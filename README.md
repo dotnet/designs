@@ -20,13 +20,13 @@ This project is licensed with the [Creative Commons BY 4.0 License](LICENSE).
 
 ## .NET Foundation
 
-New Repo is a [.NET Foundation project](https://dotnetfoundation.org/projects).
+.NET Core is a [.NET Foundation project](https://dotnetfoundation.org/projects).
 
 ## Related Projects
 
-You should take a look at these related projects:
+You may want to look at these related projects:
 
 - [C# Language Designs (dotnet/csharplang)](https://github.com/dotnet/csharplang)
-- VB Language Designs (dotnet/vblang)](https://github.com/dotnet/vblang)
+- [VB Language Designs (dotnet/vblang)](https://github.com/dotnet/vblang)
 - [.NET Core](https://github.com/dotnet/core)
 - [ASP.NET](https://github.com/aspnet)
