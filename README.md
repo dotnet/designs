@@ -30,3 +30,5 @@ You may want to look at these related projects:
 - [VB Language Designs (dotnet/vblang)](https://github.com/dotnet/vblang)
 - [.NET Core](https://github.com/dotnet/core)
 - [ASP.NET](https://github.com/aspnet)
+- [F# Language Designs (fsharp/fslang-design)](https://github.com/fsharp/fslang-design)
+- [F# Language Suggestions (fsharp/fslang-suggestions)](https://github.com/fsharp/fslang-suggestions)
