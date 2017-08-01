@@ -10,9 +10,11 @@ Anyone can contribute. The following contributions are expected to be the most c
 
 - Create an issue requesting a new feature.
 - Create an issue requesting a design for an existing feature where a behavior is problematic or not well understood.
-- Create an issue proposing a design for a feature.
-- Create an issue proposing an alternate design for a feature.
-- Comment on a proposal.
+- Comment on an issue.
+- Create a pull request for a doc in .\accepted for a design for a feature.
+- Create a pull request for a doc in .\accepted an alternate design for a
+feature.
+- Once broad agreement is reached, PR proposal doc merged into accepted folder.
 
 ## License
 
