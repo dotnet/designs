@@ -38,12 +38,17 @@ The concept of performance counters will be covered in this document, but counte
 	- Have a top-level bitmask that knows whether an event has been requested by anyone and use that to decide whether an event is on.
 	- At a minimum, once an event has been requested by anyone, use an observer pattern to dispatch the event to each consumer, and allow them to deliver it if they want (or ignore it).  We can also be smarter and only dispatch to the systems that requested the event (think of each of these logging systems as sessions).
 - Update native runtime events to use the EventData serialization format.
-	- This is fairly straight forward and just requires updating the script and serialization functions.
+	- This is fairly straight forward and just requires updating the script and serialization functions.  The purpose of this is to ensure that all events have a consistent serialization format and that the format easily allows for access to individual payload items.  Once a particular logging system has taken over it can choose to convert the payload into a different format. 
 - Enable TraceLogging support in EventPipe.
 	- This is required for use of EventCounters.  EventCounters log counter update events using TraceLogging.
 	- OPEN ISSUE: What work is required here?
 - Enable the EventPipe to target EventListeners as dispatch targets.
 	- Allow the EventListener to pinvoke into the runtime and register itself as a target.
 	- Implement a GC safe buffering mechanism to allow native events to be dispatched to managed code.
-- 
-
+- Plumb payload names for all events through the EventPipe.
+	- This is required to fill in the PayloadNames field of EventWrrittenEventArgs (EventListener support).
+	- Right now, EventSource specifies a metadata blob.
+	- CONSIDER: Make EventSource pass a strongly typed object representing the payload fields.
+- Extra Credit: Move the LTTng implementation behind the EventPipe
+	- Right now, calls to LTTng sit right next to the EventPipe.  They should be moved behind the EventPipe just like ETW (above).
+	- This isn't specifically required for performance counters, but can/should be done especially if it cleans up the code or makes things easier.
