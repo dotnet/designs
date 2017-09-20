@@ -2,17 +2,29 @@
 
 ### Introduction ###
 
-This document describes both the end-to-end scenario, and the platform support required to enable cross-platform performance monitoring.
+This document describes the end-to-end scenarios and platform support required to enable cross-platform performance monitoring of the .NET runtime, framework, and .NET applications.
 
-The concept of performance counters will be covered in this document, but counters are not the only monitoring mechanism included in this design.
+Important Points:
+
+ - This proposal is designed to provide a mechanism for managed code to consume both managed and native tracing events (GC, JIT, ThreadPool, Tasks, EventSource, EventCounters, etc.).
+ - This proposal leaves the existing EventSource/EventListener model in place and simply adds a mechanism to allow EventListeners to subscribe to events that are emitted from the .NET runtime instead of from managed code via an EventSource (GC, Jit ThreadPool, etc.)
+ - Diagnostic features that layer on top of EventSource/EventListener will continue to work and will gain the benefit of having additional tracing data made available to them directly from the runtime.
+
+The concept of performance counters will be used in this document, but counters are only one mechanism included in this design.
 
 ### End-to-End Scenarios ###
 
 #### Consuming Raw Trace Data In-Process ####
+This scenario allows developers to add code to their applications that can consume and if desired, redirect trace data.  A canonical example of this solution would be to redirect raw trace data to a Graphite database for consumption out-of-process.
 
 #### Consuming Aggregated Trace Data (Counters) In-Process ####
+This scenario allows developers to request aggregated trace data in-process.  This aggregate data is essentially what people call "performance counters".  The scenario is almost identical to consuming raw trace data with one difference - the aggregation occurs in-process before the data is provided to the consumer.  This can be useful if the goal of the user is to minimize overhead in favor of less granular data.
 
-#### OPEN ISSUE: Do we want to have an out-of-proc controlled solution or something that doesn't require the developer to opt-in? ####
+### Producing Tracing Data ###
+This proposal does not create any new ways to produce tracing data.  All tracing data emitted by an EventSource (this includes EventCounters) automatically flows to an EventListener.
+
+### Consuming Tracing Data ###
+Consumption of tracing data, including aggregated counter data, will be done via the existing EventListener class.  The difference is simply that native events will also be consumable via EventListener.
 
 ### Components Involved ###
 
@@ -46,7 +58,7 @@ The concept of performance counters will be covered in this document, but counte
 	- Allow the EventListener to pinvoke into the runtime and register itself as a target.
 	- Implement a GC safe buffering mechanism to allow native events to be dispatched to managed code.
 - Plumb payload names for all events through the EventPipe.
-	- This is required to fill in the PayloadNames field of EventWrrittenEventArgs (EventListener support).
+	- This is required to fill in the PayloadNames field of EventWrittenEventArgs (EventListener support).
 	- Right now, EventSource specifies a metadata blob.
 	- CONSIDER: Make EventSource pass a strongly typed object representing the payload fields.
 - Extra Credit: Move the LTTng implementation behind the EventPipe
