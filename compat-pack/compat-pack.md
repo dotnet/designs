@@ -54,7 +54,7 @@ solution, using a WPF desktop application with an ASP.NET WebAPI backend, both
 running on .NET Framework.
 
 Fabrikam decided that they are quite happy with the desktop application and want
-to continue to leverage WPF. But the decide it's best to leverage ASP.NET Core
+to continue to leverage WPF. But they decide it's best to leverage ASP.NET Core
 for the web API backend, as this gives them more flexibility in their choice of
 server operating system as well as isolated deployments using Docker.
 
@@ -62,8 +62,9 @@ server operating system as well as isolated deployments using Docker.
 
 Both, the frontend and the backend, share code with utility functionality and
 business logic (logging, entities, rules). John concludes that the easiest to
-share code across their tiers is by making it .NET Standard 2.0. This will also
-allow them to reuse those pieces in an upcoming Xamarin-based mobile client.
+share code across their tiers is by making it target .NET Standard 2.0. This
+will also allow them to reuse those pieces in an upcoming Xamarin-based mobile
+client.
 
 ![](scenarios-fabrikam-migration-02.png)
 
@@ -73,10 +74,10 @@ creating a project for the shared code, targeting .NET Standard 2.0. Given that
 the code was mostly low-level and general purpose, everything just compiled as-
 is. He then continues by creating an ASP.NET Core web application for his web
 API backend. After performing the ASP.NET Core specific changes (which was
-mostly changing namespace names) he's then faces some APIs that don't exist in
+mostly changing namespace names) he then faces some APIs that don't exist in
 .NET Core. He runs API Port on this existing application and it points him to
-the *Windows Compatibility Pack* to gain access to the missing APIs. His project
-is now compiling and he starts validating the new setup.
+the *.NET Framework Compatibility Pack* to gain access to the missing APIs.
+His project is now compiling and he starts validating the new setup.
 
 Aspects:
 
