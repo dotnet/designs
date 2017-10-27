@@ -129,7 +129,7 @@ behind an operating system check:
 private static string GetLoggingPath()
 {
     // If we're on Windows and the desktop app has configured a logging path, we'll use that.
-    if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
     {
         using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Fabrikam\AssetManagement"))
         {
