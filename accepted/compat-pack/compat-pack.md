@@ -1,4 +1,4 @@
-# .NET Framework Compatibility Pack
+# Windows Compatibility Pack
 
 **PM** [Immo Landwerth](https://github.com/terrajobst) |
 **Dev** [Wes Haggard](https://github.com/weshaggard)
@@ -7,9 +7,9 @@ When we shipped .NET Core 1.x as well as .NET Standard 1.x, we were hoping to be
 able to use that as an opportunity to remove legacy technologies and deprecated
 APIs. Since then, we've learned that no matter how attractive the new APIs and
 capabilities of .NET Core are: if your existing code base is large enough, the
-benefits of the new APIs are often dwarfed by the sheer cost of reimplementing
-and/or adapting your existing code. The *.NET Framework Compatibility Pack* is
-about providing a good chunk of these technologies so that building .NET Core
+benefits of the new APIs are often dwarfed by the sheer cost of re-implementing
+and/or adapting your existing code. The *Windows Compatibility Pack* is about
+providing a good chunk of these technologies so that building .NET Core
 applications as well as .NET Standard libraries becomes much more viable for
 existing code.
 
@@ -18,9 +18,9 @@ significantly increased the API set so that porting existing code becomes much
 easier and code largely just compiles as-is. However, we also didn't want to
 complicate .NET Standard by adding large API sets that can't work across all
 platforms. That's why we haven't, for instance, added the Windows registry or
-reflection emit APIs. The *.NET Framework Compatibility Pack* will sit above
-.NET Standard [1] and is thus free to provide access to technologies that are
-Windows only.
+reflection emit APIs. The *Windows Compatibility Pack* will sit above .NET
+Standard [1] and is thus free to provide access to technologies that are Windows
+only.
 
 Providing more APIs for class libraries that target .NET Standard also helps
 with the compatibility mode we've added in .NET Standard 2.0. It allows you to
@@ -29,13 +29,13 @@ period where many packages still aren't available for .NET Standard or .NET
 Core. However, the compatibility mode doesn't change physics: it only bridges
 differences in the assembly factoring between .NET Framework and .NET Standard.
 It cannot give you access to APIs that don't exist on the .NET implementation
-you're running on. The *.NET Framework Compatibility Pack* helps by extending
-the set of APIs that are covered by the compatibility mode.
+you're running on. The *Windows Compatibility Pack* helps by extending the set
+of APIs that are covered by the compatibility mode.
 
-The *.NET Framework Compatibility Pack* is especially useful for customers that
-want to move .NET Core but plan to stay on Windows as a first step. In that
-scenario, not being able to use Windows-only technologies is only a migration
-hurdle with zero architectural benefit.
+The *Windows Compatibility Pack* is especially useful for customers that want to
+move .NET Core but plan to stay on Windows as a first step. In that scenario,
+not being able to use Windows-only technologies is only a migration hurdle with
+zero architectural benefit.
 
 [ns20]: https://github.com/dotnet/announcements/issues/24
 
@@ -76,8 +76,8 @@ is. He then continues by creating an ASP.NET Core web application for his web
 API backend. After performing the ASP.NET Core specific changes (which was
 mostly changing namespace names) he then faces some APIs that don't exist in
 .NET Core. He runs API Port on this existing application and it points him to
-the *.NET Framework Compatibility Pack* to gain access to the missing APIs.
-His project is now compiling and he starts validating the new setup.
+the *Windows Compatibility Pack* to gain access to the missing APIs. His project
+is now compiling and he starts validating the new setup.
 
 Aspects:
 
@@ -225,7 +225,7 @@ Aspects:
 
 ### Package
 
-* Package ID: [Microsoft.NETFramework.Compatibility](https://www.nuget.org/packages/Microsoft.NETFramework.Compatibility)
+* Package ID: [Microsoft.Windows.Compatibility](https://www.nuget.org/packages/Microsoft.Windows.Compatibility)
 * Package must install both into .NET Core 2.0 as well as .NET Standard 2.0
 * Package will be a meta package, allowing developers to reference individual
   components
@@ -311,3 +311,9 @@ For three reasons:
    strong signal that these technologies would be legacy. We could flatten the
    legacy ones only, but it seems more complicated to understand if the pack is
    partially flattened than if it is pure meta package.
+
+### Why is it called Windows Compatibility Pack?
+
+Originally, we used the name *.NET Framework Compatibility Pack* but we changed
+it to the *Windows Compatibility Pack* to underline the notion we're not
+providing all of the .NET Framework as part of it.
