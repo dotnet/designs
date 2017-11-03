@@ -6,7 +6,7 @@ Many CI services set environment variables that can be used by developer builds.
 
 The .NET Core SDK is implementing new scenarios that require source control manager information. An initial idea was to call out to specific source control tools to get this information. This approach is problematic since it requires an implementation for each source control manager and it has the potential to be fragile and slow.
 
-It turns out that CI services all of the information that these new .NET Core scenarios need via environment variables. Also, there is a strong relationship between these scenarios and official CI-provided builds (much less on local developer builds). As a result, relying on the CI-provided environment variables is attractive.
+It turns out that CI services provide all of the information that these new .NET Core scenarios need via environment variables. Also, there is a strong relationship between these scenarios and official CI-provided builds (much less on local developer builds). As a result, relying on the CI-provided environment variables is attractive.
 
 To make it possible to provide application platform provided experiences across CI services, we need a standardized set of environment variables that are supported across those same CI services. Ideally, this set of environment variables would be supported across multiple CI services and useful for multiple application environments, not just .NET.
 
@@ -14,11 +14,11 @@ To make it possible to provide application platform provided experiences across 
 
 The .NET Core SDK needs are oriented around source control. As a result, the intial list is source control oriented, but there is no affinity to source control on the general idea of standardized environment variables.
 
-It is important that these environment variables do not conflict with other variables. To avoid that, all environment variables will be prepended with "STANDARDCI-". This name is a first proposal for the idea and it may get changed based on feedback.
+It is important that these environment variables do not conflict with other variables. To avoid that, all environment variables will be prepended with "STANDARDCI\_". This name is a first proposal for the idea and it may get changed based on feedback.
 
 * **STANDARDCI\_REPOSITORYCOMMITID** -- Commit hash / ID; Example: 2ba93796dcf132de447886d4d634414ee8cb069d
 * **STANDARDCI\_REPOSITORYROOT** -- Root of repository; Example: D:\repos\corefx
-* **STANDARDCI\_REPOSITORYNAME** -- Name repository; Example: dotnet\corefx
+* **STANDARDCI\_REPOSITORYNAME** -- Name of repository; Example: dotnet\corefx
 * **STANDARDCI\_REPOSITORYURI** -- Uri for repository; Example: https://github.com/dotnet/corefx
 
 ## Support from CI Services
