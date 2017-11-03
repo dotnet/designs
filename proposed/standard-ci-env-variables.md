@@ -23,7 +23,7 @@ It is important that these environment variables do not conflict with other vari
 
 ## Support from CI Services
 
-This plan will only work if CI services decide to support these environment variables. An important question is whether CI services have similar environment variables already. The table below suggests that the information we need is already available.
+This plan will only work if CI services decide to support these environment variables. An important question is whether CI services have similar environment variables already. The table below suggests that the information we need is already available. An arbitrary sample of CI services were picked for this exercise.
 
 | Environment Variable | VSTS | Travis CI| AppVeyor | Circle CI |
 | -------------------- | ---- | -------- | -------- | --------- |
