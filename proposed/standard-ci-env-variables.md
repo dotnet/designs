@@ -25,12 +25,12 @@ It is important that these environment variables do not conflict with other vari
 
 This plan will only work if CI services decide to support these environment variables. An important question is whether CI services have similar environment variables already. The table below suggests that the information we need is already available. An arbitrary sample of CI services were picked for this exercise.
 
-| Environment Variable | VSTS | Travis CI| AppVeyor | Circle CI |
-| -------------------- | ---- | -------- | -------- | --------- |
-|STANDARDCI\_REPOSITORYCOMMITID | BUILD\_SOURCEVERSION | TRAVIS\_COMMIT |APPVEYOR\_REPO\_COMMIT | CIRCLE\_SHA1 |
-|STANDARDCI\_REPOSITORYROOT|BUILD\_REPOSITORY\_LOCALPATH|TRAVIS\_BUILD\_DIR| APPVEYOR\_BUILD\_FOLDER | CIRCLE\_WORKING\_DIRECTORY |
+| Environment Variable | VSTS | Travis CI| AppVeyor | Circle CI | AWS CodeBuild |
+| -------------------- | ---- | -------- | -------- | --------- | ------------- |
+|STANDARDCI\_REPOSITORYCOMMITID | BUILD\_SOURCEVERSION | TRAVIS\_COMMIT |APPVEYOR\_REPO\_COMMIT | CIRCLE\_SHA1 | CODEBUILD_RESOLVED_SOURCE_VERSION |
+|STANDARDCI\_REPOSITORYROOT|BUILD\_REPOSITORY\_LOCALPATH|TRAVIS\_BUILD\_DIR| APPVEYOR\_BUILD\_FOLDER | CIRCLE\_WORKING\_DIRECTORY | CODEBUILD_SRC_DIR |
 |STANDARDCI\_REPOSITORYNAME|BUILD\_REPOSITORY\_NAME| TRAVIS\_REPO\_SLUG | APPVEYOR\_REPO\_NAME | CIRCLE\_PROJECT\_USERNAME + CIRCLE\_PROJECT\_REPONAME |
-|STANDARDCI\_REPOSITORYURI|BUILD\_REPOSITORY\_URI| | | CIRCLE\_REPOSITORY\_URL |
+|STANDARDCI\_REPOSITORYURI|BUILD\_REPOSITORY\_URI| | | CIRCLE\_REPOSITORY\_URL | CODEBUILD_SOURCE_REPO_URL |
 
 The [VSTS](https://www.visualstudio.com/team-services/) team has graciously agreed to publish environment variables in the proposed STANDARDCI format.
 
@@ -38,6 +38,7 @@ The [VSTS](https://www.visualstudio.com/team-services/) team has graciously agre
 * [Travis CI](https://travis-ci.org/) -- [environment variables](https://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables)
 * [AppVeyor](https://www.appveyor.com/) -- [environment variables](https://www.appveyor.com/docs/environment-variables/)
 * [Circle CI](https://circleci.com) -- [environment variables](https://circleci.com/docs/2.0/env-vars)
+* [AWS CodeBuild](https://aws.amazon.com/codebuild/) -- [environment variables](http://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html)
 
 ## Plan
 
