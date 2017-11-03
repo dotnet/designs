@@ -38,6 +38,7 @@ The [VSTS](https://www.visualstudio.com/team-services/) team has graciously agre
 * [Travis CI](https://travis-ci.org/) -- [environment variables](https://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables)
 * [AppVeyor](https://www.appveyor.com/) -- [environment variables](https://www.appveyor.com/docs/environment-variables/)
 * [Circle CI](https://circleci.com) -- [environment variables](https://circleci.com/docs/2.0/env-vars)
+* [AWS CodeBuild](https://aws.amazon.com/codebuild/) -- [environment variables](http://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html)
 
 ## Plan
 
