@@ -56,9 +56,20 @@ CLI needs to add a notion of a returnable local slots.
 The rationale for introducing returnable locals is to allow for a single pass verification analysis. 
 While, in theory, it may be possible that the “returnable” property could be inferred via some form of fixed point flow analysis, it would make verification substantially more complex and expensive and would not retain the single-pass property.
 
-The implementation of tagging local slots as returnable - **TBD**. 
+## Metadata encoding of returnable local slots ## 
 
-I recommend using a modopt with a platform type, such as System.Object.
-While in principle, a new signature constraint, similar to `pinned`, could be a more elegant solution, experiments have shown that introducing a new constraint is breaking to existing JITs. On the other hand `modopt[System.Object]` on a local is completely ignorable by JITs, irrelevant to external consumers such as compilers and transparently supported by IL-level introspection tools such as decompilers.
+Local slots can be marked as returnable by applying `modopt[System.Runtime.CompilerServices.IsReturnableAttribute]` in the local signature.
 
+In particular:
+-  The identity of the `IsReturnableAttribut`e type is unimportant. In fact we expect that it would be embedded by the compiler in the containing assembly.
+-  Applying `IsReturnableAttribute` to byval local slots is reserved for the future use and in scope of this proposal results in verification error. 
+
+---
 NOTE: while JIT is free to ignore the differences between returnable and ordinary byref locals. However it may use that extra information as an input/hints when performing optimizations.
+
+---
+NOTE: Why `modopt`?
+
+While in principle, a new signature constraint, similar to `pinned`, could be a more elegant solution, experiments have shown that introducing a new constraint is breaking to existing JITs. 
+
+On the other hand a `modopt` applied to a local is completely ignored by JITs, irrelevant to external consumers such as compilers and transparently supported by IL-level introspection tools such as decompilers. This makes `modopt` a convenient mechanism to implement tagging of local slots.
