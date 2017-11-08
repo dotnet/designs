@@ -54,10 +54,10 @@ There are only two environment variables listed, since this .NET Core SDK scenar
 
 This plan will only work if CI services decide to support these environment variables. An important question is whether CI services have similar environment variables already. The table below suggests that the information we need is already available. An arbitrary sample of CI services were picked for this exercise.
 
-| Environment Variable | VSTS | Travis CI| AppVeyor | Circle CI | AWS CodeBuild | Team City |
-| -------------------- | ---- | -------- | -------- | --------- | ------------- | --------- |
-|STANDARDCI\_REPOSITORYCOMMITID | BUILD\_SOURCEVERSION | TRAVIS\_COMMIT |APPVEYOR\_REPO\_COMMIT | CIRCLE\_SHA1 | CODEBUILD_RESOLVED_SOURCE_VERSION | build.vcs.number |
-|STANDARDCI\_REPOSITORYURI|BUILD\_REPOSITORY\_URI| | | CIRCLE\_REPOSITORY\_URL | CODEBUILD_SOURCE_REPO_URL | vcsroot.url |
+| Environment Variable | VSTS | Travis CI| AppVeyor | Circle CI | AWS CodeBuild | Team City | OpenShift |
+| -------------------- | ---- | -------- | -------- | --------- | ------------- | --------- | --------- |
+|STANDARDCI\_REPOSITORYCOMMITID | BUILD\_SOURCEVERSION | TRAVIS\_COMMIT |APPVEYOR\_REPO\_COMMIT | CIRCLE\_SHA1 | CODEBUILD\_RESOLVED\_SOURCE\_VERSION | build.vcs.number | OPENSHIFT\_BUILD\_COMMIT |
+|STANDARDCI\_REPOSITORYURI|BUILD\_REPOSITORY\_URI| | | CIRCLE\_REPOSITORY\_URL | CODEBUILD\_SOURCE\_REPO\_URL | vcsroot.url | OPENSHIFT\_BUILD\_SOURCE |
 
 The [VSTS](https://www.visualstudio.com/team-services/) team has graciously agreed to publish environment variables in the proposed STANDARDCI format.
 
@@ -67,6 +67,7 @@ The [VSTS](https://www.visualstudio.com/team-services/) team has graciously agre
 * [Circle CI](https://circleci.com) -- [environment variables](https://circleci.com/docs/2.0/env-vars)
 * [AWS CodeBuild](https://aws.amazon.com/codebuild/) -- [environment variables](http://docs.aws.amazon.com/codebuild/latest/userguide/build-env-ref-env-vars.html)
 * [Team City](https://confluence.jetbrains.com/display/TCDL/Predefined+Build+Parameters)
+* [OpenShift](https://docs.openshift.com/enterprise/3.1/dev_guide/builds.html#output-image-environment-variables)
 
 ## Plan
 
