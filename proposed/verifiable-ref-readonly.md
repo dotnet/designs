@@ -59,7 +59,7 @@ Readonly managed pointer may be a result of one of the following:
 ## Merging stack states ## 
 *(add to III.1.8.1.3 Merging stack states)*
 
-Merging a readonly managed pointer with an managed pointer of an ordinary or controlled mutability kind results in a managed pointer of that kind.
+Merging a readonly managed pointer with an managed pointer of an ordinary or controlled mutability kind results in a readonly managed pointer.
 
 ## Readonly local slots ##
 CLI needs to add a notion of a readonly local slots.
