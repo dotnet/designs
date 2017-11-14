@@ -41,7 +41,7 @@ Note that the final implementation provided by the .NET Core SDK might look slig
 
 ## Proposed Standard Environment Variables
 
-The .NET Core SDK needs are oriented around source control. As a result, the intial list is source control oriented, but there is no affinity to source control on the general idea of standardized environment variables.
+The .NET Core SDK needs are oriented around source control. As a result, the initial list is source control oriented, but there is no affinity to source control on the general idea of standardized environment variables.
 
 It is important that these environment variables do not conflict with other variables. To avoid that, all environment variables will be prepended with "STANDARDCI\_". This name is a first proposal for the idea and it may get changed based on feedback.
 
