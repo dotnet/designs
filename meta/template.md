@@ -33,8 +33,8 @@ proposal is (PM) and who can be asked for technical questions (Dev). At
 Microsoft, these roles happen to match to job titles too, but that's irrelevant.
 -->
 
-**PM** [John Doe](https://github.com/jondoe) |
-**Dev** [Jan Doe](https://github.com/janedoe)
+**PM** [John Doe](https://github.com/johndoe) |
+**Dev** [Jane Doe](https://github.com/janedoe)
 
 <!--
 Provide a broad problem statement here. This might include some history and the
@@ -153,8 +153,8 @@ If you're a minimalist, just copy and paste the code below:
 ```Markdown
 # Your Feature
 
-**PM** John Doe |
-**Dev** Jane Doe
+**PM** [John Doe](https://github.com/johndoe) |
+**Dev** [Jane Doe](https://github.com/janedoe)
 
 ## Scenarios and User Experience
 

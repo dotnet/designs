@@ -48,8 +48,8 @@ is a waste of time and instead should be spent on coding.
 But reduction of process and paper work isn't a goal in and of itself. The goal
 is to generate customer value faster in order to adapt to an ever faster
 changing world. There is no point in doing process for the sake of process,
-that's overhead. No customer ever said "I lover your product because your
-engineering process is so pristine". But equally, we need to avoid wasting time
+that's overhead. No customer ever said "I love your product because your
+engineering process is so pristine." But equally, we need to avoid wasting time
 because we built the feature the wrong way or -- worse -- the wrong feature.
 
 We need to appreciate that .NET isn't a simple web site. Microsoft alone has a
