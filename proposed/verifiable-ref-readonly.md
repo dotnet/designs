@@ -105,9 +105,7 @@ In particular:
 ---
 NOTE: JIT is free to ignore readonly annotations. However it may use that extra information as an input/hints when performing optimizations.
 
-# Matching readonly constraints when overriding/implementing or assigning delegate values # 
-   
-**Delegate and method signature compatibility:**
+# Delegate and method signature compatibility ##
 *(need to adjust definitions of “delegate-assignable-to” and “method-signature-compatible-
 with” accordingly)*
 
