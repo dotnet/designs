@@ -79,8 +79,20 @@ Byref local slots can be marked as readonly by applying `modopt[System.Runtime.C
 ## `ref readonly` returns ##
 When `System.Runtime.CompilerServices.IsReadOnlyAttribute` is applied to the return of a byref returning method, it means that the method returns a readonly reference.
 
+In addition, the result signature of such methods (and only those methods) must have `modreq[System.Runtime.CompilerServices.IsReadOnlyAttribute]`. 
+
+**Motivation**: this is to ensure that existing compilers cannot simply ignore `readonly` when invoking methods with `ref readonly` returns
+
 ## `in` parameters ##
 When `System.Runtime.CompilerServices.IsReadOnlyAttribute` is applied to a byref parameter, it means that the the parameter is an `in` parameter.
+
+In addition, if the method is *abstract* or *virtual*, then the signature of such parameters (and only such parameters) must have `modreq[System.Runtime.CompilerServices.IsReadOnlyAttribute]`. 
+
+**Motivation**: this is done to ensure that in a case of method overriding/implementing the `in` parameters match.
+
+Same requirements apply to `Invoke` methods in delegates. 
+
+**Motivation**: this is to ensure that existing compilers cannot simply ignore `readonly` when creating or assigning delegates.
  
 ## `readonly` structs ##
 When `System.Runtime.CompilerServices.IsReadOnlyAttribute` is applied to a value type, it means that the the type is a `readonly struct`.
@@ -91,21 +103,17 @@ In particular:
 -  Applying `IsReadOnlyAttribute` to targets not listed here - to byval local slots, byval returns/parameters, reference types, etc... is reserved for the future use and in scope of this proposal results in verification errors. 
 
 ---
-NOTE: while JIT is free to ignore readonly annotations. However it may use that extra information as an input/hints when performing optimizations.
-
+NOTE: JIT is free to ignore readonly annotations. However it may use that extra information as an input/hints when performing optimizations.
 
 # Matching readonly constraints when overriding/implementing or assigning delegate values # 
-
-**Overriding:**
-In a case of overriding, the overriding method must match the signature of the overriden method in terms of `readonly` decorations. I.E. 
-- if a parameter of the overriden method is an `in` parameter, then the corresponding parameter of the overriding method must be `in` as well. The reverse match is also required.
-- if the overriden method returns by a readonly reference, then the overriding method must return by a readonly reference. The reverse match is also required.
-
-**Implementing:**
-In a case of implementing, the implementing method must match the signature of the implemented method in terms of `readonly` decorations. I.E. 
-- if a parameter of the implemented method is an `in` parameter, then the corresponding parameter of the implementing method must be `in` as well. The reverse match is also required.
-- if the implemented method returns by a readonly reference, then the implementing method must return by a readonly reference. The reverse match is also required.
    
-**Delegate assignments:**
-Delegates with signatures that differ in terms of `readonly` are not assignment compatible.
+**Delegate and method signature compatibility:**
+*(need to adjust definitions of “delegate-assignable-to” and “method-signature-compatible-
+with” accordingly)*
 
+Signatures that differ in terms of `readonly` are not compatible.
+
+NOTE: The modifiers on parameters and returns are ignored here. That is existing behavior and it is not changed to allow delegate creation regardless of whether target method is virtual and uses modifiers or not. 
+ 
+NOTE: The requirement could be relaxed to allow readonly references be compatible with ordinary references in return position and reverse in parameter positions, if more complex rules can be justified.   
+ 
