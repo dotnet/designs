@@ -80,6 +80,12 @@ significant time learning an API that is still evolving.
   frameworks should therefore show up for all these frameworks, following NuGet
   compatibility rules.
 
+* **No superfluous installs**. There will be cases where framework-extensions
+  eventually become built-in framework components. Due to versioning, the
+  framework extension will still be applicable and thus installing the package
+  is possible. However, we don't wan our docs to point developers to the package
+  in these cases as the package will be redundant as the implementation no-ops.
+
 ### Non-Goals
 
 * **Fully unifying frameworks with package-based monikers**. Today, the [API
@@ -142,6 +148,31 @@ implement that version of the standard, which is the desired behavior.
 Furthermore, if an API is made available for a specific framework, it will also
 show up as being available on all later versions of the same framework, which is
 also desired behavior.
+
+### Framework vs. Framework-Extensions
+
+There will be cases where a framework extension becomes part of a framework. For
+example, `System.Memory` is a framework extension that will target .NET Standard
+and thus applies to all .NET implementation. However, moving forward the APIs
+will be added directly to the core assembly so that the runtime can be aware of
+it and provide a more performant implementation. The behavior we want is that
+the header that indicates a NuGet package is needed shouldn't been shown if the
+API is built-in. One way to provide the semantics is to introduce a `built-in`
+tag that is applied during indexing. If that tag is present, the header
+shouldn't be shown.
+
+All APIs provided in the reference assemblies (as opposed to any NuGet packages)
+should be considered built-in:
+
+```
+get list of all framework monikers PS supported by the API browser
+for each P in PS
+    get list of all reference assemblies AS for P
+    for each A in AS
+        get list of all APIs MS in A
+        for each M in MS
+            mark M as built-in for P
+```
 
 ## Q & A
 
