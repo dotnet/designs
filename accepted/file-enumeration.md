@@ -6,7 +6,7 @@ Enumerating files in .NET provides limited configurability. You can specify a si
 
 Recursive enumeration is also problematic in that there is no way to handle error states such as access issues or cycles created by links.
 
-These restrictions have a significant impact on file system intensive applications, a key example being MSBuild. We can address these restrictions and provide performant, configurable enumeration.
+These restrictions have a significant impact on file system intensive applications, a key example being MSBuild. This document proposes a new set of primitive file and directory traversal APIs that are optimized for providing more flexibility while keeping the overhead to a minimum so that enumeration becomes both more powerful as well as more performant.
 
 ## Scenarios and User Experience
 
@@ -15,20 +15,31 @@ These restrictions have a significant impact on file system intensive applicatio
 
 ## Requirements
 
-1. Filtering based on common file system data is possible
-	a. Name
-	b. Attributes
-	c. Time stamps
-    d. File size
-2. Result transforms can be of any type
-3. We provide common filters and transforms
-4. Recursive behavior is configurable
-5. Error handling is configurable
 
 ### Goals
 
-1. API is cross platform generic
-2. API minimizes allocations while meeting #1
+
+1. Custom filtering based on common file system data
+	- Name
+	- Attributes
+	- Time stamps
+    - File size
+2. Result transforms can be of any desired output type
+	- Like Linq Select(), but keeps FileData on the stack
+3. API minimizes allocations
+4. API is cross platform abstract
+3. We provide common filters and transforms
+	- To file/directory name
+	- To full path
+	- To File/Directory/FileSystemInfo
+	- DOS style filters (Legacy- `*/?` with DOS semantics, e.g. `*.` is all files without an extension)   
+	- Simple Regex filter
+	- Simpler globbing (`*/?` without DOS style variants)
+	- Set of extensions (`*.c`, `*.cpp`, `*.cc`, `*.cxx`, etc.)
+4. Recursive behavior is configurable
+	- On/Off
+	- Predicate based on FileData
+5. Can avoid throwing access denied exceptions
 
 ### Non-Goals
 
@@ -45,12 +56,12 @@ namespace System.IO
     /// <summary>
     /// Delegate for filtering out find results.
     /// </summary>
-    internal delegate bool FindPredicate<TState>(ref RawFindData findData, TState state);
+    public delegate bool FindPredicate<TState>(ref RawFindData findData, TState state);
 
     /// <summary>
     /// Delegate for transforming raw find data into a result.
     /// </summary>
-    internal delegate TResult FindTransform<TResult, TState>(ref RawFindData findData, TState state);
+    public delegate TResult FindTransform<TResult, TState>(ref RawFindData findData, TState state);
 
     [Flags]
     public enum FindOptions
@@ -89,7 +100,7 @@ namespace System.IO
             FindOptions options = FindOptions.None);
     }
 
-    public static class DirectoryInfo
+    public class DirectoryInfo
     {
         public static IEnumerable<TResult> Enumerate<TResult, TState>(
             FindTransform<TResult, TState> transform,
@@ -191,8 +202,7 @@ public static FindEnumerable<string, string> GetFiles(string directory,
         (ref RawFindData findData, string expr) => FindTransforms.AsFullPath(ref findData),
         (ref RawFindData findData, string expr) =>
         {
-            return FindPredicates.NotDotOrDotDot(ref findData)
-                && !FindPredicates.IsDirectory(ref findData)
+            return !FindPredicates.IsDirectory(ref findData)
                 && DosMatcher.MatchPattern(expr, findData.FileName, ignoreCase: true);
         },
         state: DosMatcher.TranslateExpression(expression),
