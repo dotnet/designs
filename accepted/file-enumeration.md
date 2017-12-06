@@ -123,11 +123,14 @@ The key goal is to provide an advanced API that keeps allocations to a minimum b
 		- (Pri1) Simple Regex filter (e.g. IsMatch())
 		- (Pri2) Simpler globbing (`*/?` without DOS style variants)
 		- (Pri2) Set of extensions (`*.c`, `*.cpp`, `*.cc`, `*.cxx`, etc.)
-4. Recursive behavior is configurable
+6. Recursive behavior is configurable
 	- On/Off via flag
 	- Predicate based on FileData
-5. Can avoid throwing access denied / security exceptions via Options flags
-6. Can hint buffer allocation size via flag
+7. Behavior flags
+	1. Recurse
+	2. Ignore inaccessible files (e.g. no rights)
+	3. Hint to use larger buffers (for remote access)
+	4. Optimization to skip locking for single-thread enumeration 
 
 ### Non-Goals
 
@@ -165,7 +168,13 @@ namespace System.IO
         IgnoreInaccessable = 0x2,
 
 		// Hint to use larger buffers for getting data (notably to help address remote enumeration perf)
-		UseLargeBuffer = 0x4
+		UseLargeBuffer = 0x4,
+
+		// Allow .NET to skip locking if you know the enumerator won't be used on multiple threads
+		// (Enumerating is inherently not thread-safe, but .NET needs to still lock by default to
+		//  avoid access violations with native access should someone actually try to use the
+		//  the same enumerator on multiple threads.)
+		NoLocking = 0x8
 
         // Future: Add flags for tracking cycles, etc. 
 	}
