@@ -83,7 +83,7 @@ significant time learning an API that is still evolving.
 * **No superfluous installs**. There will be cases where framework-extensions
   eventually become built-in framework components. Due to versioning, the
   framework extension will still be applicable and thus installing the package
-  is possible. However, we don't wan our docs to point developers to the package
+  is possible. However, we don't want our docs to point developers to the package
   in these cases as the package will be redundant as the implementation no-ops.
 
 ### Non-Goals
