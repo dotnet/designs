@@ -10,41 +10,131 @@ These restrictions have a significant impact on file system intensive applicatio
 
 ## Scenarios and User Experience
 
-1. MSBuild can custom filter filesystem entries with limited allocations and form the results in any desired format.
-2. Users can build custom enumerations utilizing completely custom or provided commonly used filters and transforms.
+### Getting full paths
+
+To get full paths for files, one would currently have to do the following:
+
+```
+public static IEnumerable<string> GetFileFullPaths(string directory,
+    string expression = "*",
+    bool recursive = false)
+{
+    return new DirectoryInfo(directory)
+        .GetFiles(expression, recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+        .Select(r => r.FullName);
+}
+
+```
+
+While not complicated to write, it allocates far more than it needs to. A `FileInfo` will be allocated for every result, even though it strictly isn't needed. A new, lower allocating, full-path wrapper could be written as follows:
+
+``` C#
+public static IEnumerable<string> GetFileFullPaths(string directory,
+    string expression = "*",
+    bool recursive = false)
+{
+    return new FindEnumerable<string, string>(
+        directory,
+        (ref FindData<string> findData) => FindTransforms.AsUserFullPath(ref findData),
+        (ref FindData<string> findData) =>
+        {
+            return !FindPredicates.IsDirectory(ref findData)
+                && DosMatcher.MatchPattern(findData.State, findData.FileName, ignoreCase: true);
+        },
+        state = DosMatcher.TranslateExpression(expression),
+        recursive = recursive);
+}
+
+```
+
+While using anonymous delegates isn't strictly necessary, they are cached, so all examples are written with them. The second argument above, for example, could simply be `FindTransforms.AsUserFullPath`, but it wouldn't take advantage of delegate caching.
+
+
+### Getting full paths of a given extension
+
+Again, here is the current way to do this:
+
+``` C#
+public static IEnumerable<string> GetFilePathsWithExtensions(string directory, bool recursive, params string[] extensions)
+{
+    return new DirectoryInfo(directory)
+        .GetFiles("*", recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly)
+        .Where(f => extensions.Any(e => f.Name.EndsWith(e, StringComparison.OrdinalIgnoreCase)))
+        .Select(r => r.FullName);
+}
+```
+
+Again, not complicated to write, but this can do an enormous amount of extra allocations. You have to create full strings and FileInfo for every single item in the file system. We can cut this down significantly with the extension point:
+
+``` C#
+public static IEnumerable<string> GetFileFullPathsWithExtension(string directory,
+    bool recursive, params string[] extensions)
+{
+    return new FindEnumerable<string, string[]>(
+        directory,
+        (ref FindData<string> findData) => FindTransforms.AsUserFullPath(ref findData),
+        (ref FindData<string> findData) =>
+        {
+            return !FindPredicates.IsDirectory(ref findData)
+                && findData.State.Any(s => findData.FileName.EndsWith(s, StringComparison.OrdinalIgnoreCase));
+        },
+        state = extensions,
+        recursive = recursive);
+}
+```
+
+The number of allocation reductions with the above solution is significant.
+
+- No `FileInfo` allocations
+- No fullpath string allocations for paths that don't match
+- No filename allocations for paths that don't match (as the filename will still be in the native buffer at this point)
 
 ## Requirements
 
 
 ### Goals
 
-
-1. Custom filtering based on common file system data
+The key goal is to provide an advanced API that keeps allocations to a minimum by allowing access to enumeration internals. We're willing to sacrifice some usability to achieve this- but will keep the complexity in-line with similar `Span<T>` based APIs, such as `String.Create()`.
+ 
+1. Keep allocations to a minimum
+	- Per result allocations are the priority
+	- Initial allocations should also be minimized, but not at the cost of per-result
+2. Considers filter/transform method call overhead for large sets
+	- Delegates appear to be a better solution than using Interfaces
+3. Filtering can be done on existing FileSystemInfo exposed data
 	- Name
 	- Attributes
 	- Time stamps
     - File size
-2. Result transforms can be of any desired output type
+4. Transforms can provide results in any type
 	- Like Linq Select(), but keeps FileData on the stack
-3. API minimizes allocations
-4. API is cross platform abstract
-3. We provide common filters and transforms
-	- To file/directory name
-	- To full path
-	- To File/Directory/FileSystemInfo
-	- DOS style filters (Legacy- `*/?` with DOS semantics, e.g. `*.` is all files without an extension)   
-	- Simple Regex filter
-	- Simpler globbing (`*/?` without DOS style variants)
-	- Set of extensions (`*.c`, `*.cpp`, `*.cc`, `*.cxx`, etc.)
+5. Filters and transforms will be provided
+	- Criteria considered for inclusion
+		- Expected to be commonly used
+		- Can be optimized by being part of the platform
+			- Via access to internals
+			- Can abstract away expected future improvements (e.g. adding Span<T> support to Regex)
+	- Expected initial transforms
+		- To file/directory name
+		- To full path
+		- To File/Directory/FileSystemInfo
+	- Expected initial filters
+		- (Pri0) DOS style filters (Legacy- `*/?` with DOS semantics, e.g. `*.` is all files without an extension)   
+		- (Pri1) Simple Regex filter (e.g. IsMatch())
+		- (Pri2) Simpler globbing (`*/?` without DOS style variants)
+		- (Pri2) Set of extensions (`*.c`, `*.cpp`, `*.cc`, `*.cxx`, etc.)
 4. Recursive behavior is configurable
-	- On/Off
+	- On/Off via flag
 	- Predicate based on FileData
-5. Can avoid throwing access denied exceptions
+5. Can avoid throwing access denied / security exceptions via Options flags
+6. Can hint buffer allocation size via flag
 
 ### Non-Goals
 
-1. API will not expose platform specific data
-3. Error handling configuration is fully customizable
+1. This will not replace existing APIs- this is an advanced way for people to write performance solutions
+2. We will not provide a way to plug in custom platform APIs to provide the FileData
+2. We will not expose platform specific data in this release
+3. We will not expose raw errors for filtering
 
 ## Design
 
@@ -56,12 +146,12 @@ namespace System.IO
     /// <summary>
     /// Delegate for filtering out find results.
     /// </summary>
-    public delegate bool FindPredicate<TState>(ref RawFindData findData, TState state);
+    public delegate bool FindPredicate<TState>(ref FindData findData, TState state);
 
     /// <summary>
     /// Delegate for transforming raw find data into a result.
     /// </summary>
-    public delegate TResult FindTransform<TResult, TState>(ref RawFindData findData, TState state);
+    public delegate TResult FindTransform<TResult, TState>(ref FindData findData, TState state);
 
     [Flags]
     public enum FindOptions
@@ -71,8 +161,11 @@ namespace System.IO
         // Enumerate subdirectories
         Recurse = 0x1,
 
-        // Skip files/directories when access is denied
-        IgnoreAccessDenied = 0x2,
+        // Skip files/directories when access is denied (e.g. AccessDeniedException/SecurityException)
+        IgnoreInaccessable = 0x2,
+
+		// Hint to use larger buffers for getting data (notably to help address remote enumeration perf)
+		UseLargeBuffer = 0x4
 
         // Future: Add flags for tracking cycles, etc. 
 	}
@@ -113,7 +206,7 @@ namespace System.IO
     /// <summary>
     /// Used for processing and filtering find results.
     /// </summary>
-    public ref struct RawFindData
+    public ref struct FindData
     {
         // This will have private members that hold the native data and
         // will lazily fill in data for properties where such data is not
@@ -149,17 +242,17 @@ namespace System.IO
 {
     internal static partial class FindPredicates
     {
-        internal static bool NotDotOrDotDot(ref RawFindData findData)
-        internal static bool IsDirectory(ref RawFindData findData)
+        internal static bool NotDotOrDotDot(ref FindData findData)
+        internal static bool IsDirectory(ref FindData findData)
     }
 
     public static partial class FindTransforms
     {
-        public static DirectoryInfo AsDirectoryInfo(ref RawFindData findData)
-        public static FileInfo AsFileInfo(ref RawFindData findData)
-        public static FileSystemInfo AsFileSystemInfo(ref RawFindData findData)
-        public static string AsFileName(ref RawFindData findData)
-        public static string AsFullPath(ref RawFindData findData)
+        public static DirectoryInfo AsDirectoryInfo(ref FindData findData)
+        public static FileInfo AsFileInfo(ref FindData findData)
+        public static FileSystemInfo AsFileSystemInfo(ref FindData findData)
+        public static string AsFileName(ref FindData findData)
+        public static string AsFullPath(ref FindData findData)
     }
 }
 
@@ -186,29 +279,6 @@ namespace System.IO
         public unsafe static bool MatchPattern(string expression, ReadOnlySpan<char> name, bool ignoreCase = true)
     }
 }
-```
-
-### Samples
-
-Getting full path of all files matching a given name pattern (close to what FindFiles does, but returning the full path):
-
-``` C#
-public static FindEnumerable<string, string> GetFiles(string directory,
-    string expression = "*",
-    bool recursive = false)
-{
-    return new FindEnumerable<string, string>(
-        directory,
-        (ref RawFindData findData, string expr) => FindTransforms.AsFullPath(ref findData),
-        (ref RawFindData findData, string expr) =>
-        {
-            return !FindPredicates.IsDirectory(ref findData)
-                && DosMatcher.MatchPattern(expr, findData.FileName, ignoreCase: true);
-        },
-        state: DosMatcher.TranslateExpression(expression),
-        options: recursive ? FindOptions.Recurse : FindOptions.None);
-}
-
 ```
 
 ### Existing API summary
