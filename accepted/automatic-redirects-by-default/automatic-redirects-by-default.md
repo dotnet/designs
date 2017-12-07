@@ -77,9 +77,9 @@ issue. Robert updates his (indirect) dependency on Markdig to the latest version
 that fixes the issue. He triggers a rebuild of the documentation and is happy to
 see that the crash no longer occurs.
 
-Michelle doesn't know that this is thanks to automatic binding redirect
-generation to be on by default. Otherwise his application would have crashed
-with a `FileLoadException`.
+Robert doesn't know that this is thanks to automatic binding redirect generation
+to be on by default. Otherwise his application would have crashed with a
+`FileLoadException`.
 
 ## Requirements
 
