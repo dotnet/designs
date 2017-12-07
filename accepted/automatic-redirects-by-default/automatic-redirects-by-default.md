@@ -63,7 +63,7 @@ Framework 4.6.1, the package installs without errors. Michelle then starts to
 use pipelines from her app. When she F5s her application it just works fine.
 
 Michelle doesn't know that this is thanks to automatic binding redirect
-generation to be on by default. Otherwise her application would have crashed
+generation being on by default. Otherwise her application would have crashed
 with a `FileLoadException`.
 
 ### Upgrading a NuGet dependency
@@ -78,7 +78,7 @@ that fixes the issue. He triggers a rebuild of the documentation and is happy to
 see that the crash no longer occurs.
 
 Robert doesn't know that this is thanks to automatic binding redirect generation
-to be on by default. Otherwise his application would have crashed with a
+being on by default. Otherwise his application would have crashed with a
 `FileLoadException`.
 
 ## Requirements
