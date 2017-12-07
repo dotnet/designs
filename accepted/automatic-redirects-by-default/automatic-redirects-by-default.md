@@ -144,3 +144,18 @@ It's also worth pointing out that the net-effect of this feature is to influence
 the .NET Framework binder to match what all other runtimes already do: unify
 assembly references to the version deployed by the application, assuming the
 version is equal or higher.
+
+### How does this work for ASP.NET projects?
+
+There are two kinds of ASP.NET projects: web application and web sites:
+
+* **Web Applications**. While those have a project file and thus run MSBuild,
+  they generally don't publish the `web.config` file but instead use the one
+  from the source. This prevents us from having the ability to add additional
+  settings as part of the build. The experience developers get is that they see
+  a single warning in the error list. Double clicking it will prompt them and
+  ask whether they want to add binding redirects to their configuration file.
+  Selecting yes will add them. It's a one time action for all affected
+  assemblies.
+
+* **Web Sites**. Web sites don't have a build definition and don't work at all.
