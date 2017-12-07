@@ -113,6 +113,15 @@ Somewhere in the common props we need to add the following snippet:
 Logically, this means we turn on `AutoGenerateBindingRedirects` unless the
 developer has configured it explicitly.
 
+### Class Libraries
+
+Class libraries don't need binding redirects, unless they behave like apps, for
+instance unit testing projects.
+
+We generally don't want to compute and emit binding redirects because for most
+class library projects it's just wasting time. We need to figure out how we can
+detect unit testing projects during build and turn the setting on.
+
 ## Q & A
 
 ### Why is the setting not conditioned on the target framework?
