@@ -72,8 +72,8 @@ public static IEnumerable<string> GetFileFullPathsWithExtension(string directory
 {
     return new FindEnumerable<string, string[]>(
         directory,
-        (ref FindData<string> findData) => FindTransforms.AsUserFullPath(ref findData),
-        (ref FindData<string> findData) =>
+        (ref FindData<string[]> findData) => FindTransforms.AsUserFullPath(ref findData),
+        (ref FindData<string[]> findData) =>
         {
             return !FindPredicates.IsDirectory(ref findData)
                 && findData.State.Any(s => findData.FileName.EndsWith(s, StringComparison.OrdinalIgnoreCase));
@@ -105,7 +105,7 @@ The key goal is to provide an advanced API that keeps allocations to a minimum b
 	- Name
 	- Attributes
 	- Time stamps
-    - File size
+	- File size
 4. Transforms can provide results in any type
 	- Like Linq Select(), but keeps FileData on the stack
 5. Filters and transforms will be provided
@@ -167,14 +167,14 @@ namespace System.IO
         // Skip files/directories when access is denied (e.g. AccessDeniedException/SecurityException)
         IgnoreInaccessable = 0x2,
 
-		// Hint to use larger buffers for getting data (notably to help address remote enumeration perf)
-		UseLargeBuffer = 0x4,
+        // Hint to use larger buffers for getting data (notably to help address remote enumeration perf)
+        UseLargeBuffer = 0x4,
 
-		// Allow .NET to skip locking if you know the enumerator won't be used on multiple threads
-		// (Enumerating is inherently not thread-safe, but .NET needs to still lock by default to
-		//  avoid access violations with native access should someone actually try to use the
-		//  the same enumerator on multiple threads.)
-		NoLocking = 0x8
+        // Allow .NET to skip locking if you know the enumerator won't be used on multiple threads
+        // (Enumerating is inherently not thread-safe, but .NET needs to still lock by default to
+        //  avoid access violations with native access should someone actually try to use the
+        //  the same enumerator on multiple threads.)
+        NoLocking = 0x8
 
         // Future: Add flags for tracking cycles, etc. 
 	}
@@ -197,7 +197,7 @@ namespace System.IO
             string path,
             FindTransform<TResult, TState> transform,
             FindPredicate<TState> predicate,
-			FindPredicate<TState> recursePredicate = null,
+            FindPredicate<TState> recursePredicate = null,
             TState state = default,
             FindOptions options = FindOptions.None);
     }
@@ -207,7 +207,7 @@ namespace System.IO
         public static IEnumerable<TResult> Enumerate<TResult, TState>(
             FindTransform<TResult, TState> transform,
             FindPredicate<TState> predicate,
-			FindPredicate<TState> recursePredicate = null,
+            FindPredicate<TState> recursePredicate = null,
             TState state = default,
             FindOptions options = FindOptions.None);
     }
@@ -221,7 +221,7 @@ namespace System.IO
         // will lazily fill in data for properties where such data is not
         // immediately available in the current platform's native results.
 
-		// The full path to the directory the current result is in
+        // The full path to the directory the current result is in
         public string Directory { get; }
 
         // The full path to the starting directory for enumeration
