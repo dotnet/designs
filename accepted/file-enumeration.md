@@ -325,3 +325,16 @@ namespace System.IO
 
 
 ## Q & A
+
+#### Why aren't you providing a filter that does _`X`_?
+
+We want to only provide pre-made filters that have broad applicability. Based on feedback we can and will consider adding new filters in the future.
+
+#### Why did you put data in the struct that is expensive to get on Unix?
+
+While Windows gives all of the data you see in `FindData` in a single enumeration call, this isn't true for Unix. We're trying to match the current `System.IO.*Info` class data, not the intersection of OS call data. We will lazily get the extra data (time stamps, for example) on Unix to avoid unnecessarily taxing solutions that don't need it.
+
+#### Why doesn’t the filename data type match the OS format?
+
+We believe that it is easier and more predictable to write cross-plat solutions based on `char` rather than have to deal directly with encoding. The current plan is that we'll optimize here by not converting from UTF-8 until/if needed and we'll also minimize/eliminate GC impact by keeping the converted data on the stack or in a cached array.
+
