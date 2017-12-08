@@ -215,7 +215,7 @@ namespace System.IO
     /// <summary>
     /// Used for processing and filtering find results.
     /// </summary>
-    public ref struct FindData
+    public ref struct FindData<TState>
     {
         // This will have private members that hold the native data and
         // will lazily fill in data for properties where such data is not
@@ -238,6 +238,8 @@ namespace System.IO
         public DateTime CreationTimeUtc { get; }
         public DateTime LastAccessTimeUtc { get; }
         public DateTime LastWriteTimeUtc { get; }
+
+        public TState State;
     }
 }
 ```
