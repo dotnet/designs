@@ -126,12 +126,17 @@ detect unit testing projects during build and turn the setting on.
 
 ### Why is the setting not conditioned on the target framework?
 
-Over the last years we have not encountered a single instance where binding
-redirect generation has caused applications to not work. It's important to note
-that this feature is already on for all projects that were created targeting
-.NET Framework 4.5.1 or higher. While this means it's not on for the vast
-majority of our customers, the customer is large enough to give us confidence
-that this feature works -- and it has been in production for over four years.
+We know that having binding redirects can cause problems, especially for
+assemblies that are in-box. However, that's a different problem from whether
+automatic generation of binding redirects is on or off. A given set of
+assemblies either needs binding redirects or it doesn't. Over the years we have
+not encountered a single instance where automatic binding redirect generation
+has caused applications to not work that would have worked with automatic
+generation being disabled. It's important to note that this feature is already
+on for all projects that were created targeting .NET Framework 4.5.1 or higher.
+While this means it's not on for the vast majority of our customers, the
+customer is large enough to give us confidence that this feature works -- and it
+has been in production for over four years.
 
 In principle it is possible to create a scenario where this setting is causing a
 problem but based on our experience we believe this case to be extremely
