@@ -16,7 +16,7 @@ assembly in version `X+N`. The application author has a way to influence this by
 using a feature called [binding redirects]. Those are entries in the
 `app.config` that instruct the CLR to unify specific version ranges.
 
-These cases frequently occur in these cases:
+This frequently occurs in these cases:
 
 * **NuGet graphs**. The application author often references a graph of NuGet
   packages while simultaneously also referencing newer versions of some of the
@@ -44,8 +44,8 @@ again. The net effect is that the vast majority of our customers have this
 setting still turned off.
 
 The proposal is to turn this setting on by default but allow application authors
-to turn the setting off if necessary. In other words, we change it from an opt-
-in feature to an opt-out feature.
+to turn the setting off if necessary. In other words, we change it from an
+opt-in feature to an opt-out feature.
 
 [binding redirects]: https://docs.microsoft.com/en-us/dotnet/framework/configure-apps/redirect-assembly-versions
 [abrg]: https://docs.microsoft.com/en-us/dotnet/framework/configure-apps/how-to-enable-and-disable-automatic-binding-redirection
@@ -68,14 +68,14 @@ with a `FileLoadException`.
 
 ### Upgrading a NuGet dependency
 
-Robert is using FizzBuzz, a documentation framework that produces help files out
-of Markdown documents. FizzBuzz depends on Markdig, a popular .NET markdown
+Robert is using DocBuzz, a documentation framework that produces help files out
+of Markdown documents. DocBuzz depends on Markdig, a popular .NET markdown
 library. Robert encounters an issue with some of his recent documentation
 changes which causes Markdig to crash. He notices that while there is no updated
-version of FizzBuzz, there is an updated version of Markdig that fixes his
-issue. Robert updates his (indirect) dependency on Markdig to the latest version
-that fixes the issue. He triggers a rebuild of the documentation and is happy to
-see that the crash no longer occurs.
+version of DocBuzz, there is an updated version of Markdig that fixes his issue.
+Robert updates his (indirect) dependency on Markdig to the latest version that
+fixes the issue. He triggers a rebuild of the documentation and is happy to see
+that the crash no longer occurs.
 
 Robert doesn't know that this is thanks to automatic binding redirect generation
 being on by default. Otherwise his application would have crashed with a
@@ -87,7 +87,8 @@ being on by default. Otherwise his application would have crashed with a
 
 * **Turning this setting on must not break working applications**. We expect
   this setting to make more applications work, but we must not break
-  applications where adding binding redirects breaks them.
+  applications where adding binding redirects breaks them. See Q&A section why
+  we believe this is achievable.
 
 * **It must be possible to opt-out**. The customer base on .NET Framework is
   fairly large and has an unfathomable amount of different configurations. We
