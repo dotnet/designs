@@ -292,6 +292,49 @@ namespace System.IO
 }
 ```
 
+### Potential testability variant
+
+Having `FindData` be a struct is critical to meet the performance goals for the feature. To allow testing of Filters and Predicates we could also expose an interface of `IFindData`:
+
+``` C#
+namespace System.IO
+{
+    public interface IFindData<TState>
+    {
+        string Directory { get; }
+        string OriginalDirectory{ get; }
+        string OriginalUserDirectory { get; }
+        TState State { get; }
+
+        ReadOnlySpan<char> FileName { get; }
+        FileAttributes Attributes { get; }
+        long Length { get; }
+
+        DateTime CreationTimeUtc { get; }
+        DateTime LastAccessTimeUtc { get; }
+        DateTime LastWriteTimeUtc { get; }
+    }
+
+    public unsafe struct FindData<TState> : IFindData<TState>
+    // ... same as defined earlier
+}
+```
+
+Predicates and transforms could then be modified as in the following example:
+
+```C#
+namespace System.IO
+{
+    public static partial class FindTransforms
+    {
+        public static DirectoryInfo AsDirectoryInfo<TFindData, TState>(ref TFindData findData)
+            where TFindData : struct, IFindData<TState>
+    }
+}
+```
+
+This adds a bit more syntactical complexity, but should allow testing transforms and predicates against mocked IFindData structs.
+
 ### Existing API summary
 
 ``` C#
