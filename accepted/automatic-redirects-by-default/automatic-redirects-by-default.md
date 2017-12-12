@@ -27,7 +27,7 @@ This frequently occurs in these cases:
   the .NET Standard 2.0 support files that .NET Framework 4.6.1 applications
   need to deploy in order to load .NET Standard libraries.
 
-Correctly authoring binding redirects if non-trivial as it requires the author
+Correctly authoring binding redirects is non-trivial as it requires the author
 to know the affected version range as well as the public key token. That's why
 in .NET Framework 4.5.1 we've added a feature to MSBuild called [Automatic
 Binding Redirect Generation][abrg] which will compute the correct binding
