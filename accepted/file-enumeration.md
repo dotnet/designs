@@ -49,6 +49,8 @@ public static IEnumerable<string> GetFileFullPaths(string directory,
 
 While using anonymous delegates isn't strictly necessary, they are cached, so all examples are written with them. The second argument above, for example, could simply be `FindTransforms.AsUserFullPath`, but it wouldn't take advantage of delegate caching.
 
+> Note that while you can write a solution that doesn't allocate a `FileInfo` by using the `string[]` APIs and `GetFullPath()` it would still allocate unneeded strings and introduce costly normalization overhead.
+
 
 ### Getting full paths of a given extension
 
@@ -328,6 +330,19 @@ namespace System.IO
 
 ## Q & A
 
+#### Why is this so complicated?
+
+This isn't intended to be a common-use API. The existing APIs will be kept, maintained, and extended based on customer demand. We don't want to:
+
+1. Have scenarios blocked waiting for new APIs to work their way through the system
+2. Have to write "normal" APIs to address more corner cases
+
+In order to make this a usable extension point we have to sacrifice some usability to get the neccessary characteristics. Note that what people build on this will directly impact our future designs of the standard, usability focused, APIs.
+
+#### Why are you using Linq in your examples?
+
+For example clarity. Clearly if we were trying to fully optimize for perf/allocations we wouldn't.
+
 #### Why aren't you providing a filter that does _`X`_?
 
 We want to only provide pre-made filters that have broad applicability. Based on feedback we can and will consider adding new filters in the future.
@@ -351,7 +366,7 @@ This is something we're investigating for the future. See discussions below.
 Right now we provide a single cross platform view. Some scenario might benefit from viewing OS specific data, such as the `inode` or the underlying UTF-8 data. A few options:
 
 1. Provide interfaces for platform specific data on `FindData`, such as `UnixFindData`.
-2. Make raw OS data structs public and provide a method to get the data: `bool TryGetNativeData<T>(ref T nativeData)`
+2. Make raw OS data structs public and provide a method to get the data: `bool TryGetNativeData<T>(ref T nativeData, ref FindData findData)`
 
 Related to this, we could potentially provide `FindOptions` flags to specify exactly what raw data we get. On Windows, for example, there are a number of different data structs that can be returned from [NtQueryDirectoryFile](https://msdn.microsoft.com/en-us/library/windows/hardware/ff567047.aspx). We could abstract this away. If we went this route we'd need to carefully measure performance impact of having conditions on our `FindData` properties.
 
