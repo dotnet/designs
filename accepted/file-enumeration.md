@@ -14,7 +14,7 @@ These restrictions have a significant impact on file system intensive applicatio
 
 To get full paths for files, one would currently have to do the following:
 
-```
+``` C#
 public static IEnumerable<string> GetFileFullPaths(string directory,
     string expression = "*",
     bool recursive = false)
@@ -292,49 +292,6 @@ namespace System.IO
 }
 ```
 
-### Potential testability variant
-
-Having `FindData` be a struct is critical to meet the performance goals for the feature. To allow testing of Filters and Predicates we could also expose an interface of `IFindData`:
-
-``` C#
-namespace System.IO
-{
-    public interface IFindData<TState>
-    {
-        string Directory { get; }
-        string OriginalDirectory{ get; }
-        string OriginalUserDirectory { get; }
-        TState State { get; }
-
-        ReadOnlySpan<char> FileName { get; }
-        FileAttributes Attributes { get; }
-        long Length { get; }
-
-        DateTime CreationTimeUtc { get; }
-        DateTime LastAccessTimeUtc { get; }
-        DateTime LastWriteTimeUtc { get; }
-    }
-
-    public unsafe struct FindData<TState> : IFindData<TState>
-    // ... same as defined earlier
-}
-```
-
-Predicates and transforms could then be modified as in the following example:
-
-```C#
-namespace System.IO
-{
-    public static partial class FindTransforms
-    {
-        public static DirectoryInfo AsDirectoryInfo<TFindData, TState>(ref TFindData findData)
-            where TFindData : struct, IFindData<TState>
-    }
-}
-```
-
-This adds a bit more syntactical complexity, but should allow testing transforms and predicates against mocked IFindData structs.
-
 ### Existing API summary
 
 ``` C#
@@ -383,3 +340,102 @@ While Windows gives all of the data you see in `FindData` in a single enumeratio
 
 We believe that it is easier and more predictable to write cross-plat solutions based on `char` rather than have to deal directly with encoding. The current plan is that we'll optimize here by not converting from UTF-8 until/if needed and we'll also minimize/eliminate GC impact by keeping the converted data on the stack or in a cached array.
 
+#### How do I get platform specific data?
+
+This is something we're investigating for the future. See discussions below.
+
+## Future
+
+### Native Data Access
+
+Right now we provide a single cross platform view. Some scenario might benefit from viewing OS specific data, such as the `inode` or the underlying UTF-8 data. A few options:
+
+1. Provide interfaces for platform specific data on `FindData`, such as `UnixFindData`.
+2. Make raw OS data structs public and provide a method to get the data: `bool TryGetNativeData<T>(ref T nativeData)`
+
+Related to this, we could potentially provide `FindOptions` flags to specify exactly what raw data we get. On Windows, for example, there are a number of different data structs that can be returned from [NtQueryDirectoryFile](https://msdn.microsoft.com/en-us/library/windows/hardware/ff567047.aspx). We could abstract this away. If we went this route we'd need to carefully measure performance impact of having conditions on our `FindData` properties.
+
+### Testability
+
+Having `FindData` be a struct is critical to meet the performance goals for the feature. Using a struct and keeping the performance goals met makes unit testing filters and predicates a little difficult.
+
+#### Interface Testability Option
+
+One option to allow testing of Filters and Predicates we could also expose an interface of `IFindData`:
+
+``` C#
+namespace System.IO
+{
+    public interface IFindData<TState>
+    {
+        string Directory { get; }
+        string OriginalDirectory{ get; }
+        string OriginalUserDirectory { get; }
+        TState State { get; }
+        ReadOnlySpan<char> FileName { get; }
+        FileAttributes Attributes { get; }
+        long Length { get; }
+        DateTime CreationTimeUtc { get; }
+        DateTime LastAccessTimeUtc { get; }
+        DateTime LastWriteTimeUtc { get; }
+    }
+
+    public unsafe struct FindData<TState> : IFindData<TState>
+    // ... same as defined in the main proposal
+}
+```
+
+Predicates and transforms could then be modified as in the following example:
+
+``` C#
+namespace System.IO
+{
+    public static partial class FindTransforms
+    {
+        public static DirectoryInfo AsDirectoryInfo<TFindData, TState>(ref TFindData findData)
+            where TFindData : struct, IFindData<TState>
+    }
+}
+```
+
+This adds a fair bit more syntactical complexity, but should allow testing transforms and predicates against mocked IFindData structs.
+
+#### Constructor Testability Option
+
+Another option for testability would involve providing a constructor that takes either the fields or perhaps an interface as in the interface option above:
+
+``` C#
+namespace System.IO
+{
+    public interface IFindData<TState>
+    {
+        string Directory { get; }
+        string OriginalDirectory{ get; }
+        string OriginalUserDirectory { get; }
+        TState State { get; }
+        ReadOnlySpan<char> FileName { get; }
+        FileAttributes Attributes { get; }
+        long Length { get; }
+        DateTime CreationTimeUtc { get; }
+        DateTime LastAccessTimeUtc { get; }
+        DateTime LastWriteTimeUtc { get; }
+    }
+
+    public unsafe struct FindData<TState> // : IFindData<TState> <- Possibly could still do this but not use for our APIs
+    {
+        public FindData(IFindData data);
+        // ... same as defined in the main proposal
+    }
+
+    // *** OR ***
+
+    public unsafe struct FindData<TState>
+    {
+        public FindData(string directory, string originalDirectory /*, etc */);
+        // ... same as defined in the main proposal
+    }
+
+}
+```
+
+These routes would require adding some overhead to check for the "mock" data on every property call. Perf impact would need to be measured.
