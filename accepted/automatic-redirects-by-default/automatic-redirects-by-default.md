@@ -1,7 +1,7 @@
 # Automatic Binding Redirection By Default
 
 **PM** [Immo Landwerth](https://github.com/terrajobst) |
-**Dev** *TBD* |
+**Dev** [Daniel Plaisted](https://github.com/dsplaisted) |
 **Feature**: [#dotnet/sdk/1405](https://github.com/dotnet/sdk/issues/1405)
 
 Four years ago, .NET Framework 4.5.1 shipped an MSBuild feature that
@@ -85,6 +85,37 @@ being on by default. Otherwise his application would have crashed with a
 
 ### Goals
 
+* **Turned off if the project isn't targeting .NET Framework**. The .NET
+  Framework is the only runtime that needs binding redirects. While computing
+  conflicts for other runtimes doesn't do any harm but it does impact
+  performance as the MSBuild has to walk more assemblies.
+
+* **Turned off in class libraries**. Binding redirects are generally not useful
+  for class libraries as they are for the application. Again, computing them
+  doesn't do harm but it does impact performance as the MSBuild has to walk more
+  assemblies.
+
+* **Turned off in web projects**. Web projects cannot use an `app.config` file
+  as they use `web.config`, which is usually taken from the source directory. At
+  best, dropping the extra file is just noise but at worse it might confuse the
+  build or the runtime.
+
+* **Automatically turned on when targeting .NET Framework 4.6.1 or higher and a
+  .NET Standard 2.0 library is consumed**. This addresses the primary issues
+  developers face when consuming .NET Standard binaries from .NET Framework
+  today.
+
+* **Automatically turned on when targeting .NET Framework 4.7.2 or higher**.
+  This properly converts the feature from opt-in to opt-out but ties it a .NET
+  Framework version in the rare instance the developer needs to trouble shoot
+  any issues. This also avoids issues where customers use a .NET Standard
+  library on .NET Framework 4.6.1 and automatic binding redirects *happen* to
+  also fix some issue with their NuGet packages. When upgrading to .NET
+  Framework 4.7.2 we no longer use the build support for .NET Standard, which
+  would now also mean that binding redirects are no longer generated. This can
+  be solved by making sure .NET Framework 4.7.2 also generates binding redirects
+  by default.
+
 * **Turning this setting on must not break working applications**. We expect
   this setting to make more applications work, but we must not break
   applications where adding binding redirects breaks them. See Q&A section why
@@ -112,7 +143,8 @@ Somewhere in the common props we need to add the following snippet:
 ```
 
 Logically, this means we turn on `AutoGenerateBindingRedirects` unless the
-developer has configured it explicitly.
+developer has configured it explicitly. The condition likely needs more
+refinement in order to model the constraints listed in the requirement section.
 
 ### Class Libraries
 
@@ -121,35 +153,51 @@ instance unit testing projects.
 
 We generally don't want to compute and emit binding redirects because for most
 class library projects it's just wasting time. We need to figure out how we can
-detect unit testing projects during build and turn the setting on.
+detect unit testing projects during build and turn the setting on. It looks like
+this would work as follows:
+
+* **MSTest**. This one already has a bunch of targets. Ideally, those targets
+  would indicate that the class library is really an application-like output
+  instead of enabling `AutoGenerateBindingRedirects` directly. This allows to
+  control the policy for binding redirects separately from the question whether
+  the class library really needs a configuration file.
+
+* **xUnit**. xUnit provides additional targets via their NuGet package. Whatever
+  properties we set for MSTest we should ask xUnit to set as well.
 
 ## Q & A
 
-### Why is the setting not conditioned on the target framework?
+### Why don't we turn this on regardless of target framework?
+
+We're concerned that this might have subtle binding differences when rebuilding
+existing code. The current proposal is making this an opt-out rather than an
+opt-in starting with .NET Framework 4.7.2. So the application developer has to
+change the project by targeting a higher version of .NET Framework. Since that
+is an explicit step, we believe in the rare case the binding does change the
+developer has a better way to root cause and troubleshoot the issues, for
+instance by looking at the .NET Framework 4.7.2 release notes.
+
+The only exception is .NET Framework 4.6.1 when consuming a .NET Standard 2.0
+library in which case we turn this on too. The rationale is that this scenario
+is broken today and turning on automatic binding redirects is part of fixing it.
+
+### Why do we believe it's safe to be opt-out?
 
 We know that having binding redirects can cause problems, especially for
 assemblies that are in-box. However, that's a different problem from whether
 automatic generation of binding redirects is on or off. A given set of
 assemblies either needs binding redirects or it doesn't. Over the years we have
-not encountered a single instance where automatic binding redirect generation
-has caused applications to not work that would have worked with automatic
-generation being disabled. It's important to note that this feature is already
-on for all projects that were created targeting .NET Framework 4.5.1 or higher.
-While this means it's not on for the vast majority of our customers, the
-customer is large enough to give us confidence that this feature works -- and it
-has been in production for over four years.
+not encountered many instances where automatic binding redirect generation has
+caused applications to not work that would have worked with automatic generation
+being disabled. It's important to note that this feature is already on for all
+projects that were created targeting .NET Framework 4.5.1 or higher. While this
+means it's not on for the vast majority of our customers, the customer is large
+enough to give us confidence that this feature works -- and it has been in
+production for over four years.
 
 In principle it is possible to create a scenario where this setting is causing a
-problem but based on our experience we believe this case to be extremely
-unlikely. Also, these cases would likely require hand crafted binding redirects,
-which Automatic Binding Redirect Generation will honor (i.e. it doesn't override
-any hand-authored redirects). And in the unlikely case this still poses issues
-the application author can turn off the feature entirely.
-
-It's also worth pointing out that the net-effect of this feature is to influence
-the .NET Framework binder to match what all other runtimes already do: unify
-assembly references to the version deployed by the application, assuming the
-version is equal or higher.
+problem but based on our experience we believe this case to be fairly rare.
+That's why we tied the opt-in behavior to a framework change.
 
 ### How does this work for ASP.NET projects?
 
