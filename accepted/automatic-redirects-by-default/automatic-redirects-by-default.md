@@ -101,9 +101,9 @@ being on by default. Otherwise his application would have crashed with a
   build or the runtime.
 
 * **Automatically turned on when targeting .NET Framework 4.6.1 or higher and a
-  .NET Standard 2.0 library is consumed**. This addresses the primary issues
-  developers face when consuming .NET Standard binaries from .NET Framework
-  today.
+  .NET Standard 1.5 (or higher) library is consumed**. This addresses the
+  primary issues developers face when consuming .NET Standard binaries from .NET
+  Framework today.
 
 * **Automatically turned on when targeting .NET Framework 4.7.2 or higher**.
   This properly converts the feature from opt-in to opt-out but ties it a .NET
