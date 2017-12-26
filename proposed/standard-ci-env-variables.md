@@ -43,10 +43,10 @@ Note that the final implementation provided by the .NET Core SDK might look slig
 
 The .NET Core SDK needs are oriented around source control. As a result, the initial list is source control oriented, but there is no affinity to source control on the general idea of standardized environment variables.
 
-It is important that these environment variables do not conflict with other variables. To avoid that, all environment variables will be prepended with "STANDARDCI\_". This name is a first proposal for the idea and it may get changed based on feedback.
+It is important that these environment variables do not conflict with other variables. To avoid that, all environment variables will be prepended with ```STANDARD_CI_```. This name is a first proposal for the idea and it may get changed based on feedback.
 
-* **STANDARDCI\_REPOSITORYCOMMITID** -- Commit hash / ID; Example: 2ba93796dcf132de447886d4d634414ee8cb069d
-* **STANDARDCI\_REPOSITORYURI** -- Uri for repository; Example: https://github.com/dotnet/corefx
+* **STANDARD\_CI\_SOURCE\_REVISION\_ID** -- Commit hash / ID; Example: 2ba93796dcf132de447886d4d634414ee8cb069d
+* **STANDARD\_CI\_REPOSITORY_URL** -- URL for repository; Example: https://github.com/dotnet/corefx
 
 There are only two environment variables listed, since this .NET Core SDK scenario only requires these two environment variables.
 
@@ -56,10 +56,10 @@ This plan will only work if CI services decide to support these environment vari
 
 | Environment Variable | VSTS | Travis CI| AppVeyor | Circle CI | AWS CodeBuild | Team City | OpenShift |
 | -------------------- | ---- | -------- | -------- | --------- | ------------- | --------- | --------- |
-|STANDARDCI\_REPOSITORYCOMMITID | BUILD\_SOURCEVERSION | TRAVIS\_COMMIT |APPVEYOR\_REPO\_COMMIT | CIRCLE\_SHA1 | CODEBUILD\_RESOLVED\_SOURCE\_VERSION | build.vcs.number | OPENSHIFT\_BUILD\_COMMIT |
-|STANDARDCI\_REPOSITORYURI|BUILD\_REPOSITORY\_URI| | | CIRCLE\_REPOSITORY\_URL | CODEBUILD\_SOURCE\_REPO\_URL | vcsroot.url | OPENSHIFT\_BUILD\_SOURCE |
+|STANDARD\_CI\_SOURCE\_REVISION\_ID | BUILD\_SOURCEVERSION | TRAVIS\_COMMIT |APPVEYOR\_REPO\_COMMIT | CIRCLE\_SHA1 | CODEBUILD\_RESOLVED\_SOURCE\_VERSION | build.vcs.number | OPENSHIFT\_BUILD\_COMMIT |
+|STANDARD\_CI\_REPOSITORY\_URL|BUILD\_REPOSITORY\_URI| | | CIRCLE\_REPOSITORY\_URL | CODEBUILD\_SOURCE\_REPO\_URL | vcsroot.url | OPENSHIFT\_BUILD\_SOURCE |
 
-The [VSTS](https://www.visualstudio.com/team-services/) team has graciously agreed to publish environment variables in the proposed STANDARDCI format.
+The [VSTS](https://www.visualstudio.com/team-services/) team has graciously agreed to publish environment variables in the proposed STANDARD\_CI format.
 
 * [VSTS](https://www.visualstudio.com/team-services/) -- [environment variables](https://docs.microsoft.com/en-us/vsts/build-release/concepts/definitions/build/variables?tabs=batch#predefined-variables)
 * [Travis CI](https://travis-ci.org/) -- [environment variables](https://docs.travis-ci.com/user/environment-variables/#Default-Environment-Variables)
