@@ -38,6 +38,7 @@ Returnable managed pointer may be a result of one of the following:
 except for arg0 in a struct method 		(see: C# rule #5).
 -	`CALL`, `CALLVIRT`, `CALLI` when all reference arguments are returnable. (see: C# rule 6)
 note: arg0 in this-calls are not considered here since it cannot be returned by reference.
+note: in a case of `vararg` calls, all arguments are considered.
 -	`LDLOC` of a byref local when the slot marked “returnable” (IL specific rule)
 
 All other ways of obtaining a managed reference (Ex: `LDARGA`, `LDLOCA`, `LOCALLOC`, `REFANYVAL`…) do not result in returnable references.
@@ -58,14 +59,14 @@ While, in theory, it may be possible that the “returnable” property could be inf
 
 ## Metadata encoding of returnable local slots ## 
 
-Local slots can be marked as returnable by applying `modopt[System.Runtime.CompilerServices.IsReturnableAttribute]` in the local signature.
+Local slots can be marked as returnable by applying `modopt[System.Runtime.CompilerServices.IsReturnable]` in the local signature.
 
 In particular:
--  The identity of the `IsReturnableAttribute` type is unimportant. In fact we expect that it would be embedded by the compiler in the containing assembly.
--  Applying `IsReturnableAttribute` to byval local slots is reserved for the future use and in scope of this proposal results in verification error. 
+-  The identity of the `IsReturnable` type is unimportant. In fact we expect that it could be embedded by the compiler in the containing assembly.
+-  Applying `IsReturnable` to byval local slots is reserved for the future use and in scope of this proposal results in verification error. 
 
 ---
-NOTE: while JIT is free to ignore the differences between returnable and ordinary byref locals. However it may use that extra information as an input/hints when performing optimizations.
+NOTE: The JIT compiler is free to ignore the differences between returnable and ordinary byref locals. However it may use that extra information as an input/hints when performing optimizations.
 
 ---
 NOTE: Why `modopt`?
