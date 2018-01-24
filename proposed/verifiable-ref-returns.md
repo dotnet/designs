@@ -36,7 +36,7 @@ Returnable managed pointer may be a result of one of the following:
 -	`LDFLDA` when the receiver is a returnable ref 	(see: C# rule #4)
 -	`LDARG` of a byref parameter 			(see: C# rule #2, #3), 
 except for arg0 in a struct method 		(see: C# rule #5).
--	`CALL`, `CALLVIRT` when all reference arguments are returnable. (see: C# rule 6)
+-	`CALL`, `CALLVIRT`, `CALLI` when all reference arguments are returnable. (see: C# rule 6)
 note: arg0 in this-calls are not considered here since it cannot be returned by reference.
 -	`LDLOC` of a byref local when the slot marked “returnable” (IL specific rule)
 
@@ -61,7 +61,7 @@ While, in theory, it may be possible that the “returnable” property could be inf
 Local slots can be marked as returnable by applying `modopt[System.Runtime.CompilerServices.IsReturnableAttribute]` in the local signature.
 
 In particular:
--  The identity of the `IsReturnableAttribut`e type is unimportant. In fact we expect that it would be embedded by the compiler in the containing assembly.
+-  The identity of the `IsReturnableAttribute` type is unimportant. In fact we expect that it would be embedded by the compiler in the containing assembly.
 -  Applying `IsReturnableAttribute` to byval local slots is reserved for the future use and in scope of this proposal results in verification error. 
 
 ---
