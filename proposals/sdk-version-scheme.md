@@ -44,7 +44,7 @@ If required, we will roll our release number series into the 1000 range. The nex
 In some places visible to the user we will use the two part version number where the Runtime and SDK match. The full version numbers for the Runtime and SDK will be used when needed for clarity. The full name is 
 
  ```
- .NET Core SDK (v [full SDK version])
+ .NET Core [Runtime major/minor] SDK (v [full SDK version])
 
  .NET Core 2.1 SDK (v 2.1.100)
  ```
