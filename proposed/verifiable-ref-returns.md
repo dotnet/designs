@@ -12,7 +12,7 @@ While we believe that the current rules of the language result in a type-safe co
 2)	ref parameters are safe to return
 3)	out parameters are safe to return (but must be definitely assigned, as is already the case today)
 4)	instance struct fields are safe to return as long as the receiver is safe to return
-5)	ìthisî is not safe to return from struct members
+5)	‚Äúthis‚Äù is not safe to return from struct members
 6)	a ref, returned from another method is safe to return if all refs/outs passed to that method as formal parameters were safe to return.
 *Specifically it is irrelevant if receiver is safe to return, regardless whether receiver is a struct, class or typed as a generic type parameter.*  
 
@@ -24,7 +24,7 @@ The following is the attempt to introduce/adjust verification rules to allow val
 ## Returnable managed pointer. ##
 
 CLI needs to add a notion of another transient type - returnable managed pointer. 
-*(need to adjust ìIII.1.8.1.1 Verification algorithmî and in ìI.8.7 Assignment compatibilityî accordingly)*
+*(need to adjust ‚ÄúIII.1.8.1.1 Verification algorithm‚Äù and in ‚ÄúI.8.7 Assignment compatibility‚Äù accordingly)*
 
 NOTE: there are similarities with already existing concept of controlled mutability managed references.
 
@@ -36,11 +36,12 @@ Returnable managed pointer may be a result of one of the following:
 -	`LDFLDA` when the receiver is a returnable ref 	(see: C# rule #4)
 -	`LDARG` of a byref parameter 			(see: C# rule #2, #3), 
 except for arg0 in a struct method 		(see: C# rule #5).
--	`CALL`, `CALLVIRT` when all reference arguments are returnable. (see: C# rule 6)
+-	`CALL`, `CALLVIRT`, `CALLI` when all reference arguments are returnable. (see: C# rule 6)
 note: arg0 in this-calls are not considered here since it cannot be returned by reference.
--	`LDLOC` of a byref local when the slot marked ìreturnableî (IL specific rule)
+note: in a case of `vararg` calls, additional arguments that follow the fixed ones are also considered.
+-	`LDLOC` of a byref local when the slot marked ‚Äúreturnable‚Äù (IL specific rule)
 
-All other ways of obtaining a managed reference (Ex: `LDARGA`, `LDLOCA`, `LOCALLOC`, `REFANYVAL`Ö) do not result in returnable references.
+All other ways of obtaining a managed reference (Ex: `LDARGA`, `LDLOCA`, `LOCALLOC`, `REFANYVAL`‚Ä¶) do not result in returnable references.
 
 ## Merging stack states ## 
 *(add to III.1.8.1.3 Merging stack states)*
@@ -54,18 +55,18 @@ CLI needs to add a notion of a returnable local slots.
 -	`LDLOC` from a returnable slot produces a returnable managed pointer.
 
 The rationale for introducing returnable locals is to allow for a single pass verification analysis. 
-While, in theory, it may be possible that the ìreturnableî property could be inferred via some form of fixed point flow analysis, it would make verification substantially more complex and expensive and would not retain the single-pass property.
+While, in theory, it may be possible that the ‚Äúreturnable‚Äù property could be inferred via some form of fixed point flow analysis, it would make verification substantially more complex and expensive and would not retain the single-pass property.
 
 ## Metadata encoding of returnable local slots ## 
 
-Local slots can be marked as returnable by applying `modopt[System.Runtime.CompilerServices.IsReturnableAttribute]` in the local signature.
+Local slots can be marked as returnable by applying `modopt[System.Runtime.CompilerServices.IsReturnable]` in the local signature.
 
 In particular:
--  The identity of the `IsReturnableAttribut`e type is unimportant. In fact we expect that it would be embedded by the compiler in the containing assembly.
--  Applying `IsReturnableAttribute` to byval local slots is reserved for the future use and in scope of this proposal results in verification error. 
+-  The identity of the `IsReturnable` type is unimportant. In fact we expect that it could be embedded by the compiler in the containing assembly.
+-  Applying `IsReturnable` to byval local slots is reserved for the future use and in scope of this proposal results in verification error. 
 
 ---
-NOTE: while JIT is free to ignore the differences between returnable and ordinary byref locals. However it may use that extra information as an input/hints when performing optimizations.
+NOTE: The JIT compiler is free to ignore the differences between returnable and ordinary byref locals. However it may use that extra information as an input/hints when performing optimizations.
 
 ---
 NOTE: Why `modopt`?
