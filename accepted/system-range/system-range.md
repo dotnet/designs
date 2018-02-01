@@ -160,11 +160,12 @@ namespace System {
     public struct Range : IEnumerable, IEnumerable<int>, IEquatable<Range> {
         public static Range Empty { get; }
         public static Range All { get; }
-        public static Range Between(int start, int end);
-        public static Range From(int start);
-        public static Range To(int end);
+        public static Range Between(int startIndex, int endIndex);
+        public static Range From(int startIndex);
+        public static Range To(int endIndex);
         public Range(int index, int length);
         public int Index { get; }
+        public int EndIndex { get; }
         public int Length { get; }
         public bool IsUnbounded { get; }
         public Range Bind(int length);
@@ -258,10 +259,11 @@ namespace System {
 
 ### Open Design Points
 
-* Right now, we cannot retrieve `Index` or `Length` if the range is unbounded
-  (it throws `NotSupportedException`).
-    - We could expose `Start: int?` and `End: int?` and then add a factory
-      method `Between(int? start, int? end)`
+* Right now, we cannot retrieve `Index`, `EndIndex` or `Length` if the
+  range is unbounded (it throws `NotSupportedException`).
+    - We could expose `Index: int?` and `EndIndex: int?` and then add a
+      factory method `Between(int? start, int? end)` but that feels
+      overengineered
 
 * Should `Range` support containment checks?
     - Positions and/or ranges?
