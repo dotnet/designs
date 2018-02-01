@@ -11,19 +11,18 @@ language has to be bound to a .NET type, which we call `System.Range`.
 ### Construcing ranges
 
 ```csharp
-// Ranges are constructed with an index and a length
+// Ranges are constructed with an index and a length:
 
 var fiveToTen = new Range(index: 5, length: 6);
 
-// By using a factory method, they can also be constructed from two indices.
+// By using a factory method, they can also be constructed from two indices:
 
 var alsoFiveToTen = Range.Between(5, 11);
 
-// The upper bound is considered exclusive so this will print the 1, 2, 3
+// The upper bound is considered exclusive so this will print 1, 2, 3:
 
 foreach (var value in Range.Between(1, 4))
     Console.WriteLine(value);
-
 ```
 
 The C# syntax for ranges isn't finalized and is actively worked on. While this
@@ -32,25 +31,33 @@ so that we can look at source code as it's likely written:
 
 ```csharp
 var fiveToTen = 5..11; // Equivalent to Range.Between(5, 11)
+
+// You can also construct ranges with index and length:
+var fiveToTen = 5.:6; // Equivalent to new Range.Between(5, 6)
 ```
 
-### Open ended ranges
+### Unbounded ranges
 
 ```csharp
-// Ranges can be open ended:
+// Ranges can be unbounded:
 
 var fiveToEnd = 5..;  // Equivalent to Range.From(5) i.e. missing upper bound
 var startToTen = ..1; // Equivalent to Range.To(11) i.e. missing lower bound
 var everything = ..;  // Equivalent to Range.All i.e. missing upper and lower bound
 
-// Asking for Index, Length or enumerating an open range will throw
+// When the lower bound is omitted, it's interpreted to be zero.
+//
+// When the upper bound is omitted, it's interpreted to be the length of the
+// receiving collection.
+//
+// Asking for Length or enumerating an unbound range will throw
 // NotSupportedException. The consumer of the range is expected to 
-// close it over the particular data:
+// bind it for a particular length:
 
 void Print(int[] data, Range range)
 {
-    if (range.IsOpen)
-        range = range.Close(0..data.Length);
+    if (range.IsUnbound)
+        range = range.Bind(data.Length);
 
     foreach (var index in range)
         Console.WriteLine(data[index]);
@@ -60,6 +67,19 @@ var data = new [] { 'a', 'b', 'c' };
 Print(data, 2..); // Prints c
 Print(data, ..2); // Prints a, b
 Print(data, ..);  // Prints a, b, c
+```
+
+### Negative bounds
+
+```csharp
+// You can also use negative bounds. They are interpreted as being relative
+// to the length of the receiving collection, so -1 is the last element,
+// -2 is the second to last element and so on.
+
+var data = new [] { 'a', 'b', 'c' };
+Print(data, -2.:2);  // Prints b, c
+Print(data, -1..);   // Prints c
+Print(data, -3..-1); // Prints a, b
 ```
 
 ### Using ranges in APIs
@@ -80,7 +100,7 @@ This allows creating substrings simply by using the indexer:
 ```csharp
 var helloWorld = "Hello, World!";
 var hello = helloWorld[..5];
-var world = helloWorld[7..12];
+var world = helloWorld[7.:5];
 ```
 
 While this might appear to just be minor syntactic sugar it allows for creating
@@ -106,10 +126,12 @@ This might look like this:
 ```csharp
 Tensor<float> testDataTable = GetTestData();
 int columnCount = testDataTable.GetLength(1);
-int outputColumn = columnCount - 1;
 
-Tensor<float> inputTable = testDataTable[.., ..outputColumn];
-Tensor<float> outputTable = testDataTable[.., outputColumn..];
+// Take all rows and all but the last column
+Tensor<float> inputTable = testDataTable[.., ..-1];
+
+// Take all rows and only the last column
+Tensor<float> outputTable = testDataTable[.., -1..]; 
 ```
 
 ## Requirements
@@ -144,8 +166,8 @@ namespace System {
         public Range(int index, int length);
         public int Index { get; }
         public int Length { get; }
-        public bool IsClosed { get; }
-        public Range Close(Range range);
+        public bool IsUnbounded { get; }
+        public Range Bind(int length);
         public override string ToString();
         public override int GetHashCode();
         public bool Equals(Range other);
@@ -156,33 +178,16 @@ namespace System {
 }
 ```
 
-### Companion APIs
+### Negative indices
 
-```csharp
-namespace System {
-    public partial class String {
-        public string this[Range range] { get; }
-    }
-    public partial class T[] {
-        public T[] this[Range range] { get; }
-    }
-    public partial struct ArraySegment<T> {
-        public ArraySegment<T> this[Range range] { get; }
-    }      
-    public partial struct Span<T> {
-        public Span<T> this[Range range] { get; }
-    }
-}
-```
+The semantics of negative indices are as follows:
 
-### Semantics of negative indices
-
-The semantics of negative indices would be as follows:
-
-* Both `start` and `end` can be negative.
+* `length` can never be negative, but both `start` and `end` can be. In other
+  words, calling the constructor with a negative length will fail but you can
+  pass negative values to `From()`, `Between()`, and `To()`.
 * If the value is negative, the size of container is added. So `-1` is the last
   element.
-* Logically, negative bounds requires the range to be closed.
+* Logically, negative bounds requires the range to be bound.
 
 The internal encoding would be as follows:
 
@@ -191,7 +196,7 @@ The internal encoding would be as follows:
   - `length := (start < 0 || end < 0) ? end : end - start`
 
 * `..end`
-  - `index := int.MinValue`
+  - `index := 0`
   - `length := end`
 
 * `start..`
@@ -205,36 +210,69 @@ length of a range is `int.MaxValue` which negated is `int.MinValue + 1`.
 done if either both are positive or both are negative. As soon if only one side
 is negative one needs to know the container size in order to verify that `start`
 is indeed less than or equal to `end`. However, it seems bad form to throw from
-the `Close()` method. Instead, we should follow what Python does and simply
-produce the range `start..start`.
+the `Bind()` method. Instead, we should follow what Python does and clamp the
+produced ranges to the container boundaries if either side is negative.
 
-This encoding ensures that checking whether the range is open only requires
+This encoding ensures that checking whether the range is unbound only requires
 checking if either `index` or `length` is negative. This will cover both missing
 bounds as well as bounds that require adding the container size.
+
+### Companion APIs
+
+```csharp
+namespace System {
+    public partial class String {
+        public string this[Range range] { get; }
+    }
+    public partial class T[] {
+        public ArraySegment<T> this[Range range] { get; }
+    }
+    public partial struct ArraySegment<T> {
+        public ArraySegment<T> this[Range range] { get; }
+    }      
+    public partial struct Span<T> {
+        public Span<T> this[Range range] { get; }
+    }
+    // These aren't needed but they are provided for aesthetics.
+    //
+    // Instead of:
+    //
+    //      data.AsSpan()[start:.length]
+    //      data.AsSpan().Slice(start:.length)
+    //
+    // You can just say:
+    //
+    //      data.AsSpan(start:.length)
+    //
+    public static partial class MemoryExtensions {
+        public static Span<T> AsSpan<T>(this T[] array, Range range);
+        public static Span<T> AsSpan<T>(this ArraySegment<T> arraySegment, Range range);
+        public static Span<T> AsReadOnlySpan<T>(this T[] array, Range range);
+        public static ReadOnlySpan<T> AsReadOnlySpan<T>(this ArraySegment<T> arraySegment, Range range);
+        public static ReadOnlySpan<char> AsReadOnlySpan(this string text, Range range);
+    }
+}
+```
 
 ## Q & A
 
 ### Open Design Points
 
-* Right now, we cannot retrieve `Index` or `Length` if the range is open on any
-  side (it throws `NotSupportedException`).
+* Right now, we cannot retrieve `Index` or `Length` if the range is unbounded
+  (it throws `NotSupportedException`).
     - We could expose `Start: int?` and `End: int?` and then add a factory
       method `Between(int? start, int? end)`
 
-* We should check whether we can handle negative numbers for `Length` so that we
-  can support addressing relative to the end. Check Python to see what they did
-  there.
-
 * Should `Range` support containment checks?
     - Positions and/or ranges?
-    - Question is how to define semantics for open ended ranges.
+    - Question is how to define semantics for unbounded ranges.
 
-* Should `Range` support combining/intersecting open ended ranges?
-    - Be careful though. For open ended slices this might produce invalid
-      values. For instance, you might think combining `3..` and `..12` would
-      produce `3..12` but this would mean indexing into an array of size 5 would
-      fail, while `3..` would have worked.
-    - We could define the operation as `Close(Range)` though.
+* Should `Range` support combining/intersecting unbounded ranges?
+    - Be careful though. For unbounded ranges this might produce invalid values.
+      For instance, you might think combining `3..` and `..12` would produce
+      `3..12` but this would mean indexing into an array of size 5 would fail,
+      while `3..` would have worked.
+    - We could define the operation as `Bind(Range)` though.
 
 * Should we add an interface for range access?
     ```csharp
@@ -262,10 +300,11 @@ bounds as well as bounds that require adding the container size.
         }
         ```
 * Should we suppport steps in ranges? Syntax is unclear and so is whether this
-  means we'd need a separate type.
+  means we'd need a separate type, such as `SteppedRange`. Python supports this:
+  `lower:upper:step` with `:step` being optional and `:1` by default.
 * For the companion types, should we support setters for range-based indexers?
   `myarray[0..10] = Enumerable.Range(1, 10)`
 * Python doesn't create errors for cases where the indexes aren't valid. It
-  looks like when they close ranges the just clamp the start and end position to
+  looks like when they bind ranges the just clamp the start and end position to
   the container. And if the start:end are overlapping, they simply produce an
   empty set.
