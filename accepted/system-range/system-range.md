@@ -33,7 +33,7 @@ so that we can look at source code as it's likely written:
 var fiveToTen = 5..11; // Equivalent to Range.Between(5, 11)
 
 // You can also construct ranges with index and length:
-var fiveToTen = 5.:6; // Equivalent to new Range.Between(5, 6)
+var fiveToTen = 5.:6; // Equivalent to new Range(5, 6)
 ```
 
 ### Unbounded ranges
@@ -42,7 +42,7 @@ var fiveToTen = 5.:6; // Equivalent to new Range.Between(5, 6)
 // Ranges can be unbounded:
 
 var fiveToEnd = 5..;  // Equivalent to Range.From(5) i.e. missing upper bound
-var startToTen = ..1; // Equivalent to Range.To(11) i.e. missing lower bound
+var startToTen = ..1; // Equivalent to Range.To(1) i.e. missing lower bound
 var everything = ..;  // Equivalent to Range.All i.e. missing upper and lower bound
 
 // When the lower bound is omitted, it's interpreted to be zero.
@@ -125,7 +125,6 @@ This might look like this:
 
 ```csharp
 Tensor<float> testDataTable = GetTestData();
-int columnCount = testDataTable.GetLength(1);
 
 // Take all rows and all but the last column
 Tensor<float> inputTable = testDataTable[.., ..-1];
@@ -141,8 +140,7 @@ Tensor<float> outputTable = testDataTable[.., -1..];
 * We need a type that both, plays well with existing concepts in the base class
   library, as well as the intended syntax for C#
 * We need to ensure we can extend the notion of ranges in the base class library
-  in the future (for example, by supporting negative ranges or element types
-  other than `Int32`).
+  in the future (for example, by supporting element types other than `Int32`).
 
 ### Non-Goals
 
