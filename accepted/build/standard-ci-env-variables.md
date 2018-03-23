@@ -14,6 +14,7 @@ Source control information needed:
 
 * Commit ID/hash
 * Repository URL
+* Source Control Manager name (`git`, `TFVC`, `mercurial`, `svn`, etc.)
 
 Places to store this information:
 
@@ -46,7 +47,8 @@ The .NET Core SDK needs are oriented around source control. As a result, the ini
 It is important that these environment variables do not conflict with other variables. To avoid that, all environment variables will be prepended with ```STANDARD_CI_```. This name is a first proposal for the idea and it may get changed based on feedback.
 
 * **STANDARD\_CI\_SOURCE\_REVISION\_ID** -- Commit hash / ID; Example: 2ba93796dcf132de447886d4d634414ee8cb069d
-* **STANDARD\_CI\_REPOSITORY_URL** -- URL for repository; Example: https://github.com/dotnet/corefx
+* **STANDARD\_CI\_REPOSITORY\_URL** -- URL for repository; Example: https://github.com/dotnet/corefx
+* **STANDARD\_CI\_REPOSITORY\_TYPE** -- Source Control Manager name; Example: `git`, `TFVC`, `mercurial`, `svn`
 
 There are only two environment variables listed, since this .NET Core SDK scenario only requires these two environment variables.
 
@@ -58,6 +60,7 @@ This plan will only work if CI services decide to support these environment vari
 | -------------------- | ---- | -------- | -------- | --------- | ------------- | --------- | --------- |
 |STANDARD\_CI\_SOURCE\_REVISION\_ID | BUILD\_SOURCEVERSION | TRAVIS\_COMMIT |APPVEYOR\_REPO\_COMMIT | CIRCLE\_SHA1 | CODEBUILD\_RESOLVED\_SOURCE\_VERSION | build.vcs.number | OPENSHIFT\_BUILD\_COMMIT |
 |STANDARD\_CI\_REPOSITORY\_URL|BUILD\_REPOSITORY\_URI| | | CIRCLE\_REPOSITORY\_URL | CODEBUILD\_SOURCE\_REPO\_URL | vcsroot.url | OPENSHIFT\_BUILD\_SOURCE |
+|STANDARD\_CI\_REPOSITORY\_TYPE |  | |APPVEYOR\_REPO\_SCM |  | 
 
 The [VSTS](https://www.visualstudio.com/team-services/) team has graciously agreed to publish environment variables in the proposed STANDARD\_CI format.
 
