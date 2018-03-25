@@ -62,21 +62,21 @@ $ docker image build ...
 The core context for the .NET Core CLI is the project. Like many other CLIs, this concept is a little fluffy and you will probably comfortably think about it as _the main thing I am working on right now_. This will generally be a project, but it might in some cases be a solution or a directory. We think of a solution as a super-project and in some cases a project is represented by its directory. The .NET Core CLI will adopt the Docker style of allowing the core context to be explicit or implicit because it makes help much easier. `dotnet --help` may have 30 entries while `dotnet project --help` may have 15. For example, the following commands continue to work as before:
 
 ``` terminal
-$ build
-$ new
-$ publish
-$ restore
-$ run
+$ dotnet build
+$ dotnet new
+$ dotnet publish
+$ dotnet restore
+$ dotnet run
 ```
 
 The following commands will work in a future version of the .NET Core CLI:
 
 ``` terminal
-$ project build
-$ project new
-$ project publish
-$ project restore
-$ project run
+$ dotnet project build
+$ dotnet project new
+$ dotnet project publish
+$ dotnet project restore
+$ dotnet project run
 ```
 
 In general terms, this is described:
