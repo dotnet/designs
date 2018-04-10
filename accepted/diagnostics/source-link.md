@@ -7,41 +7,98 @@ Most debugging is done against locally built source code on a developer's machin
 ## Source Link File Specification
 The `/sourcelink:<file>` compiler flag will embed a JSON configuration file in the PDB. This configuration file would be generated as part of the build process. The JSON configuration file contains a simple mapping of local file path to URL where the source file can be retrieved via http or https. A debugger would retrieve the original file path of the current location from the PDB, look this path up in the Source Link map, and use the resulting URL to download the source file.
 
-### MSBuild Example
-There is an open source tool available for generating Source Link configuration at build time. See https://github.com/ctaggart/SourceLink for the most up to date information.
+## MSBuild Example
+There is an open source tool available for generating Source Link configuration at build time. This supports GitHub and BitBucket out of the box. See https://github.com/ctaggart/SourceLink#quick-start for the most up to date information.
 
-Generating and embedding a Source Link file can also be done manually with an MSBuild Target. The following is an example of enabling source link in a .csproj for a project hosted on GitHub.
+Generating and embedding a Source Link file can also be done manually with an MSBuild Target.
+
+### GitHub
+GitHub allows files to be downloaded from the domain raw.githubusercontent.com. For exmaple, the README for the [.NET Core](https://github.com/dotnet/core) repo can be downloaded directly for commit `1ae869434444693bd463bf972af5b9a1b1a889d0` with the follwing URL:
 ```
+https://raw.githubusercontent.com/dotnet/core/1ae869434444693bd463bf972af5b9a1b1a889d0/README.md. 
+```
+Using this URL scheme, it is possible to generate Source Link for GitHub repositories.
+
+```xml
 ...
+  <!-- Enable the /sourcelink compiler flag -->
   <PropertyGroup Condition="'$(UseSourceLink)' == 'true'">
     <SourceLink>$(IntermediateOutputPath)source_link.json</SourceLink>
   </PropertyGroup>
   ...
   <Target Name="GenerateSourceLink" BeforeTargets="CoreCompile" Condition="'$(UseSourceLink)' == 'true'">
     <PropertyGroup>
+      <!-- Determine the root of the repository and ensure it's \'s are escaped -->
       <SrcRootDirectory>$([System.IO.Directory]::GetParent($(MSBuildThisFileDirectory.TrimEnd("\"))))</SrcRootDirectory>
       <SourceLinkRoot>$(SrcRootDirectory.Replace("\", "\\"))</SourceLinkRoot>
     </PropertyGroup>
 
+    <!-- Get the GitHub url for the current git repo -->
     <Exec Command="git config --get remote.origin.url" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="RemoteUri" />
     </Exec>
 
+    <!-- Get the current commit from git if this is not building in VSTS -->
     <Exec Command="git rev-parse HEAD" ConsoleToMsBuild="true" Condition = " '$(TF_BUILD)' != 'True' ">
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
     </Exec>
 
+    <!-- Get the current commit from git if this is buildin in VSTS -->
     <Exec Command="git merge-base --fork-point refs/remotes/origin/master HEAD" ConsoleToMsBuild="true" Condition = " '$(TF_BUILD)' == 'True' ">
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
     </Exec>
 
     <!-- Write out the source file for this project to point at raw.githubusercontent.com -->
-    <WriteLinesToFile File="$(IntermediateOutputPath)source_link.json" Overwrite="true" Lines='{"documents": { "$(SourceLinkRoot)\\*" : "$(RemoteUri.Replace(".git", "").Replace("github.com", "raw.githubusercontent.com"))/$(LatestCommit)/*" }}' />
+    <WriteLinesToFile File="$(IntermediateOutputPath)source_link.json" Overwrite="true" 
+                      Lines='{"documents": { "$(SourceLinkRoot)\\*" : "$(RemoteUri.Replace(".git", "").Replace("github.com", "raw.githubusercontent.com"))/$(LatestCommit)/*" }}' />
   </Target>
 ...
 ```
 
-### Source Link JSON Schema
+### VSTS
+VSTS git repos allow files to be downloaded directly using the [VSTS REST API](https://docs.microsoft.com/en-us/rest/api/vsts/git/items/get?view=vsts). Using the API, it is possible to create a URL that can be used for Source Link. For example, the REAMDE of the repo at https://myaccout.visualstudio.com/MyProject/_git/MyRepo/ can be downloaded directly at commit `a194757aa9808e18fe900d5a3b4dcde6df14c094` with the following URL :
+```
+https://myaccount.visualstudio.com/MyProject/_apis/git/repositories/MyRepo/items?scopePath=/README.md&versionDescriptor.version=a194757aa9808e18fe900d5a3b4dcde6df14c094&versionDescriptor.versionType=commit&api-version=4.1-preview
+```
+Using this URL scheme, it is possible to generate Source Link for VSTS git repositories. NOTE: VSTS does not allow anonymous access to repositories, so all requests must be [authenticated](https://docs.microsoft.com/en-us/vsts/integrate/get-started/authentication/authentication-guidance?view=vsts). See [tooling](#tooling) for more info. 
+
+```xml
+...
+  <!-- Enable the /sourcelink compiler flag -->
+  <PropertyGroup Condition="'$(UseSourceLink)' == 'true'">
+    <SourceLink>$(IntermediateOutputPath)source_link.json</SourceLink>
+  </PropertyGroup>
+...
+  <Target Name="GenerateSourceLink" BeforeTargets="CoreCompile" Condition="'$(UseSourceLink)' == 'true'">
+    <PropertyGroup>
+      <!-- Determine the root of the repository and ensure it's \'s are escaped -->
+      <SrcRootDirectory>$([System.IO.Directory]::GetParent($(MSBuildThisFileDirectory.TrimEnd("\"))))</SrcRootDirectory>
+      <SourceLinkRoot>$(SrcRootDirectory.Replace("\", "\\"))</SourceLinkRoot>
+
+      <!-- Define our VSTS repo's Account and Project -->
+      <VstsAccount>MyAccount</VstsAccount>
+      <VstsProject>MyProject</VstsProject>
+      <VstsRepo>MyRepo</VstsRepo>
+    </PropertyGroup>
+
+    <!-- Get the current commit from git if this is not building in VSTS -->
+    <Exec Command="git rev-parse HEAD" ConsoleToMsBuild="true" Condition = " '$(TF_BUILD)' != 'True' ">
+      <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
+    </Exec>
+
+    <!-- Get the current commit from git if this is buildin in VSTS -->
+    <Exec Command="git merge-base --fork-point refs/remotes/origin/master HEAD" ConsoleToMsBuild="true" Condition = " '$(TF_BUILD)' == 'True' ">
+      <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
+    </Exec>
+
+    <!-- Write out the source file for this project to point at VSTS REST API -->
+    <WriteLinesToFile File="$(IntermediateOutputPath)source_link.json" Overwrite="true" 
+                      Lines='{"documents": { "$(SourceLinkRoot)\\*" : "https://$(VstsAccount).visualstudio.com/$(VstsProject)/_api/git/repositories/$(VstsRepo)/items?scopePath=/*&amp;versionDescriptor.version=$(LatestCommit)&amp;versionDescriptor.versionType=commit&amp;api-version=4.1-preview" }}' />
+  </Target>
+...
+```
+
+## Source Link JSON Schema
 ```json
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -69,7 +126,7 @@ Generating and embedding a Source Link file can also be done manually with an MS
 }
 ```
 
-### Examples
+## Examples
 The simplest Source Link JSON would map every file in the project directory to a URL with a matching relative path. The following example shows what the Source Link JSON would look like for the .NET [Code Formatter](https://github.com/dotnet/codeformatter). In this example, Code Formatter has been cloned to `C:\src\CodeFormatter\` and is being built at commit `bcc51178e1a82fb2edaf47285f6e577989a7333f`.
 ```json
 {
@@ -119,7 +176,7 @@ In this example:
 - All files under directory `foo` will map to a relative URL beginning with `http://MyFooDomain.com/src/` **EXCEPT** `foo/specific.txt` which will map to `http://MySpecificFoodDomain.com/src/specific.txt`.
 - All other files anywhere under the `src` directory will map to a relative url beginning with `http://MyDefaultDomain.com/src/`.
 
-## Tooling
+## Tooling<a name="#tooling">
 - [Visual Studio 2017](https://www.visualstudio.com/downloads/)
     - First debugger to support Source Link.
     - Supports Source Link in [Portable PDBs](https://github.com/dotnet/core/blob/master/Documentation/diagnostics/portable_pdb.md) -- default PDB format for .NET Core projects.
@@ -133,9 +190,9 @@ In this example:
             }
         }
         ```
+    - Starting in [VS 2017 version 15.7 Preview 3](https://blogs.msdn.microsoft.com/visualstudio/2018/04/09/visual-studio-2017-version-15-7-preview-3/), the debugger can automatically authenticate Source Link requests for VSTS and GitHub repositories.
 - [C# Extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp)
-    - Source Link is a planned feature but is not yet supported. 
-    - [Omnisharp-vscode issue](https://github.com/OmniSharp/omnisharp-vscode/issues/373)
+    - Supports Source Link as of C# extension version 1.15
 - [JetBrains dotPeek](https://www.jetbrains.com/dotpeek) and [JetBrains ReSharper](https://www.jetbrains.com/resharper)
     - First .NET decompiler to support Source Link.
     - Supports Source Link in [Portable PDBs](https://github.com/dotnet/core/blob/master/Documentation/diagnostics/portable_pdb.md) -- default PDB format for .NET Core projects.
