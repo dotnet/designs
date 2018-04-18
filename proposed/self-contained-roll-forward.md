@@ -65,6 +65,12 @@ Thus, we'd prefer to have a different method of selecting the latest patch versi
 
 Because of these challenges, we expect to go forward with using a hard-coded list of patches in the SDK targets for the first iteration of this feature, and pursue further improvements later.
 
+### ASP.NET Core
+
+In .NET Core 2.1, ASP.NET Core is treated as a shared framework.  The dependency is represented by a `PackageReference` to `Microsoft.AspNetCore.App`.  A framework dependent app will roll forward to the latest installed version of ASP.NET Core the same way it will roll forward to the latest .NET Core runtime.  We would also like the behavior for self-contained ASP.NET Core apps to be similar to how the .NET Core runtime is handled- ie they should deploy the "latest" patch version of ASP.NET Core.
+
+The difference is that the reference to `Microsoft.NETCore.App` is implicit, while the reference to `Microsoft.AspNetCore.App` is an explicit `PackageReference` in the project.  In order to support rolling the version of ASP.NET forward, by default this `PackageReference` will not have a `Version` attribute on it.  There will be code in the Web SDK targets which will add the version number to this `PackageReference` item following the same versioning rules as the implicit reference to `Microsoft.NETCore.App` will use.
+
 ## Alternative proposals
 
 - Have a way for restore to use a different version in a PackageReference for RID-less and RID-specific targets
@@ -72,9 +78,6 @@ Because of these challenges, we expect to go forward with using a hard-coded lis
 - Use a different assets for self-contained (probably fails with combination of multi-targeting and conditional `RuntimeIdentifier`)
 - Add a property that enables roll-forward to latest patch version.  This would be in addition to the current proposal, and would allow opting in to roll-forward behavior without having to burn a `RuntimeFrameworkVersion` in your project.
 
-## Outstanding issues / questions
+## Notes
 
-- Roll-forward for ASP.NET as a framework
-  - How will self-contained ASP.NET Core apps roll forward to patches of the ASP.NET Core framework?
-- `--no-restore` was apparently a workaround for various issues with publish.  What were those issues, and will this proposal break those workarounds?
-- `publish --no-build` - For this to work (we don't have this feature at all yet), you will need to have built with the RID specified (ie `dotnet build -r {rid}`)
+- `publish --no-build` - For this to work, you will need to have built with the RID specified (ie `dotnet build -r {rid}`)
