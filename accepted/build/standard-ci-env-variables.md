@@ -14,7 +14,7 @@ Source control information needed:
 
 * Commit ID/hash
 * Repository URL
-* Source Control Manager name (`git`, `TFVC`, `mercurial`, `svn`, etc.)
+* Source Control Manager name (`git`, `tfvc`, etc.)
 
 Places to store this information:
 
@@ -28,14 +28,13 @@ The following examples demonstrate how the Roslyn team has implemented this same
 Example -- Microsoft.CodeAnalysis.CSharp.dll:
 
 ```csharp
-[assembly: AssemblyInformationalVersion("2.4.0-beta1-62122-04. Commit Hash: ab56a4a6c32268d925014a3e45ddce61fba715cd")]
+[assembly: AssemblyInformationalVersion("2.4.0-beta1-62122-04+ab56a4a6c32268d925014a3e45ddce61fba715cd")]
 ```
 
 Example -- Microsoft.Net.Compilers.nupkg (NuGet package):
 
 ```xml
-<projectUrl>https://github.com/dotnet/roslyn</projectUrl>
-<description>This package was built from the source at https://github.com/dotnet/roslyn/commit/ab56a4a6c32268d925014a3e45ddce61fba715cd</description>
+<repository type="git" url="https://github.com/dotnet/roslyn" commit="ab56a4a6c32268d925014a3e45ddce61fba715cd"/>
 ```
 
 Note that the final implementation provided by the .NET Core SDK might look slightly differently from the Roslyn examples, but it will be similar. There will be a separate spec on this feature. This document is focussed on the CI service integration.
@@ -44,13 +43,20 @@ Note that the final implementation provided by the .NET Core SDK might look slig
 
 The .NET Core SDK needs are oriented around source control. As a result, the initial list is source control oriented, but there is no affinity to source control on the general idea of standardized environment variables.
 
-It is important that these environment variables do not conflict with other variables. To avoid that, all environment variables will be prepended with ```STANDARD_CI_```. This name is a first proposal for the idea and it may get changed based on feedback.
+It is important that these environment variables do not conflict with other variables. To avoid that, all environment variables will be prepended with `STANDARD_CI_`. This name is a first proposal for the idea and it may get changed based on feedback.
 
 * **STANDARD\_CI\_SOURCE\_REVISION\_ID** -- Commit hash / ID; Example: 2ba93796dcf132de447886d4d634414ee8cb069d
 * **STANDARD\_CI\_REPOSITORY\_URL** -- URL for repository; Example: https://github.com/dotnet/corefx
-* **STANDARD\_CI\_REPOSITORY\_TYPE** -- Source Control Manager name; Example: `git`, `TFVC`, `mercurial`, `svn`
+* **STANDARD\_CI\_REPOSITORY\_TYPE** -- Source control manager name; Example: `git`, `TFVC`, `mercurial`, `svn`
 
-There are only two environment variables listed, since this .NET Core SDK scenario only requires these two environment variables.
+The following strings are well-known values for `STANDARD_CI_REPOSITORY_TYPE`. Other values can be used for source control managers not listed in this table.
+
+|  `STANDARD_CI_REPOSITORY_TYPE` | Source Control Manager |
+| ------------------------------ | ---------------------- |
+| `git`                          | [git](https://git-scm.com) |
+| `tfvc`                         | [Team Foundation Version Control](https://docs.microsoft.com/en-us/vsts/tfvc) |
+| `svn`                          | [Apache Subversion](https://subversion.apache.org) |
+| `mercurial`                    | [Mercurial](https://www.mercurial-scm.org) |
 
 ## Support from CI Services
 
