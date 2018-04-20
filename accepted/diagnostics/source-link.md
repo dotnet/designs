@@ -49,7 +49,7 @@ Using this URL scheme, it is possible to generate Source Link for GitHub reposit
     </Exec>
 
     <!-- Write out the source file for this project to point at raw.githubusercontent.com -->
-    <WriteLinesToFile File="$(IntermediateOutputPath)source_link.json" Overwrite="true" 
+    <WriteLinesToFile File="$(SourceLink)" Overwrite="true"
                       Lines='{"documents": { "$(SourceLinkRoot)\\*" : "$(RemoteUri.Replace(".git", "").Replace("github.com", "raw.githubusercontent.com"))/$(LatestCommit)/*" }}' />
   </Target>
 ...
@@ -92,7 +92,7 @@ Using this URL scheme, it is possible to generate Source Link for VSTS git repos
     </Exec>
 
     <!-- Write out the source file for this project to point at VSTS REST API -->
-    <WriteLinesToFile File="$(IntermediateOutputPath)source_link.json" Overwrite="true" 
+    <WriteLinesToFile File="$(SourceLink)" Overwrite="true"
                       Lines='{"documents": { "$(SourceLinkRoot)\\*" : "https://$(VstsAccount).visualstudio.com/$(VstsProject)/_api/git/repositories/$(VstsRepo)/items?scopePath=/*&amp;versionDescriptor.version=$(LatestCommit)&amp;versionDescriptor.versionType=commit&amp;api-version=4.1-preview" }}' />
   </Target>
 ...
