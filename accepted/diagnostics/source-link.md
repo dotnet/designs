@@ -13,7 +13,7 @@ There is an open source tool available for generating Source Link configuration 
 Generating and embedding a Source Link file can also be done manually with an MSBuild Target.
 
 ### GitHub
-GitHub allows files to be downloaded from the domain raw.githubusercontent.com. For exmaple, the README for the [.NET Core](https://github.com/dotnet/core) repo can be downloaded directly for commit `1ae869434444693bd463bf972af5b9a1b1a889d0` with the follwing URL:
+GitHub allows files to be downloaded from the domain raw.githubusercontent.com. For example, the README for the [.NET Core](https://github.com/dotnet/core) repo can be downloaded directly for commit `1ae869434444693bd463bf972af5b9a1b1a889d0` with the following URL:
 ```
 https://raw.githubusercontent.com/dotnet/core/1ae869434444693bd463bf972af5b9a1b1a889d0/README.md. 
 ```
@@ -28,7 +28,7 @@ Using this URL scheme, it is possible to generate Source Link for GitHub reposit
   ...
   <Target Name="GenerateSourceLink" BeforeTargets="CoreCompile" Condition="'$(UseSourceLink)' == 'true'">
     <PropertyGroup>
-      <!-- Determine the root of the repository and ensure it's \'s are escaped -->
+      <!-- Determine the root of the repository and ensure its \'s are escaped -->
       <SrcRootDirectory>$([System.IO.Directory]::GetParent($(MSBuildThisFileDirectory.TrimEnd("\"))))</SrcRootDirectory>
       <SourceLinkRoot>$(SrcRootDirectory.Replace("\", "\\"))</SourceLinkRoot>
     </PropertyGroup>
@@ -43,20 +43,20 @@ Using this URL scheme, it is possible to generate Source Link for GitHub reposit
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
     </Exec>
 
-    <!-- Get the current commit from git if this is buildin in VSTS -->
+    <!-- Get the current commit from git if this is building in VSTS -->
     <Exec Command="git merge-base --fork-point refs/remotes/origin/master HEAD" ConsoleToMsBuild="true" Condition = " '$(TF_BUILD)' == 'True' ">
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
     </Exec>
 
     <!-- Write out the source file for this project to point at raw.githubusercontent.com -->
-    <WriteLinesToFile File="$(IntermediateOutputPath)source_link.json" Overwrite="true" 
+    <WriteLinesToFile File="$(SourceLink)" Overwrite="true"
                       Lines='{"documents": { "$(SourceLinkRoot)\\*" : "$(RemoteUri.Replace(".git", "").Replace("github.com", "raw.githubusercontent.com"))/$(LatestCommit)/*" }}' />
   </Target>
 ...
 ```
 
 ### VSTS
-VSTS git repos allow files to be downloaded directly using the [VSTS REST API](https://docs.microsoft.com/en-us/rest/api/vsts/git/items/get?view=vsts). Using the API, it is possible to create a URL that can be used for Source Link. For example, the REAMDE of the repo at https://myaccout.visualstudio.com/MyProject/_git/MyRepo/ can be downloaded directly at commit `a194757aa9808e18fe900d5a3b4dcde6df14c094` with the following URL :
+VSTS git repos allow files to be downloaded directly using the [VSTS REST API](https://docs.microsoft.com/en-us/rest/api/vsts/git/items/get?view=vsts). Using the API, it is possible to create a URL that can be used for Source Link. For example, the README of the repo at https://myaccount.visualstudio.com/MyProject/_git/MyRepo/ can be downloaded directly at commit `a194757aa9808e18fe900d5a3b4dcde6df14c094` with the following URL:
 ```
 https://myaccount.visualstudio.com/MyProject/_apis/git/repositories/MyRepo/items?scopePath=/README.md&versionDescriptor.version=a194757aa9808e18fe900d5a3b4dcde6df14c094&versionDescriptor.versionType=commit&api-version=4.1-preview
 ```
@@ -71,7 +71,7 @@ Using this URL scheme, it is possible to generate Source Link for VSTS git repos
 ...
   <Target Name="GenerateSourceLink" BeforeTargets="CoreCompile" Condition="'$(UseSourceLink)' == 'true'">
     <PropertyGroup>
-      <!-- Determine the root of the repository and ensure it's \'s are escaped -->
+      <!-- Determine the root of the repository and ensure its \'s are escaped -->
       <SrcRootDirectory>$([System.IO.Directory]::GetParent($(MSBuildThisFileDirectory.TrimEnd("\"))))</SrcRootDirectory>
       <SourceLinkRoot>$(SrcRootDirectory.Replace("\", "\\"))</SourceLinkRoot>
 
@@ -86,13 +86,13 @@ Using this URL scheme, it is possible to generate Source Link for VSTS git repos
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
     </Exec>
 
-    <!-- Get the current commit from git if this is buildin in VSTS -->
+    <!-- Get the current commit from git if this is building in VSTS -->
     <Exec Command="git merge-base --fork-point refs/remotes/origin/master HEAD" ConsoleToMsBuild="true" Condition = " '$(TF_BUILD)' == 'True' ">
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
     </Exec>
 
     <!-- Write out the source file for this project to point at VSTS REST API -->
-    <WriteLinesToFile File="$(IntermediateOutputPath)source_link.json" Overwrite="true" 
+    <WriteLinesToFile File="$(SourceLink)" Overwrite="true"
                       Lines='{"documents": { "$(SourceLinkRoot)\\*" : "https://$(VstsAccount).visualstudio.com/$(VstsProject)/_api/git/repositories/$(VstsRepo)/items?scopePath=/*&amp;versionDescriptor.version=$(LatestCommit)&amp;versionDescriptor.versionType=commit&amp;api-version=4.1-preview" }}' />
   </Target>
 ...
@@ -103,7 +103,7 @@ Using this URL scheme, it is possible to generate Source Link for VSTS git repos
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "SourceLink",
-    "description": "A mapping of source file paths to URL's",
+    "description": "A mapping of source file paths to URLs",
     "type": "object",
     "properties": {
         "documents": {
@@ -113,7 +113,7 @@ Using this URL scheme, it is possible to generate Source Link for VSTS git repos
                 "type": "string"
             },
             "description": "Each document is defined by a file path and a URL. Original source file paths are compared 
-                             case insensitive to documents and the resulting URL is used to download source. The document 
+                             case-insensitively to documents and the resulting URL is used to download source. The document 
                              may contain an asterisk to represent a wildcard in order to match anything in the asterisk's 
                              location. The rules for the asterisk are as follows:
                              1. The only acceptable wildcard is one and only one '*', which if present will be replaced by a relative path.
@@ -137,7 +137,7 @@ The simplest Source Link JSON would map every file in the project directory to a
 ```
 In this example, the file `C:\src\CodeFormatter\src\Microsoft.DotNet.CodeFormatting\FormattingEngine.cs` would be retrieved from `https://raw.githubusercontent.com/dotnet/codeformatter/bcc51178e1a82fb2edaf47285f6e577989a7333f/src/Microsoft.DotNet.CodeFormatting/FormattingEngine.cs`
 
-If the project was built on linux and was cloned to `/usr/local/src/CodeFormatter/`, the Source Link JSON would be:
+If the project was built on Linux and was cloned to `/usr/local/src/CodeFormatter/`, the Source Link JSON would be:
 ```json
 {
     "documents": {
