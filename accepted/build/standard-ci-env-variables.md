@@ -47,7 +47,24 @@ It is important that these environment variables do not conflict with other vari
 
 * **STANDARD\_CI\_SOURCE\_REVISION\_ID** -- Commit hash / ID; Example: 2ba93796dcf132de447886d4d634414ee8cb069d
 * **STANDARD\_CI\_REPOSITORY\_URL** -- URL for repository; Example: https://github.com/dotnet/corefx
+* **STANDARD\_CI\_REPOSITORY\_URL\_MAP{n}** -- optional mapping of URLs 
 * **STANDARD\_CI\_REPOSITORY\_TYPE** -- Source control manager name; Example: `git`, `TFVC`, `mercurial`, `svn`
+
+### STANDARD_CI_REPOSITORY_URL
+
+The URL to be used to refer to the repository from artifacts produced by the build. If the source control provider supports permanent URLs (i.e. URLs resilient to renames) this should be such permanent URL. 
+
+### STANDARD_CI_REPOSITORY_URL_MAP{n}
+
+Specifies a map of URLs stored in the repository (or its source control metadata) to permanent URLs that can be embedded in the artifacts produced by the build. This map can be set by the build server when it determines that the repository may contain URLs that might change in future. The build infrastructure can then use this map to replace non-permanent URLs with permanent ones that are resilient to such changes.
+
+For example, a git repository may contain a submodule created using a non-permanent URL of the target repository. The build in this repository is set up such that it includes the URL of the submodule in the symbol file, so that the debugger can find the source files copiled from the submodule on the source server that hosts the submodule sources. `STANDARD_CI_REPOSITORY_URL_MAP` makes it possible to set up permanent (forwarding) URLs that the build infrastructure can use when producing the symbol file instead of the original URL stored in the git metadata.
+
+The value of `STANDARD_CI_REPOSITORY_URL_MAP` variable is a semicolon-delimited list of URLs. The number of items in the list shall be even. Every odd item is the original URL and every even item is the mapped URL. If there are multiple mappings with the same original URLs the mapped URL of the last one shall be used.
+
+On some systems the length of an environment variable is limited. If the length of the map were to exceed this limit additional URLs can be specified in variables `STANDARD_CI_REPOSITORY_URL_MAP1`, `STANDARD_CI_REPOSITORY_URL_MAP2`, etc., each having the same syntax as `STANDARD_CI_REPOSITORY_URL_MAP`. When building the complete map a reader shall first check if variable `STANDARD_CI_REPOSITORY_URL_MAP` specifies is set. If so it shall add its mappings to the map. It shall then check if `STANDARD_CI_REPOSITORY_URL_MAP1` is set. If so it shall add its mappings to the map. Et cetera. The construction of the map ends with the first _n_ for which variable `STANDARD_CI_REPOSITORY_URL_MAP{n}` is not set.
+
+### STANDARD_CI_REPOSITORY_TYPE
 
 The following strings are well-known values for `STANDARD_CI_REPOSITORY_TYPE`. Other values can be used for source control managers not listed in this table.
 
