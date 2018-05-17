@@ -22,11 +22,11 @@ Using this URL scheme, it is possible to generate Source Link for GitHub reposit
 ```xml
 ...
   <!-- Enable the /sourcelink compiler flag -->
-  <PropertyGroup Condition="'$(UseSourceLink)' == 'true'">
+  <PropertyGroup>
     <SourceLink>$(IntermediateOutputPath)source_link.json</SourceLink>
   </PropertyGroup>
   ...
-  <Target Name="GenerateSourceLink" BeforeTargets="CoreCompile" Condition="'$(UseSourceLink)' == 'true'">
+  <Target Name="GenerateSourceLink" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <!-- Determine the root of the repository and ensure its \'s are escaped -->
       <SrcRootDirectory>$([System.IO.Directory]::GetParent($(MSBuildThisFileDirectory.TrimEnd("\"))))</SrcRootDirectory>
@@ -38,13 +38,13 @@ Using this URL scheme, it is possible to generate Source Link for GitHub reposit
       <Output TaskParameter="ConsoleOutput" PropertyName="RemoteUri" />
     </Exec>
 
-    <!-- Get the current commit from git if this is not building in VSTS -->
-    <Exec Command="git rev-parse HEAD" ConsoleToMsBuild="true" Condition = " '$(TF_BUILD)' != 'True' ">
+    <!-- Get the current commit from git -->
+    <Exec Command="git rev-parse HEAD" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
     </Exec>
 
-    <!-- Get the current commit from git if this is building in VSTS -->
-    <Exec Command="git merge-base --fork-point refs/remotes/origin/master HEAD" ConsoleToMsBuild="true" Condition = " '$(TF_BUILD)' == 'True' ">
+    <!-- Get the current commit from git -->
+    <Exec Command="git merge-base --fork-point refs/remotes/origin/master HEAD" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
     </Exec>
 
@@ -65,11 +65,11 @@ Using this URL scheme, it is possible to generate Source Link for VSTS git repos
 ```xml
 ...
   <!-- Enable the /sourcelink compiler flag -->
-  <PropertyGroup Condition="'$(UseSourceLink)' == 'true'">
+  <PropertyGroup>
     <SourceLink>$(IntermediateOutputPath)source_link.json</SourceLink>
   </PropertyGroup>
 ...
-  <Target Name="GenerateSourceLink" BeforeTargets="CoreCompile" Condition="'$(UseSourceLink)' == 'true'">
+  <Target Name="GenerateSourceLink" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <!-- Determine the root of the repository and ensure its \'s are escaped -->
       <SrcRootDirectory>$([System.IO.Directory]::GetParent($(MSBuildThisFileDirectory.TrimEnd("\"))))</SrcRootDirectory>
@@ -81,13 +81,13 @@ Using this URL scheme, it is possible to generate Source Link for VSTS git repos
       <VstsRepo>MyRepo</VstsRepo>
     </PropertyGroup>
 
-    <!-- Get the current commit from git if this is not building in VSTS -->
-    <Exec Command="git rev-parse HEAD" ConsoleToMsBuild="true" Condition = " '$(TF_BUILD)' != 'True' ">
+    <!-- Get the current commit from git -->
+    <Exec Command="git rev-parse HEAD" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
     </Exec>
 
-    <!-- Get the current commit from git if this is building in VSTS -->
-    <Exec Command="git merge-base --fork-point refs/remotes/origin/master HEAD" ConsoleToMsBuild="true" Condition = " '$(TF_BUILD)' == 'True' ">
+    <!-- Get the current commit from git-->
+    <Exec Command="git merge-base --fork-point refs/remotes/origin/master HEAD" ConsoleToMsBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="LatestCommit" />
     </Exec>
 
