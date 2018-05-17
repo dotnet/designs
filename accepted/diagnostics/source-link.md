@@ -17,7 +17,9 @@ GitHub allows files to be downloaded from the domain raw.githubusercontent.com. 
 ```
 https://raw.githubusercontent.com/dotnet/core/1ae869434444693bd463bf972af5b9a1b1a889d0/README.md. 
 ```
-Using this URL scheme, it is possible to generate Source Link for GitHub repositories.
+Using this URL scheme, it is possible to generate Source Link for GitHub repositories. 
+
+> Note that the following code is just a sample that doesn't handle all corner cases and is not as efficient as it could be. Use [Microsoft.SourceLink.GitHub](https://github.com/dotnet/sourcelink#using-sourcelink) package to get a robust Source Link support.
 
 ```xml
 ...
@@ -61,6 +63,8 @@ VSTS git repos allow files to be downloaded directly using the [VSTS REST API](h
 https://myaccount.visualstudio.com/MyProject/_apis/git/repositories/MyRepo/items?scopePath=/README.md&versionDescriptor.version=a194757aa9808e18fe900d5a3b4dcde6df14c094&versionDescriptor.versionType=commit&api-version=4.1-preview
 ```
 Using this URL scheme, it is possible to generate Source Link for VSTS git repositories. NOTE: VSTS does not allow anonymous access to repositories, so all requests must be [authenticated](https://docs.microsoft.com/en-us/vsts/integrate/get-started/authentication/authentication-guidance?view=vsts). See [tooling](#tooling) for more info. 
+
+> Note that the following code is just a sample that doesn't handle all corner cases and is not as efficient as it could be. Use [Microsoft.SourceLink.Vsts.Git](https://github.com/dotnet/sourcelink#using-sourcelink) package to get a robust Source Link support.
 
 ```xml
 ...
