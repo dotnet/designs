@@ -8,7 +8,7 @@ Most debugging is done against locally built source code on a developer's machin
 The `/sourcelink:<file>` compiler flag will embed a JSON configuration file in the PDB. This configuration file would be generated as part of the build process. The JSON configuration file contains a simple mapping of local file path to URL where the source file can be retrieved via http or https. A debugger would retrieve the original file path of the current location from the PDB, look this path up in the Source Link map, and use the resulting URL to download the source file.
 
 ## MSBuild Example
-There is an open source tool available for generating Source Link configuration at build time. This supports GitHub and BitBucket out of the box. See https://github.com/ctaggart/SourceLink#quick-start for the most up to date information.
+There is an open source tool available for generating Source Link configuration at build time. This supports GitHub and VSTS out of the box. See https://github.com/dotnet/sourcelink#using-sourcelink for the most up to date information.
 
 Generating and embedding a Source Link file can also be done manually with an MSBuild Target.
 
