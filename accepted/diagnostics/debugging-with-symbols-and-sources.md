@@ -113,7 +113,7 @@ The following tools and libraries require Windows PDBs today:
 * [WinDbg](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/)
 * [DIA API](https://docs.microsoft.com/visualstudio/debugger/debug-interface-access/debug-interface-access-sdk)
 
-The work on these tools to support Portable and Embedded PDBs in in progress. Until the necessary changes are implemented and customers of these tools update to their new versions we provide a [conversion tool and API](https://github.com/dotnet/symreader-converter) that allows users to convert between these formats in both directions.
+The work on these tools to support Portable and Embedded PDBs is in progress. Until the necessary changes are implemented and customers of these tools update to their new versions we provide a [conversion tool and API](https://github.com/dotnet/symreader-converter) that allows users to convert between these formats in both directions.
 
 This conversion can be performed either at the time of use of the PDB or at the time the library is being published. In the latter case, the build would produce a Portable PDB and include it in a NuGet package. The build would also convert this Portable PDB to Windows PDB and publish it to a symbol server. The Portable PDB can also be published to the symbol server if the symbol server supports it (e.g. VSTS symbol service).
 
