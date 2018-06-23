@@ -47,7 +47,7 @@ It is important that these environment variables do not conflict with other vari
 
 * **STANDARD\_CI\_SOURCE\_REVISION\_ID** -- Commit hash / ID; Example: 2ba93796dcf132de447886d4d634414ee8cb069d
 * **STANDARD\_CI\_REPOSITORY\_URL** -- URL for repository; Example: https://github.com/dotnet/corefx
-* **STANDARD\_CI\_REPOSITORY\_TYPE** -- Source control manager name; Example: `git`, `TFVC`, `mercurial`, `svn`
+* **STANDARD\_CI\_REPOSITORY\_TYPE** -- Source control manager name; Example: `git`, `TFVC`, `hg`, `svn`
 
 The following strings are well-known values for `STANDARD_CI_REPOSITORY_TYPE`. Other values can be used for source control managers not listed in this table.
 
@@ -56,7 +56,7 @@ The following strings are well-known values for `STANDARD_CI_REPOSITORY_TYPE`. O
 | `git`                          | [git](https://git-scm.com) |
 | `tfvc`                         | [Team Foundation Version Control](https://docs.microsoft.com/en-us/vsts/tfvc) |
 | `svn`                          | [Apache Subversion](https://subversion.apache.org) |
-| `mercurial`                    | [Mercurial](https://www.mercurial-scm.org) |
+| `hg`                           | [Mercurial](https://www.mercurial-scm.org) |
 
 ## Support from CI Services
 
