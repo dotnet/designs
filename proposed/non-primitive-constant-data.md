@@ -73,13 +73,14 @@ The proposal is to provide a set of CompilerServices apis implemented as intrins
 
 ### Definition of types which can be represented as constants
 - Must be a struct
-- The struct must have sequential layout
+- Generic structures are permitted, and only those generic type parameters which contribute to field layout shall have impact on whether the type can be represented as a constant.
+- The struct must have sequential layout, auto layout, or explicit layout without any overlap.
 - Without pointers of any form (No object reference, IntPtr, UIntPtr, pointer, function pointer)
-- All fields must be public, or the type must be a primitive type
+- All fields must be public, or the type must be a primitive type, or a type well known to the runtime/language as having special layout (Vector128<T>, Vector256<T>)
 - All fields must also be of a type which can be represented as a constant
 
 ### Well known type layout
-Given that IL binaries may be loaded on many different platforms with different type layout rules, constant data must be represented in a consistent manner across all of them. For consistent type layout, types shall be laid out in precisely a sequential manner, with *no* packing between any fields. For instance, this struct will utilize 9 bytes when stored.
+Given that IL binaries may be loaded on many different platforms with different type layout rules, constant data must be represented in a consistent manner across all of them. For consistent type layout, types shall be laid out in precisely a sequential manner as described in metadata, with *no* packing between any fields. For instance, this struct will utilize 9 bytes when stored. In addition, if the type uses explicit layout, the layout used for "well known type layout" 
 
 ```csharp
 struct NonAlignedStruct
