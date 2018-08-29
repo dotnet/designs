@@ -122,21 +122,24 @@ System.Runtime.Intrinsics.Vector256<T>
 ### RuntimeHelpers apis
 
 ```csharp
+// All of this is in System.Runtime.CompilerServices
+
+// Placing this attribute on a type indicates that it can be stored and loaded using the 
+// CreateSpan<T>, LoadConstant<T> and InitializeArray helper functions
+public class WellKnownLayoutTypeAttribute : Attribute
+{
+}
+
+// Placing this attribute on a type indicates that it can be stored and loaded using the 
+// CreateSpan<T>, LoadConstant<T> and InitializeArray helper functions. This attribute
+// indicates that the layout is that of a vector of the type parameter of the type it is placed
+// upon.
+public class WellKnownLayoutVectorTypeAttribute : Attribute
+{
+}
+
 class RuntimeHelpers
 {
-    // Placing this attribute on a type indicates that it can be stored and loaded using the CreateSpan<T>, LoadConstant<T> and InitializeArray helper functions
-    public WellKnownLayoutTypeAttribute : Attribute
-    {
-    }
-
-    // Placing this attribute on a type indicates that it can be stored and loaded using the 
-    // CreateSpan<T>, LoadConstant<T> and InitializeArray helper functions. This attribute
-    // indicates that the layout is that of a vector of the type parameter of the type it is placed
-    // upon.
-    public WellKnownLayoutVectorTypeAttribute : Attribute
-    {
-    }
-
     // Fundamental new api capability
     // Behavior if the value represented by the field handle changes over time is undefined
     // The behavior of this function is to provide a span upon the data stored into the RVA static specified
