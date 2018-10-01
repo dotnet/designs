@@ -6,7 +6,7 @@
 * Assemblies which have additional dependencies in the same folder and which don't collide with anything in the app itself (`Assembly.LoadFrom`)
 * Loading a single assembly in full isolation (from the app), but all its dependencies must come from the app (`Assembly.LoadFile`)
 
-Other scenarios are technically supported by implementing a custom `AssemblyLoadContext` but doing so is complex.  
+Other scenarios are technically supported by implementing a custom [`AssemblyLoadContext`](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/assemblyloadcontext.md) but doing so is complex.  
 Additionally, there's no inherent synergy with the .NET Core SDK tooling. Components produced by the SDK can't be easily loaded at runtime.
 
 The goal of this feature is to provide an easy-to-use way to dynamically load a component with its dependencies.
@@ -17,6 +17,7 @@ List of few scenarios where dynamic loading of full components is required:
 * Roslyn analyzers - similar to MSBuild tasks, the Roslyn compiler dynamically loads analyzers which are separate components with potentially conflicting dependencies.
 * XUnit loading tests - the test runner acts as an app and the test is loaded dynamically. The test can have any number of dependencies. Finding and resolving those dependencies is challenging.
 * ASP .NET's `dotnet watch` - ability to dynamically reload an app without restarting the process. Each version of the app is inherently in collision with any previous version. The old version should be unloaded.
+* Possibly profiling controller - see [performance-profiling-controller](https://github.com/dotnet/designs/blob/master/accepted/performance-profiling-controller.md) for the proposal. There are plans to load "plugin" like components at runtime to provide the controller functionality.
 
 In most of these cases the component which is to be loaded dynamically has a non-trivial set of dependencies which are unknown to the app itself. So the loading mechanism has to be able to resolve them.
 
