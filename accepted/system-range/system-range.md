@@ -194,8 +194,8 @@ instance of `Span<T>`, `ReadOnlySpan<T>`, `Memory<T>` or `ReadOnlyMemory<T>` by
 calling the appropriate API (e.g. `AsSpan()` or `AsMemory()`).
 
 We'll also provide overloads to common operations that take indexes and ranges,
-such as `String.Substring(int)`, `String.Substring(int, int)` and
-`AsSpan(int, int)`.
+such as `String.Substring(Index)`, `String.Substring(Range)` and
+`AsSpan(Range)`.
 
 ```C#
 namespace System
@@ -204,42 +204,42 @@ namespace System
     {
         public char this[Index index] { get; }
         public String this[Range range] { get; }
-        public String Substring(Index index);
+        public String Substring(Index startIndex);
         public String Substring(Range range);
     }
     public readonly ref partial struct Span<T>
     {
         public ref T this[Index index] { get; }
         public Span<T> this[Range range] { get; }
-        public Span<T> Slice(Index index);
+        public Span<T> Slice(Index startIndex);
         public Span<T> Slice(Range range);
     }
     public readonly ref partial struct ReadOnlySpan<T>
     {
         public readonly ref T this[Index index] { get; }
         public ReadOnlySpan<T> this[Range range] { get; }
-        public ReadOnlySpan<T> Slice(Index index);
+        public ReadOnlySpan<T> Slice(Index startIndex);
         public ReadOnlySpan<T> Slice(Range range);
     }
     public readonly struct Memory<T>
     {
-        public Memory<T> Slice(Index index);
+        public Memory<T> Slice(Index startIndex);
         public Memory<T> Slice(Range range);
     }
     public readonly struct ReadOnlyMemory<T>
     {        
-        public ReadOnlyMemory<T> Slice(Index index);
+        public ReadOnlyMemory<T> Slice(Index startIndex);
         public ReadOnlyMemory<T> Slice(Range range);
     }
     public static partial class MemoryExtensions
     {
-        public static Memory<T> AsMemory<T>(this T[] array, Index index);
+        public static Memory<T> AsMemory<T>(this T[] array, Index startIndex);
         public static Memory<T> AsMemory<T>(this T[] array, Range range);
-        public static ReadOnlyMemory<char> AsMemory(this string text, Index index);
+        public static ReadOnlyMemory<char> AsMemory(this string text, Index startIndex);
         public static ReadOnlyMemory<char> AsMemory(this string text, Range range);
-        public static Span<T> AsSpan<T>(this T[] array, Index index);
+        public static Span<T> AsSpan<T>(this T[] array, Index startIndex);
         public static Span<T> AsSpan<T>(this T[] array, Range range);
-        public static Span<T> AsSpan<T>(this ArraySegment<T> segment, Index index);
+        public static Span<T> AsSpan<T>(this ArraySegment<T> segment, Index startIndex);
         public static Span<T> AsSpan<T>(this ArraySegment<T> segment, Range range);
     }    
 }
