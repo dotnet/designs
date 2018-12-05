@@ -28,7 +28,7 @@ The language syntax for *from end* will use the `^` unary operator, like so:
 Index lastElement = ^1;
 ```
 
-Logically, you can think of the indexing from end as substracting the value from
+Logically, you can think of the indexing from end as subtracting the value from
 the collection's length:
 
 ```C#
@@ -59,9 +59,9 @@ var fiveToTen = 5..11; // Equivalent to Range.Create(5, 11)
 ```C#
 // Ranges can be unbounded:
 
-var fiveToEnd = 5..;  // Equivalent to Range.FromStart(5) i.e. missing upper bound
-var startToTen = ..1; // Equivalent to Range.ToEnd(1) i.e. missing lower bound
-var everything = ..;  // Equivalent to Range.All() i.e. missing upper and lower bound
+var fiveToEnd = 5..;   // Equivalent to Range.FromStart(5) i.e. missing upper bound
+var startToTen = ..11; // Equivalent to Range.ToEnd(11) i.e. missing lower bound
+var everything = ..;   // Equivalent to Range.All() i.e. missing upper and lower bound
 ```
 
 ## Requirements
@@ -137,7 +137,7 @@ For indexing using `Index` the compiler doesn't have to do much, thus the
 handling is done directly by the compiler, i.e. this code:
 
 ```C#
-T[] array = GetArray(;)
+T[] array = GetArray();
 Index index = GetIndex();
 T element = array[index];
 ```
@@ -145,7 +145,7 @@ T element = array[index];
 will be compiled down to the following code:
 
 ```C#
-T[] array = GetArray(;)
+T[] array = GetArray();
 Index index = GetIndex();
 int $index = index.FromEnd
                 ? array.Length - index.Value
@@ -157,7 +157,7 @@ For `Range` the code-gen would be a more a bit more involved, thus we propose
 to give the compiler a `RuntimeHelper` API to call, so this code:
 
 ```C#
-T[] array = GetArray(;)
+T[] array = GetArray();
 Range range = GetRange();
 T[] elements = array[range];
 ```
@@ -165,7 +165,7 @@ T[] elements = array[range];
 will be compiled down to:
 
 ```C#
-T[] array = GetArray(;)
+T[] array = GetArray();
 Range range = GetRange();
 T[] elements = RuntimeHelpers.GetArrayRange<T>(array, range);
 ```
@@ -184,12 +184,12 @@ namespace System.Runtime.CompilerServices
 
 ### Companion APIs
 
-To decide which indexers we offer we followed the following principles:
+To decide which indexers we offer, we followed the following principles:
 
 * Scalar indexers should return the element type
 * Range indexers should return the type they are on
 
-If developers whish to optimize for allocations they can convert the type to an
+If developers wish to optimize for allocations, they can convert the type to an
 instance of `Span<T>`, `ReadOnlySpan<T>`, `Memory<T>` or `ReadOnlyMemory<T>` by
 calling the appropriate API (e.g. `AsSpan()` or `AsMemory()`).
 
