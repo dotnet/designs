@@ -206,7 +206,7 @@ We will offer a configuration knobs for hosts that enable artificial roll-forwar
 
 The host exposes the following configuration knobs that you can use to control binding behavior:
 
-### DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX`
+### DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX
 
 This setting is described in [Roll Forward On No Candidate Fx](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md). It does not have the right behavior or UX. We will deprecate this setting for 3.0+.
 
