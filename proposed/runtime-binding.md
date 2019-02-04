@@ -1,14 +1,13 @@
 # Runtime Binding Behavior
 
-[Framework-dependent](https://docs.microsoft.com/en-us/dotnet/core/deploying/#framework-dependent-deployments-fdd)  applications require a .NET Core host to find a compatible runtime from a central location. The behavior of runtime binding is critical for both application compatibility and runtime deployment convenience.
+[Framework-dependent](https://docs.microsoft.com/dotnet/core/deploying/#framework-dependent-deployments-fdd)  applications require a .NET Core host to find a compatible runtime from a central location. The behavior of runtime binding is critical for both application compatibility and runtime deployment convenience. [Self-contained](https://docs.microsoft.com/dotnet/core/deploying/#self-contained-deployments-scd) apps don't have this need, because there is only one runtime they will ever use.
 
 This document proposes a model that works for both apps and managed COM components/hosting.
 
 Related content:
 
 * [Roll Forward On No Candidate Fx](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md) doc defines existing behavior. 
-* [Roll forward improvements for COM -- dotnet/core-setup #5062](https://github.com/dotnet/core-setup/issues/5062) specifies a proposal specific to COM. 
-* [--fx-version argument to dotnet exec should apply roll-forward policy -- dotnet/core-setup #4146](https://github.com/dotnet/core-setup/issues/4146) specifies a proposal to enable roll-forward for `--fx-version`
+* [Roll forward improvements for COM -- dotnet/core-setup #5062](https://github.com/dotnet/core-setup/issues/5062) specifies a proposal specific to COM.
 
 ## Parts of a version number
 
@@ -196,7 +195,7 @@ Assumption: Stable Visual Studio versions only install stable .NET Core versions
 
 ## COM Components
 
-COM-based and other hosted environments have the requirement of loading managed components built for multiple runtime versions, and this set is typically not known a priori . 
+COM-based and other hosted environments have the requirement of loading managed components built for multiple runtime versions, and this set is typically not known a priori.
 
 The application situation, described earlier in the doc, is largely oriented on missing runtime versions and how to handle that. The COM situation is oriented more on "best fit" for a set of components it may load. As a result, COM and other hosts need to artificially roll-forward to the latest acceptable runtime version to enable compatibility for arbitrary components.
 
@@ -206,21 +205,18 @@ We will offer a configuration knobs for hosts that enable artificial roll-forwar
 
 The host exposes the following configuration knobs that you can use to control binding behavior:
 
-### DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX
-
-This setting is described in [Roll Forward On No Candidate Fx](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md). It does not have the right behavior or UX. We will deprecate this setting for 3.0+.
-
 ### RollForward
 
 We will introduce a new knob, called `RollForward`, with the following values:
 
-* `patch` -- Roll forward to the highest patch verison. This disables minor version roll forward.
-* `minor` -- Roll forward to the lowest higher minor verison, if requested minor version is missing.
-* `major` -- Roll forward to lowest higher major version, and lowest minor version, if requested major version is missing
-* `UseLatestMinor` -- Roll forward to latest minor version, even if requested minor version is on machine. Intended for COM hosting scenario.
-* `UseLatestMajor` -- Roll forward to latest major and highest minor version, even if requested major is on machine. Intended for COM hosting scenario.
+* `None` -- Do not roll forward. Only bind to specified version.
+* `Patch` -- Roll forward to the highest patch verison. This disables minor version roll forward.
+* `Minor` -- Roll forward to the lowest higher minor verison, if requested minor version is missing. If the requested minor version is present, then the `Patch` policy is used.
+* `Major` -- Roll forward to lowest higher major version, and lowest minor version, if requested major version is missing. If the requested major version is present, then the `Minor` and `Patch` policies are used, as appropriate.
+* `AlwaysLatestMinor` -- Roll forward to latest minor version, even if requested minor version is present. Intended for COM hosting scenario.
+* `AlwaysLatestMajor` -- Roll forward to latest major and highest minor version, even if requested major is present. Intended for COM hosting scenario.
 
-There is no default setting. See **Configuration Precedence** for more information.
+`Minor` is the default setting. See **Configuration Precedence** for more information.
 
 Can be specified via the following ways:
 
@@ -229,37 +225,80 @@ Can be specified via the following ways:
 * Environment variable: `DOTNET_ROLL_FORWARD`
 * Command line argument: `--roll-forward`
 
+### DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX
+
+This setting is described in [Roll Forward On No Candidate Fx](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md). It does not have the right behavior or UX. We will deprecate this setting for 3.0.
+
+The following policy will be used in 3.0:
+
+* If `ROLL_FORWARD_ON_NO_CANDIDATE_FX` is set, it will be honored.
+* If `ROLL_FORWARD` is set, it will be honored.
+* If both settings are set, it is an error.
+* If neither settings are set, then the existing default behavior is used, as described in the **Patch Version Selection** and **Patch Version Selection** sections above.
+
+Note: The ENV syntax is used above, but the same rules apply for any way that the two settings are set.
+
 ### fx-version
 
-You can specify the exact desired runtime version using the command line argument '--fx-version'. In this case, only the specified version will be accepted, even if patch roll forward is enabled. The expected behavior would be the same in the example above.
+You can specify the exact desired runtime version using the command line argument '--fx-version'.
 
-The following example shows how to use this knob:
-
-```console
-C:\testapps\twotwoapp>dotnet --fx-version 3.0.0 bin\Debug\netcoreapp2.2\twotwoapp.dll
-```
-
-The example above will attempt to load the 3.0.0 runtime version. If it isn't found, the host will print an error message.
-
-Another example:
+The following example shows the existing behavior of this knob:
 
 ```console
-C:\testapps\threezeroapp>bin\Debug\netcoreapp3.0\threezero.exe --fx-version 3.0.0 --roll-forward patch
+C:\testapps\twooneapp>type Program.cs
+using System;
+
+namespace twooneapp
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine("Hello World!");
+            Console.WriteLine(typeof(Object).Assembly.Location);
+        }
+    }
+}
+C:\testapps\twooneapp>
+C:\testapps\twooneapp>dotnet bin\Debug\netcoreapp2.1\twooneapp.dll
+Hello World!
+C:\Program Files\dotnet\shared\Microsoft.NETCore.App\2.1.7\System.Private.CoreLib.dll
+
+C:\testapps\twooneapp>dotnet --fx-version 2.1.0 bin\Debug\netcoreapp2.1\twooneapp.dll
+Hello World!
+C:\Program Files\dotnet\shared\Microsoft.NETCore.App\2.1.0\System.Private.CoreLib.dll
 ```
 
-The example above will attempt to load the highest `3.0` patch version, which may be `3.0.0` or `3.0.27`, for example, whichever is the highest path version on the machine.
+The `--fx-version` argument can be composed with the new `RollForward` settings, either via CLI or ENV. By default, `--fx-version` does not roll-forward.
+
+The following example enables a .NET Core 2.1 application to run on .NET Core 2.2 without having to select the correct 2.2 patch version. In this case `--fx-version` specifies the floor version. In this scenario, 2.2.0 is not on the machine, but a later patch version is.
+
+```console
+C:\testapps\twooneapp>dotnet --fx-version 2.2.0 bin\Debug\netcoreapp2.1\twooneapp.dll
+It was not possible to find any compatible framework version
+The specified framework 'Microsoft.NETCore.App', version '2.2.0' was not found.
+C:\testapps\twooneapp>dotnet --fx-version 2.2.0 --roll-forward Patch bin\Debug\netcoreapp2.1\twooneapp.dll
+Hello World!
+C:\Program Files\dotnet\shared\Microsoft.NETCore.App\2.2.3\System.Private.CoreLib.dll
+```
 
 ### Configuration Precedence
 
-The host will consult these settings in order (later scopes take precendence over earlier ones):
+The host will consult the various ways of setting `RollForward`, in order (later scopes take precendence over earlier ones):
 
-* `.runtimeconfig.json` properties (AKA "json")
-* CLI arguments
-* Environment variables (AKA "ENV")
+1. `.runtimeconfig.json` properties (AKA "json")
+2. CLI arguments
+3. Environment variables (AKA "ENV")
+
+Note: The project file property is not listed because the project file is a build-time not runtime artifact. Runtime-oriented values in project files need to be written to `.runtimeconfig.json` as part of the build in order to influence runtime behavior.
 
 The `version` and `roll-forward` settings compose in the following way:
 
-* If set at the same scope (json, CLI or ENV), then `version` establishes a floor for any roll-forward behavior.
-* The `roll-forward` value does not affect higher precedent scopes. For example, a `version` setting specified at the CLI scope overwrites both a `version` and `roll-forward` setting that might exist at the json scope. Same thing with ENV configuation w/rt CLI arugments and json.
+* A `version` setting at higher precedent scopes overwrites both the `version` and `roll-forward` values at lower scopes. For example, `version` specified at the CLI scope (with `--fx-version`) overwrites both a `version` and `roll-forward` setting that might exist at the json scope.
 * A `version` setting can flow to higher scopes if it is not replaced by another `version` value. This enables a `roll-forward` setting at a higher scope to compose with a `version` setting at a lower scope.
-* The default `roll-forward` for json scope is `minor`. There is no default roll-forward value for CLI and ENV scopes.
+* The absense of a `version` value is an error when the `roll-forward` value of `Patch`, `Minor`, `Major` or `AlwaysLatestMinor` is set since the initial version state is not available. It is not an error when the `roll-forward` value of `AlwaysLatestMajor` is set since an initial version state is not meaningful.
+
+More generally:
+
+* The `version` value establishes a floor for roll-forward behavior, except `AlwaysLatestMajor`.
+* The default `roll-forward` setting is `Minor` except when `--fx-version` is specified when it is `None`.
