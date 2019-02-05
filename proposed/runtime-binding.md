@@ -222,18 +222,20 @@ MSBuild project settings are only consulted at build-time and are then written a
 
 ### RollForward
 
-`RollForward` specifies the roll-forward policy for an application, either as a fallback in case a specific version 
+`RollForward` specifies the roll-forward policy for an application, either as a fallback to accomodate missing a specific runtime version or as a directive to use a later version.
 
 `RollForward` can have the following values:
 
 * `LatestPatch` -- Roll forward to the highest patch verison. This disables minor version roll forward.
 * `Minor` -- Roll forward to the lowest higher minor verison, if requested minor version is missing. If the requested minor version is present, then the `LatestPatch` policy is used.
 * `Major` -- Roll forward to lowest higher major version, and lowest minor version, if requested major version is missing. If the requested major version is present, then the `Minor` policy is used.
-* `LatestMinor` -- Roll forward to latest minor version, even if requested minor version is present. Intended for COM hosting scenario.
-* `LatestMajor` -- Roll forward to latest major and highest minor version, even if requested major is present. Intended for COM hosting scenario.
+* `LatestMinor` -- Roll forward to latest minor version, even if requested minor version is present.
+* `LatestMajor` -- Roll forward to latest major and highest minor version, even if requested major is present.
 * `Disable` -- Do not roll forward. Only bind to specified version. This policy is not recommended for general use since it disable the ability to roll-forward to the latest patches. It is only recommended for testing.
 
 `Minor` is the default setting. See **Configuration Precedence** for more information.
+
+Note: `LatestMinor` and `LatestMajor` are intended for component hosting scenarios, for both managed and native hosts (for example, managed COM components).
 
 `RollForward` can be set in the following ways:
 
