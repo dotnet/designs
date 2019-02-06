@@ -261,7 +261,7 @@ Note: The ENV syntax is used above, but the same rules apply for any way that th
 
 ### Configuration Precedence
 
-The host will consult the various ways of setting `RollForward`, in order (later scopes take precendence over earlier ones):
+The host will consult the various ways of setting `RollForward`, in order (later scopes take precedence over earlier ones):
 
 1. `.runtimeconfig.json` properties (AKA "json")
 2. Environment variables (AKA "ENV")
