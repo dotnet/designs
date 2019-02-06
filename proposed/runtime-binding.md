@@ -195,6 +195,52 @@ As of 3.0 Preview 2, previews have special binding behavior. In this proposal, p
 
 Assumption: Stable Visual Studio versions only install stable .NET Core versions.
 
+## Handling Frameworks
+
+In .NET Core 3.0, components like ASP.NET Core, WPF and Windows Forms are modeled as *frameworks*. Frameworks follow the same binding rules as the runtime. The runtime is modeled as the lowest-level framework in the system.
+
+The following example, the application depends on the `Microsoft.NETCore.App` framework, version `3.0.0-preview-27324-5`. This framework is defined within the .NET Core installation and expresses a dependency on `Microsoft.NETCore.App`, version `3.0.0-preview-27324-5`. The host binds the frameworks according to these declarations.
+
+```console
+C:\testapps\threewebapp>type threewebapp.csproj
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.0.0-preview-19075-0444" />
+  </ItemGroup>
+
+</Project>
+
+C:\testapps\threewebapp>type bin\Debug\netcoreapp3.0\threewebapp.runtimeconfig.json
+{
+  "runtimeOptions": {
+    "tfm": "netcoreapp3.0",
+    "framework": {
+      "name": "Microsoft.AspNetCore.App",
+      "version": "3.0.0-preview-19075-0444"
+    },
+    "configProperties": {
+      "System.GC.Server": true
+    }
+  }
+}
+C:\testapps\threewebapp>type C:\Program Files\dotnet\shared\Microsoft.AspNetCore.App\3.0.0-preview-19075-0444\Microsoft.AspNetCore.App.runtimeconfig.json
+{
+  "runtimeOptions": {
+    "tfm": "netcoreapp3.0",
+    "framework": {
+      "name": "Microsoft.NETCore.App",
+      "version": "3.0.0-preview-27324-5"
+    }
+  }
+}
+```
+
 ## COM Components
 
 COM-based and other hosted environments have the requirement of loading managed components built for multiple runtime versions, and this set is typically not known a priori.
