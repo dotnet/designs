@@ -278,9 +278,13 @@ More generally:
 * The `version` value establishes a floor for roll-forward behavior, except `LatestMajor`.
 * The default `roll-forward` setting is `Minor` except when `--fx-version` is specified when it is `Disabled`.
 
-### Using `version` and `roll-forward` in practice
+## Diagnostics
 
-The following examples demonstrate various (non-exhaustive) ways that `version` and `roll-forward` can be used.
+Runtime binding behavior and failures can be hard to diagnose. We will add events (maybe the same as runtime events, maybe different) that can be used to collect information about runtime binding behavior. This part of the plan needs to be better defined.
+
+## Runtime Binding in Practice
+
+The following examples demonstrate various (non-exhaustive) ways that runtime binding behaves in practice, using `version` and `roll-forward` settings.
 
 Installed versions:
 
