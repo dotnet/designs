@@ -23,7 +23,7 @@ To date, there have effectively been two different approaches to framework refer
 * Provide both reference assemblies and implementation as standard nuget assets
 * Downloaded via nuget restore if not already in fallback folder/cache
 
-And each have had strengths and wekaness:
+And each have had strengths and weaknesses:
 
 **Traditional targeting pack strengths**
 * Fast build performance
@@ -192,10 +192,10 @@ A FrameworkReference can be added to a project in the following ways.
 
   1. Implicit `<FrameworkReference Include="...">` in MSBuild SDK.
   2. Transitively through project references
-  3. Transtively through package references
+  3. Transitively through package references
   3. Explicit `<FrameworkReference Include="..." />` in user project file
 
-The implicit framework references brokwn down by MSBuild SDK for netcore3.0 are as follows:
+The implicit framework references broken down by MSBuild SDK for netcoreapp3.0 are as follows:
 
  1. Microsoft.NET.Sdk 
     * "Microsoft.NETCore.App"
