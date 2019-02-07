@@ -78,4 +78,4 @@ The cleanup of extracted files in the install-location will be manual in this ve
 
 The above implementation options suit different customer scenarios. So, instead of picking an extraction policy, we can implement both strategies, and let app-developers choose a strategy as part of the app's configuration.
 
-For .Net Core, we propose that we start with the simple implementation that extracts necessary files to temporary locations on every run at startup. Based on customer feedback, we can implement other options discussed above.
+For .Net Core 3.0, we propose that we start with the simple implementation that extracts necessary files to temporary locations on every run at startup. Based on customer feedback, we can implement other options discussed above.

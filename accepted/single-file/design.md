@@ -266,6 +266,7 @@ To summarize, here's the overall experience for creating a HelloWorld single-fil
 
   * The bundled app and configuration files are processed directly from the bundle.
   * Remaining 216 files will be extracted to disk at startup. 
+  * If reuse of extracted files is enabled, subsequent runs of the app may skip the extraction step.
 
 
 Most applications are expected to work without any changes. However, apps with a strong expectation about absolute location of dependent files may need to be made aware of bundling and extraction aspects of single-file publishing. No difference is expected with respect to debugging and analysis of apps.
