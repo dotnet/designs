@@ -152,7 +152,7 @@ During the prerelease phase of a new major.minor version of the runtime, the tar
 For example, 
 
 * .NET Core SDK 3.0.100-preview with 3.0.0-preview runtime
-    * packs/Microsoft.NETCore.App/3.0.0-preview
+    * packs/Microsoft.NETCore.App.Ref/3.0.0-preview
     * shared/Microsoft.NETCore.App/3.0.0-preview
 
 * .NET Core SDK 3.0.100 with 3.0.0 runtime
