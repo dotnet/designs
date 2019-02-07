@@ -41,7 +41,8 @@ And each have had strengths and weaknesses:
 * Cross-platform/cross-IDE acquisition
 * Non-admin acquisition
 * Seamless acquisition: just clone, restore, and build
-* Allow for (cross-targeted) self-contained deployment
+   * Users can target a minimum patch version of a .NET Core shared framework
+
 
 **Framework Nuget package weaknesses**
 * Slow build (restore) performance
