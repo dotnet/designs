@@ -105,7 +105,8 @@ Publishing to a single file can be triggered by adding the following property to
 ```
 
 * The `PublishSingleFile` property applies to both framework dependent and self-contained publish operations.
-* Setting the `PublishSingleFile`property causes the managed app, dependencies, configurations, etc. (basically the contents of the publish directory when `dotnet publish` is run without setting the property) to be embedded within the native `apphost`. The publish directory will only contain the single bundled executable (and the symbol file).
+* The `PublishSingleFile` property applies to platform-specific builds with respect to a given runtime-identifier. The output of the build is a native binary for the specified platform.
+* Setting the `PublishSingleFile`property causes the managed app, managed dependencies, platform-specific native dependencies, configurations, etc. (basically the contents of the publish directory when `dotnet publish` is run without setting the property) to be embedded within the native `apphost`. The publish directory will only contain the single bundled executable (and the PDB file).
 
 Optionally, we can add the following switch to the CLI, as a shortcut to setting the `PublishSingleFile` property.
 
@@ -239,7 +240,7 @@ To summarize, here's the overall experience for creating a HelloWorld single-fil
 
 * Normal publish: `dotnet publish` 
 
-  * Publish directory contains the host `HelloWorld.exe` ,  the app `HelloWorld.dll`, configuration files `HelloWorld.deps.json`, `HelloWorld.runtimeconfig.json`, and the symbol-file `HelloWorld.pdb`.
+  * Publish directory contains the host `HelloWorld.exe` ,  the app `HelloWorld.dll`, configuration files `HelloWorld.deps.json`, `HelloWorld.runtimeconfig.json`, and the PDB-file `HelloWorld.pdb`.
 
 * Single-file publish: `dotnet publish /p:PublishSingleFile=true`
 
@@ -255,7 +256,7 @@ To summarize, here's the overall experience for creating a HelloWorld single-fil
 
 - Normal publish: `dotnet publish -r win10-x64 --self-contained`
 
-  * Publish directory contains 221 files including the host, the app, configuration files, the symbol-file and the runtime.
+  * Publish directory contains 221 files including the host, the app, configuration files, the PDB-file and the runtime.
 
 - Single-file publish: `dotnet publish -r win10-x64 --self-contained /p:PublishSingleFile=true`
 
