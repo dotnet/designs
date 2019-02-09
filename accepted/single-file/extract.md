@@ -48,18 +48,36 @@ The requirements for persistent extraction are:
 * Uninstall: Users can identify and delete extracted files when the app is no longer needed.
 * Access control: Processes running with elevated access can extract to admin-only-writable locations.
 
-At first startup, the host takes a disk lock (in order to handle concurrent launches), extracts files to an *install-location*, verifies them, and writes and *end-marker* before releasing the lock. If the host fails to extract all the resources at startup, it will attempt to clean up all contents of the install-location before termination. 
+At first startup, the host 
+
+* Takes a disk lock (in order to handle concurrent launches).
+* Extracts appropriate files to an *install-location* on disk, and verifies them.
+* If all files are extracted successfully, host writes an *end-marker*. The end-marker will include name and version information for the app's main assembly in plain text, in order to help users in associating install-locations with app versions.
+* If there are failures, host attempts to clean up all contents of the *install-location*
+* Releases the disk lock. 
 
 Subsequent runs reuse the extracted files after confirming their successful extraction. However, if the contents of install-location are corrupted post-extraction, they will need to be explicitly cleaned.
 
+#### Install Location
+
 By default, the host extracts dependencies to `BASE_PATH/APP_NAME/ID/PERM/`
 
-- `BASE_PATH` is  `%HOMEPATH%\.dotnet\AppDependencies ` /  `$HOME/.dotnet/AppDependencies`
+- `BASE_PATH` is  `%HOMEPATH%\.dotnet\Apps ` /  `$HOME/.dotnet/Apps`
 - `APP_NAME` is simple the name of the app (the host executable containing embedded data).
 - `ID` is a hash-code based on the host binary to distinguish app version and architecture specifications.
 - `PERM` is `user` for normal runs, and `admin` for elevated runs with appropriate write-permissions.
 
-A different extraction location may be specified via a `runtimeconfig` option.
+A different extraction location may be specified via the runtime configuration settings:
+
+```json
+{
+    "runtimeoptions": {
+        "bundledFileExtractionLocation": "<path>"
+    }
+}
+```
+
+#### Cleanup
 
 The cleanup of extracted files in the install-location will be manual in this version. We can consider adding `dotnet CLI` commands for cleanup in future. However, future versions are expected to spill fewer artifacts to disk, making the cleanup commands a lower priority feature.
 
