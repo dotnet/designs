@@ -166,26 +166,23 @@ Where
 the TPA with single-exe publish will be (assuming `?` is the bundle marker):
 `?/il.dll`; `/tmp/.net/e53xf3/r2r.dll`; `/usr/local/nuget/dep.dll`
 
-## Testing
+### New API
 
-* Unit Tests to achieve good coverage on apps using managed, ready-to-run, native code 
-* Tests to verify that framework-dependent and self-contained apps can be published as single file.
-* Tests for ensure that every app model template supported by .NET Core (console, wpf, winforms, web, etc.) can be published as a single file.
-* A subset of CoreCLR Tests
-* End-to-End testing on real world apps such as Roslyn, MusicStore
-* *Measurements*: Publish size and run-time (first run, subsequent runs) for HelloWorld, Roslyn and MusicStore.
+We propose adding the following API to the .net core framework to facilitate operation of apps published as single-files 
 
-## Further Work
+#### Single-file? 
 
-#### Bundler Optimizations
+Check whether an app is running from a single-file bundle:
 
-Since all the files of an app published as a single-file live together, we can perform the following optimizations
-
-- R2R compile the app and all of its dependent assemblies in a single version-bubble
-
-  Single-file apps compiled cross-platform may have this optimization disabled until the ready-to-run compiler  (`crossgen`) supports cross-compilation. 
-
-- Investigate whether collectively signing the files in an assembly saves space for certificates.
+```cs
+namespace System.Runtime.Loader
+{
+    public partial class Bundle
+    {
+        public static bool IsBundle(Assembly assembly);
+    }
+}
+```
 
 #### APIs to access Bundled files
 
@@ -209,6 +206,29 @@ namespace System.Runtime.Loader
 ```
 
 We can also provide an abstraction that abstracts away the physical location of a file (bundle or disk). For example, add a variant of  `GetFileStream` API that looks for a file in the bundle, and if not found, falls back to disk-lookup.
+
+## Testing
+
+* Unit Tests to achieve good coverage on apps using managed, ready-to-run, native code 
+* Tests for the newly added API 
+* Tests to verify that framework-dependent and self-contained apps can be published as single file.
+* Tests for ensure that every app model template supported by .NET Core (console, wpf, winforms, web, etc.) can be published as a single file.
+* A subset of CoreCLR Tests
+* Tests to ensure that MSIL files with embedded PDBs are handled correctly
+* End-to-End testing on real world apps such as Roslyn, MusicStore
+* *Measurements*: Publish size and run-time (first run, subsequent runs) for HelloWorld, Roslyn and MusicStore.
+
+## Further Work
+
+#### Bundler Optimizations
+
+Since all the files of an app published as a single-file live together, we can perform the following optimizations
+
+- R2R compile the app and all of its dependent assemblies in a single version-bubble
+
+  Single-file apps compiled cross-platform may have this optimization disabled until the ready-to-run compiler  (`crossgen`) supports cross-compilation. 
+
+- Investigate whether collectively signing the files in an assembly saves space for certificates.
 
 #### Single-file Plugins
 
