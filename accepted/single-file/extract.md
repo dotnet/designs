@@ -29,7 +29,7 @@ The proposed extraction path is `%TEMP\.net\<random-code>` / `$TMPDIR/.net/<rand
 
 * Simpler implementation: fewer complexities with respect to app-updates and concurrency.
 * User need not worry about explicit cleanup.
-* Some customers don't prefer a click-and-run model, rather than an app-install model. This option better suits them.
+* Suits customers who prefer click-and-run model for their apps, rather than app-install model. 
 
 #### Cons
 
