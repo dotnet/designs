@@ -168,7 +168,8 @@ the TPA with single-exe publish will be (assuming `?` is the bundle marker):
 
 ### New API
 
-We propose adding the following API to the .net core framework to facilitate operation of apps published as single-files 
+In this section, we propose adding a few APIs to facilitate common operations on bundled-apps.
+This is only a draft of the proposed APIs. The actual shape of the APIs will be decided via API review process.
 
 #### Single-file? 
 
@@ -192,7 +193,7 @@ The binaries that are published in the project are expected to be handled transp
 - Open an assembly for reflection/inspection
 - Load plugins built as single-file class-libs using existing Loader APIs.
 
-In facilitate this usage, we can add an API similar to [GetManifestResourceStream](https://docs.microsoft.com/en-us/dotnet/api/system.reflection.assembly.getmanifestresourcestream?view=netframework-4.7.2#System_Reflection_Assembly_GetManifestResourceStream_System_String_) to obtain a stream corresponding to an embedded file. 
+Therefore, we propose adding an API similar to [GetManifestResourceStream](https://docs.microsoft.com/en-us/dotnet/api/system.reflection.assembly.getmanifestresourcestream?view=netframework-4.7.2#System_Reflection_Assembly_GetManifestResourceStream_System_String_) to obtain a stream corresponding to an embedded file. 
 
 ```C#
 // Open a file embedded in the bundle built for the specified assembly 
@@ -205,7 +206,27 @@ namespace System.Runtime.Loader
 }
 ```
 
-We can also provide an abstraction that abstracts away the physical location of a file (bundle or disk). For example, add a variant of  `GetFileStream` API that looks for a file in the bundle, and if not found, falls back to disk-lookup.
+We can also provide an abstraction that abstracts away the physical location of a file (bundle or disk). For example, add a variant of  `GetFileStream` API that looks for a file in the bundle, and if not found, falls back to disk-lookup. However such abstractions are also easy to build outside of the .Net Framework.
+
+### Existing API
+
+We need to determine the semantics of current APIs such as `Assembly.Location` that return the information about an assembly's location on disk. For example, `Assembly.Location`  for a bundled assembly could return:
+
+* A fixed literal (ex: `null`) indicating that no actual location is available.
+* The simple name of the assembly (with no path).
+* A special UNC notation such as `//?/asm.dll` to denote files that come from the bundle. If multiple single-file bundles are used in an app (ex: plugins), this notation could be extended as `//?bundle-assembly/name.dll` -- if it is important to make a distinction with respect to which bundle an assembly came from.
+* The path of the assembly as if it were not to be packaged into the single-file.
+* In the case of files spilled to disk (ex: ready-to-run assemblies) -- the actual location of the extracted file.
+* A configurable selection of the above, etc.
+
+Most of the app development can be agnostic to whether the app is published as single-file or not. However, the parts of the app that deal with physical locations of files need to be aware of the single-file packaging. 
+
+In the first implementation, we propose keeping the default behavior of `Assembly.Location`. That is, 
+
+* If the assembly is loaded directly from the bundle, return empty-string
+* If the assembly is extracted to disk, return the location of the extracted file.
+
+The semantics of assembly location should be tuned further based on user feedback, and such that it aligns with other bundling technologies in .Net Core ecosystem.
 
 ## Testing
 
