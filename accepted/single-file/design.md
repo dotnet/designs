@@ -108,10 +108,28 @@ Publishing to a single file can be triggered by adding the following property to
 * The `PublishSingleFile` property applies to platform-specific builds with respect to a given runtime-identifier. The output of the build is a native binary for the specified platform.
 * Setting the `PublishSingleFile`property causes the managed app, managed dependencies, platform-specific native dependencies, configurations, etc. (basically the contents of the publish directory when `dotnet publish` is run without setting the property) to be embedded within the native `apphost`. The publish directory will only contain the single bundled executable (and the PDB file).
 
-Optionally, we can add the following switch to the CLI, as a shortcut to setting the `PublishSingleFile` property.
+Optionally, we can add a switch to the CLI, as a shortcut to setting the `PublishSingleFile` property.
 
 ```bash
+# Alias for dotnet publish /p:PublishSingleFile=true
 dotnet publish --single-file
+```
+
+By default, `PublishSingleFile` bundles all files in the publish directory into the single executable. This behavior can be altered by using the following content meta-data:
+
+```xml
+<IncludeInSingleFilePublish>{Always, PreserveNewest, Never}</IncludeInSingleFilePublish>
+```
+
+For example, to place some files in the publish directory but not bundle them in the single-file:
+
+```xml
+<ItemGroup>
+    <Content Update="*.xml">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <IncludeInSingleFilePublish>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
 ```
 
 #### Interaction with other tools
@@ -164,6 +182,9 @@ the TPA with single-exe publish will be (assuming `?` is the bundle marker):
 Since all the files of an app published as a single-file live together, we can perform the following optimizations
 
 - R2R compile the app and all of its dependent assemblies in a single version-bubble
+
+  Single-file apps compiled cross-platform may have this optimization disabled until the ready-to-run compiler  (`crossgen`) supports cross-compilation. 
+
 - Investigate whether collectively signing the files in an assembly saves space for certificates.
 
 #### APIs to access Bundled files
@@ -198,33 +219,7 @@ The above design should be extended to seamlessly support single-file publish fo
   - Implement plugins using existing infrastructure. For example: Take control of assembly/native binary loads via existing `AssemblyLoadContext` callbacks and events. Extract the files embedded within the single-file plugin using the `GetFileStream()` API and load them on demand.
   - Have new API to load a single-file plugin, for example: `AssemblyLoadContext.LoadWithEmbeddedDependencies()`.
 
-#### Project File Options
 
-By default, `PublishSingleFile` bundles all files in the publish directory into the single executable. This behavior can be altered via the following configurations in the application's project file.
-
-* Exclude certain files in the publish directory from being bundled (ex: because of licensing issues or for testing purposes).
-
-```xml
-<ItemGroup>
-    <SingleFileExclude Include="List of patterns to exclude"/>
-</ItemGroup>
-```
-
-- Add additional files to the bundle from other locations (ex: add data files to the app). The developer will be responsible for handling these additional files.
-
-```xml
-<ItemGroup>
-    <SingleFileAdd Include="List of file paths"/>
-</ItemGroup>
-```
-
-An app may choose to have all of its dependencies extracted to disk at runtime (instead of loading certain files directly from the bundle) by setting the following property.
-
-```xml
-<PropertyGroup>
-    <SingleFileExtractAll>true</SingleFileExtractAll>
-</PropertyGroup>
-```
 
 #### VS Integration
 

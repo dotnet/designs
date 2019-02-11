@@ -92,8 +92,24 @@ The cleanup of extracted files in the install-location will be manual in this ve
 - Unsuitable for customer scenarios that cannot tolerate persistent disk state after the app terminates.
 - Cleanup is manual.
 
-## Proposed Solution
+## Extraction Configurations
 
 The above implementation options suit different customer scenarios. So, instead of picking an extraction policy, we can implement both strategies, and let app-developers choose a strategy as part of the app's configuration.
+
+```xml
+<PropertyGroup>
+    <ExtractionStrategy>Temp-startup / Temp-Lazy / Persistent</SingleFileExtractAll>
+</PropertyGroup>
+```
+
+An app may choose to have all of its dependencies extracted to disk at runtime (instead of loading certain files directly from the bundle) by setting the following property.
+
+```xml
+<PropertyGroup>
+    <SingleFileExtractAll>true</SingleFileExtractAll>
+</PropertyGroup>
+```
+
+## Proposed Solution
 
 For .Net Core 3.0, we propose that we start with the simple implementation that extracts necessary files to temporary locations on every run at startup. Based on customer feedback, we can implement other options discussed above.

@@ -27,7 +27,7 @@ This stage implements:
 
 The mechanism will support:
 
-* Reuse: Extract on first-run, reuse on subsequent runs.
+* Reuse: Extract on first-run, reuse on subsequent runs (if apps choose to do so).
 * Upgrade: Each version of the app extracts to a unique location, supporting side-by-side use of multiple versions.
 * Uninstall: Users can identify and delete extracted files when the app is no longer needed.
 * Access control: Processes running with elevated access can extract to admin-only-writable locations.
