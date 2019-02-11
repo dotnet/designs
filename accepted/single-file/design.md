@@ -118,7 +118,7 @@ dotnet publish --single-file
 By default, `PublishSingleFile` bundles all files in the publish directory into the single executable. This behavior can be altered by using the following content meta-data:
 
 ```xml
-<IncludeInSingleFilePublish>{Always, PreserveNewest, Never}</IncludeInSingleFilePublish>
+<IncludeInSingleFile>{Always, PreserveNewest, Never}</IncludeInSingleFile>
 ```
 
 For example, to place some files in the publish directory but not bundle them in the single-file:
@@ -127,7 +127,7 @@ For example, to place some files in the publish directory but not bundle them in
 <ItemGroup>
     <Content Update="*.xml">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <IncludeInSingleFilePublish>PreserveNewest</CopyToPublishDirectory>
+      <IncludeInSingleFile>PreserveNewest</IncludeInSingleFile>
     </Content>
   </ItemGroup>
 ```
