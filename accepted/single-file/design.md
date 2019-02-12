@@ -78,7 +78,7 @@ To any host (native binary) specified, the bundler tool will add:
 
 ##### Implementation
 
-The bundler should ideally be located close to the dotnet host, since their implementation is closely related. Therefore, the bundler will be implemented in the `core-setup` repo. The `corehost` code is expected to move to the CoreCLR repo, at which point, the bundler should move with it. The bundler will be implemented in managed code.
+The bundler should ideally be located close to the core-host, since their implementation is closely related. Therefore, the bundler will be implemented in the `core-setup` repo. The bundler will be implemented in managed code.
 
 ##### Command Line Interface
 
@@ -237,7 +237,18 @@ The semantics of assembly location should be tuned further based on user feedbac
 * A subset of CoreCLR Tests
 * Tests to ensure that MSIL files with embedded PDBs are handled correctly
 * End-to-End testing on real world apps such as Roslyn, MusicStore
-* *Measurements*: Publish size and run-time (first run, subsequent runs) for HelloWorld, Roslyn and MusicStore.
+
+#### Measurements
+
+Measure publish size and run-time (first run, subsequent runs) for HelloWorld (framework-dependent and self-contained), Roslyn and MusicStore.
+
+#### Telemetry
+
+Collect telemetry for single-file published apps with respect to parameters such as:
+
+* Framework-dependent vs self-contained apps.
+* Whether the apps are Pure managed apps, ready-to run compiled apps, or have native dependencies.
+* Embedding of additional/data files, and use of file access API.
 
 ## Further Work
 
@@ -259,8 +270,6 @@ The above design should be extended to seamlessly support single-file publish fo
 - For host/runtime support, the options are:
   - Implement plugins using existing infrastructure. For example: Take control of assembly/native binary loads via existing `AssemblyLoadContext` callbacks and events. Extract the files embedded within the single-file plugin using the `GetFileStream()` API and load them on demand.
   - Have new API to load a single-file plugin, for example: `AssemblyLoadContext.LoadWithEmbeddedDependencies()`.
-
-
 
 #### VS Integration
 
