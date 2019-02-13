@@ -310,5 +310,6 @@ Most applications are expected to work without any changes. However, apps with a
 * [Mono/MkBundle](https://github.com/mono/mono/blob/master/mcs/tools/mkbundle) 
 * [Fody.Costura](https://github.com/Fody/Costura)
 * [Warp](https://github.com/dgiagio/warp)
+* [dotnet-warp](https://github.com/Hubert-Rybak/dotnet-warp)
 * [BoxedApp](https://docs.boxedapp.com/index.html)
 
