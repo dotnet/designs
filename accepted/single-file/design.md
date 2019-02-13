@@ -78,21 +78,9 @@ To any host (native binary) specified, the bundler tool will add:
 
 ##### Implementation
 
-The bundler should ideally be located close to the core-host, since their implementation is closely related. Therefore, the bundler will be implemented in the `core-setup` repo. The bundler will be implemented in managed code.
+The bundler should ideally be located close to the core-host, since their implementation is closely related. Therefore, the bundler will be implemented in the `core-setup` repo. 
 
-##### Command Line Interface
-
-The bundler will be a standalone tool with the following command line:
-
-```bash
-bundle -a <App>      The name of the managed app
-       -h <Host>     The path to the native host
-       -c <contents> The path to a directory containing the files to bundle
-       [-o <output>] The path to output bundle
-       [-v]          Generate verbose output
-```
-
-Most users are only expected to interact with the bundler via the build system.
+The bundler will be implemented in managed code as a standalone tool. Application developers are expected to interact with the bundler only through the build system. The `dotnet` SDK will implement msbuild-tasks that use this tool to publish single-file apps.  
 
 ##### Build System Interface
 
