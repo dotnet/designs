@@ -308,7 +308,7 @@ The following policy will be used in 3.0:
 Note: The ENV syntax is used above, but the same rules apply for any way that the two settings are set.
 
 ### Apply patches
-This setting is described in [Roll Forward On No Candidate Fx](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md). It's interaction with the other settings is confusing. We will deprecate this setting for 3.0.
+This setting is described in [Roll Forward On No Candidate Fx](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md). Its interaction with the other settings is confusing. We will deprecate this setting for 3.0.
 
 The following policy will be used in 3.0:
 * If `applyPatches` is set, it will be honored if the effective value of `RollForward` is on of `LatestPatch`, `Minor` and `Major`. In these cases setting `applyPatches` to `false` disables the automatic roll forward to latest patch version. If `RollForward` has any other value, the `applyPatches` is ignored.
@@ -333,7 +333,7 @@ The `version` and `roll-forward` settings compose in the following way:
 
 More generally:
 
-* The `version` value establishes a floor for roll-forward behavior. The roll-forward process will never select version lower than the effective value of the `version`.
+* The `version` value establishes a floor for roll-forward behavior. The roll-forward process will never select a version lower than the effective value of the `version`.
 * The default `roll-forward` setting is `Minor` except when `--fx-version` is specified when it is `Disabled`.
 
 ## Diagnostics
