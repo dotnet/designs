@@ -311,8 +311,8 @@ Note: The ENV syntax is used above, but the same rules apply for any way that th
 This setting is described in [Roll Forward On No Candidate Fx](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md). Its interaction with the other settings is confusing. We will deprecate this setting for 3.0.
 
 The following policy will be used in 3.0:
-* If `applyPatches` is set, it will be honored if the effective value of `RollForward` is on of `LatestPatch`, `Minor` and `Major`. In these cases setting `applyPatches` to `false` disables the automatic roll forward to latest patch version. If `RollForward` has any other value, the `applyPatches` is ignored.
-* If both settings are set in the same scope, it is an error.
+* If `applyPatches` is set, it will be honored if the effective value of `RollForward` is one of `LatestPatch`, `Minor` and `Major`. In these cases setting `applyPatches` to `false` disables the automatic roll forward to latest patch version. If `RollForward` has any other value, the `applyPatches` is ignored.
+* If both settings are specified in the same scope, that is if `applyPatches` and `rollForward` are specified together in one `.runtimeconfig.json` file (anywhere in the file), it is an error.
 * If neither settings are set, then the existing default behavior is used, as described in the **Patch Version Selection** and **Minor Version Selection** sections above. The default behavior is the same as setting `Minor`.
 
 Note: `applyPatches` can only be set in the runtime configuration file.
