@@ -270,18 +270,20 @@ MSBuild project settings are only consulted at build-time and are then written a
 
 ### RollForward
 
-`RollForward` specifies the roll-forward policy for an application, either as a fallback to accomodate missing a specific runtime version or as a directive to use a later version.
+`RollForward` specifies the roll-forward policy for an application, either as a fallback to accommodate missing a specific runtime version or as a directive to use a later version.
 
 `RollForward` can have the following values:
 
-* `LatestPatch` -- Roll forward to the highest patch verison. This disables minor version roll forward.
-* `Minor` -- Roll forward to the lowest higher minor verison, if requested minor version is missing. If the requested minor version is present, then the `LatestPatch` policy is used.
+* `LatestPatch` -- Roll forward to the highest patch version. This disables minor version roll forward.
+* `Minor` -- Roll forward to the lowest higher minor version, if requested minor version is missing. If the requested minor version is present, then the `LatestPatch` policy is used.
 * `Major` -- Roll forward to lowest higher major version, and lowest minor version, if requested major version is missing. If the requested major version is present, then the `Minor` policy is used.
-* `LatestMinor` -- Roll forward to latest minor version, even if requested minor version is present.
-* `LatestMajor` -- Roll forward to latest major and highest minor version, even if requested major is present.
+* `LatestMinor` -- Roll forward to highest minor version, even if requested minor version is present.
+* `LatestMajor` -- Roll forward to highest major and highest minor version, even if requested major is present.
 * `Disable` -- Do not roll forward. Only bind to specified version. This policy is not recommended for general use since it disable the ability to roll-forward to the latest patches. It is only recommended for testing.
 
 `Minor` is the default setting. See **Configuration Precedence** for more information.
+
+In all cases except `Disable` the highest available patch version is selected.
 
 Note: `LatestMinor` and `LatestMajor` are intended for component hosting scenarios, for both managed and native hosts (for example, managed COM components).
 
@@ -300,10 +302,20 @@ The following policy will be used in 3.0:
 
 * If `ROLL_FORWARD_ON_NO_CANDIDATE_FX` is set, it will be honored.
 * If `ROLL_FORWARD` is set, it will be honored.
-* If both settings are set, it is an error.
-* If neither settings are set, then the existing default behavior is used, as described in the **Patch Version Selection** and **Patch Version Selection** sections above.
+* If both settings are set in the same scope, it is an error.
+* If neither settings are set, then the existing default behavior is used, as described in the **Patch Version Selection** and **Minor Version Selection** sections above. The default behavior is the same as setting `Minor`.
 
 Note: The ENV syntax is used above, but the same rules apply for any way that the two settings are set.
+
+### Apply patches
+This setting is described in [Roll Forward On No Candidate Fx](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md). Its interaction with the other settings is confusing. We will deprecate this setting for 3.0.
+
+The following policy will be used in 3.0:
+* If `applyPatches` is set, it will be honored if the effective value of `RollForward` is one of `LatestPatch`, `Minor` and `Major`. In these cases setting `applyPatches` to `false` disables the automatic roll forward to latest patch version. If `RollForward` has any other value, the `applyPatches` is ignored.
+* If both settings are specified in the same scope, that is if `applyPatches` and `rollForward` are specified together in one `.runtimeconfig.json` file (anywhere in the file), it is an error.
+* If neither settings are set, then the existing default behavior is used, as described in the **Patch Version Selection** and **Minor Version Selection** sections above. The default behavior is the same as setting `Minor`.
+
+Note: `applyPatches` can only be set in the runtime configuration file.
 
 ### Configuration Precedence
 
@@ -317,11 +329,11 @@ The `version` and `roll-forward` settings compose in the following way:
 
 * A `version` setting at higher precedent scopes overwrites both the `version` and `roll-forward` values at lower scopes. For example, `version` specified at the CLI scope (with `--fx-version`) overwrites both a `version` and `roll-forward` setting that might exist at the json scope.
 * A `version` setting can flow to higher scopes if it is not replaced by another `version` value. This enables a `roll-forward` setting at a higher scope to compose with a `version` setting at a lower scope.
-* The absense of a `version` value is an error when the `roll-forward` value of `LatestPatch`, `Minor`, `Major` or `LatestMinor` is set since the initial version state is not available. It is not an error when the `roll-forward` value of `LatestMajor` is set since an initial version state is not meaningful.
+* The absence of a `version` value is an error.
 
 More generally:
 
-* The `version` value establishes a floor for roll-forward behavior, except `LatestMajor`.
+* The `version` value establishes a floor for roll-forward behavior. The roll-forward process will never select a version lower than the effective value of the `version`.
 * The default `roll-forward` setting is `Minor` except when `--fx-version` is specified when it is `Disabled`.
 
 ## Diagnostics
