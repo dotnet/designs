@@ -4,60 +4,53 @@
 
 Note: Windows has a concept similar to cgroups called [job objects](https://docs.microsoft.com/windows/desktop/ProcThread/job-objects). .NET Core should honor job objects in the same way as cgroups, as appropriate. This document will focus on cgroups throughout.
 
-It is critical to provide effective and well defined experiences when .NET Core applications are run within memory-limited cgroups. An application should run indefinitely given a sensible configuration for that application. We considered relying on orchestators to manage failing applications (that can no longer satisfy the configuration of a cgroup), but believe this to be antithetical to building reliable systems. We also expect that there are scenarios where orchestrators will be unavailable or primitive or hardware will be constrainted, and therefore not tolerant of frequently failing applications. As a result, we need a better tuned algorithm for cgroup support to the end of running reliable software within constrained environments.
+It is critical to provide effective and well defined experiences when .NET Core applications are run within memory-limited cgroups. An application should run indefinitely given a sensible configuration for that application. We considered relying on orchestators to manage failing applications (that can no longer satisfy the configuration of a cgroup), but believe this to be antithetical as a primary solution for building reliable systems. We also expect that there are scenarios where orchestrators will be unavailable or primitive or hardware will be constrainted, and therefore not tolerant of frequently failing applications. As a result, we need a better tuned algorithm for cgroup support to the end of running reliable software within constrained environments.
 
-## Archetypal Experiences
+See [implementing hard limit for GC heap dotnet/coreclr #22180](https://github.com/dotnet/coreclr/pull/22180).
 
-We identified two archetypal experiences (with arbitrary metrics provided) that we want to enable:
+## GC Heap Hard Limit
 
-* Maximum RPS that can be maintained indefinitely with 64MB of memory allocated
-* Minimum memory size required to indefinitely maintain 100 requests per second (RPS)
+The following configuration knobs will be exposed to enable developers to configure their applications:
 
-These experiences fix a single metric and expect the application to otherwise function indefinitely. They each offer a specific characteristic that we expect will align with a specific kind of workload.
+* `GCHeapHardLimit` - specifies a hard limit for the GC heap as an absolute value
+* `GCHeapHardLimitPercent` - specifies a hard limit for the GC heap as a percentage of physical memory that the process is allowed to use
 
-A cloud hoster might want to fix the memory allocated to an application to improve hosting density and profitability. They will look to our documentation to understand the maximum RPS that they can promise their customers in this configuration, as demonstrated by a sample application like Music Store.
+If both are specified, `GCHeapHardLimit` is used.
 
-An IoT developer might want to determine the minimum amount of memory that can be used to maintain a given RPS metric, typically a very low level <100 RPS.
+The `GCHeapHardLimit` will be calculated using the following formular if it is not specified and the process is running inside a container (or cgroup or job object) with a memory limit specified:
 
-## GC Configuration
+```console
+max (20mb, 75% of the memory limit on the container)
+```
 
-We will expose the following configuration knobs (final naming TBD) to enable developers to define their own policies, with the following default values (final values TBD).
+The GC will more aggressive perform GCs as the GC heap grows closer to the `GCHeapHardLimit` with the goal of making more memory available so that the application can continue to safely function. The GC will avoid continuously performing full blocking GCs if they are not considered productive.
 
-* **Native memory budget**: 20MB
-* **Minimum GC heap size**: 20MB
-* **Maximum GC heap size**: 90% of (**cgroup limit** - **native memory budget**)
-* **Safe GC heap size**: 80% of (**cgroup limit** - **native memory budget**)
+The GC will throw an `OutOfMemoryException` when the committed heap size exceeds the `GCHeapHardLimit` memory size after a full compacting GC.
 
-Small cgroup example:
+## GC Heap Heap Minimum Size
 
-* **cgroup limit**: 60MB
-* Defaults for other values
-* **Maximum GC heap size**: 36MB
-* **Safe GC heap size**: 32MB
+Using Server GC, there are multiple GC heaps created, up to one per core. This model doesn't scale well when a small memory limit is set on a machine with many cores.
 
-Big cgroup example:
+The minimum _reserved_ segment size per heap: 16mb
 
-* **cgroup limit**: 1000MB
-* Defaults for other values
-* **Maximum GC heap size**: 882MB
-* **Safe GC heap size**: 784MB
+Example:
 
-Error cases:
+* 48 core machine
+* cgroup has a 200MB memory limit
+* cgroup has no CPU/core limit
+* 160MB `GCHeapHardLimit`
+* Server GC will create 10 GC heaps
+* All 48 cores can be used by the application
 
-* **cgroup limit** - **native memory budget** - **minimum GC heap size** < 0
-* **maximum GC heap size** < **minimum GC heap size**
-* **maximum GC heap size** < **safe GC heap size**
+Example:
 
-Note: This means that the minimum cgroup size by default is 40MB.
+* 48 core machine
+* cgroup has a 200MB memory limit
+* cgroup has 4 CPU/core limit
+* 160MB `GCHeapHardLimit`
+* Server GC will create 4 GC heaps
+* Only 4  cores can be used by the application
 
-Today, the **maximum GC heap size** matches the cgroup limit. We found that the maximum GC heap size needs to be lower than the cgroup limit in order to account for native component memory requirements and to enable the GC to successfully maintain the managed heap at a sustainable level for a process.
+## Previous behavior
 
-The heap sizes can be specified as a percentage of cgroup limit or as an absolute value. We expect a given application to be run in cgroups of varying sizes, making a percentage value attractive.  **native memory budget** represents the amount of native memory that is expected to be used by native components in the process and should be unavailable to the GC to use. Specifying `0` for any of the configuration knobs disables the associated policy from being enforced for that knob.
-
-The GC will throw an `OutOfMemoryException` when an allocation exceeds the specified **maximum GC heap size**.
-
-The GC will more aggressive perform GCs after the GC heap grows beyond the **safe GC heap limit** with the goal of returning the heap under that limit. The GC will avoid continuously performing full blocking GCs if they are not considered productive.
-
-## Conclusion
-
-We believe that running .NET Core applications in cgroups set to low memory limits is critically important, and that the two archetypal scenarios are descriptive of real-world needs. We would appreciate feedback to determine if we're on the right track, and if we have thought broadly enough about scenarios that should be supported.
+Previously, the **maximum GC heap size** matched the cgroup limit. We found that the maximum GC heap size needs to be lower than the cgroup limit in order to account for native component memory requirements and to enable the GC to successfully maintain the managed heap at a sustainable level for a process.
