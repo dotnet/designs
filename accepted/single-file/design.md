@@ -312,4 +312,5 @@ Most applications are expected to work without any changes. However, apps with a
 * [Warp](https://github.com/dgiagio/warp)
 * [dotnet-warp](https://github.com/Hubert-Rybak/dotnet-warp)
 * [BoxedApp](https://docs.boxedapp.com/index.html)
+* [LibZ](https://github.com/MiloszKrajewski/LibZ)
 
