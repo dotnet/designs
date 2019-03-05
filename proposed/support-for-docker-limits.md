@@ -53,4 +53,4 @@ Example:
 
 ## Previous behavior
 
-Previously, the **maximum GC heap size** matched the cgroup limit. We found that the maximum GC heap size needs to be lower than the cgroup limit in order to account for native component memory requirements and to enable the GC to successfully maintain the managed heap at a sustainable level for a process.
+Previously, the **maximum GC heap size** matched the cgroup limit.
