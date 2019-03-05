@@ -25,7 +25,7 @@ max (20mb, 75% of the memory limit on the container)
 
 The GC will more aggressive perform GCs as the GC heap grows closer to the `GCHeapHardLimit` with the goal of making more memory available so that the application can continue to safely function. The GC will avoid continuously performing full blocking GCs if they are not considered productive.
 
-The GC will throw an `OutOfMemoryException` when the committed heap size exceeds the `GCHeapHardLimit` memory size after a full compacting GC.
+The GC will throw an `OutOfMemoryException` for allocations that would cause the committed heap size to exceed the `GCHeapHardLimit` memory size, even after a full compacting GC.
 
 ## GC Heap Heap Minimum Size
 
