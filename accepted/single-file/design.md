@@ -115,7 +115,7 @@ For example, to place some files in the publish directory but not bundle them in
 <ItemGroup>
     <Content Update="*.xml">
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <IncludeInSingleFile>PreserveNewest</IncludeInSingleFile>
+      <IncludeInSingleFile>Never</IncludeInSingleFile>
     </Content>
   </ItemGroup>
 ```
