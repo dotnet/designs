@@ -23,14 +23,25 @@ This is the most common case where an installer installs the runtime (and potent
 * Linux - the host searches in `/usr/share/dotnet` as a fallback, but the installer may pick a different default based on the requirements of the specific distro/configuration. In such case the install is effectively just like the global install to custom location described below. If correctly registered the host will search the custom location first.
 * macOS - `/usr/local/share/dotnet`
 
-*This type of install is supported by .NET Core 2.2 and earlier.*
+Typically the muxer from this install is registered to be readily accessible without specifying full path. The exact mechanism is platform specific, for example on Windows this means that the muxer is added to the `PATH`.
+
+*This type of install is supported on all versions of .NET Core.*
 
 ### Global install to custom location
 .NET Core is installed globally for the machine but into a non-default (custom) location. The location of the install is stored in platform specific configuration so that it can be found by everything on the system (and by all users).
 
 This type of install should effectively behave the same as install to the default location. Can be used to put .NET Core on a different drive to save space on the system drive, or to serve other purposes.
+Typically the muxer from this install is registered to be readily accessible without specifying full path. The exact mechanism is platform specific, for example on Windows this means that the muxer is added to the `PATH`.
 
-*This type of install will for sure be supported by .NET Core 3.0 on Windows, other cases are not yet committed.*
+Installer behavior:
+* There can only be one globally registered location.
+* The installer should query the system for existing .NET Core global installs. If it finds any, it should only install to the already registered location, it should not install to a new location.
+
+*Custom install locations are supported for .NET Core 3.0 on Windows, other cases are not yet committed.*
+
+Global installs (both default or custom location) are registered in a well know location:
+* Windows - registry `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` (32-bit view only)
+* Linux/macOS - file `/etc/dotnet/install_location.conf`
 
 ### Per-user install
 .NET Core installation which is per-user, thus doesn't require admin/root access to the machine. Otherwise it should behave just like a global install, but only accessible to the user which installed it.
@@ -45,12 +56,13 @@ There would also be a platform specific way to store this location in some kind 
 .NET Core is "installed" by simply creating the right layout on the disk with the right files, there's no system registration mechanism attached to it (typically called x-copy deployment).
 
 This can be used for
-* Project-local .NET Core SDK/runtime (for example most dotnet repos use this)
+* Project-local .NET Core SDK/runtime. Most typically used to have a stable environment for build and related tools to run with - regardless of what is available on the machine. (For example almost all dotnet repos use this approach.)
 * Experimentation
 
 As such it's actually desirable that creating such installation doesn't affect anything which didn't opt into using it.
+Using this install must be intentional/explicit, either by using full path to invoke the muxer or by setting environment variable (`DOTNET_ROOT`).
 
-*This type of install is supported by .NET Core 2.2 and earlier.*
+*This type of install is supported on all versions of .NET Core.*
 
 ### Self-contained apps
 Technically speaking self-contained apps also "install" a private copy of the runtime, but they don't use the same layout and such installation is only usable by the app itself. So for the purposes of this document, self-contained apps are largely out of scope.
@@ -78,9 +90,9 @@ Unfortunately some of these components are hard to service:
 
 The biggest problem is with the app-contained hosts which we can't service in any way. So introducing new install types or changing the default location can be breaking for apps using old hosts.
 
-The problem already exists since the `apphost` has been shipped in .NET Core 2.1 with support for framework dependent apps. Fortunately this feature is not widely used yet.
+The problem already exists since the `apphost` has been shipped in .NET Core 2.2 with support for framework dependent apps. The feature is used only occasionally. The most common case is probably dotnet global tools (`dotnet tool install -g <tool>`) which create framework dependent `apphost` for each installed tool.
 
-In .NET Core 3.0 the situation will be very different. Framework dependent `apphost` is the default for apps. Scenarios requiring the other hosts are also likely to be relatively common (COM, IJW, native hosting). So the hosts which we ship with .NET Core 3.0 will be spread across all machines running .NET Core (not just development but production as well) without any ability to service them directly.
+In .NET Core 3.0 framework dependent apps use an `apphost` by default, which makes this case far more prevalent. Scenarios requiring the other hosts are also likely to be relatively common (COM, IJW, native hosting). So the hosts which we ship with .NET Core 3.0 will be spread across all machines running .NET Core (not just development but production as well) without any ability to service them directly.
 
 This means that .NET Core 3.0 is the last chance to get the algorithms for install locations modified in "breaking ways". Future release will very likely have to be 100% backward compatible in this regard.
 
@@ -96,9 +108,9 @@ To achieve this the install location must be recorded in some system-wide config
   * `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` - where `<arch>` is one of the `x86`, `x64`, `arm` or `arm64`.
   Note that this registry key is "redirected" that means that 32-bit processes see different copy of the key then 64bit processes. So it's important that both installers and the host access only the 32-bit view of the registry.
 * Linux and macOS - the installer will store the install location in a text file
-  * `/etc/dotnet/install_location` - the file will contain a single line which is the path.
+  * `/etc/dotnet/install_location.conf` - the file will contain a single line which is the path.
 
-The muxer (`dotnet.exe`) is registered on the system-wide `PATH` environment variable.
+The muxer is registered on the system in such a way that it is readily accessible without providing full path to it. The exact mechanism is platform specific and outside of the scope of this document. (For example on Windows it's added to `PATH`)
 
 ### Per-user registered install location :new:
 This will allow installs to per-user directories (no need for admin/root access). It's to be decided if we will actually create an installer which does this. Once installed the per-user install should take precedence over the global one, but otherwise should be available to all processes running under the respective user.
@@ -157,7 +169,7 @@ In both cases all locations listed below are searched and the complete list of a
 
 Search locations:
 * the location of the `hostfxr` used. See the `hostfxr` search algorithm above. This means that `DOTNET_ROOT` has effect on framework and SDK search as well.
-* If multi-level lookup is enabled (by default it is, can be disabled via `DOTNET_MULTILEVEL_LOOKUP=0` environment variable)
+* If multi-level lookup is enabled (by default it is, can be disabled via `DOTNET_MULTILEVEL_LOOKUP=0` environment variable), then the following locations are searched as well:
   * :new: per-user registered install location
     * Windows - `HKCU\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation`
     * Linux/macOS - `$HOME/.dotnet/install_location`
@@ -170,8 +182,10 @@ Search locations:
     * Windows (everything else) - `%ProgramFiles%\dotnet`
     * :new: Linux - `/usr/share/dotnet`
     * :new: macOS - `/usr/local/share/dotnet`
+* Else multi-level lookup is disabled, no other search locations are considered.
 
-*Note: The above means that on Linux/macOS in 2.2 the multi-level lookup was effectively non-functional, as there were no search paths for it. Part of the 3.0 changes is to change that and make Linux/macOS work similarly to Windows in this case as well.*
+*Note: The above means that on Linux/macOS in 2.2 the multi-level lookup was effectively non-functional, as there were no search paths for it. Part of the 3.0 changes is to change that and make Linux/macOS work similarly to Windows in this case as well.*  
+*Note: The multi-level lookup feature in its current form seems to be rather confusing and there are discussions around phasing it out. See dotnet/core-setup#3606. If there's no change in that area in .NET Core 3.0 we should do what's proposed here as it makes all platforms consistent.*
 
 
 ## Open questions
