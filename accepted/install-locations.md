@@ -146,6 +146,8 @@ All hosts use the same logic.
 Both framework and SDK search uses the same logic, the only difference is that frameworks are in the `share` subdirectory, while SDKs are in the `sdk` subdirectory of the install location.
 In both cases all locations listed below are searched and the complete list of all available SDKs/Frameworks is combined before making a choice which one will be used (based on version requirements).
 
+**Important:** There's a difference in search algorithm for `hostfxr` and for frameworks/SDKs. For `hostfxr` only the first available location is considered (and the highest version from that location is selected). For frameworks/SDKs **all** locations are considered and the best match for the requested version is selected from all those locations.
+
 Search locations:
 * the location of the `hostfxr` used. See the `hostfxr` search algorithm above. This means that `DOTNET_ROOT` has effect on framework and SDK search as well since the `hostfxr` search will consider it.  
 *If the `hostfxr` is found in the `DOTNET_ROOT` location (should happen pretty much always when the variable is non-empty), then that location will be part of the search locations for frameworks/SDKs.*
