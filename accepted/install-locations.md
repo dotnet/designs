@@ -43,17 +43,8 @@ Global installs (both default or custom location) are registered in a well know 
 * Windows - registry `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` (32-bit view only)
 * Linux/macOS - file `/etc/dotnet/install_location.conf`
 
-### Per-user install
-.NET Core installation which is per-user, thus doesn't require admin/root access to the machine. Otherwise it should behave just like a global install, but only accessible to the user which installed it.
-
-There should be a default location specific for each platform - up for discussion.
-
-There would also be a platform specific way to store this location in some kind of configuration so that it can be found by all apps for the given user.
-
-*This type of install is not yet planned for any specific .NET Core release.*
-
 ### Private install (also called x-copy install)
-.NET Core is "installed" by simply creating the right layout on the disk with the right files, there's no system registration mechanism attached to it (typically called x-copy deployment).
+.NET Core is "installed" by simply creating the right layout on the disk with the right files, there's no system registration mechanism attached to it (typically called x-copy deployment). The most common way is to unzip a build into a directory.
 
 This can be used for
 * Project-local .NET Core SDK/runtime. Most typically used to have a stable environment for build and related tools to run with - regardless of what is available on the machine. (For example almost all dotnet repos use this approach.)
@@ -100,9 +91,11 @@ This means that .NET Core 3.0 is the last chance to get the algorithms for insta
 ## Proposal for 3.0
 
 ### Globally registered install location :new:
-This is by far the most common case and in 3.0 we want to provide a way to globally install to a custom location. The typical case will still be to install into the default location, but custom location should be possible. Either location should behave the same.
+This is by far the most common case and in 3.0 we want to provide a way to globally install to a custom location. The typical case will still be to install into the default location, but custom location should be possible. Either location should behave the same and which one is used is solely decision of the installer.
 
-To achieve this the install location must be recorded in some system-wide configuration in a fixed location which is well-known.
+Note that the installer should try to avoid creating two global locations as only one can be registered. So if there is already some version installed it should only add to that location and create a new one. The only way to get two global locations should be to first install 3.0 into custom location and then install 2.* which always installs to the default location.
+
+To achieve the desired behavior the install location must be recorded in some system-wide configuration in a fixed location which is well-known.
 
 * Windows - the installer will store the install location in 32-bit registry (for both 32-bit and 64-bit installations):
   * `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` - where `<arch>` is one of the `x86`, `x64`, `arm` or `arm64`.
@@ -112,30 +105,17 @@ To achieve this the install location must be recorded in some system-wide config
 
 The muxer is registered on the system in such a way that it is readily accessible without providing full path to it. The exact mechanism is platform specific and outside of the scope of this document. (For example on Windows it's added to `PATH`)
 
-### Per-user registered install location :new:
-This will allow installs to per-user directories (no need for admin/root access). It's to be decided if we will actually create an installer which does this. Once installed the per-user install should take precedence over the global one, but otherwise should be available to all processes running under the respective user.
-
-To achieve this the install location must be recorded in some per-user configuration in a fixed location which is well-known.
-
-* Windows - the installer will store the install location in registry:
-  * `HKCU\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` - where `<arch>` is one of the `x86`, `x64`, `arm` or `arm64`.
-  Note that this key is "shared" meaning both 32-bit and 64-bit processes see the same values.
-* Linux and macOS - the installer will store the install location in a text file
-  * `$HOME/.dotnet/install_location` - the file will contain a single line which is the path.
-
-The muxer (`dotnet`) is registered on the per-user `PATH` environment variable and in such a way that it wins over any globally installed one.
-
 ### Private install location
 This allows users to install private copy of .NET Core into any directory. This copy should not be used by anything unless explicitly asked for.
 
 There is not installer for this scenario, these installs are produced by simply copying the right directory structure into a custom location.
 
-*This mechanism already exists in .NET Core 2.2.*
-
 If the muxer (`dotnet`) is used then it must be invoked directly from the private install location (it's not registered on `PATH` in any way).  
 If other hosts are used then the private install location must be specified in environment variable:
 * `DOTNET_ROOT`
 * `DOTNET_ROOT(x86)` for 32-bit process running on 64-bit Windows.
+
+*Note: this type of install is supported in all versions of .NET Core and there are no changes proposed to how it's created and used.*
 
 
 ## Host behavior for 3.0
@@ -146,9 +126,6 @@ If other hosts are used then the private install location must be specified in e
 All other hosts will search for the first location which exists in this order:
 * the directory where the host resides (this is important mostly for `apphost` as self-contained apps will have the `hostfxr` in the same directory).
 * `DOTNET_ROOT` (or `DOTNET_ROOT(x86)`) environment variable, in the `host/fxr/<version>` subdirectory.
-* :new: per-user registered install location, in the `/host/fxr/<version>` subdirectory
-  * Windows - `HKCU\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation`
-  * Linux/macOS - `$HOME/.dotnet/install_location`
 * :new: global registered install location, in the `/host/fxr/<version>` subdirectory  
   **We've committed to support this on Windows for .NET Core 3.0**
   * Windows - `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` (32-bit view)  
@@ -161,6 +138,8 @@ All other hosts will search for the first location which exists in this order:
 
 In each case with the `<version>` subdirectory, the latest available version as per SemVer 2.0 rules will be selected. Note that the algorithm picks the first location which exists, and only then looks for the `/host/fxr/<version>` subdirectory, and if that doesn't exist, or the library is missing it will fail.
 
+The reason for including the default global location is so that 3.0 host can find 2.* installs since those are not registered in the system. All 3.0 and higher installs should be registered.
+
 ### Framework and SDK search
 All hosts use the same logic.
 
@@ -168,11 +147,9 @@ Both framework and SDK search uses the same logic, the only difference is that f
 In both cases all locations listed below are searched and the complete list of all available SDKs/Frameworks is combined before making a choice which one will be used (based on version requirements).
 
 Search locations:
-* the location of the `hostfxr` used. See the `hostfxr` search algorithm above. This means that `DOTNET_ROOT` has effect on framework and SDK search as well.
+* the location of the `hostfxr` used. See the `hostfxr` search algorithm above. This means that `DOTNET_ROOT` has effect on framework and SDK search as well since the `hostfxr` search will consider it.  
+*If the `hostfxr` is found in the `DOTNET_ROOT` location (should happen pretty much always when the variable is non-empty), then that location will be part of the search locations for frameworks/SDKs.*
 * If multi-level lookup is enabled (by default it is, can be disabled via `DOTNET_MULTILEVEL_LOOKUP=0` environment variable), then the following locations are searched as well:
-  * :new: per-user registered install location
-    * Windows - `HKCU\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation`
-    * Linux/macOS - `$HOME/.dotnet/install_location`
   * :new: global registered install location  
     **We've committed to support this on Windows for .NET Core 3.0**
     * Windows - `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` (32-bit view)  
@@ -184,27 +161,13 @@ Search locations:
     * :new: macOS - `/usr/local/share/dotnet`
 * Else multi-level lookup is disabled, no other search locations are considered.
 
+The reason for including the default global location is so that 3.0 host can find 2.* installs since those are not registered in the system. All 3.0 and higher installs should be registered.
+
 *Note: The above means that on Linux/macOS in 2.2 the multi-level lookup was effectively non-functional, as there were no search paths for it. Part of the 3.0 changes is to change that and make Linux/macOS work similarly to Windows in this case as well.*  
 *Note: The multi-level lookup feature in its current form seems to be rather confusing and there are discussions around phasing it out. See dotnet/core-setup#3606. If there's no change in that area in .NET Core 3.0 we should do what's proposed here as it makes all platforms consistent.*
 
 
 ## Open questions
-
-### Support for per-user installation
-So far there's no support for per-user installation. It would make sense to add support for this as we may need it in the future. For example VS Code per-user installation can't install .NET Core and thus .NET Core doesn't work in it out of the box. A system wide install of .NET Core is required and has to be done as a separate step which requires admin/root access.
-
-If there's at least some sense of future scenarios for this we should add the support for this into the hosts. As we won't get a chance to really update the algorithms in the hosts due to servicing problems described above.
-
-We can not ship any installers like this in .NET Core 3.0, just have support for it in the hosts. Later on when we get the scenario we can ship a new installer and everything will just work.
-
-#### Default location for per-user installation
-If we decide to provide per-user installation it should have a good default location.
-* Windows - `%HOMEPATH%\.dotnet\<arch>` is probably the best. `%HOMEPATH%\.dotnet` already exists and is used for example for global tools and NuGet fallback cache.
-* Linux - `$HOME/.dotnet` probably. The location already exists and stores global tools.
-* macOS - `$HOME/.dotnet` (or whatever is the equivalent where we store global tools).
-
-Note that the host would not look for the default per-user location, it would solely rely on the registration mechanism described above, so the default per-user location is really only a convenience feature of the installer.
-
 
 ### Make muxer less special
 As mentioned above, the muxer has certain specific behavior:
@@ -239,3 +202,13 @@ Looking for recommendations.
 
 ### Describe targeting packs
 In .NET Core 3.0 aside from the shared frameworks (which are effectively also runtime packs) there's also the notion of targeting packs. The document might mention them, where they live and if the installation types have any effect on their behavior.
+
+### Support for per-user installation
+This would in theory allow installation which would be registered in `PATH` (and similar mechanism) but would be per-user and thus not require admin/root rights to install.
+
+This approach has severe security implications though:
+* The hosts would need to consider the per-use location during their search of `hostfxr` and frameworks/SDKs.
+* As such it would be possible for malicious code to register per-user location without admin rights.
+* Later on tool running under admin rights would consider the per-user location and allow loading code from effectively arbitrary location into the context of elevated process.
+
+As such there is no proposal to add any per-user installation type right now.
