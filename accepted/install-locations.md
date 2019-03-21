@@ -129,7 +129,7 @@ All other hosts will search for the first location which exists in this order:
 * :new: global registered install location, in the `/host/fxr/<version>` subdirectory  
   **We've committed to support this on Windows for .NET Core 3.0**
   * Windows - `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` (32-bit view)  
-  * Linux/macOS - `/etc/dotnet/install_location`  
+  * Linux/macOS - `/etc/dotnet/install_location.conf`  
 * default global location, in the `/host/fxr/<version>` subdirectory
   * Windows (32-bit process on 64-bit Windows) - `%ProgramFiles(x86)%\dotnet`
   * Windows (everything else) - `%ProgramFiles%\dotnet`
@@ -153,25 +153,48 @@ Search locations:
 *If the `hostfxr` is found in the `DOTNET_ROOT` location (should happen pretty much always when the variable is non-empty), then that location will be part of the search locations for frameworks/SDKs.*
 * If multi-level lookup is enabled (by default it is, can be disabled via `DOTNET_MULTILEVEL_LOOKUP=0` environment variable), then the following locations are searched as well:
   * :new: global registered install location  
-    **We've committed to support this on Windows for .NET Core 3.0**
     * Windows - `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` (32-bit view)  
-    * Linux/macOS - `/etc/dotnet/install_location`
+    **We've committed to support this in .NET Core 3.0 (Windows)**
+    * None on Linux/macOS
   * default global location, in the `/host/fxr/<version>` subdirectory
     * Windows (32-bit process on 64-bit Windows) - `%ProgramFiles(x86)%\dotnet`
     * Windows (everything else) - `%ProgramFiles%\dotnet`
-    * :new: Linux - `/usr/share/dotnet`
-    * :new: macOS - `/usr/local/share/dotnet`
+    * None on Linux/macOS
 * Else multi-level lookup is disabled, no other search locations are considered.
 
 The reason for including the default global location is so that 3.0 host can find 2.* installs since those are not registered in the system. All 3.0 and higher installs should be registered.
 
-*Note: The above means that on Linux/macOS in 2.2 the multi-level lookup was effectively non-functional, as there were no search paths for it. Part of the 3.0 changes is to change that and make Linux/macOS work similarly to Windows in this case as well.*  
-*Note: The multi-level lookup feature in its current form seems to be rather confusing and there are discussions around phasing it out. See dotnet/core-setup#3606. If there's no change in that area in .NET Core 3.0 we should do what's proposed here as it makes all platforms consistent.*
+*Note: As of .NET Core 2.2 Linux/macOS effectively doesn't support multi-level lookup as there are no additional search paths considered when it's turned on.*
 
+The multi-level lookup feature is only useful for private installs (xcopy). Installs into global locations typically don't want/need multi-level lookup. Important scenarios:
+* Muxer from global location - for example running `dotnet build`. This will already use the global location for framework/SDK search since it's the one next to the used `hostfxr`. Multi-level lookup in this case doesn't add any value.
+* `apphost` relying on global location - this is basically the default case for .NET Core 3.0. Framework dependent `apphost` which loads `hostfxr` from global location. This case will also already use global location for framework/SDK search due to it using `hostfxr` from the global location. Multi-level lookup doesn't add any value.
+* Muxer from a private install (xcopy) - typically running `dotnet` using full path. This will use `hostfxr` from the private install and thus will use the private install to search for frameworks/SDKs. Multi-level lookup in this case helps by also including global locations in the frameworks/SDKs search. Only needed if trying to run apps which require frameworks/SDKs not in the private install.
+* `apphost` using private install through `DOTNET_ROOT`- similar to the above case of muxer from private install. In this case it's really only about framework search (`apphost` doesn't really support SDKs). Multi-level lookup can help in some special cases, but mostly is not desirable.
 
-## Open questions
+Open question:  
+**Should we include the global registered and global default location in framework/SDK search on Linux/macOS?**
+These are only used when multi-level lookup is enabled. The entire multi-level lookup features in its current form seems to be rather confusing and there are discussions around phasing it out. See dotnet/core-setup#3606.  
+Possible options:
+* Find a replacement solution which is better then multi-level lookup in its current form - dotnet/core-setup#3606. This is a separate discussion from this document.
+* Leave Linux/macOS as-is - that is effectively not supporting multi-level lookup on these platforms.
+* Enable multi-level on Linux/macOS in its current form - making it consistent with Windows.
+
+Proposal:
+**Leave it as-is on Linux/macOS.**  
+Pros:
+* Most important scenarios (as described above) will work just fine if we add the global locations into `hostfxr` search. The scenarios where multi-level lookup helps don't work on Linux/macOS today and we haven't got much feedback to enable it.
+* Avoids extending the controversial multi-level lookup to Linux/macOS. Once we figure out the replacement story, that should be implemented on Linux/macOS, but there won't be any backward compat burden.
+
+Cons:
+* Inconsistent behavior between Windows and Linux/macOS
+
+## Discussed questions
 
 ### Make muxer less special
+Proposal is to leave muxer as is - don't use `DOTNET_ROOT` in it.
+
+Leaving the below as interesting discussion...
 As mentioned above, the muxer has certain specific behavior:
 * It only looks next to itself when searching for `hostfxr`.
 * It ignores `DOTNET_ROOT` environment variable.
