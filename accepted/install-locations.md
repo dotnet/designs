@@ -11,6 +11,7 @@ The content of a .NET Core install location always follows the same layout. The 
   * `./<FrameworkName>/<version>` - any other shared framework. Applications can choose which version to use.
 * `./sdk/<version>` - only installed when .NET Core SDK is installed - contains the SDK tools. Users can choose which version to use.
 
+Note that the above list is not complete, it only serves to point out interesting parts of the installation which are present in the directory.
 
 ## Installation types
 .NET Core can be installed in several ways, each provides a different location and expected behavior. Each such location will contain the .NET Core install layout described above.
@@ -35,7 +36,8 @@ Typically the muxer from this install is registered to be readily accessible wit
 
 Installer behavior:
 * There can only be one globally registered location.
-* The installer should query the system for existing .NET Core global installs. If it finds any, it should only install to the already registered location, it should not install to a new location.
+* On Windows the installer will query the system for existing .NET Core global installs. If it finds any, it should only install to the already registered location.
+* On Linux the distro builders will decide the location of the global install and write it into the globally registered location.
 
 *Custom install locations are supported for .NET Core 3.0 on Windows, other cases are not yet committed.*
 
@@ -101,7 +103,7 @@ To achieve the desired behavior the install location must be recorded in some sy
   * `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` - where `<arch>` is one of the `x86`, `x64`, `arm` or `arm64`.
   Note that this registry key is "redirected" that means that 32-bit processes see different copy of the key then 64bit processes. So it's important that both installers and the host access only the 32-bit view of the registry.
 * Linux and macOS - the installer will store the install location in a text file
-  * `/etc/dotnet/install_location.conf` - the file will contain a single line which is the path.
+  * `/etc/dotnet/install.conf` - The file will be in the `.ini` [format](https://en.wikipedia.org/wiki/INI_file). In it the key `InstallLocation` (in no section) will contain the path to the global location. The host will have a simplistic parser for this file, which will only support empty lines, comment lines (starts with #) and the one key/value pair. Any additional keys will be ignored. The host will trim any spaces around the equal sign and then treat the rest of the line after the equal sign as the install location path (no quotes or escaping).
 
 The muxer is registered on the system in such a way that it is readily accessible without providing full path to it. The exact mechanism is platform specific and outside of the scope of this document. (For example on Windows it's added to `PATH`)
 
@@ -129,7 +131,7 @@ All other hosts will search for the first location which exists in this order:
 * :new: global registered install location, in the `/host/fxr/<version>` subdirectory  
   **We've committed to support this on Windows for .NET Core 3.0**
   * Windows - `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` (32-bit view)  
-  * Linux/macOS - `/etc/dotnet/install_location.conf`  
+  * Linux/macOS - `/etc/dotnet/install.conf`  
 * default global location, in the `/host/fxr/<version>` subdirectory
   * Windows (32-bit process on 64-bit Windows) - `%ProgramFiles(x86)%\dotnet`
   * Windows (everything else) - `%ProgramFiles%\dotnet`
