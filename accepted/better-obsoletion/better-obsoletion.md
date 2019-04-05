@@ -210,7 +210,7 @@ follows:
 Here is how the attribute would be applied:
 
 ```C#
-internal static class Obsolete
+internal static class BclObsolete
 {
     public const string Url = "http://aka.ms/obsolete/{0}";
 
@@ -222,13 +222,13 @@ internal static class Obsolete
 
 namespace System.Collections
 {
-    [Obsolete(DiagnosticId = Obsolete.NonGenericCollectionsId, UrlFormat=Obsolete.Url)]
+    [Obsolete(DiagnosticId = BclObsolete.NonGenericCollectionsId, UrlFormat=BclObsolete.Url)]
     public class ArrayList
     {
         // ...
     }
 
-    [Obsolete(DiagnosticId = Obsolete.NonGenericCollectionsId, UrlFormat=Obsolete.Url)]
+    [Obsolete(DiagnosticId = BclObsolete.NonGenericCollectionsId, UrlFormat=BclObsolete.Url)]
     public class Hashtable
     {
         // ...
@@ -237,7 +237,7 @@ namespace System.Collections
 
 namespace System.Security
 {
-    [Obsolete(DiagnosticId = Obsolete.SecureStringId, UrlFormat=Obsolete.Url)]
+    [Obsolete(DiagnosticId = BclObsolete.SecureStringId, UrlFormat=BclObsolete.Url)]
     public sealed class SecureString
     {
         // ...
