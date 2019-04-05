@@ -154,7 +154,8 @@ they also need to plan for removing their dependency on `SecureString`.
   versions of the platform. In other words, this doesn't support a sidecar file
   that can be applied to an existing version of .NET.
 
-* **Being able to remove APIs in later versions**. See the discussion in the Q&A
+* **Being able to remove APIs in later versions**. See
+  [the discussion](#why-is-being-able-to-delete-apis-not-a-goal) in the Q&A
   section.
 
 ## Design
