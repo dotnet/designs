@@ -210,6 +210,11 @@ follows:
 * The compiler should assume that `Url` and `DiagnosticId` are independent
   features, in other words both can be used, either, and neither.
 
+***OPEN ISSUE**: Should the compiler suppress all diagnostics from
+`ObsoleteAttributes` if the existing generic diagnostic ID is suppressed
+(e.g.`CS0618`) ? If not, the developer has no way to turn this feature off
+entirely.*
+
 ### Samples
 
 Here is how the attribute would be applied:
