@@ -203,8 +203,6 @@ follows:
 * If `DiagnosticId` is `null`, use the existing diagnostic ID (e.g. `CS0618` in
   C#). Otherwise, use `DiagnosticId`.
     - The compiler should honor suppressions for the specified diagnostic id.
-    - If a custom diagnostic ID is specified, suppression for the generic
-      obsolete diagnostic shouldn't apply.
 * If `Url` is not `null`, use it as the diagnostic link when rendering them in
   the IDE.
 * The compiler should assume that `Url` and `DiagnosticId` are independent
