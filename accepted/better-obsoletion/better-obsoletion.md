@@ -37,9 +37,11 @@ This obsoletion approach has a few benefits over the alternatives:
   and some technologies that looked like good ideas turn out to be unviable. We
   need a mechanism that informs developers after the fact.
 
-Obsoletion via the `[Obsolete]` attribute works pretty well when: only a few
-APIs are affected, it's easy to remove their usage, and guidance can be provided
-as a short one-line string.
+Obsoletion via the `[Obsolete]` attribute works pretty well when:
+
+1. Only a few APIs are affected
+2. It's easy to remove their usage
+3. Guidance can be provided as a short one-line string
 
 In practice these requirements are often not satisfiable:
 
@@ -47,7 +49,7 @@ In practice these requirements are often not satisfiable:
   means that we'll have to annotate all entry points to that technology, which
   often means obsoleting a *set of APIs*, such as types and static members.
 
-* **Removing obsoleted APIs isn't always practical**. It would be nice if we
+* **Not using obsoleted APIs isn't always practical**. It would be nice if we
   could always remove dependencies on obsoleted technologies but this isn't
   always possible if they are used heavily in existing code bases. In those
   cases, you typically want a way to ignore obsoletion diagnostics regarding
@@ -199,7 +201,10 @@ The compilers would be enlightened about these new properties and use them as
 follows:
 
 * If `DiagnosticId` is `null`, use the existing diagnostic ID (e.g. `CS0618` in
-  C#). Otherwise, use the specified warning ID.
+  C#). Otherwise, use `DiagnosticId`.
+    - The compiler should honor suppressions for the specified diagnostic id.
+    - If a custom diagnostic ID is specified, suppression for the generic
+      obsolete diagnostic shouldn't apply.
 * If `Url` is not `null`, use it as the diagnostic link when rendering them in
   the IDE.
 * The compiler should assume that `Url` and `DiagnosticId` are independent
@@ -251,7 +256,7 @@ in the ground could be that we should a prefix like `BCL` that is owned by a
 single party and responsible to avoid duplicated numbers. Other parties would
 need to choose a different prefix.*
 
-### Possible Alternatives
+### Rejected Alternatives
 
 #### String Encoding
 
