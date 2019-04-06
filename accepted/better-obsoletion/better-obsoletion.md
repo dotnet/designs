@@ -81,7 +81,7 @@ instead so that the application can eventually be converted to a cloud-based
 offering.
 
 Abigail would like to use the brand new JSON APIs so she updates the project
-from .NET Core 2.1 to .NET Core 3.1. However, after upgrading the notices that
+from .NET Core 2.1 to .NET Core 3.1. However, after upgrading she notices that
 we obsoleted non-generic collections and she gets a bunch of warnings against
 her code:
 
