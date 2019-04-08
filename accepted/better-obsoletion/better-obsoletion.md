@@ -359,7 +359,7 @@ goals require removing the API eventually.
 
 ### Should obsoleted members be hidden from IntelliSense?
 
-No always. Using `[EditorBrowsable(EditorBrowsableState.Never)]` one can hide
+Not always. Using `[EditorBrowsable(EditorBrowsableState.Never)]` one can hide
 APIs from IntelliSense. The rationale is that it makes it harder for new code to
 take a dependency on it. While that's true, it makes it harder for existing code
 that can't remove the dependency (yet). Consider Abigail's example above. If she
