@@ -160,6 +160,11 @@ they also need to plan for removing their dependency on `SecureString`.
   [the discussion](#why-is-being-able-to-delete-apis-not-a-goal) in the Q&A
   section.
 
+* **Hiding all obsoleted APIs from IntelliSense**. Whether or not an API should
+  be hidden is an independent decision. For more details, see
+  [the discussion](#should-obsoleted-members-be-hidden-from-intellisense) in the
+  Q&A section.
+
 ## Design
 
 The design proposal piggybacks on the existing `ObsoleteAttribute` that is
@@ -351,3 +356,18 @@ useful for first time users of the API so that they don't take dependencies on
 less optimal technology. However, it's also a powerful tool for informing
 customers about potential issues they have in their code base. Neither of these
 goals require removing the API eventually.
+
+### Should obsoleted members be hidden from IntelliSense?
+
+No always. Using `[EditorBrowsable(EditorBrowsableState.Never)]` one can hide
+APIs from IntelliSense. The rationale is that it makes it harder for new code to
+take a dependency on it. While that's true, it makes it harder for existing code
+that can't remove the dependency (yet). Consider Abigail's example above. If she
+needs to evolve the existing code base hiding on all generic collections
+wouldn't be helpful at all.
+
+More specifically, this feature is about enabling developers to suppress
+specific obsoletions but not others. We could consider expanding
+`EditorBrowsable` by adding a diagnostic ID to it which determines would disable
+the hiding if the specific ID is suppressed (in other words, we'd link their
+behaviors). But that feels a bit over the top.
