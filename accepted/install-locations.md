@@ -43,7 +43,7 @@ Installer behavior:
 
 Global installs (both default or custom location) are registered in a well know location:
 * Windows - registry `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` (32-bit view only)
-* Linux/macOS - file `/etc/dotnet/install_location.conf`
+* Linux/macOS - file `/etc/dotnet/install.conf`
 
 ### Private install (also called x-copy install)
 .NET Core is "installed" by simply creating the right layout on the disk with the right files, there's no system registration mechanism attached to it (typically called x-copy deployment). The most common way is to unzip a build into a directory.
