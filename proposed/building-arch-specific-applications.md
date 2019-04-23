@@ -147,7 +147,7 @@ WPF and Windows Forms templates should opt-in to this build type, with the follo
 
 The `win-x86` RID is proposed as the default to match the 32-bit default for .NET Framework projects. There is a perf benefit and it will be more compatible with existing .NET Framework projects that may have 32-bit only dependencies. It does mean that we need to install the Windows 32-bit .NET Core runtime by default (the 32-bit SDK is not needed). Visual Studio should make it straightforward to switch the default RID to `win-x64`.
 
-Note: It is possible that the RID should be specified a different way that better aligns with the Visual Studio configutation manager. This document doesn't take an opinion on that. it is a detail to work out.
+Note: It is possible that the RID should be specified a different way that better aligns with the Visual Studio configuration manager. This document doesn't take an opinion on that. it is a detail to work out.
 
 Alternative idea for specifying architecture:
 
