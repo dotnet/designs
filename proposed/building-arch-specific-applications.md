@@ -23,7 +23,7 @@ The default `dotnet build` behavior in .NET Core 3.0 Preview 4 is the following:
 
 * Framework-dependent application
 * Architecture-specific executable (matches architecture of the SDK )
-* Native dependencies for all achitectures
+* Native dependencies for all architectures
 
 This combination of characteristics, particularly the last two points, isn't entirely coherent. It gives you an executable for one architecture, but native dependencies for all achitectures. That means that the application will run on all architecture supported by the native dependencies (if any) but that an executable is provided for only one architecture and the `dotnet` launcher needs to be used on all other architectures.
 
