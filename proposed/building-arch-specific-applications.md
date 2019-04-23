@@ -114,7 +114,7 @@ For the purposes of this document, there are three types of applications:
 
 The following changes are proposed for .NET Core 3.0. `build` will be the specific verb discussed in the following text. The behavior is intended to be the same for `publish` unless specifically called out.
 
-#### Framework-dependent architecture-netural applications
+#### Framework-dependent architecture-neutral applications
 
 Maintain framework-dependent architecture-netural applications as the default for `build`.
   
