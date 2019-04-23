@@ -11,7 +11,7 @@ The document proposes the following:
 * .NET Core applications should be architecture-neutral by default.
 * Client applications should be architecture-specific by default, controlled via templates.
 * Only architecture-specific (including self-contained) applications should have EXEs.
-* The default for `--self-contained` is bad for usability. We should fix that for 3.0+ projects.
+* Self-contained apps are disabled by default unless a RID is specified, at which point self-cotained becomes the default. This is an unfortuante behavior. We should fix that for 3.0+ projects.
 
 Note: The term *architecture* is used throughout this document. It is intended to mean the unique combination of an operating system and CPU, like Windows X64, or Linux ARM64. It is equivalent to runtime identifier (RID).
 
