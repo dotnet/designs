@@ -25,6 +25,8 @@ The default `dotnet build` behavior in .NET Core 3.0 Preview 4 is the following:
 * Architecture-specific executable (matches architecture of the SDK )
 * Native dependencies for all architectures
 
+Note: This behavior matches .NET Core 2.2 (with the exception of producing an architecture-specific executable).
+
 This combination of characteristics, particularly the last two points, isn't entirely coherent. It gives you an executable for one architecture, but native dependencies for all architectures. That means that the application will run on all architecture supported by the native dependencies (if any) but that an executable is provided for only one architecture and the `dotnet` launcher needs to be used on all other architectures.
 
 It also means that the application may be carrying extra files it doesn't need if the application is intended to be run on only one architecture. We expect this to be the case for WPF and Windows Forms applications, for example.
@@ -69,21 +71,23 @@ Notice the inclusion of native dependencies for Linux, macOS and two Windows arc
 
 `dotnet build` should have three modes:
 
-* Architecture-agnostic, framework-dependent, application that includes native dependencies for all supported architectures and no EXE
-* Achitecture-specific, framework-dependent, application that includes an EXE and native dependencies for a single targeted architecture
-* Architecture-specific, self-contained, application that includes EXE and native dependencies for a single targeted architecture
+* **Architecture-agnostic, framework-dependent application**: includes native dependencies for all supported architectures and no EXE
+* **Achitecture-specific, framework-dependent application**: includes an EXE and native dependencies for a single targeted architecture
+* **Architecture-specific, self-contained application**: includes an EXE, native dependencies and the .NET Core runtime for a single targeted architecture
 
 The proposal is:
 
 * Retain the first behavior as the default.
-* Enable the second behavior as opt-in. Enable this behavior in Windows client application templates.
-* Maintain the third behavior as opt-in (change defaults for `-r` and `--self-contained` for 3.0+).
+* Expose the second behavior as opt-in. Enable this behavior by default in Windows client application templates, specifying Windows 64-bit as the default architecture.
+* Maintain the third behavior as opt-in (with some changes on syntax).
 
-The first behavior is most similar to the .NET Core 2.2 behavior. It is a good behavior because it builds an application with no assumptions and produces artifacts with the broadest scope and utility. Many developers will want the second behavior. It needs to be very easy to opt-in to that behavior, either via the CLI or with a single property in a template.
+The first behavior matches the .NET Core 2.2 behavior. It is a good behavior because it builds an application with no architectur-specific assumptions or biases and produces artifacts with the broadest scope and utility. Many developers will want the second behavior. It needs to be very easy to opt-in to that behavior, either via the CLI or with a single property in a project file.
+
+The third behavior, specifically changing defaults, is motivated by increasing use of RID-specific assets. A [recent experience](https://github.com/dotnet/iot/issues/345#issuecomment-477825812) demonstrates that using a library with native assets can be confusing and can produce undesired results for people who one would expect to be expert.
 
 ## Detailed Proposal
 
-Many .NET Framework developers unfamiliar with .NET Core will start using the newer environment with .NET Core 3.0 and will expect a similar experience as they have been used to, particularly for those that only ever intend to target Windows with Windows Forms and WPF applications. Very few of them will expect Linux or macOS binaries in their build output. We need to deliver an experience they expect.
+Many .NET Framework developers unfamiliar with .NET Core will start using the newer environment with .NET Core 3.0 and will expect a similar experience as they have been used to, particularly for those that only ever intend to target Windows with Windows Forms and WPF applications. Very few of them will expect Linux or macOS binaries in their build output. We need to deliver an experience they expect and that aligns with the needs of their use cases.
 
 ### Goals
 
@@ -106,9 +110,9 @@ The following are more specific goals to improve CLI usability:
 
 For the purposes of this document, there are three types of applications:
 
-* **Architecture-neutral, framework-dependent** -- Applications of this kind target and can run on multiple architectures. They require an installed runtime to run (that matches the architecture of the target machine). They carry multiple sets of dependent native libraries for a variety of target architectures. All application and other architecture-agnostic  binaries are contained in a single directory and architecture-specific binaries are carried in RID-specific directories within a `runtimes` directory.
-* **Architecture-specific, framework-dependent** -- Applications of this kind target and can only run on a single architecture, like Windows x64 or Linux ARM32. They require an installed runtime to run. They carry one set of dependent native libraries for a single target architecture. They include an executable launcher for the given architecture. All application binaries are contained in a single directory.
-* **Architecture-specific, self-contained** -- Applications of this kind target and can only run on a single architecture, like Windows x64 or Linux ARM32. They carry a runtime and one set of dependent native libraries for a single target architecture. They include an executable launcher for the given architecture. All application, runtime and native binaries are contained in a single directory.
+* **Architecture-neutral, framework-dependent** -- Applications of this kind target and can run on multiple architectures. They require an installed runtime to run (that matches the architecture of the target machine). They carry multiple sets of dependent native libraries for a variety of target architectures. All application and other architecture-agnostic  binaries are contained in a single directory and architecture-specific binaries are carried in RID-specific directories within a `runtimes` directory. Applications of this kind are launched via the `dotnet` tool, which is part of a (typically) centrally installed .NET Core runtime.
+* **Architecture-specific, framework-dependent** -- Applications of this kind target and can only run on a single architecture, like Windows x64 or Linux ARM32. They require an installed runtime to run. They carry one set of dependent native libraries for a single target architecture. They include an executable launcher for the given architecture. All application binaries are contained in a single directory. Applications of this kind are launched via the native exectuable launcher that comes with the application. The launcher is responsible for locating a (typically) centrally installed .NET Core runtime.
+* **Architecture-specific, self-contained** -- Applications of this kind target and can only run on a single architecture, like Windows x64 or Linux ARM32. They carry a runtime and one set of dependent native libraries for a single target architecture. They include an executable launcher for the given architecture. All application, runtime and native binaries are contained in a single directory. Applications of this kind are launched via the native exectuable launcher that comes with the application. The launcher discovers and uses the runtime in the same directory. It does not attempt to use any other runtime.
 
 ### Proposed CLI argument and MSBuild property changes
 
@@ -122,7 +126,7 @@ Maintain framework-dependent architecture-neutral applications as the default fo
 * Remove the capability to produce EXEs for this type of build.
 * If EXEs are desired for this build type, consider for a later release. It's a hard scenario to get right due to filename conflicts.
 
-ASP.NET and console templates should accept this default.
+The ASP.NET and .NET Core console application templates use this default configuration (meaning, not specifying any additional configuration).
 
 #### Framework-dependent architecture-specific applications
 
@@ -138,31 +142,56 @@ Expose a new opt-in build type, called architecture-specific framework-dependent
   * MSBuild: `<RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>` (means: use RID of SDK; this already works)
 * With this build type, `--self-contained` is `false` by default, even when a RID is specified. `--self-contained` or `--self-contained true` must be specified to produce a self-contained build.
 
-WPF and Windows Forms templates should opt-in to this build type, with the following pattern:
+The WPF and Windows Forms application templates will opt-in to this configuration, and will choose Windows 64-bit as their default architecture. These templates will be updated to include the following properties:
 
 ```xml
 <ArchitectureSpecific>true</ArchitectureSpecific>
-<RuntimeIdentifier>win-x86</RuntimeIdentifier>
+<RuntimeIdentifier>win-x64</RuntimeIdentifier>
 ```
 
-The `win-x86` RID is proposed as the default to match the 32-bit default for .NET Framework projects. There is a perf benefit and it will be more compatible with existing .NET Framework projects that may have 32-bit only dependencies. It does mean that we need to install the Windows 32-bit .NET Core runtime by default (the 32-bit SDK is not needed). Visual Studio should make it straightforward to switch the default RID to `win-x64`.
-
-Note: It is possible that the RID should be specified a different way that better aligns with the Visual Studio configuration manager. This document doesn't take an opinion on that. it is a detail to work out.
+Note: It is possible that the RID should be specified a different way that better aligns with the Visual Studio configuration manager. This document doesn't take an opinion on that. It is a detail to work out.
 
 Alternative idea for specifying architecture:
 
 * MSBuild: `<ArchitectureSpecific>RID</ArchitectureSpecific>`
 
-This alternative idea requires one instead of two lines, but also replaces the existing `RuntimeIdentifier` property, which can be viewed as good or bad.
+This alternative idea requires one instead of two lines, but also replaces the existing `RuntimeIdentifier` property for only architecture-specific apps, which is likely confusing.
 
 #### Self-contained architecture-specific applications
 
 Maintain the existing self-contained behavior as-is for .NET Core 2.2 apps and earlier, but change it for 3.0 apps and later.
 
-The behavior where specifying a runtime (via `-r`) is convenient but confusing and unfortunate given that we consider framework-dependent applications to be the default. The proposal for framework-dependent architecture-specific apps makes self-contained opt-in when a RID is specific. It would be better to do that for all build types, making the system easier to understand.
+The behavior of specifying a runtime (via `-r`) currently results ins self-contained applications by default. That's a confusing experience given that we consider framework-dependent applications to be the default. The proposed beavhior for framework-dependent architecture-specific apps makes self-contained opt-in. It would be better to do that for all build types, making the overall system easier to understand. We cannot reasonably do that for existing projects, but we can do it for 3.0 and later projects.
 
 * For 1.x and 2.x application, `-r RID` assumes `--self-contained true`
 * For 3.0+ application, `-r RID` assumes `--self-contained false` -- `--self-contained` or `--self-contained true` must be specified to produce a self-contained application.
+
+## Default architecture for Windows client applications
+
+This proposal defines 64-bit as the default architecture for Windows client applications. This is a departure from .NET Framework, which defines 32-bit as the default architecture, using the `32-bit preferred` MSIL setting. Given that .NET Core uses native executable launchers, there is no analogous concept as 32-preferred. We must choose 32-bit or 64-bit as the default for Windows applications.
+
+There are some performance advantages of 32-bit, however there are also performance disadantages. There are significant security advantages of 64-bit. Assuming performance is a wash across all potential client applications that will be built using .NET Core, then security advantages alone make choosing 64-bit as the default a sound choice. A developer can still choose 32-bit for their specific application. More context: [@tannergooding](https://github.com/dotnet/designs/pull/65#discussion_r277171851), [@jkotas](https://github.com/dotnet/designs/pull/65#discussion_r277172570).
+
+### Enabling Windows client applications that support 32-bit and 64-bit environments
+
+We have seen several requests to enable applications that run in both 32-bit and 64-bit Windows environments, like `32-bit preferred`. This is possible, but not convenient. The following are the primary challenges with enabling that scenario:
+
+* It requires two launchers, for each of 32-bit and 64-bit architectures. They either need to have different names so that they can co-exist in the same directory, or live in different directories if they have the same name. It is unclear how end-users should be directed to the correct executable or how a setup program should be configured to select the correct executable.
+* It requires application setups to pre-req both the 32-bit and 64-bit runtimes and install the correct one.
+* Native dependencies for just Windows 32- and 64-bit should be included in the build output, but no other architectures.
+* It dissallows the use crossgen to produce ahead-of-time compiled application binaries as a means of improving startup performance. Crossgen is not provided as a tool that can be run on client machines.
+
+While solving these challenges is possible, we expect very few developers to go through that much trouble in the short-term. This scenario can be revisited in later releases.
+
+### Addressing 32-bit runtime usage
+
+We expect that there will be a much larger number of 32-bit applications created now that we've added support for client applications, even though 64-bit is proposed as the default. This is expected because some developers will have 32-bit requirements for .NET Framework applications that they port to .NET Core.
+
+The 32-bit runtime is not carried or offered in Visual Studio, primarily because we suspect that very few server developers want to host their applications as 32-bit. Going forward, we should add the 32-bit .NET Core runtime as an optional install with Visual Studio.
+
+When customers switch their application to target 32-bit, there should be a check to see if a compatible 32-bit runtime is installed. If it is not, they should be directed to install the runtime via the Visual Studio installer. If we do not do that, developers will see error messages directing them to install a runtime in the `Debug` window.
+
+Visual Studio Code does not currently support 32-bit Windows debugging for .NET Core. This should be resolved.
 
 ## Exploration of current behavior for building .NET Core applications
 
