@@ -93,7 +93,7 @@ The following broad goals should be satisfied for building applications with nat
 * .NET CLI opt-in arguments (for architecture and native dependencies) have good usability for key user scenarios, with a bias to short and memorable arguments and good defaults for those arguments.
 * It is straightforward to transform CLI opt-in arguments (for architecture and native dependencies) that enable your project use-case into msbuild properties in your project file, resulting in a custom default for that project.
 * It is straightforward to produce deterministic builds, independent of OS or architecture of the build machine.
-* It is easy and intutive to share applications with others or deploy them to other machines (like a Rasperry Pi, or a Windows ARM64 laptop) as part of a fluid workflow.
+* It is easy and intuitive to share applications with others or deploy them to other machines (like a Rasperry Pi, or a Windows ARM64 laptop) as part of a fluid workflow.
 
 The following are more specific goals to improve CLI usability:
 
