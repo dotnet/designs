@@ -116,7 +116,7 @@ The following changes are proposed for .NET Core 3.0. `build` will be the specif
 
 #### Framework-dependent architecture-neutral applications
 
-Maintain framework-dependent architecture-netural applications as the default for `build`.
+Maintain framework-dependent architecture-neutral applications as the default for `build`.
   
 * Produces an application with native dependencies for all supported architectures.
 * Remove the capability to produce EXEs for this type of build.
