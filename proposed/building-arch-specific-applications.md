@@ -166,7 +166,7 @@ The behavior where specifying a runtime (via `-r`) is convenient but confusing a
 
 ## Exploration of current behavior for building .NET Core applications
 
-The following sections explore the current behavior for building .NET Core applications. It is provided for informational purposes only and isn't needed to understand the propopsal.
+The following sections explore the current behavior for building .NET Core applications. It is provided for informational purposes only and isn't needed to understand the proposal.
 
 ### Architecture-neutral, framework-dependent applications with NO native dependencies
 
