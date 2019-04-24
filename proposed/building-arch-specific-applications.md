@@ -81,7 +81,7 @@ The proposal is:
 * Expose the second behavior as opt-in. Enable this behavior by default in Windows client application templates, specifying Windows 64-bit as the default architecture.
 * Maintain the third behavior as opt-in (with some changes on syntax).
 
-The first behavior matches the .NET Core 2.2 behavior. It is a good behavior because it builds an application with no architectur-specific assumptions or biases and produces artifacts with the broadest scope and utility. Many developers will want the second behavior. It needs to be very easy to opt-in to that behavior, either via the CLI or with a single property in a project file.
+The first behavior matches the .NET Core 2.2 behavior. It is a good behavior because it builds an application with no architecture-specific assumptions or biases and produces artifacts with the broadest scope and utility. Many developers will want the second behavior. It needs to be very easy to opt-in to that behavior, either via the CLI or with a single property in a project file.
 
 The third behavior, specifically changing defaults, is motivated by increasing use of RID-specific assets. A [recent experience](https://github.com/dotnet/iot/issues/345#issuecomment-477825812) demonstrates that using a library with native assets can be confusing and can produce undesired results for people who one would expect to be expert.
 
