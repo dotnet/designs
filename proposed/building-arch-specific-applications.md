@@ -170,7 +170,7 @@ The behavior of specifying a runtime (via `-r`) currently results ins self-conta
 
 This proposal defines 64-bit as the default architecture for Windows client applications. This is a departure from .NET Framework, which defines 32-bit as the default architecture, using the `32-bit preferred` MSIL setting. Given that .NET Core uses native executable launchers, there is no analogous concept as 32-preferred. We must choose 32-bit or 64-bit as the default for Windows applications.
 
-There are some performance advantages of 32-bit, however there are also performance disadantages. There are significant security advantages of 64-bit. Assuming performance is a wash across all potential client applications that will be built using .NET Core, then security advantages alone make choosing 64-bit as the default a sound choice. A developer can still choose 32-bit for their specific application. More context: [@tannergooding](https://github.com/dotnet/designs/pull/65#discussion_r277171851), [@jkotas](https://github.com/dotnet/designs/pull/65#discussion_r277172570).
+There are some performance advantages of 32-bit, however there are also performance disadvantages. There are significant security advantages of 64-bit. Assuming performance is a wash across all potential client applications that will be built using .NET Core, then security advantages alone make choosing 64-bit as the default a sound choice. A developer can still choose 32-bit for their specific application. More context: [@tannergooding](https://github.com/dotnet/designs/pull/65#discussion_r277171851), [@jkotas](https://github.com/dotnet/designs/pull/65#discussion_r277172570).
 
 ### Enabling Windows client applications that support 32-bit and 64-bit environments
 
