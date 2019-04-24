@@ -72,7 +72,7 @@ Notice the inclusion of native dependencies for Linux, macOS and two Windows arc
 `dotnet build` should have three modes:
 
 * **Architecture-agnostic, framework-dependent application**: includes native dependencies for all supported architectures and no EXE
-* **Achitecture-specific, framework-dependent application**: includes an EXE and native dependencies for a single targeted architecture
+* **Architecture-specific, framework-dependent application**: includes an EXE and native dependencies for a single targeted architecture
 * **Architecture-specific, self-contained application**: includes an EXE, native dependencies and the .NET Core runtime for a single targeted architecture
 
 The proposal is:
