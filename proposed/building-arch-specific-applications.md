@@ -161,7 +161,7 @@ This alternative idea requires one instead of two lines, but also replaces the e
 
 Maintain the existing self-contained behavior as-is for .NET Core 2.2 apps and earlier, but change it for 3.0 apps and later.
 
-The behavior of specifying a runtime (via `-r`) currently results ins self-contained applications by default. That's a confusing experience given that we consider framework-dependent applications to be the default. The proposed beavhior for framework-dependent architecture-specific apps makes self-contained opt-in. It would be better to do that for all build types, making the overall system easier to understand. We cannot reasonably do that for existing projects, but we can do it for 3.0 and later projects.
+The behavior of specifying a runtime (via `-r`) currently results ins self-contained applications by default. That's a confusing experience given that we consider framework-dependent applications to be the default. The proposed behavior for framework-dependent architecture-specific apps makes self-contained opt-in. It would be better to do that for all build types, making the overall system easier to understand. We cannot reasonably do that for existing projects, but we can do it for 3.0 and later projects.
 
 * For 1.x and 2.x application, `-r RID` assumes `--self-contained true`
 * For 3.0+ application, `-r RID` assumes `--self-contained false` -- `--self-contained` or `--self-contained true` must be specified to produce a self-contained application.
