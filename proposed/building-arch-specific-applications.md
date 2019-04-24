@@ -4,7 +4,7 @@ The first set of .NET Core releases, up to and including .NET Core 2.2, focused 
 
 Client applications differ in this respect, often relying on native libraries and APIs and typically need to integrate with OS-provided experiences (like notifications). With the addition of client scenarios in .NET Core 3.0, we need to reassess the usability and capability of building applications and libraries that that are intended for only a single architecture.
 
-Our goal is that `dotnet build` should produce useful and intuitive artifacts for building both client and server applications. Where a non-default configuration is desired, it should be easy and intutive to select that option.
+Our goal is that `dotnet build` should produce useful and intuitive artifacts for building both client and server applications. Where a non-default configuration is desired, it should be easy and intuitive to select that option.
 
 The document proposes the following:
 
