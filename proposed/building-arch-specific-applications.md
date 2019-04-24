@@ -179,7 +179,7 @@ We have seen several requests to enable applications that run in both 32-bit and
 * It requires two launchers, for each of 32-bit and 64-bit architectures. They either need to have different names so that they can co-exist in the same directory, or live in different directories if they have the same name. It is unclear how end-users should be directed to the correct executable or how a setup program should be configured to select the correct executable.
 * It requires application setups to pre-req both the 32-bit and 64-bit runtimes and install the correct one.
 * Native dependencies for just Windows 32- and 64-bit should be included in the build output, but no other architectures.
-* It dissallows the use crossgen to produce ahead-of-time compiled application binaries as a means of improving startup performance. Crossgen is not provided as a tool that can be run on client machines.
+* It disallows the use crossgen to produce ahead-of-time compiled application binaries as a means of improving startup performance. Crossgen is not provided as a tool that can be run on client machines.
 
 While solving these challenges is possible, we expect very few developers to go through that much trouble in the short-term. This scenario can be revisited in later releases.
 
