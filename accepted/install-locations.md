@@ -43,7 +43,7 @@ Installer behavior:
 
 Global installs (both default or custom location) are registered in a well know location:
 * Windows - registry `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` (32-bit view only)
-* Linux/macOS - file `/etc/dotnet/install.conf`
+* Linux/macOS - file `/etc/dotnet/install_location`
 
 ### Private install (also called x-copy install)
 .NET Core is "installed" by simply creating the right layout on the disk with the right files, there's no system registration mechanism attached to it (typically called x-copy deployment). The most common way is to unzip a build into a directory.
@@ -103,7 +103,7 @@ To achieve the desired behavior the install location must be recorded in some sy
   * `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` - where `<arch>` is one of the `x86`, `x64`, `arm` or `arm64`.
   Note that this registry key is "redirected" that means that 32-bit processes see different copy of the key then 64bit processes. So it's important that both installers and the host access only the 32-bit view of the registry.
 * Linux and macOS - the installer will store the install location in a text file
-  * `/etc/dotnet/install.conf` - The file will be in the `.ini` [format](https://en.wikipedia.org/wiki/INI_file). In it the key `InstallLocation` (in no section) will contain the path to the global location. The host will have a simplistic parser for this file, which will only support empty lines, comment lines (starts with #) and the one key/value pair. Any additional keys will be ignored. The host will trim any spaces around the equal sign and then treat the rest of the line after the equal sign as the install location path (no quotes or escaping).
+  * `/etc/dotnet/install_location` - a text file. The first line of the file specifies the install location path (no quotes or escaping).
 
 The muxer is registered on the system in such a way that it is readily accessible without providing full path to it. The exact mechanism is platform specific and outside of the scope of this document. (For example on Windows it's added to `PATH`)
 
@@ -112,7 +112,7 @@ This allows users to install private copy of .NET Core into any directory. This 
 
 There is not installer for this scenario, these installs are produced by simply copying the right directory structure into a custom location.
 
-If the muxer (`dotnet`) is used then it must be invoked directly from the private install location (it's not registered on `PATH` in any way).  
+If the muxer (`dotnet`) is used then it must be invoked directly from the private install location (private install location is not registered in the `PATH` unless explicitly modified by the user).  
 If other hosts are used then the private install location must be specified in environment variable:
 * `DOTNET_ROOT`
 * `DOTNET_ROOT(x86)` for 32-bit process running on 64-bit Windows.
@@ -131,14 +131,14 @@ All other hosts will search for the first location which exists in this order:
 * :new: global registered install location, in the `/host/fxr/<version>` subdirectory  
   **We've committed to support this on Windows for .NET Core 3.0**
   * Windows - `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation` (32-bit view)  
-  * Linux/macOS - `/etc/dotnet/install.conf`  
-* default global location, in the `/host/fxr/<version>` subdirectory
+  * Linux/macOS - `/etc/dotnet/install_location`  
+* default global location, in the `host/fxr/<version>` subdirectory
   * Windows (32-bit process on 64-bit Windows) - `%ProgramFiles(x86)%\dotnet`
   * Windows (everything else) - `%ProgramFiles%\dotnet`
   * Linux - `/usr/share/dotnet`
   * macOS - `/usr/local/share/dotnet`
 
-In each case with the `<version>` subdirectory, the latest available version as per SemVer 2.0 rules will be selected. Note that the algorithm picks the first location which exists, and only then looks for the `/host/fxr/<version>` subdirectory, and if that doesn't exist, or the library is missing it will fail.
+In each case with the `<version>` subdirectory, the latest available version as per SemVer 2.0 rules will be selected. Note that the algorithm picks the first location which exists, and only then looks for the `host/fxr/<version>` subdirectory, and if that doesn't exist, or the library is missing it will fail.
 
 The reason for including the default global location is so that 3.0 host can find 2.* installs since those are not registered in the system. All 3.0 and higher installs should be registered.
 
@@ -168,7 +168,8 @@ The reason for including the default global location is so that 3.0 host can fin
 
 *Note: As of .NET Core 2.2 Linux/macOS effectively doesn't support multi-level lookup as there are no additional search paths considered when it's turned on.*
 
-The multi-level lookup feature is only useful for private installs (xcopy). Installs into global locations typically don't want/need multi-level lookup. Important scenarios:
+The multi-level lookup feature is typically useful for private installs (xcopy). If there's only one global install location then apps which use it don't need the multi-level lookup functionality.  
+Important scenarios:
 * Muxer from global location - for example running `dotnet build`. This will already use the global location for framework/SDK search since it's the one next to the used `hostfxr`. Multi-level lookup in this case doesn't add any value.
 * `apphost` relying on global location - this is basically the default case for .NET Core 3.0. Framework dependent `apphost` which loads `hostfxr` from global location. This case will also already use global location for framework/SDK search due to it using `hostfxr` from the global location. Multi-level lookup doesn't add any value.
 * Muxer from a private install (xcopy) - typically running `dotnet` using full path. This will use `hostfxr` from the private install and thus will use the private install to search for frameworks/SDKs. Multi-level lookup in this case helps by also including global locations in the frameworks/SDKs search. Only needed if trying to run apps which require frameworks/SDKs not in the private install.
@@ -224,11 +225,13 @@ If the muxer changes then the question is how much:
 * Alternatively it could only use `DOTNET_ROOT` and its location (`DOTNET_ROOT` would need to be preferred for it to make a difference).
 * Another consideration is reacting to multi-level lookup in `hostfxr` search as well. This would unify the probing logic for `hostfxr` with that for frameworks and SDKs. This is the only option which would effectively guarantee the usage of highest available version of `hostfxr` and thus effectively remove the problem of using older `hostfxr` with newer `hostpolicy`.
 
-Looking for recommendations.
+There are also security implications of allowing to search for `hostfxr` (or the frameworks) in custom locations. The muxer `dotnet.exe` is typically installed in a trusted location (like `Program Files`). If there are ways to modify its behavior to load `hostfxr` or frameworks from "untrusted" location, it can lead to security issues. So supporting `DOTNET_ROOT` in `dotnet.exe` would mean it's possible to tell `dotnet.exe` to load the `hostfxr` from any location by simply setting an environment variable.
+
+The outcome for 3.0 is to not modify the `dotnet.exe` in how it searches for `hostfxr`. The only modification will be to `apphost` and other custom hosts.
 
 
 ### Describe targeting packs
-In .NET Core 3.0 aside from the shared frameworks (which are effectively also runtime packs) there's also the notion of targeting packs. The document might mention them, where they live and if the installation types have any effect on their behavior.
+In .NET Core 3.0 aside from the shared frameworks (which are effectively also runtime packs) there's also the notion of targeting packs. Currently this document doesn't describe where they are installed and how they are found.
 
 ### Support for per-user installation
 This would in theory allow installation which would be registered in `PATH` (and similar mechanism) but would be per-user and thus not require admin/root rights to install.
