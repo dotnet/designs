@@ -145,7 +145,7 @@ The reason for including the default global location is so that 3.0 host can fin
 ### Framework and SDK search
 All hosts use the same logic.
 
-Both framework and SDK search uses the same logic, the only difference is that frameworks are in the `share` subdirectory, while SDKs are in the `sdk` subdirectory of the install location.
+Both framework and SDK search uses the same logic, the only difference is that frameworks are in the `shared` subdirectory, while SDKs are in the `sdk` subdirectory of the install location.
 In both cases all locations listed below are searched and the complete list of all available SDKs/Frameworks is combined before making a choice which one will be used (based on version requirements).
 
 **Important:** There's a difference in search algorithm for `hostfxr` and for frameworks/SDKs. For `hostfxr` only the first available location is considered (and the highest version from that location is selected). For frameworks/SDKs **all** locations are considered and the best match for the requested version is selected from all those locations.
