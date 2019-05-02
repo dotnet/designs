@@ -70,7 +70,7 @@ For .Net Core 3.0, we propose to implement the persistent-extraction scheme. Bas
 The desirable characteristics of the extraction directory are:
 
 - Should be configurable
-- Should be semi-permeant: Not a directory that is lost frequently (ex: on machine reboot), but considered recyclable storage, since any subsequent run can re-extract.
+- Should be semi-permanent: Not a directory that is lost frequently (ex: on machine reboot), but considered recyclable storage, since any subsequent run can re-extract.
 - Be short, to reduce the risk of running over path length limit.
 
 For a single-file app, the extraction directory is `<base>/<app>/<bundle-id>`
@@ -80,7 +80,7 @@ For a single-file app, the extraction directory is `<base>/<app>/<bundle-id>`
   * `DOTNET_BUNDLE_EXTRACT_BASE_DIR` environment variable, if set.
   * If not, defaults to 
     * `%TEMP%\.net ` on Windows
-    * `$TMPDIR\.net` if `$TMPDIR` is set (Posix conforming OSes including Mac)
+    * `$TMPDIR/.net` if `$TMPDIR` is set (Posix conforming OSes including Mac)
     * Otherwise `/var/tmp/.net` (Ubuntu)  if the directory exists.
     * Otherwise  `/tmp/.net` 
 
@@ -112,7 +112,9 @@ During startup, the Apphost:
 
 ### Extraction Configurations
 
-The following environment variables influence the extraction mechanism:
+The following switches can be set in the application configuration file (`runtimeconfig.json`) to influence the extraction mechanism:
 
-* `DOTNET_BUNDLE_EXTRACT_BASE_DIR`  The base directory within which the files embedded in a single-file app are extracted, as explained in sections above. This directory can be set up an admin-only writable location if necessary.
-* `DOTNET_BUNDLE_EXTRACT_ALL`:  Apps may choose to have all of their dependencies extracted to disk at runtime (instead of loading certain files directly from the bundle) by setting this variable.
+* `ExtractBaseDir` The base directory within which the files embedded in a single-file app are extracted, as explained in sections above. This directory can be set up an admin-only writable location if necessary.
+* `ExtractAllFiles`:  Extract all embedded dependencies in each run (instead of loading certain files directly from the bundle) .
+
+Alternately, the environment variables `DOTNET_BUNDLE_EXTRACT_BASE_DIR`  and `DOTNET_BUNDLE_EXTRACT_ALL_FILES` can be set at run time, to achieve the effect of the configuration settings `ExtractBaseDir` and `ExtractAllFiles` respectively.  The environment variables are expected to be useful in debugging scenarios.
