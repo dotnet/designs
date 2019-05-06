@@ -108,7 +108,7 @@ During startup, the Apphost:
 - After successful extraction of all necessary files to `<base>/<app>/<proc-id>`, the app host commits the extraction to the actual location `<base>/<app>/<bundle-id>` .
   - If `<base>/<app>/<bundle-id>` already exists by now, another process may have completed the extraction, so the host removes the directory `<base>/<app>/<proc-id>`, and continues execution with files in `<base>/<app>/<bundle-id>` .
   - If not,  `<base>/<app>/<proc-id>` is renamed to `<base>/<app>/<bundle-id>` 
-- The `<base>/<app>/<proc-id>`  is now considered app-root, and execution continues.
+- The `<base>/<app>/<bundle-id>` is now considered app-root, and execution continues.
 
 ### Extraction Configurations
 
