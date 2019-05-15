@@ -270,7 +270,7 @@ To summarize, here's the overall experience for creating a HelloWorld single-fil
 
   * Publish directory contains the host `HelloWorld.exe` ,  the app `HelloWorld.dll`, configuration files `HelloWorld.deps.json`, `HelloWorld.runtimeconfig.json`, and the PDB-file `HelloWorld.pdb`.
 
-* Single-file publish: `dotnet publish /p:PublishSingleFile=true`
+* Single-file publish: `dotnet publish -r win10-x64 --self-contained=false /p:PublishSingleFile=true`
 
   * Publish directory contains: `HelloWorld.exe` `HelloWorld.pdb`
 
@@ -282,11 +282,11 @@ To summarize, here's the overall experience for creating a HelloWorld single-fil
 
 #### Self-Contained HelloWorld
 
-- Normal publish: `dotnet publish -r win10-x64 --self-contained`
+- Normal publish: `dotnet publish -r win10-x64`
 
   * Publish directory contains 221 files including the host, the app, configuration files, the PDB-file and the runtime.
 
-- Single-file publish: `dotnet publish -r win10-x64 --self-contained /p:PublishSingleFile=true`
+- Single-file publish: `dotnet publish -r win10-x64 /p:PublishSingleFile=true`
 
   - Publish directory contains: `HelloWorld.exe` `HelloWorld.pdb`
   - The remaining 219 files are embedded within the host `HelloWorld.exe`.
