@@ -80,6 +80,6 @@ For example, if the bundle contains the following files:
 - `r2r.dll` is a ready-to-run assembly that is bundled and extract out to disk
 - `dep.dll` is an assembly that is not bundled with the app,
 
-The TPA will be set to `:/il.dll`; `/var/tmp/.net/app/e53xf3/r2r.dll`; `/usr/local/nuget/dep.dll`
+The TPA will be set to `:il.dll`: `/var/tmp/.net/app/e53xf3/r2r.dll`: `/usr/local/nuget/dep.dll`
 
 If the runtime wants to load `il.dll`, it reads the contents of the file via the `bundle_reader` and loads the file using `PELoader`.

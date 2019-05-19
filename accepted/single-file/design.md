@@ -143,10 +143,6 @@ On Startup, the AppHost checks if it has embedded files. If so, it
 
 An app may choose to only embed some files (ex: due to licensing restrictions) and expect to pickup other dependencies from application-launch directory, nuget packages, etc. In order to resolve assemblies and native libraries, the embedded resources are probed first, followed by other probing paths. 
 
-#### App_Root Setting
-
-If files are extracted out to disk, the corehost `App_Root` is set to the directory where files are extracted. If all files in a bundle can be processed directly without need for extraction (an extraction directory is not created), and the `App_Root` is set to the directory where the AppHost resides.
-
 ### New API
 
 In this section, we propose adding a few APIs to facilitate common operations on bundled-apps.
@@ -182,7 +178,11 @@ We can also provide an abstraction that abstracts away the physical location of 
 
 ### Existing API
 
-We need to determine the semantics of current APIs such as `Assembly.Location` that return the information about an assembly's location on disk. For example, `Assembly.Location`  for a bundled assembly could return:
+We need to determine the semantics of current APIs such as `Assembly.Location` that return the information about an assembly's location on disk. 
+
+#### `Assembly.Location`
+
+`Assembly.Location`  for a bundled assembly could return:
 
 * A fixed literal (ex: `null`) indicating that no actual location is available.
 * The simple name of the assembly (with no path).
@@ -199,6 +199,10 @@ In the first implementation, we propose keeping the default behavior of `Assembl
 * If the assembly is extracted to disk, return the location of the extracted file.
 
 The semantics of assembly location should be tuned further based on user feedback, and such that it aligns with other bundling technologies in .Net Core ecosystem.
+
+#### `AppContext.BaseDirectory`
+
+If files are extracted out to disk, the `AppContext.BaseDirectory` is set to the directory where files are extracted. If all files in a bundle can be processed directly without need for extraction (an extraction directory is not created), and the `AppContext.BaseDirectory` is set to the directory where the AppHost resides.
 
 ## Testing
 
