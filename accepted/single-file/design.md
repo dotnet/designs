@@ -182,7 +182,7 @@ We need to determine the semantics of current APIs such as `Assembly.Location` t
 
 #### `Assembly.Location`
 
-`Assembly.Location`  for a bundled assembly could return:
+There are a few options to consider for the `Assembly.Location`  property of a bundled assembly:
 
 * A fixed literal (ex: `null`) indicating that no actual location is available.
 * The simple name of the assembly (with no path).
@@ -191,18 +191,25 @@ We need to determine the semantics of current APIs such as `Assembly.Location` t
 * In the case of files spilled to disk (ex: ready-to-run assemblies) -- the actual location of the extracted file.
 * A configurable selection of the above, etc.
 
-Most of the app development can be agnostic to whether the app is published as single-file or not. However, the parts of the app that deal with physical locations of files need to be aware of the single-file packaging. 
-
-In the first implementation, we propose keeping the default behavior of `Assembly.Location`. That is, 
+We propose keeping the default behavior of `Assembly.Location`. That is, 
 
 * If the assembly is loaded directly from the bundle, return empty-string
 * If the assembly is extracted to disk, return the location of the extracted file.
 
-The semantics of assembly location should be tuned further based on user feedback, and such that it aligns with other bundling technologies in .Net Core ecosystem.
+Most of the app development can be agnostic to whether the app is published as single-file or not. However, the parts of the app that deal with physical locations of files need to be aware of the single-file packaging. 
 
 #### `AppContext.BaseDirectory`
 
-If files are extracted out to disk, the `AppContext.BaseDirectory` is set to the directory where files are extracted. If all files in a bundle can be processed directly without need for extraction (an extraction directory is not created), and the `AppContext.BaseDirectory` is set to the directory where the AppHost resides.
+A few options to consider for the `AppContext.BaseDirectory` are:
+
+* The directory where embedded files are extracted out: This option enables easy access to content files spilled to disk. However, if no files need to be extracted to disk for an application bundle, there's no extraction directory. 
+* The extraction-directory if files are extracted, the AppHost directory otherwise. The limitation to this approach is that the value of  `AppContext.BaseDirectory`  changes with the way applications are packaged/executed.
+* The directory where `AppHost` binary resides (always).
+
+We propose that `AppContext.BaseDirectory`  should always be set to the directory where the `AppHost` bundle resides.  This scheme doesn't provide an obvious mechanism to access the contents of the extraction directory -- by design. The recommended method for accessing content files from the bundle are: 
+
+- Do not bundle application data files into the single-exe; instead them next to the bundle. This way, the application binary is a single-file, but not the whole application.
+- Embed data files as managed resources into application binary, and access them via resource management [APIs](<https://docs.microsoft.com/en-us/dotnet/api/system.reflection.assembly.getmanifestresourcestream?view=netcore-3.0>). 
 
 ## Testing
 
