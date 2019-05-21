@@ -72,14 +72,7 @@ CORECLR_HOSTING_API(coreclr_register_bundle_reader,
                                           size_t* size));
 ```
 
-`HostPolicy` communicates the location of files residing within the bundle with a special bundle-marker (`:`) in the CoreCLR properties such as `TRUSTED_PLATFORM_ASSEMBLIES`.
+`HostPolicy` maintains a list of bundled assemblies internally, and communicates the assemblies on disk (unbundled or extracted) to the runtime in `TRUSTED_PLATFORM_ASSEMBLIES`.
 
-For example, if the bundle contains the following files:
+In order to resolve an assembly, the TPA-Binder first checks if it is available in the bundle (by invoking the `bundle_reader` callback). If the assembly is available in the bundle, the runtime loads the binary from memory via PELoader. If the assembly is not available in the bundle, the runtime continues to resolve it using the TPA-list.
 
-- `il.dll` is a pure managed assembly that is loaded directly from the bundle
-- `r2r.dll` is a ready-to-run assembly that is bundled and extract out to disk
-- `dep.dll` is an assembly that is not bundled with the app,
-
-The TPA will be set to `:il.dll`: `/var/tmp/.net/app/e53xf3/r2r.dll`: `/usr/local/nuget/dep.dll`
-
-If the runtime wants to load `il.dll`, it reads the contents of the file via the `bundle_reader` and loads the file using `PELoader`.
