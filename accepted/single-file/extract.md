@@ -112,7 +112,7 @@ During startup, the Apphost:
 
 ### Extraction Configurations
 
-The following switches can be set in the application configuration file (`runtimeconfig.json`) to influence the extraction mechanism:
+The following build-properties can be set to influence the extraction mechanism:
 
 * `ExtractBaseDir` The base directory within which the files embedded in a single-file app are extracted, as explained in sections above. This directory can be set up an admin-only writable location if necessary.
 * `ExtractAllFiles`:  Extract all embedded dependencies in each run (instead of loading certain files directly from the bundle) .
