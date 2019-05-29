@@ -135,28 +135,13 @@ Once the single-file-publish tooling is added to the publish pipeline, other sta
 
 On Startup, the AppHost checks if it has embedded files. If so, it 
 
-* Processes configuration files such as `app.deps.json` , `app.runtimeconfig.json` from the embedded files, instead of looking for them on the disk next to the app.
-* Sets up the data-structures to locate pure managed assemblies within the bundle so that they can be loaded on-demand.
-* Extracts the other files (native libraries, ready-to-run compiled assemblies, and other data files to an *install-location*). Extraction of files is discussed in detail in this  [document](extract.md). 
-* Communicates the information about bundled and extracted files to the runtime, as explained in the section on dependency resolution.
+* Memory maps the entire bundle file.
+* Extracts the necessary files (ex: native binaries) to disk (if any) as explained in this [document](extract.md). 
+* Sets up data-structures so other components can access files embedded directly, as explained in this [document](direct.md)
 
 #### Dependency Resolution
 
 An app may choose to only embed some files (ex: due to licensing restrictions) and expect to pickup other dependencies from application-launch directory, nuget packages, etc. In order to resolve assemblies and native libraries, the embedded resources are probed first, followed by other probing paths. 
-
-The communication between the host and the runtime will continue to be through properties such as `TRUSTED_PLATFORM_ASSEMBLIES`, `NATIVE_DLL_SEARCH_DIRECTORIES`, etc.  These properties will be populated with entries from the bundled files (using a special marker) and the extracted files.
-
-For example, if the TPA without single-exe publish is:
-`~/app/il.dll`; `~/app/r2r.dll`; `/usr/local/nuget/dep.dll`
-
-Where
-
-* `il.dll` is a pure managed assembly that is loaded directly from the bundle
-* `r2r.dll` is a ready-to-run assembly that is bundled and extract out to disk
-* `dep.dll` is an assembly that is not bundled with the app,
-
-the TPA with single-exe publish will be (assuming `?` is the bundle marker):
-`?/il.dll`; `/var/tmp/.net/app/e53xf3/r2r.dll`; `/usr/local/nuget/dep.dll`
 
 ### New API
 
@@ -193,23 +178,38 @@ We can also provide an abstraction that abstracts away the physical location of 
 
 ### Existing API
 
-We need to determine the semantics of current APIs such as `Assembly.Location` that return the information about an assembly's location on disk. For example, `Assembly.Location`  for a bundled assembly could return:
+We need to determine the semantics of current APIs such as `Assembly.Location` that return the information about an assembly's location on disk. 
+
+#### `Assembly.Location`
+
+There are a few options to consider for the `Assembly.Location`  property of a bundled assembly:
 
 * A fixed literal (ex: `null`) indicating that no actual location is available.
 * The simple name of the assembly (with no path).
-* A special UNC notation such as `//?/asm.dll` to denote files that come from the bundle. If multiple single-file bundles are used in an app (ex: plugins), this notation could be extended as `//?bundle-assembly/name.dll` -- if it is important to make a distinction with respect to which bundle an assembly came from.
+* A special UNC notation such as `<bundle-path>/:/asm.dll` to denote files that come from the bundle. 
 * The path of the assembly as if it were not to be packaged into the single-file.
 * In the case of files spilled to disk (ex: ready-to-run assemblies) -- the actual location of the extracted file.
 * A configurable selection of the above, etc.
 
-Most of the app development can be agnostic to whether the app is published as single-file or not. However, the parts of the app that deal with physical locations of files need to be aware of the single-file packaging. 
-
-In the first implementation, we propose keeping the default behavior of `Assembly.Location`. That is, 
+We propose keeping the default behavior of `Assembly.Location`. That is, 
 
 * If the assembly is loaded directly from the bundle, return empty-string
 * If the assembly is extracted to disk, return the location of the extracted file.
 
-The semantics of assembly location should be tuned further based on user feedback, and such that it aligns with other bundling technologies in .Net Core ecosystem.
+Most of the app development can be agnostic to whether the app is published as single-file or not. However, the parts of the app that deal with physical locations of files need to be aware of the single-file packaging. 
+
+#### `AppContext.BaseDirectory`
+
+A few options to consider for the `AppContext.BaseDirectory` are:
+
+* The directory where embedded files are extracted out: This option enables easy access to content files spilled to disk. However, if no files need to be extracted to disk for an application bundle, there's no extraction directory. 
+* The extraction-directory if files are extracted, the AppHost directory otherwise. The limitation to this approach is that the value of  `AppContext.BaseDirectory`  changes with the way applications are packaged/executed.
+* The directory where `AppHost` binary resides (always).
+
+We propose that `AppContext.BaseDirectory`  should always be set to the directory where the `AppHost` bundle resides.  This scheme doesn't provide an obvious mechanism to access the contents of the extraction directory -- by design. The recommended method for accessing content files from the bundle are: 
+
+- Do not bundle application data files into the single-exe; instead them next to the bundle. This way, the application binary is a single-file, but not the whole application.
+- Embed data files as managed resources into application binary, and access them via resource management [APIs](<https://docs.microsoft.com/en-us/dotnet/api/system.reflection.assembly.getmanifestresourcestream?view=netcore-3.0>). 
 
 ## Testing
 
