@@ -112,9 +112,14 @@ During startup, the Apphost:
 
 ### Extraction Configurations
 
-The following build-properties can be set to influence the extraction mechanism:
+The following settings can be used to configure the extraction mechanism:
 
-* `ExtractBaseDir` The base directory within which the files embedded in a single-file app are extracted, as explained in sections above. This directory can be set up an admin-only writable location if necessary.
-* `ExtractAllFiles`:  Extract all embedded dependencies in each run (instead of loading certain files directly from the bundle) .
+* Extract all embedded dependencies in each run (instead of loading certain files directly from the bundle) 
+  * Build time: Set the property `ExtractAllFiles= true`
+  * Run-time: Set the environment variable `DOTNET_BUNDLE_EXTRACT_ALL_FILES=true`
+* Set the base directory within which the files embedded in a single-file app are extracted, as explained in sections above. 
+  * Run-time: Set the `DOTNET_BUNDLE_EXTRACT_BASE_DIR` environment variable to the full path.
+  * There is no build-time configuration, since this is a path-setting on the machine where the app is run.
 
-Alternately, the environment variables `DOTNET_BUNDLE_EXTRACT_BASE_DIR`  and `DOTNET_BUNDLE_EXTRACT_ALL_FILES` can be set at run time, to achieve the effect of the configuration settings `ExtractBaseDir` and `ExtractAllFiles` respectively.  The environment variables are expected to be useful in debugging scenarios.
+The environment variables mentioned above are expected to be useful in debugging scenarios.
+
