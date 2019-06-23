@@ -98,6 +98,7 @@ The `global.json` schema to offers support for all of the identified scenarios t
     * `true` or `false`
     * Default: `true` to match today's behavior.
   * `rollForward`
+    * The `version` must be specified if `rollForward` is specified.
     * To avoid some of the repetitiveness, I do not restate in these rules that version numbers below that specified are always ignored. 
     * `patch`
       * If the requested major, minor, feature band, and patch if found, use it.
