@@ -26,7 +26,7 @@ Given x.y.znn
 
 ## Current behavior
 
-The SDK resolvers (in both the CLI and VS) search from the current location (project in VS) up the directory hierarchy until they encounter a `global.json` file. When the resolver finds one, _it stop looking_ and attempts to resolve the SDK version specified in that file. This happens even if this `global.json` does not specify an SDK version.
+The SDK resolvers (in both the CLI and VS) search from the current location (project in VS) up the directory hierarchy until they encounter a `global.json` file. When the resolver finds one, _it stops looking_ and attempts to resolve the SDK version specified in that file. This happens even if this `global.json` does not specify an SDK version.
 
 When a `global.json` is encountered and it specifies an SDK version, the SDK resolvers attempt to locate that specific SDK patch version:
 
