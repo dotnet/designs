@@ -72,11 +72,9 @@ Due to the rules above, the following occurs:
 * Hosted CI, including Azure DevOps and Kudu, need to provide a small number of SDKs.
   * If there is no patch of the major/minor/feature version (xyz in `x.y.znn`) present, the build fails, causing friction between user and host needs.
 
-## Proposal C
+## Proposal
 
-This proposal parallels [runtime roll-forward behavior as initially described](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md)} and [recent improvements](https://github.com/dotnet/designs/blob/master/accepted/runtime-binding.md). All of the features proposed here may not be included in Phase 1. It will include at least `ignorePreview` and `"rollforward": "disable"`
-
-This is called Proposal C to differentiate it from two earlier proposals that were discarded but are included at the end of this document for reference.
+This proposal parallels [runtime roll-forward behavior as initially described](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md)} and [recent improvements](https://github.com/dotnet/designs/blob/master/accepted/runtime-binding.md). All of the features proposed here may not be included in Phase 1. It will include at least `usePreview` and `"rollforward": "disable"`
 
 ### Details
 
@@ -174,8 +172,8 @@ Or, if it is easier to understand with logic (bail out of logic on fail or selec
 ## Customer problems addressed
 
 * User wants to install a preview but only use it with a subset of projects.
-  * User opts out in projects where preview should not be used by adding `ignorePreview: true` to those projects, or
-  * User adds `ignorePreview: true` in a `global.json` higher in their file system, and adds `ignorePreview: false` in a `global.json` in specific projects.
+  * User opts out in projects where preview should not be used by adding `usePreview: false` to those projects, or
+  * User adds `usePreview: false` in a `global.json` higher in their file system, and adds `usePreview: true` in a `global.json` in specific projects.
 * User wants to always use a specific SDK patch version, and receive an error if it is not on the machine.
   * User adds `rollForward: disable` to a `global.json`
 * User wants to always run the latest patch of a particular SDK feature band.
@@ -202,7 +200,7 @@ The following `global.json` defines a specific version number, and to use a high
 {
   "sdk": {
     "version": "2.2.100",
-    "ignorePreview": false,
+    "usePreview": true,
     "rollForward": "patch"
   }
 }
@@ -227,7 +225,7 @@ If there is no `global.json` that would logically be the same as the following.
 ```json
 {
   "sdk": {
-    "ignorePreview": false,
+    "usePreview": true,
     "rollForward": "latestMajor"
   }
 }
@@ -240,7 +238,7 @@ If there is no `global.json` but the user does not want to use previews, that wo
 ```json
 {
   "sdk": {
-    "ignorePreview": true,
+    "usePreview": false,
     "rollForward": "latestMajor"
   }
 }
@@ -251,7 +249,7 @@ The common `global.json` for this case is likely to be:
 ```json
 {
   "sdk": {
-    "ignorePreview": true,
+    "usePreview": false,
   }
 }
 ```
@@ -266,7 +264,7 @@ If the user wants to specify the lowest SDK they want to use, they could use the
 {
   "sdk": {
     "version": "2.2.100",
-    "ignorePreview": false,
+    "usePreview": true,
     "rollForward": "latestMajor"
   }
 }
@@ -291,7 +289,7 @@ If the user wanted to use any SDK higher than the one listed but ignore previews
 {
   "sdk": {
     "version": "2.2.100",
-    "ignorePreview": true,
+    "usePreview": false,
     "rollForward": "latestMajor"
   }
 }
@@ -305,7 +303,7 @@ If the user wants to use any SDK as high or higher than the one listed but ignor
 {
   "sdk": {
     "version": "3.0.100-Pre",
-    "ignorePreview": true,
+    "usePreview": false,
     "rollForward": "highestMajor"
   }
 }
@@ -325,7 +323,7 @@ If the user wants an exact match, they could use the following.
 {
   "sdk": {
     "version": "2.2.100",
-    "ignorePreview": false,
+    "usePreview": true,
     "rollForward": "disable"
   }
 }
@@ -361,7 +359,7 @@ If the user wants the highest within a runtime major/minor, they could use the f
 {
   "sdk": {
     "version": "2.2.100",
-    "ignorePreview": false,
+    "usePreview": true,
     "rollForward": "latestMinor"
   }
 }
@@ -394,13 +392,3 @@ Prior to arriving at this proposal, two others were considered. Neither of these
 
 * An independent versioning scheme. It's largest downside is that it would be _another_ way users would have to think about specifying versioning behavior. 
 * An attempt to parallel NuGet. Definining [NuGet version ranges](https://docs.microsoft.com/en-us/nuget/reference/package-versioning) is relatively complex, and it didn't feel like a good fit. 
-
-## Additional suggestions
-
-These suggestions have been received via Twitter, and I want to acknowledge that we've seen them and why we aren't acting on them at present.
-
-### [Have Visual Studio offer to download the requested SDK](https://twitter.com/Nick_Craver/status/1124649778078527488)
-
-This idea is for Visual Studio, so it is not covered in this proposal. 
-
-The roll-forward within feature band is a feature, so this probably makes sense only when the presence of global.json would fail.
