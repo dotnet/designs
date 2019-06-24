@@ -24,7 +24,7 @@ Given x.y.znn
 * z is the feature band
 * nn is the patch
 
-## Current behavior
+## Previous behavior
 
 The SDK resolvers (in both the CLI and VS) search from the current location (project in VS) up the directory hierarchy until they encounter a `global.json` file. When the resolver finds one, _it stops looking_ and attempts to resolve the SDK version specified in that file. This happens even if this `global.json` does not specify an SDK version.
 
@@ -76,16 +76,11 @@ Due to the rules above, the following occurs:
 
 This proposal parallels [runtime roll-forward behavior as initially described](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md)} and [recent improvements](https://github.com/dotnet/designs/blob/master/accepted/runtime-binding.md). All of the features proposed here may not be included in Phase 1. It will include at least `usePreview` and `"rollforward": "disable"`
 
-### Details
-
 The runtime options allow for three basic approaches: find nearest, find latest and find exact. 
 
-To avoid a backward compatibility issue, the default recovery strategy when a match is not found needs to match the old `dotnet` behavior. This defines the defaults, and the default behavior differs between runtime. 
+## Details
 
-* Runtime: From the [recent improvements](https://github.com/dotnet/designs/blob/master/accepted/runtime-binding.md) document "_In all cases except `disable` the highest available patch version is selected._"
-* SDK: For backwards compatibility, the additonal option `patch` is offered and is the default.
-  * If the specified patch version is found, it is used.
-  * In all other cases (except `disable`), the highest patch within the appropriate feature band is used. 
+* Runtime: From the [recent improvements](https://github.com/dotnet/designs/blob/master/accepted/runtime-binding.md) document" _In all cases except `disable` the highest available patch version is selected._"
 
 The `global.json` schema to offers support for all of the identified scenarios that can be fixed without altering how we find `global.json`:
 
@@ -97,46 +92,55 @@ The `global.json` schema to offers support for all of the identified scenarios t
   * `usePreview`
     * `true` or `false`
     * Default: `true` to match today's behavior.
-  * `rollForward`
-    * The `version` must be specified if `rollForward` is specified.
-    * To avoid some of the repetitiveness, I do not restate in these rules that version numbers below that specified are always ignored. 
-    * `patch`
+  * `rollForward` (The `version` must be specified if `rollForward` is specified.)
+    * `patch` **[[(I've gone back and forth on "patch" or "legacy" here)]]**
       * If the requested major, minor, feature band, and patch if found, use it.
       * Otherwise, use the highest patch within the specified major, minor and feature band.
+      * This recreates the previous SDK selection criteria.
     * `feature`
-      * If the requested major, minor, feature band, and patch is found, use it.
-      * Otherwise, if the requested major, minor and feature band is found, use the highest patch in that band.
-      * Otherwise, use the lowest higher feature band, and use the highest patch within that feature band.
+      * If the requested major, minor, feature band, is found, use the highest available patch in that band.
+      * Otherwise, use the lowest higher major/minor/feature band, use the highest patch within that feature band.
     * `minor`
-      * If the requested major, minor, feature band, and patch is found, use it.
-      * Otherwise, if the requested major, minor and feature band is found, use the highest patch in that band.
-      * Otherwise, if the requested major and minor is found, use the highest patch in the _lowest_ feature band within that major and minor version.
-      * Otherwise, use the lowest higher minor, it's lowest feature band, and the highest patch within that feature band.
-    * `major` 
-      * If the requested major, minor, feature band, and patch is found, use it.
-      * Otherwise, if the requested major, minor and feature band is found, use the highest patch in that band.
-      * Otherwise, if the requested major and minor is found, use the highest patch in the _lowest_ feature band within that major and minor version.
-      * Otherwise, if the requested major is found, use the  _lowest_ minor within that major version, and it's lowest feature band, and it's highest patch.
+      * If the requested major, minor, feature band, is found, use the highest available patch in that band.
+      * If there is higher major/minor/feature band, use the highest patch within that feature band.
+      * Otherwise, use the lowest higher major/minor, use it's lowest feature band, and the highest patch within that feature band.
+    * `major`
+      * If the requested major, minor, feature band, is found, use the highest available patch in that band.
+      * If there is a higher major/minor/feature band, use the highest patch within that feature band.
+      * If there is a higher major/minor, use it's lowest feature band, and the highest patch within that feature band.
       * Otherwise, use the lowest higher major, it's lowest minor, and it's lowest feature band, and the highest patch within that feature band.
     * `latestPatch`
       * Even if the requested major, minor, feature band and patch is found, do not use it unless it matches rules below.
-      * Select the highest available patch version that matches the specified major, minor and feature band versions.
+      * Select the highest available patch version that matches the specified major, minor and feature band.
     * `latestFeature`
-      * Even if the requested major, minor, feature band and patch is found, do not use it unless it matches rules below.
+      * Even if the requested major, minor, feature band is found, do not use it unless it matches rules below.
       * Select the highest available feature band that matches the specified major and minor version, and select it's highest patch.
     * `latestMinor`
-      * Even if the requested major, minor, feature band and patch is found, do not use it unless it matches rules below.
+      * Even if the requested major, minor is found, do not use it unless it matches rules below.
       * Select the highest available minor that matches the specified major version, and select it's highest feature band, and that feature band's highest patch.
-    * `latestMajor` 
-      * Even if the requested major, minor, feature band and patch is found, do not use it unless it matches rules below.
+    * `latestMajor` (latest)
+      * Even if the requested major is found, do not use it unless it matches rules below.
       * Select the highest available major version, and select it's highest minor version, and that minor's highest feature band, and that feature band's highest patch.
     * `disable`
       * Do not roll forward. Only bind to specified version. This policy means the latest patches, including security patches will not be used.
-    * Defaults: 
-      * If a version is specified in the `global.json`, the default is `patch` to match today's behavior.
-      * If there is no `global.json` or a version is not specified, the default is`latestMajor`, again to match today's behavior.
  
-### Examples to illustrate roll-forward options
+## Default
+
+### No `global.json`
+
+If there is no `global.json` or a version is not specified, the default is`latestMajor`, again to match today's behavior.
+
+### `global.json` containing a version number
+
+**Breaking Change** This default represents a breaking change. We took this change because we believe the new behavior will cause no change or be an improvement.  
+
+Previously, if the specified patch version was present, it was used even if a higher patch number was installed. In discussing this with users, ignoring the updated patch was not the anticipated behavior. Also, the previous default did not roll forward across feature, minor or major bands. This could result in failure when a usable SDK existed on the machine.
+
+The new behavior is that the highest patch within the feature band will be used even if the requested version is available, unless the `rollForward` is set to `disable`.
+
+Also, the nearest higher SDK will be used if there is no version that matches the requested major, minor and feature. This behavior can be changed by specifying other options for the `rollForward` property. 
+
+## Examples to illustrate roll-forward options
 
 The following table considers various SDK version combinations that may be available on the machine, and the outcome of the following `global.json`:
 
@@ -149,26 +153,16 @@ The following table considers various SDK version combinations that may be avail
 }
 ```
 
-| Available SDKs                                       | patch     | feature | minor   | major   | latestPatch | latestFeature | latestMinor | latestMajor | disable |
-|------------------------------------------------------|-----------|---------|---------|---------|-------------|---------------|-------------|-------------|---------|
-| 2.1.500                                              | fail      | fail    | fail    | fail    | fail        | fail          | fail        | fail        | fail    |
-| 2.1.501, 2.1.503                                     | _2.1.501_ | 2.1.501 | 2.1.501 | 2.1.501 | _2.1.503_   | 2.1.503       | 2.1.503     | 2.1.503     | 2.1.501 |
-| 2.1.503, 2.1.505, 2.1.601, 2.2.101, 3.0.100          | 2.1.503   | 2.1.503 | 2.1.503 | 2.1.503 | 2.1.505     | 2.1.601       | 2.2.101     | 3.0.100     | fail    |
-| 2.1.601, 2.1.604, 2.1.702, 2.2.101, 2.2.203, 3.0.100 | fail      | 2.1.601 | 2.1.601 | 2.1.601 | fail        | 2.1.702       | 2.2.203     | 3.0.100     | fail    |
-| 2.2.101, 2.2.203, 3.0.100                            | fail      | fail    | 2.2.101 | 2.2.101 | fail        | fail          | 2.2.203     | 3.0.100     | fail    |
-| 3.0.100, 3.1.102                                     | fail      | fail    | fail    | 3.0.100 | fail        | fail          | fail        | 3.1.102     | fail    |
+| Available SDKs                                       | patch   | feature | minor   | major(*) | latestPatch | latestFeature | latestMinor | latestMajor | disable |
+|------------------------------------------------------|---------|---------|---------|----------|-------------|---------------|-------------|-------------|---------|
+| 2.1.500                                              | fail    | fail    | fail    | fail     | fail        | fail          | fail        | fail        | fail    |
+| 2.1.501, 2.1.503                                     | 2.1.501 | 2.1.503 | 2.1.503 | 2.1.503  | 2.1.503     | 2.1.503       | 2.1.503     | 2.1.503     | 2.1.501 |
+| 2.1.503, 2.1.505, 2.1.601, 2.2.101, 3.0.100          | 2.1.505 | 2.1.505 | 2.1.505 | 2.1.505  | 2.1.505     | 2.1.601       | 2.2.101     | 3.0.100     | fail    |
+| 2.1.601, 2.1.604, 2.1.702, 2.2.101, 2.2.203, 3.0.100 | fail    | 2.1.604 | 2.1.604 | 2.1.604  | fail        | 2.1.702       | 2.2.203     | 3.0.100     | fail    |
+| 2.2.101, 2.2.203, 3.0.100                            | fail    | fail    | 2.2.101 | 2.2.101  | fail        | fail          | 2.2.203     | 3.0.100     | fail    |
+| 3.0.100, 3.1.102                                     | fail    | fail    | fail    | 3.0.102  | fail        | fail          | fail        | 3.1.102     | fail    |
 
-Or, if it is easier to understand with logic (bail out of logic on fail or select):
-
-1. If not `latest`, and there is a match, select it.
-1. If we get here for `disable`, then fail.
-1. Exclude any lower versions.
-1. If `minor` or `latestMinor`, exclude any that don't match major version. 
-1. If `feature` or `latestFeature`, exclude any that don't match major and minor version.
-1. If `patch` or `latestPatch`, exclude any that don't match major, minor and feature band version.
-1. If there is one left, select it.
-1. If any of the `latest` options are used, select the highest. 
-1. Otherwise, select the lowest major, and within that lowest minor, and within that lowest feature band. Then select the highest patch in that feature band.  
+(*)  Default
 
 ## Customer problems addressed
 
@@ -176,15 +170,11 @@ Or, if it is easier to understand with logic (bail out of logic on fail or selec
   * User opts out in projects where preview should not be used by adding `usePreview: false` to those projects, or
   * User adds `usePreview: false` in a `global.json` higher in their file system, and adds `usePreview: true` in a `global.json` in specific projects.
 * User wants to always use a specific SDK patch version, and receive an error if it is not on the machine.
-  * User adds `rollForward: disable` to a `global.json`
+  * User adds `version` and `rollForward: disable` to a `global.json`
+* User wants to set a floor or lowest version and use the best installed version above that (common for public repos).
+  * User adds `rollForward: latestMajor` and the lowest version (with patch) they want to a `global.json`
 * User wants to always run the latest patch of a particular SDK feature band.
   * User adds `rollForward: latestPatch` and the lowest version (with patch) they want to a `global.json`
-* User includes a feature that requires an SDK that corresponds to a SDK feature band or higher, and wants to run the best available tools.
-  * User adds `rollForward: latestMajor` and the lowest version (with patch) they want to a `global.json`
-* User wants to know what version of the SDK is being used.
-  * Not addressed in this proposal: `global.json` will still be a subtle, hidden and easily forgotten marker
-* User rarely wants the risk of running the unsupported scenario of multiple SDK versions in a solution build.
-  * Not addressed in this proposal: There is nothing that encourages users to place `global.json` in a logical location.
 * Hosted CI, including Azure DevOps and Kudu, need to provide a small number of SDKs.
   * It will now be possible for users to specify `global.json` files in a way that can work with Azure DevOps (roll-forward across at least feature bands)
   * We will work with Azure DevOps to determine the recommended `global.json` for this scenario.
@@ -193,33 +183,22 @@ Or, if it is easier to understand with logic (bail out of logic on fail or selec
 
 This section lists a series of scenarios and following the corresponding `global.json`. Following this is a table that shows the SDK that would be selected with specific combinations of SDKs present on the machine.
 
-### 1. Explicitly state today's behavior when a `global.json` specifies a version
+### 1. Previous behavior when a `global.json` specifies a version
 
-The following `global.json` defines a specific version number, and to use a higher version if it is available.
+The following `global.json` defines a specific version number, and to use a higher patch only when this version is not available. Note: this is not the default. 
 
 ```json
 {
   "sdk": {
     "version": "2.2.100",
-    "usePreview": true,
     "rollForward": "patch"
   }
 }
 ```
 
-The common `global.json` for this case is likely to be:
+### 2. Explicitly state previous behavior when there is no `global.json` by excluding the version number and stating behavior
 
-```json
-{
-  "sdk": {
-    "version": "2.2.100"
-  }
-}
-```
-
-### 2. Explicitly state today's behavior when there is no `global.json`
-
-Today's behavior is that an exact match is used if found, and if not found, the highest patch above the current in the feature band is used.
+Today's behavior is that an exact match is used if found, and if not found, the highest patch above the requested in the feature band is used.
 
 If there is no `global.json` that would logically be the same as the following.
 
@@ -255,7 +234,7 @@ The common `global.json` for this case is likely to be:
 }
 ```
 
-The user may include their preference for previews high in their directory structure, and then individual project can elect different behavior with a new `global.json`. This will continue to follow today's rules. In particular: if there is a `global.json` file for a different reason, like a custom SDK, the higher `global.json` will not be used. 
+The user may include their preference for previews high in their directory structure, and then individual project can elect different behavior with a new `global.json`. This will continue to follow today's rules. In particular: if there is a `global.json` file for a different reason, like a custom SDK, the higher `global.json` in the directory tree will not be used. 
 
 ### 4 Select highest available, higher than specified
 
@@ -266,17 +245,6 @@ If the user wants to specify the lowest SDK they want to use, they could use the
   "sdk": {
     "version": "2.2.100",
     "usePreview": true,
-    "rollForward": "latestMajor"
-  }
-}
-```
-
-The common `global.json` for this case is likely to be:
-
-```json
-{
-  "sdk": {
-    "version": "2.2.100",
     "rollForward": "latestMajor"
   }
 }
@@ -347,11 +315,7 @@ When this fails, the error is:
 The requested SDK version was not available, and SDK version roll-forward was disabled.
 ```
 
-### 8. Exact match or highest within runtime major.minor
-
-This proposal does not support arbitrary ranges or arbitrary upper bounds.
-
-### 9. Highest within runtime major.minor
+### 8. Highest within runtime major.minor
 
 If the user wants the highest within a runtime major/minor, they could use the following. 
 
@@ -361,31 +325,28 @@ If the user wants the highest within a runtime major/minor, they could use the f
   "sdk": {
     "version": "2.2.100",
     "usePreview": true,
-    "rollForward": "latestMinor"
+    "rollForward": "latestFeature"
   }
 }
 ```
 
-### 10. Highest within arbitrary upper and lower bound
+### 9. Exact match or highest within runtime major.minor
 
-If the user wanted to use any SDK higher than the one listed but ignore previews, they could use the following. 
+This proposal does not support arbitrary ranges or arbitrary upper bounds.
 
-Proposal C
-
-There is no concept of an arbitrary upper bound (as there isn't with the runtime)
 
 ### Selections made
 
 This table lists the SDKs selected in each of the above scenarios. 
 
-| Available SDKs                | #1      | #2          | #3      | #4          | #5      | #6      | #7      | #8      | #9      | #10     |
-|-------------------------------|---------|-------------|---------|-------------|---------|---------|---------|---------|---------|---------|
-| 2.1.700                       | fail    | 2.1.700     | 2.1.700 | fail        | fail    | fail    | fail    | fail    | fail    | 2.1.700 |
-| 2.2.100                       | 2.2.100 | 2.2.100     | 2.2.100 | 2.2.100     | 2.2.100 | fail    | 2.2.100 | 2.2.100 | 2.2.100 | 2.2.100 |
-| 2.2.103                       | 2.2.103 | 2.2.103     | 2.2.103 | 2.2.103     | 2.2.103 | fail    | fail    | 2.2.103 | 2.2.103 | 2.2.103 |
-| 2.1.700, 2.2.100, 2.2.103     | 2.2.100 | 2.2.103     | 2.2.103 | 2.2.103     | 2.2.103 | fail    | 2.2.100 | 2.2.100 | 2.2.103 | 2.2.103 |
-| 2.1.700, 2.2.103, 3.1.100-Pre | 2.2.103 | 3.1.100-Pre | 2.2.103 | 3.1.100-Pre | 2.2.103 | fail    | fail    | 2.2.100 | 2.2.103 | 2.2.103 |
-| 2.1.700, 2.2.103, 3.1.100     | 2.2.103 | 3.1.100     | 3.1.100 | 3.1.100     | 3.1.100 | 3.1.100 | fail    | 2.2.103 | 2.2.103 | 2.2.103 |
+| Available SDKs                | #1      | #2          | #3      | #4          | #5      | #6      | #7      | #8      |
+|-------------------------------|---------|-------------|---------|-------------|---------|---------|---------|---------|
+| 2.1.700                       | fail    | 2.1.700     | 2.1.700 | fail        | fail    | fail    | fail    | fail    |
+| 2.2.100                       | 2.2.100 | 2.2.100     | 2.2.100 | 2.2.100     | 2.2.100 | fail    | 2.2.100 | 2.2.100 |
+| 2.2.103                       | 2.2.103 | 2.2.103     | 2.2.103 | 2.2.103     | 2.2.103 | fail    | fail    | 2.2.103 |
+| 2.1.700, 2.2.100, 2.2.103     | 2.2.100 | 2.2.103     | 2.2.103 | 2.2.103     | 2.2.103 | fail    | 2.2.100 | 2.2.100 |
+| 2.1.700, 2.2.103, 3.1.100-Pre | 2.2.103 | 3.1.100-Pre | 2.2.103 | 3.1.100-Pre | 2.2.103 | fail    | fail    | 2.2.100 |
+| 2.1.700, 2.2.103, 3.1.100     | 2.2.103 | 3.1.100     | 3.1.100 | 3.1.100     | 3.1.100 | fail    | fail    | 2.2.103 |
 
 ## Other proposals considered
 
