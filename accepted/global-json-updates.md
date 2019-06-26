@@ -92,35 +92,48 @@ The `global.json` schema to offers support for all of the identified scenarios t
   * `usePreview`
     * `true` or `false`
     * Default: `true` to match today's behavior.
-  * `rollForward` (The `version` must be specified if `rollForward` is specified.)
+  * `rollForward` (The `version` must be specified if `rollForward` is specified, except `latestMajor`.)
+    * There are four basic intents for roll-forward:
+      * `patch`: legacy behavior.
+      * `feature`, `minor`, `major`: highest patch of the nearest version within specified limits.
+      * `latestPatch`, `latestFeature`, `latestMinor`, `latestMajor`: highest patch of the highest available version within specified limits.
+      * `disable`: use exactly the version specified.
     * `patch` **[[(I've gone back and forth on "patch" or "legacy" here)]]**
-      * If the requested major, minor, feature band, and patch if found, use it.
-      * Otherwise, use the highest patch within the specified major, minor and feature band.
+      * If the requested major/minor/feature band/patch is found, use it.
+      * Otherwise, if there are higher patches within the major/minor/feature band, use the highest patch of that set.
+      * Otherwise, fail.
       * This recreates the previous SDK selection criteria.
     * `feature`
-      * If the requested major, minor, feature band, is found, use the highest available patch in that band.
-      * Otherwise, use the lowest higher major/minor/feature band, use the highest patch within that feature band.
+      * If the requested major/minor/feature band is found, use the highest patch within that set.
+      * Otherwise, if there are higher feature band versions within the major/minor, use the highest patch in the lowest higher feature band of that set.
+      * Otherwise, fail.
     * `minor`
-      * If the requested major, minor, feature band, is found, use the highest available patch in that band.
-      * If there is higher major/minor/feature band, use the highest patch within that feature band.
-      * Otherwise, use the lowest higher major/minor, use it's lowest feature band, and the highest patch within that feature band.
+      * If the requested major/minor/feature band is found, use the highest patch within that set.
+      * Otherwise, if there are other feature band versions within the major/minor, use the highest patch in the lowest higher feature band of that set.
+      * Otherwise, if there are higher minor versions within the major, use the lowest higher minor version in that set, it's lowest feature band, and the highest patch within that feature band.
+      * Otherwise, fail.
     * `major`
-      * If the requested major, minor, feature band, is found, use the highest available patch in that band.
-      * If there is a higher major/minor/feature band, use the highest patch within that feature band.
-      * If there is a higher major/minor, use it's lowest feature band, and the highest patch within that feature band.
-      * Otherwise, use the lowest higher major, it's lowest minor, and it's lowest feature band, and the highest patch within that feature band.
+      * If the requested major/minor/feature band is found, use the highest patch within that set.
+      * Otherwise, if there are other feature band versions within the major/minor, use the highest patch in the lowest higher feature band of that set.
+      * Otherwise, if there are other minor versions within the major, use the lowest higher minor version in that set, its lowest feature band, and the highest patch within that feature band.
+      * Otherwise, if there higher major versions, use the lowest higher major version in that set, its lowest minor, its lowest feature band, and the highest patch within that feature band. 
+      * Otherwise, fail.
     * `latestPatch`
-      * Even if the requested major, minor, feature band and patch is found, do not use it unless it matches rules below.
-      * Select the highest available patch version that matches the specified major, minor and feature band.
+      * Even if the requested major/minor/feature band/patch is found, do not use it unless it matches rules below.
+      * Considering only the equal and higher patches in the major/minor/feature band, select the highest available patch.
+      * If there are no equal or higher patches in the major/minor/feature band, fail.
     * `latestFeature`
-      * Even if the requested major, minor, feature band is found, do not use it unless it matches rules below.
-      * Select the highest available feature band that matches the specified major and minor version, and select it's highest patch.
+      * Even if the requested major/minor/feature band is found, do not use it unless it matches rules below.
+      * Considering only the equal and higher feature bands in the major/minor, select the highest available feature band and its highest patch.
+      * If there are no equal or higher feature bands in the major/minor, fail.
     * `latestMinor`
-      * Even if the requested major, minor is found, do not use it unless it matches rules below.
-      * Select the highest available minor that matches the specified major version, and select it's highest feature band, and that feature band's highest patch.
+      * Even if the requested major/minor is found, do not use it unless it matches rules below.
+      * Considering only the equal and higher minor versions in the major version, select the highest available minor, its highest feature band and its highest patch.
+      * If there are no equal or higher minor versions in the major, fail.
     * `latestMajor` (latest)
       * Even if the requested major is found, do not use it unless it matches rules below.
-      * Select the highest available major version, and select it's highest minor version, and that minor's highest feature band, and that feature band's highest patch.
+      * Considering only the equal and higher major versions, select the highest available major, its highest minor, its highest feature band and its highest patch.
+      * If there are no equal or higher major versions, fail.
     * `disable`
       * Do not roll forward. Only bind to specified version. This policy means the latest patches, including security patches will not be used.
  
