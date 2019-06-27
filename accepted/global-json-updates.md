@@ -32,7 +32,7 @@ When a `global.json` is encountered and it specifies an SDK version, the SDK res
 
 1. When the resolver finds no `global.json` or finds one that does not specify SDK version,the latest SDK is used. Whether previews are considered depends on how `dotnet` is called:
    - If called from the CLI, previews are considered.
-   - If called Visual Studio a flag is passed indicating whether to consider previews:
+   - If called from Visual Studio, a flag is passed indicating whether to consider previews:
      - If Visual Studio is a Preview, or the "Use Previews" options is set by the user, previews are considered.
      - Otherwise, previews are not considered when called from Visual Studio.
 2. When the resolver finds a `global.json`, the specific SDK patch version it specifies is used if it is found.
