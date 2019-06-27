@@ -30,11 +30,11 @@ The SDK resolvers (in both the CLI and VS) search from the current location (pro
 
 When a `global.json` is encountered and it specifies an SDK version, the SDK resolvers attempt to locate that specific SDK patch version:
 
-1. When the resolver finds no `global.json` or finds one that does not specify SDK version,the latest SDK is used. Whether previews are considered depends on how `dotnet` is called:
-   - If called from the CLI, previews are considered.
-   - If called from Visual Studio, a flag is passed indicating whether to consider previews:
-     - If Visual Studio is a Preview, or the "Use Previews" options is set by the user, previews are considered.
-     - Otherwise, previews are not considered when called from Visual Studio.
+1. When the resolver finds no `global.json` or finds one that does not specify SDK version,the latest SDK is used. Whether prerelease versions are considered depends on how `dotnet` is called:
+   - If called from the CLI, prerelease versions are considered.
+   - If called from Visual Studio, a flag is passed indicating whether to consider prerelease versions:
+     - If Visual Studio is a Preview, or the "Use Previews" options is set by the user, prerelease versions are considered.
+     - Otherwise, prerelease versions are not considered when called from Visual Studio.
 2. When the resolver finds a `global.json`, the specific SDK patch version it specifies is used if it is found.
 3. When the resolver finds a `global.json`, and the SDK it specifies can't be found, the resolver looks for a close match:
     * Prior to .NET Core 2.1
@@ -45,17 +45,17 @@ When a `global.json` is encountered and it specifies an SDK version, the SDK res
 Due to the rules above, the following occurs:
 
 * Due to #2, simply installing a patch on the machine will not update the machine to use the safer version.
-  * The impact of this is mitigated by work we did in .NET Core 3.0 Preview 3 to replace earlier patch versions.
+  * The impact of this is mitigated by work we did in .NET Core 3.0 prerelease version 3 to replace earlier patch versions.
 * Due to #3, users can not guarantee they are pinned to a specific version.
 
 ## Customer problems to address
 
-* User wants to install a preview but only use it with a subset of projects.
-  * Due to Rule #1, a `global.json` is the only way to opt out of a preview in the common case of the preview being the highest version on the machine.
-  * The `global.json` the user addss must include a specific version.
+* User wants to install a prerelease version but only use it with a subset of projects.
+  * Due to Rule #1, a `global.json` is the only way to opt out of a prerelease version in the common case of the prerelease version being the highest version on the machine.
+  * The `global.json` the user adds must include a specific version.
   * If no matching SDK version in the feature band (xyz in x.y.z.nn) is found, the command being called fails.
   * Each `global.json` must later be updated to use the new stable SDK.
-  * Due to Rule #2, there is no roll forward from preview to stable if they are both on the machine.
+  * Due to Rule #2, there is no roll forward from prerelease version to stable if they are both on the machine.
     * The impact of this is mitigated by work we did in .NET Core 3.0 Preview 3 to replace earlier patch versions.
 * User wants to always use a specific SDK patch version, and receive an error if it is not on the machine.
   * The user cannot currently do this.
@@ -89,10 +89,10 @@ The `global.json` schema to offers support for all of the identified scenarios t
     * The lowest SDK the resolver would select - any SDKs with lower versions are ignored.
     * Identical to today - wildcards are not supported.
     * Default: empty
-  * `usePreview`
+  * `allowPrerelease`
     * `true` or `false`
     * Default
-      * If called from Visual Studio, use the preview status requested
+      * If called from Visual Studio, use the prerelease status requested
       * Otherwise,`true` to match today's behavior.
   * `rollForward` (The `version` must be specified if `rollForward` is specified, except `latestMajor`.)
     * There are four basic intents for roll-forward:
@@ -184,9 +184,9 @@ The following table considers various SDK version combinations that may be avail
 
 ## Customer problems addressed
 
-* User wants to install a preview but only use it with a subset of projects.
-  * User opts out in projects where preview should not be used by adding `usePreview: false` to those projects, or
-  * User adds `usePreview: false` in a `global.json` higher in their file system, and adds `usePreview: true` in a `global.json` in specific projects.
+* User wants to install a prerelease version but only use it with a subset of projects.
+  * User opts out in projects where prerelease version should not be used by adding `allowPrerelease: false` to those projects, or
+  * User adds `allowPrerelease: false` in a `global.json` higher in their file system, and adds `allowPrerelease: true` in a `global.json` in specific projects.
 * User wants to always use a specific SDK patch version, and receive an error if it is not on the machine.
   * User adds `version` and `rollForward: disable` to a `global.json`
 * User wants to set a floor or lowest version and use the best installed version above that (common for public repos).
@@ -223,20 +223,20 @@ If there is no `global.json` that would logically be the same as the following.
 ```json
 {
   "sdk": {
-    "usePreview": true,
+    "allowPrerelease": true,
     "rollForward": "latestMajor"
   }
 }
 ```
 
-### 3. Skip previews, otherwise as though there was no `global.json`
+### 3. Skip prerelease versions, otherwise as though there was no `global.json`
 
-If there is no `global.json` but the user does not want to use previews, that would logically be the same as the following:
+If there is no `global.json` but the user does not want to use prerelease versions, that would logically be the same as the following:
 
 ```json
 {
   "sdk": {
-    "usePreview": false,
+    "allowPrerelease": false,
     "rollForward": "latestMajor"
   }
 }
@@ -247,12 +247,12 @@ The common `global.json` for this case is likely to be:
 ```json
 {
   "sdk": {
-    "usePreview": false,
+    "allowPrerelease": false,
   }
 }
 ```
 
-The user may include their preference for previews high in their directory structure, and then individual project can elect different behavior with a new `global.json`. This will continue to follow today's rules. In particular: if there is a `global.json` file for a different reason, like a custom SDK, the higher `global.json` in the directory tree will not be used. 
+The user may include their preference for prerelease versions high in their directory structure, and then individual project can elect different behavior with a new `global.json`. This will continue to follow today's rules. In particular: if there is a `global.json` file for a different reason, like a custom SDK, the higher `global.json` in the directory tree will not be used. 
 
 ### 4 Select highest available, higher than specified
 
@@ -262,21 +262,21 @@ If the user wants to specify the lowest SDK they want to use, they could use the
 {
   "sdk": {
     "version": "2.2.100",
-    "usePreview": true,
+    "allowPrerelease": true,
     "rollForward": "latestMajor"
   }
 }
 ```
 
-### 5. Select highest available, higher than specified, previews ignored
+### 5. Select highest available, higher than specified, prerelease versions ignored
 
-If the user wanted to use any SDK higher than the one listed but ignore previews, they could use the following:
+If the user wanted to use any SDK higher than the one listed but ignore prerelease versions, they could use the following:
 
 ```json
 {
   "sdk": {
     "version": "2.2.100",
-    "usePreview": false,
+    "allowPrerelease": false,
     "rollForward": "latestMajor"
   }
 }
@@ -284,13 +284,13 @@ If the user wanted to use any SDK higher than the one listed but ignore previews
 
 ### 6. Select highest available with unusual combination
 
-If the user wants to use any SDK as high or higher than the one listed but ignore previews, they could use the following:
+If the user wants to use any SDK as high or higher than the one listed but ignore prerelease versions, they could use the following:
 
 ```json
 {
   "sdk": {
     "version": "3.0.100-Pre",
-    "usePreview": false,
+    "allowPrerelease": false,
     "rollForward": "latestMajor"
   }
 }
@@ -299,7 +299,7 @@ If the user wants to use any SDK as high or higher than the one listed but ignor
 This will always fail. The error will be:
 
 ```
-No SDK could be selected due to global.json issue: Specifying a preview version with exactMatch and skipPreview set to true will always fail.
+No SDK could be selected due to global.json issue: Specifying a prerelease version version with exactMatch and allowPrerelease is set to false will always fail.
 ```
 
 ### 7. Fail if exact match is not found
@@ -310,7 +310,7 @@ If the user wants an exact match, they could use the following.
 {
   "sdk": {
     "version": "2.2.100",
-    "usePreview": true,
+    "allowPrerelease": true,
     "rollForward": "disable"
   }
 }
@@ -342,7 +342,7 @@ If the user wants the highest within a runtime major/minor, they could use the f
 {
   "sdk": {
     "version": "2.2.100",
-    "usePreview": true,
+    "allowPrerelease": true,
     "rollForward": "latestFeature"
   }
 }
