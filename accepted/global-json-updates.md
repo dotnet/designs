@@ -286,7 +286,7 @@ If the user wants to use any SDK as high or higher than the one listed but ignor
   "sdk": {
     "version": "3.0.100-Pre",
     "usePreview": false,
-    "rollForward": "highestMajor"
+    "rollForward": "latestMajor"
   }
 }
 ```
