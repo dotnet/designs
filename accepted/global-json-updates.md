@@ -74,7 +74,7 @@ Due to the rules above, the following occurs:
 
 ## Proposal
 
-This proposal parallels [runtime roll-forward behavior as initially described](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md)} and [recent improvements](https://github.com/dotnet/designs/blob/master/accepted/runtime-binding.md). All of the features proposed here may not be included in Phase 1. It will include at least `usePreview` and `"rollforward": "disable"`
+This proposal parallels [runtime roll-forward behavior as initially described](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md)} and [recent improvements](https://github.com/dotnet/designs/blob/master/accepted/runtime-binding.md).
 
 The runtime options allow for three basic approaches: find nearest, find latest and find exact. 
 
@@ -91,14 +91,16 @@ The `global.json` schema to offers support for all of the identified scenarios t
     * Default: empty
   * `usePreview`
     * `true` or `false`
-    * Default: `true` to match today's behavior.
+    * Default
+      * If called from Visual Studio, use the preview status requested
+      * Otherwise,`true` to match today's behavior.
   * `rollForward` (The `version` must be specified if `rollForward` is specified, except `latestMajor`.)
     * There are four basic intents for roll-forward:
       * `patch`: legacy behavior.
       * `feature`, `minor`, `major`: highest patch of the nearest version within specified limits.
       * `latestPatch`, `latestFeature`, `latestMinor`, `latestMajor`: highest patch of the highest available version within specified limits.
       * `disable`: use exactly the version specified.
-    * `patch` **[[(I've gone back and forth on "patch" or "legacy" here)]]**
+    * `patch`
       * If the requested major/minor/feature band/patch is found, use it.
       * Otherwise, if there are higher patches within the major/minor/feature band, use the highest patch of that set.
       * Otherwise, fail.
@@ -145,13 +147,16 @@ If there is no `global.json` or a version is not specified, the default is`lates
 
 ### `global.json` containing a version number
 
-**Breaking Change** This default represents a breaking change. We took this change because we believe the new behavior will cause no change or be an improvement.  
+**Change** The default behavior is changed. We took this change because we believe the new behavior will cause no change or be an improvement. 
 
-Previously, if the specified patch version was present, it was used even if a higher patch number was installed. In discussing this with users, ignoring the updated patch was not the anticipated behavior. Also, the previous default did not roll forward across feature, minor or major bands. This could result in failure when a usable SDK existed on the machine.
+The new behavior is `major` as described above. The previous behavior is `patch` as described above.
 
-The new behavior is that the highest patch within the feature band will be used even if the requested version is available, unless the `rollForward` is set to `disable`.
+This changes behavior in two scenarios:
 
-Also, the nearest higher SDK will be used if there is no version that matches the requested major, minor and feature. This behavior can be changed by specifying other options for the `rollForward` property. 
+* Previously, if the specified patch version was present, it was used even if a higher patch number was installed. In discussing this with users, ignoring the updated patch was not the anticipated behavior. 
+* If there was no patch version of the specified major/minor/feature band, SDK resolution previously failed. SDK resolution will now succeed. 
+
+This will change behavior if the specified SDK is not present, but a higher version outside the current feature band is present. Previously SDK selection failed in this scenario, and now it will succeed.
 
 ## Examples to illustrate roll-forward options
 
