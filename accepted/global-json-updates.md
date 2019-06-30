@@ -166,7 +166,7 @@ The following table considers various SDK version combinations that may be avail
 {
   "sdk": {
     "version": "2.1.501",
-    "rollForward": [entry in table header]
+    "rollForward": "<entry in table header>"
   }
 }
 ```
