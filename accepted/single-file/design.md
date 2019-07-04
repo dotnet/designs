@@ -54,35 +54,9 @@ There are two main aspects to publishing apps as a self-extracting single file:
 
 #### Bundling Tool
 
-The bundler tool must be:
+The bundler is a tool that embeds the managed app and its dependencies into the native `AppHost` executable. The functional details of the bundler are explained in [this document](bundler.md). 
 
-* Able to embed any file required to run a .Net Core app -- managed assemblies, native binaries, configuration files, data files, etc.
-* Able to generate cross-platform bundles (ex: publish a single-file for Linux target from Windows)
-* Deterministic (generate the exact same single-file on multiple runs)
-
-With the above requirements in mind, we plan to implement a tool similar to [MkBundle](https://github.com/mono/mono/blob/master/mcs/tools/mkbundle) that simply appends the bundled dependencies as a binary blob at the end of a host binary.
-
-To any host (native binary) specified, the bundler tool will add:
-
-* A footer that contains:
-  * A flag to identify that this is actually a bundle.
-  * A version identifier.
-  * Offset of the bundle manifest
-* A manifest that identifies (via offset and size)
-  * The configuration files `app.deps.json` `app.runtimeconfig.json`
-  * The embedded app to load
-  * The set of MSIL images
-  * The set of ready-to-run images
-  * All other files
-* The actual files to be bundled.
-
-##### Implementation
-
-The bundler should ideally be located close to the core-host, since their implementation is closely related. Therefore, the bundler will be implemented in the `core-setup` repo. 
-
-The bundler will be implemented in managed code as a standalone tool. Application developers are expected to interact with the bundler only through the build system. The `dotnet` SDK will implement msbuild-tasks that use this tool to publish single-file apps.  
-
-##### Build System Interface
+#### Build System Interface
 
 Publishing to a single file can be triggered by adding the following property to an application's project file:
 
@@ -244,6 +218,11 @@ Since all the files of an app published as a single-file live together, we can p
   Single-file apps compiled cross-platform may have this optimization disabled until the ready-to-run compiler  (`crossgen`) supports cross-compilation. 
 
 - Investigate whether collectively signing the files in an assembly saves space for certificates.
+
+#### Compression
+
+Currently the bundler does not compress the contents embedded at the end of the host binary. 
+Compressing the bundled files and meta-data can significantly reduce the size of the single-file output (by about 30%-50% as determined by prototyping).
 
 #### Single-file Plugins
 
