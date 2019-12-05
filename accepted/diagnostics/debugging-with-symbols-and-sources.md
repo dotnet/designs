@@ -128,7 +128,7 @@ Acquiring and consuming source is mostly a function of first having acquired sym
 * The symbol file contains an embedded source link file, at which point the debugger will interpret and act upon the declarations in the source link file.
 * Otherwise, source will not be available via the mechanisms discussed in this document
 
-> For consideration: If the debugger can't find the source file in the symbol file or via source link it may still try to look it up on the symbol server using [Simple Symbol Query Protocol] (https://github.com/dotnet/symstore/blob/master/docs/specs/Simple_Symbol_Query_Protocol.md). This would allow for scenarios where the source is made available later, after the binaries and symbols have been built. To support this scenario we would provide a command line tool that uploads the sources to a specified symbol server.
+> For consideration: If the debugger can't find the source file in the symbol file or via source link it may still try to look it up on the symbol server using [Simple Symbol Query Protocol](https://github.com/dotnet/symstore/blob/master/docs/specs/Simple_Symbol_Query_Protocol.md). This would allow for scenarios where the source is made available later, after the binaries and symbols have been built. To support this scenario we would provide a command line tool that uploads the sources to a specified symbol server.
 
 ### Source Link Files
 
