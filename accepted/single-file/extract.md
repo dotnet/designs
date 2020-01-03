@@ -78,11 +78,20 @@ For a single-file app, the extraction directory is `<base>/<app>/<bundle-id>`
 * `<base>` is 
 
   * `DOTNET_BUNDLE_EXTRACT_BASE_DIR` environment variable, if set.
-  * If not, defaults to 
-    * `%TEMP%\.net ` on Windows
-    * `$TMPDIR/.net` if `$TMPDIR` is set (Posix conforming OSes including Mac)
-    * Otherwise `/var/tmp/.net` (Ubuntu)  if the directory exists.
-    * Otherwise  `/tmp/.net` 
+  * If not, on Windows, defaults to `%TEMP%\.net`
+  * On Unix-like systems, where multiple users may use a single system, an approach that removes the possibility of name collisions and other users creating files to prevent an application to start (by a malicious user creating a predictable directory name) is used instead:
+     * For .NET 3, the extraction directory follows the following order:
+         * `${TMPDIR}/.net/${UID}` if `${TMPDIR}` is set; otherwise,
+         * `/var/tmp/.net/${UID}` if that exists; otherwise,
+         * `/tmp/.net/${UID}` if that exists; fails otherwise.
+     * For .NET 5, the proposal is to follow this scheme:
+         * The directory to extract the bundle is created with `mkdtemp()`, using the `$TMPDIR` environment variable (if set), `/var/tmp/` (if exists, because it survives reboots), falling back to `/tmp` (does not survive reboots, it's often a ramdisk) in the template (e.g. `/var/tmp/dotnet-<app>-XXXXXX`);
+         * A symbolic link to the directory created by `mkdtemp()` is created in a predictable location:
+             * If `${XDG_CACHE_HOME}` is set, the symlink is created under `${XDG_CACHE_HOME}/.cache/dotnet/<app>/<bundle-id>` (See [the XDG spec for information](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)); otherwise,
+             * Symlink is created under `~/.cache/dotnet/<app>/<bundle-id>`
+         * On startup:
+            * If the symbolic link exists and isn't stale (points to a directory owned by the user, with correct permissions (`0700`), etc.), that's what it is used;
+            * If the symbolic link does not exist (or exists and is stale), it is removed, a new directory is created with `mkdtemp()`, and the link is re-created.
 
 * `<app>` is the name of the single-exe binary
 
