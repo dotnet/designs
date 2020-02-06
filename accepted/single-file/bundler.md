@@ -40,11 +40,15 @@ Given a .net core app published with respect to a specific runtime, the bundler 
 * Write meta-data headers and manifest that help locate the contents of the bundle.
 * Set the bundle-indicator in the `AppHost` to the offset of the bundle-header.
 
+The bundler should generate the correct format of single-file bundles based on the target framework.
+
 ## Implementation
 
-The bundling tool is implemented as a library in the [Microsoft.NET.HostModel](https://www.nuget.org/packages/Microsoft.NET.HostModel/) package. This library is used by the SDK in order to publish a .net core app as a single-file. 
+The bundling tool is implemented as a library in the [Microsoft.NET.HostModel](https://www.nuget.org/packages/Microsoft.NET.HostModel/) package in the [runtime](https://github.com/dotnet/runtime) repo. 
 
-The bundler should generate the correct format of single-file bundles based on the target framework.
+* The bundler is located alongside the host components, since their implementations are closely related.
+* Separating the bundler (and other AppHost transformers in HostModel) implementation from SDK repo aligns with code ownership, and facilitates maintenance of the library. 
+* The build targets/tasks that use the HostModel library are in the SDK repo. This facilitates the MSBuild tasks to be multi-targeted. It also helps generate localized error messages, since SDK repo has the localization infrastructure. 
 
 ## Limitations
 
