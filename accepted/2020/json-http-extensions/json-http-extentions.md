@@ -241,16 +241,16 @@ namespace System.Net.Http.Json {
 ### Default serialization options
 
 The default should match the defaults that ASP.NET Core is using, e.g.
-camelCasing, as opposed to the defaults System.Text.Json is using. Otherwise the
-most common case (calling your own web API from a Blazor client) would require
-explicit configuration.
+`camelCasing`, as opposed to the defaults `System.Text.Json` is using. Otherwise
+the most common case (calling your own web API from a Blazor client) would
+require explicit configuration.
 
 To avoid having to sync the settings between ASP.NET Core and this library, we
 should expose a new API. We should move the default configuration from ASP.NET
 Core to this method and change ASP.NET Core to call this API instead. This
-ensures we don't break the defaults for System.Text.Json (which is what you get
-by calling the default constructor) while also providing a sharable default for
-web.
+ensures we don't break the defaults for `System.Text.Json` (which is what you
+get by calling the default constructor) while also providing a single home of
+the default configuration used for web.
 
 ```C#
 namespace System.Text.Json
@@ -269,8 +269,8 @@ namespace System.Text.Json
 The existing assembly (which ships in
 [Microsoft.AspNet.WebApi.Client](https://www.nuget.org/packages/Microsoft.AspNet.WebApi.Client)
 package) provides the integration between HttpClient and JSON.NET. Mixing this
-with the new System.Text.Json would create a mess. Also, we don't believe we'll
-need any of the complexity provided by the formatting infrastructure.
+with the new `System.Text.Json` would create a mess. Also, we don't believe
+we'll need any of the complexity provided by the formatting infrastructure.
 
 ### Why didn't we put the extension methods into the System.Net.Http namespace?
 
