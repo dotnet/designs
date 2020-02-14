@@ -128,7 +128,7 @@ On Startup, the [host components](https://github.com/dotnet/core-setup/blob/mast
   * Implements a bundle-probe function, which will be used by the runtime to probe contents of the bundle when resolving assemblies. 
   
     ```C++
-  /// <summary>
+    /// <summary>
     /// <param name="path"> Relative-path to the file being probed. </param>
     /// <param name="size"> Out-param: size of the file, if found. </param>
     /// <param name="path"> Out-param: offset within the bundle, if found</param>
@@ -140,7 +140,7 @@ On Startup, the [host components](https://github.com/dotnet/core-setup/blob/mast
     
   * The `bundle_probe` function pointer is passed to the runtime (encoded as a string) through a property named `BUNDLE_PROBE`.
   
-  * When probing for assemblies, the the [assembly resolution logic](https://github.com/dotnet/runtime/blob/4f9ae42d861fcb4be2fcd5d3d55d5f227d30e723/docs/design/features/assembly-conflict-resolution.md#probe-ordering) will treat bundled assemblies similar to assemblies in the app directory. The probe ordering will be in the order:  servicing location, shared store, framework directory(s) from higher to lower, the *single-file bundle*, app directory, additional locations specified in runtimeconfig.dev.json file.
+  * When probing for assemblies, the [host probing logic](https://github.com/dotnet/runtime/blob/master/docs/design/features/host-probing.md#probing-paths) will treat bundled assemblies similar to assemblies in the app directory. The probe ordering will be in the order:  servicing location, the *single-file bundle*, app directory, framework directory(s) from higher to lower, shared store, additional specified probing paths.
   
   * The assemblies on disk are listed in `TRUSTED_PLATFORM_ASSEMBLIES` using absolute paths. The assemblies to be loaded from the single-file bundle will be listed in `TRUSTED_PLATFORM_ASSEMBLIES` using relative paths (as a distinguishing convention). 
   
