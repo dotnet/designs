@@ -428,8 +428,10 @@ binary for multiple versions of an operating system. The calls to APIs
 introduced in later versions must be guarded, but this is generally understood,
 and we have some limited tooling already with plans to extend it.
 
-Also, this isn't possible on any of our TFMs today, except for Android and we
-believe it's acceptable there.
+However, we do want to allow the developer to express a minimum version they
+require for the OS. It will likely be a property in the project file that is
+being persisted in the resulting NuGet package as well. There is a separate doc
+that we're working on.
 
 ### Why is there no TFM for Blazor?
 
