@@ -1,6 +1,7 @@
 # Target Framework Names in .NET 5
 
-**PM** [Immo Landwerth](https://github.com/terrajobst)
+**PM** [Immo Landwerth](https://github.com/terrajobst) |
+[Video Presentation](https://youtu.be/kKH8NzvtENQ?t=694)
 
 We'd like to drastically simplify the framework names (TFMs) developers must use
 in project files and NuGet packages. This includes merging the concept of .NET 5
