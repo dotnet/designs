@@ -36,9 +36,8 @@ The bundle identifier is a *path-compatible* cryptographically strong name.
 
 Given a .NET Core app published with respect to a specific runtime, the bundler transforms the `AppHost` binary to a single-file bundle through the following actions:
 
-* Append the managed app and its dependencies as a binary-blob at the end of the `AppHost` executable. 
-  * 
-* Write meta-data headers and manifest that help locate the contents of the bundle.
+* Append the managed app and its dependencies as a binary-blob at the end of the `AppHost` executable. This includes all files to be embedded located within the publish directory and any sub-directories. The path (relative to the bundle-root) of published files are noted in the bundle meta-data.
+* Write meta-data headers and manifest that help locate the contents of the bundle. 
 * Set the bundle-indicator in the `AppHost` to the offset of the bundle-header.
 
 The bundler should generate the correct format of single-file bundles based on the target framework.

@@ -142,7 +142,7 @@ On Startup, the [host components](https://github.com/dotnet/core-setup/blob/mast
   
   * When probing for assemblies, the [host probing logic](https://github.com/dotnet/runtime/blob/master/docs/design/features/host-probing.md#probing-paths) will treat bundled assemblies similar to assemblies in the app directory. The probe ordering will be in the order:  servicing location, the *single-file bundle*, app directory, framework directory(s) from higher to lower, shared store, additional specified probing paths.
   
-  * The assemblies on disk are listed in `TRUSTED_PLATFORM_ASSEMBLIES` using absolute paths. The assemblies to be loaded from the single-file bundle will be listed in `TRUSTED_PLATFORM_ASSEMBLIES` using relative paths (as a distinguishing convention). 
+  * The assemblies on disk are listed in `TRUSTED_PLATFORM_ASSEMBLIES` using absolute paths. As a distinguishing convention, the assemblies to be loaded from the single-file bundle will be listed in `TRUSTED_PLATFORM_ASSEMBLIES` using relative paths (as noted in the [bundle meta-data](bundler.md#Bundle-Transformation)). 
   
   * Similarly, the paths to directories containing satellite assemblies within the bundle are listed as relative paths in `PLATFORM_RESOURCE_ROOTS`. 
   
