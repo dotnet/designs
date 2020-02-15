@@ -1,6 +1,6 @@
 # Related Work
 
-Single-file packaging for .Net Core apps is currently supported by third-party tools such as [Warp](https://github.com/dgiagio/warp) and [Costura](https://github.com/Fody/Costura). We now consider the pros and cons of implementing this feature within .Net Core.
+Single-file packaging for .NET apps is currently supported by third-party tools such as [Warp](https://github.com/dgiagio/warp) and [Costura](https://github.com/Fody/Costura). We now consider the pros and cons of implementing this feature within .Net Core.
 
 #### Advantages
 

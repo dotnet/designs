@@ -1,8 +1,8 @@
 # Single-file Staging 
 
-Publishing apps as a single file is a popular feature-request in .Net Core. Ideally, we want a single-file solution that:
+Publishing .NET apps as a single file is a popular feature-request. Ideally, we want a single-file solution that:
 
-* Is compatible with all .Net Core applications
+* Is compatible with all .NET Core applications
 * Bundles MSIL, R2R, native code and custom (data) files
 * Doesn't require installation or cleanup steps
 * Runs directly from the bundle, without extracting components to disk
@@ -93,13 +93,13 @@ Limitations:
 
 * Unsuitable for environments that have native dependencies that must be bundled and cannot be extracted.
 
-## 4. Run from Bundle: .Net Core libraries 
+## 4. Run from Bundle: .Net libraries 
 
 ### 4.1 Description
 
 In this stage
 
-* .Net Core native libraries are statically linked to the single-file host executable.
+* .NET native libraries are statically linked to the single-file host executable.
 * Handling of custom native libraries is the same as the previous stage.
 * A large portion of the work involved in this stage is to make debuggers and tools compatible with the statically linked runtime.
 

@@ -1,10 +1,10 @@
 # Single-file Publish
 
-The design of single-file apps in .net core 3.0.
+The design of single-file apps in .NET Core 3.0.
 
 ## Introduction
 
-In .net core 3 implements Stage 1 (described in the [staging document](staging.md)) support for single-file apps.
+In .NET Core 3.0 implements Stage 1 (described in the [staging document](staging.md)) support for single-file apps.
 
 ## Build System Interface
 
@@ -48,7 +48,7 @@ For example, to place some files in the publish directory but not bundle them in
 
 ## The Bundler
 
-The bundler is a tool that embeds the managed app and its dependencies into the native `AppHost` executable, as described [here](bundler.md). The bundle layout in .net core 3.x is described below.
+The bundler is a tool that embeds the managed app and its dependencies into the native `AppHost` executable, as described [here](bundler.md). The bundle layout in .NET Core 3.x is described below.
 
 | Bundle Layout (ver 1.0) |
 | ------------------------------------------------------------ |

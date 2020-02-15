@@ -101,7 +101,7 @@ The cleanup of extracted files in the install-location will be manual, or throug
 
 ## Extraction Implementation
 
-In .net core 3.0, the AppHost itself performed the extraction of bundled components. This was necessary because, the [HostFxr](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md#host-fxr) and [HostPolicy](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md#host-policy) DLLs themselves may be bundled (in self-contained builds), and need to be extracted out before extraction. In .net 5.0, this problem is solved by alleviating the need to extract host components, as explained in the [Host Builds](design.md#host-builds) section. 
+In .NET Core3.0, the AppHost itself performed the extraction of bundled components. This was necessary because, the [HostFxr](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md#host-fxr) and [HostPolicy](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md#host-policy) DLLs themselves may be bundled (in self-contained builds), and need to be extracted out before extraction. In .net 5.0, this problem is solved by alleviating the need to extract host components, as explained in the [Host Builds](design.md#host-builds) section. 
 
 In .net 5.0, the bundle-extraction functionality will be implemented in the HostPolicy component. The advantages of this approach are: 
 

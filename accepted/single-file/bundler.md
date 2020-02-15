@@ -4,7 +4,7 @@
 
 Ideally, the bundler should be:
 
-* Able to embed any file required to run a .Net Core app -- managed assemblies, native binaries, configuration files, data files, etc.
+* Able to embed any file required to run a .NET Core app -- managed assemblies, native binaries, configuration files, data files, etc.
 * Able to generate cross-platform bundles (ex: publish a single-file for Linux target from Windows)
 * Deterministic (generate the exact same single-file on multiple runs)
 * Amenable to post-processing (ex: signing tools)
@@ -34,9 +34,10 @@ The bundle identifier is a *path-compatible* cryptographically strong name.
 
 ## Bundle Transformation
 
-Given a .net core app published with respect to a specific runtime, the bundler transforms the `AppHost` binary to a single-file bundle through the following actions:
+Given a .NET Core app published with respect to a specific runtime, the bundler transforms the `AppHost` binary to a single-file bundle through the following actions:
 
 * Append the managed app and its dependencies as a binary-blob at the end of the `AppHost` executable. 
+  * 
 * Write meta-data headers and manifest that help locate the contents of the bundle.
 * Set the bundle-indicator in the `AppHost` to the offset of the bundle-header.
 
