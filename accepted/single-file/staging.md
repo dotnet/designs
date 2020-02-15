@@ -3,7 +3,7 @@
 Publishing .NET apps as a single file is a popular feature-request. Ideally, we want a single-file solution that:
 
 * Is compatible with all .NET Core applications
-* Bundles MSIL, R2R, native code and custom (data) files
+* Bundles IL, R2R, native code and custom (data) files
 * Doesn't require installation or cleanup steps
 * Runs directly from the bundle, without extracting components to disk
 * Reduces publish-size
@@ -48,13 +48,13 @@ Advantages:
 * Bundler tool can be used as-is for most further stages
 * Provides ability to develop test infrastructure and prototypes
 
-## 2. Run from Bundle: MSIL
+## 2. Run from Bundle: IL
 
 ### 2.1 Description
 
 This stage improves on Stage 1 in that 
 
-* MSIL files bundled into the single-file will load and execute directly from the executable.
+* IL files bundled into the single-file will load and execute directly from the executable.
 * Native libraries will still need to 
 	* Remain in the publish directory unmerged, or
 	* Extracted to the disk like the previous self-extractor stage
@@ -79,7 +79,7 @@ Limitations:
 
 In this stage
 
-* MSIL and Ready-to-run files bundled into the single-file will load and execute directly from the executable.
+* IL and Ready-to-run files bundled into the single-file will load and execute directly from the executable.
 * Native library support is the same as the previous stage.
 * Debugging support is unaffected. 
 

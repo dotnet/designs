@@ -13,7 +13,7 @@ There are several strategies to implement this feature -- ranging from bundling 
 
 In .NET 5.0, we plan to implement a solution that:
 
-* Is widely compatible: Apps containing MSIL assemblies, ready-to-run assemblies, composite assemblies, native binaries, configuration files, etc. can be packaged into one executable.
+* Is widely compatible: Apps containing IL assemblies, ready-to-run assemblies, composite assemblies, native binaries, configuration files, etc. can be packaged into one executable.
 * Can run managed components of the app directly from bundle, without need for extraction to disk. 
 * Usable with debuggers and tools.
 
@@ -191,7 +191,7 @@ The Host includes bundled assemblies as relative paths in `TRUSTED_PLATFORM_ASSE
 
 * ReadyToRun Assemblies
     * On Linux, ReadyToRun assemblies are loaded directly from bundle. The various sections in the PE file are mapped at appropriate addresses, and offsets are fixed up.
-    * On MAC, ReadyToRun assemblies are loaded similar to Linux. However, Mojave hardened runtime doesn't allow executable mappings of a file. Therefore, the contents of an assembly are read from the bundle into pre-allocated executable memory.
+    * On Mac, ReadyToRun assemblies are loaded similar to Linux. However, Mojave hardened runtime doesn't allow executable mappings of a file. Therefore, the contents of an assembly are read from the bundle into pre-allocated executable memory.
     * On Windows, due to [certain limitations](#Windows-Limitations) in memory mapping routines described below, ReadyToRun assemblies are loaded by memory mapping the file and copying sections to appropriate offsets.
 
 * ReadyToRun [Composite](https://github.com/dotnet/runtime/blob/master/docs/design/features/readytorun-composite-format-design.md) Assemblies are expected to be loaded similar to ReadyToRun assemblies. 
@@ -241,7 +241,7 @@ The app may want to access certain embedded content for reading, rather than loa
   * Apps using managed, ready-to-run, native code 
   * Framework-dependent and self-contained apps 
   * Apps with content explicitly annotated for inclusion/exclusion in the single-file bundle
-  * MSIL files with embedded PDBs 
+  * IL files with embedded PDBs 
   * PDBs included/excluded from bundle
 * Tests for ensure that every app model template supported by .NET 5 can be published as a single file.
 * Tests to ensure cross-platform publishing of single-file bundles.
