@@ -77,7 +77,7 @@ The following settings can be used to package additional files into the single-f
 | Property                             | Behavior when set to `true`                                  |
 | ------------------------------------ | ------------------------------------------------------------ |
 | `IncludeNativeLibrariesInSingleFile` | Bundle published native binaries into the single-file app.   |
-| `IncludeSymbolsInSingleFile`         | Bundle the `.pdb` file(s) into the single file app. This option is provided for compatibility with .NET 3 single-file mode. The recommended alternative is to generate assemblies with embed portable PDBs. |
+| `IncludeSymbolsInSingleFile`         | Bundle the `.pdb` file(s) into the single file app. This option is provided for compatibility with .NET 3 single-file mode. The recommended alternative is to generate assemblies with embedded PDBs (`<DebugType>embedded</DebugType>`). |
 | `IncludeAllContentInSingleFile`      | Bundle all published files (except symbol files) into single-file app. This option provides backward compatibility with the  .NET Core 3.x version of single-file apps. |
 
 Certain files can be explicitly excluded from being embedded in the single-file by setting following `ExcludeFromSingleFile` meta-data element. For example, to place some files in the publish directory but not bundle them in the single-file:
