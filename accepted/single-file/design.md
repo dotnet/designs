@@ -1,62 +1,53 @@
 # Single-file Publish
 
-Design for publishing apps as a single-file in .Net Core 3.0
+This document describes the design single-file apps in .NET 5.0.
+The design of single-file apps in .NET Core 3.0 can be found [here](3.0/bundler.md)
 
 ## Introduction
 
 The goal of this effort is enable .Net-Core apps to be published and distributed as a single executable.
 
-There are several strategies to implement this feature -- ranging from bundling the published files into zip file (ex: [Warp](https://github.com/dgiagio/warp)), to native compiling and linking all the binaries together (ex: [CoreRT](https://github.com/dotnet/corert)). These options, along with their cost/benefit analysis is explored in this [staging document](staging.md).
+There are several strategies to implement this feature -- ranging from bundling the published files into zip file to native compiling and linking all the binaries together. These options, along with their cost/benefit analysis is discussed in the [staging document](staging.md) and [related work](related.md).
 
 #### Goals
 
-In .Net Core 3.0, we plan to implement a solution that 
+In .NET 5.0, we plan to implement a solution that:
 
-* Is widely compatible: Apps containing MSIL assemblies, ready-to-run assemblies, native binaries, configuration files, etc. can be packaged into one executable.
-* Can run framework dependent pure managed apps directly from bundle:
-  * Executes IL assemblies, and processes configuration files directly from the bundled executable.
-  * Extracts ready-to-run and native binaries to disk before loading them.
-* Usable with debuggers and tools:  The single-file should be debuggable using the generated symbol file. It should also be usable with profilers and tools similar to a non-bundled app.
-
-This feature-set is described as Stage 2 in the [staging document](staging.md), and can be improvised in further releases.
+* Is widely compatible: Apps containing IL assemblies, ready-to-run assemblies, composite assemblies, native binaries, configuration files, etc. can be packaged into one executable.
+* Can run managed components of the app directly from bundle, without need for extraction to disk. 
+* Usable with debuggers and tools.
 
 #### Non Goals
 
-* Optimizing for development: The single-file publishing is typically not a part of the development cycle. It is typically used in release builds as a packaging step. Therefore, the single-file feature will be designed with focus on consumption rather than production.
+* Optimizing for development: The single-file publishing is typically not a part of the development cycle, but is rather a packaging step as part of a release. Therefore, the single-file feature will be designed with focus on consumption rather than production.
 * Merging IL: Tools like [ILMerge](https://github.com/dotnet/ILMerge) combines the IL from many assemblies into one, but lose assembly identity in the process. This is not a goal for single-file feature.
 
-#### Existing tools
+## User Experience
 
-Single-file packaging for .Net Core apps is currently supported by third-party tools such as [Warp](https://github.com/dgiagio/warp) and [Costura](https://github.com/Fody/Costura). We now consider the pros and cons of implementing this feature within .Net Core.
+Here's the overall experience for publishing a HelloWorld single-file app. The new build properties used in this example are explained in the [Build System Interface](#build-system-interface) section.
 
-##### Advantages
+* Create a new HelloWorld app: `HelloWorld$ dotnet new console`
 
-* A standardized experience available for all apps
-* Integration with dotnet CLI
-* A more transparent experience: for example, external tools may utilize public APIs such `AssemblyLoadContext.Resolving` or `AssemblyLoadContext.ResolvingUnmanagedDll` events to load files from a bundle. However, this may conflict with the app's own use of these APIs, which requires a cooperative resolution. Such a situation is avoided by providing inbuilt support for single-file apps.
+* Framework Dependent Publish
 
-##### Limitations
+  * Normal publish: `dotnet publish` 
+    * Published files: `HelloWorld.exe`, `HelloWorld.dll`, `HelloWorld.deps.json`, `HelloWorld.runtimeconfig.json`, `HelloWorld.pdb`
 
-* Inbox implementation of the feature adds complexity for customers with respect to the list of deployment options to choose from.
-* Independent tools can evolve faster on their own schedule.
-* Independent tools can provide richer set of features catering to match a specific set of customers.
+  * Single-file publish: `dotnet publish -r win-x64 --self-contained=false /p:PublishSingleFile=true`
+    * Published files: `HelloWorld.exe`, `HelloWorld.pdb`
 
-We believe that the advantages outweigh the disadvantages in with respect to implementing this feature inbox.
+* Self-Contained Publish
 
-## Design
+  * Normal publish: `dotnet publish -r win-x64`
+    * Published files: `HelloWorld.exe`, `HelloWorld.pdb`, and 224 more files 
+  * Single-file publish Linux: `dotnet publish -r linux-x64 /p:PublishSingleFile=true`
+    * Published files: `HelloWorld.exe`, `HelloWorld.pdb`
+  * Single-file publish Windows: `dotnet publish -r win-x64 /p:PublishSingleFile=true`
+    * Published files: `HelloWorld.exe`, `HelloWorld.pdb`, `coreclr.dll`, `clrjit.dll`, `clrcompression.dll`,  `mscordaccore.dll`
+  * Single-file publish Windows with Extraction: `dotnet publish -r win-x64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesInSingleFile=true` 
+    * Published files: `HelloWorld.exe`, `HelloWorld.pdb`
 
-There are two main aspects to publishing apps as a self-extracting single file:
-
-- The Bundler: A tool that embeds the managed app, its dependencies, and the runtime into a single host executable.
-- The host: The "single-file" which facilitates the extraction and/or loading of embedded components.
-
-### The Bundler
-
-#### Bundling Tool
-
-The bundler is a tool that embeds the managed app and its dependencies into the native `AppHost` executable. The functional details of the bundler are explained in [this document](bundler.md). 
-
-#### Build System Interface
+## Build System Interface
 
 Publishing to a single file can be triggered by adding the following property to an application's project file:
 
@@ -66,138 +57,210 @@ Publishing to a single file can be triggered by adding the following property to
 </PropertyGroup>    
 ```
 
-* The `PublishSingleFile` property applies to both framework dependent and self-contained publish operations.
-* The `PublishSingleFile` property applies to platform-specific builds with respect to a given runtime-identifier. The output of the build is a native binary for the specified platform.
-  When `PublishSingleFile`  is set to `true`, it is an error to leave `RuntimeIdentifier` undefined, or to set `UseAppHost` to `false`.
-* Setting the `PublishSingleFile`property causes the managed app, managed dependencies, platform-specific native dependencies, configurations, etc. (basically the contents of the publish directory when `dotnet publish` is run without setting the property) to be embedded within the native `apphost`. 
+When the `PublishSingleFile` property is set to true, 
 
-By default, the symbol files are not embedded within the single-file, but remain as separate files in the publish directory. 
-This includes both the IL `.pdb` file, and the native `.ni.pdb` / `app.guid.map` files generated by ready-to-run compiler.
-Setting the following property causes the symbol files to be included in the single-file.
+* `RuntimeIdentifier` must be defined. Single-file builds generate a native binary for the specific platform and architecture.
+* `UseAppHost` cannot be  set to `false`.  
+* If `TargetFramework` is
+  * `netcoreapp5.0`, single-file publish works as described in this document.
+  * `netcoreapp3.0`  or `netcoreapp3.1` single-file publish works as described [here](design_3_0.md).
+  * An earlier framework, causes a compilation error.
+
+Setting the `PublishSingleFile` property causes the managed app, runtime configuration files (`app.deps.json`, `app.runtimeconfig.json`), and managed binary dependencies to be embedded within the native `apphost`.  All managed binaries (IL and ready-to-run files) that would be written to the publish directory and any sub-directories are bundled with the apphost.
+
+All other files, including platform-specific native binaries and symbol files, are left alongside the app by default. However, the set of files left unbundled alongside the app is expected to be small, such as: data-files (ex: `appsettings.json`) and custom native binary dependencies of the application. Further details regarding the files left next to the app is discussed in the [Host build](#Host-Builds) section. 
+
+### Optional Settings
+
+The following settings can be used to package additional files into the single-file app. However, when using these options, the files that cannot be processed directly from the bundle will be extracted out to disk during startup. 
+
+| Property                             | Behavior when set to `true`                                  |
+| ------------------------------------ | ------------------------------------------------------------ |
+| `IncludeNativeLibrariesInSingleFile` | Bundle published native binaries into the single-file app.   |
+| `IncludeSymbolsInSingleFile`         | Bundle the `.pdb` file(s) into the single file app. This option is provided for compatibility with .NET 3 single-file mode. The recommended alternative is to generate assemblies with embedded PDBs (`<DebugType>embedded</DebugType>`). |
+| `IncludeAllContentInSingleFile`      | Bundle all published files (except symbol files) into single-file app. This option provides backward compatibility with the  .NET Core 3.x version of single-file apps. |
+
+Certain files can be explicitly excluded from being embedded in the single-file by setting following `ExcludeFromSingleFile` meta-data element. For example, to place some files in the publish directory but not bundle them in the single-file:
 
 ```xml
 <PropertyGroup>
-    <IncludeSymbolsInSingleFile>true</IncludeSymbolsInSingleFile>
-</PropertyGroup>
-```
-
-Certain files can be explicitly excluded from being embedded in the single-file by setting following meta-data:
-
-```xml
-<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-```
-
-For example, to place some files in the publish directory but not bundle them in the single-file:
-
-```xml
+  <PublishSingleFile>true</PublishSingleFile>
+  <IncludeContentInSingleFile>true</IncludeContentInSingleFile>
+</PropertyGroup> 
 <ItemGroup>
-    <Content Update="*.xml">
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+  <Content Update="*-exclude.dll">
+    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-  </ItemGroup>
+  </Content>
+</ItemGroup>
 ```
 
-#### Interaction with other tools
+### Alternatives
 
-Once the single-file-publish tooling is added to the publish pipeline, other static binary transformation tools may need to adapt its presence. For example:
+The behavior of `PublishSingleFile` property described above, is significantly different from .NET Core 3.x  SDK. As an alternative, we could leave `PublishSingleFile` semantics unchanged (bundle all content to an actual single file), and have a different property `PublishFewFiles` to only bundle content that can be directly processed from the single-file.
 
-* The MSBuild logic in `dotnet SDK` should be crafted such that [IlLinker](https://github.com/dotnet/core/blob/master/samples/linker-instructions.md), [crossgen](https://github.com/dotnet/coreclr/blob/master/Documentation/building/crossgen.md), and the single-file bundler run in that order in the build/publish sequence. 
-* External tools like [Fody](https://github.com/Fody/Fody) that use  `AfterBuild`/`AfterPublish` targets may need to adapt to expect the significantly different output generated by publishing to a single file. The goal in this case is to provide sufficient documentation and guidance.
+### Handling Content 
 
-### The Host
+The app may want to access certain embedded content for reading, rather than loading via host/runtime. For example: bundled payload/data files. In this case, the recommended strategy is to embed the content files within appropriate managed assemblies as resources, and access them through [resource handling APIs](https://docs.microsoft.com/en-us/dotnet/api/system.reflection.assembly.getmanifestresourceinfo?view=netcore-3.1). 
 
-On Startup, the AppHost checks if it has embedded files. If so, it 
+### Interaction with External Tools
 
-* Memory maps the entire bundle file.
-* Extracts the necessary files (ex: native binaries) to disk (if any) as explained in this [document](extract.md). 
-* Sets up data-structures so other components can access files embedded directly, as explained in this [document](direct.md)
+Once the single-file-publish tooling is added to the publish pipeline, other static binary transformation tools may need to adapt its presence. For example, tools like [Fody](https://github.com/Fody/Fody) that use  `AfterBuild`/`AfterPublish` targets may need to adapt to expect the significantly different output generated by publishing to a single file. The goal in this case is to provide sufficient documentation and guidance.
 
-#### Dependency Resolution
+## The Bundler
 
-An app may choose to only embed some files (ex: due to licensing restrictions) and expect to pickup other dependencies from application-launch directory, nuget packages, etc. In order to resolve assemblies and native libraries, the embedded resources are probed first, followed by other probing paths. 
+The bundler is a tool that embeds the managed app and its dependencies into the native `AppHost` executable. The functional details of the bundler are explained in [this document](bundler.md). 
 
-### New API
+## The Host
 
-In this section, we propose adding a few APIs to facilitate common operations on bundled-apps.
+### Startup
 
-The binaries that are published in the project are expected to be handled transparently by the host. However, explicit access to the embedded files is useful in situations such as:
+On Startup, the [host components](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md) perform the following functions:
 
-- Reading additional files packaged into the app (ex: data files).
-- Open an assembly for reflection/inspection
-- Load plugins built as single-file class-libs using existing Loader APIs.
+* **AppHost**: The AppHost identifies itself as a single-file bundle (by checking the [bundle marker](bundler.md#bundle-marker)) before invoking [HostFxr](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md#host-fxr).
 
-Therefore, we propose adding an API similar to [GetManifestResourceStream](https://docs.microsoft.com/en-us/dotnet/api/system.reflection.assembly.getmanifestresourcestream?view=netframework-4.7.2#System_Reflection_Assembly_GetManifestResourceStream_System_String_) to obtain a stream corresponding to an embedded file. 
+* **HostFxr**: If invoked from a single-file app, HostFxr process the `runtimeconfig.json` and `deps.json` files directly from the bundle. The location of these `json` files  are identified directly from the bundle-header for simple access.
+* **HostPolicy**: Much of the bundle-processing is performed within HostPolicy.
+  
+  * If the app needs extraction, extracts out the appropriate files as explained in [this document](extractor.md).
+  * Reads the `deps.json` file directly from the bundle and resolves dependencies.
+  * Processes the Bundle manifest to maintain internal data-structures to locate bundled assemblies when probed by the runtime.
+  * Implements a [`bundle_probe` ](#Dependency-Resolution) function, and passes it (function pointer encoded as a string) to the runtime through a property named `BUNDLE_PROBE`.
+  * Starts the runtime to continue execution.
+  
+### Host Builds
 
-This is only a draft of the proposed APIs. The actual shape of the APIs will be decided via API review process.
+The .NET 5 AppHost will be built in a few different configurations, and consumed by the SDK in appropriate scenarios as noted below.
 
-```cs
-namespace System.Runtime.Loader
-{
-    public partial class Bundle
-    {
-        // Check whether an app is running from a single-file bundle
-        public static bool IsBundle(Assembly assembly);
-        
-        // Get the location where contents of the bundle are extracted
-        public static string GetContentRoot(Assembly assembly);
- 
-        // Open a file embedded in the bundle built for the specified assembly 
-        public static System.IO.Stream GetFileStream(Assembly assembly, string name);
-    }
-}
-```
+| Code Name  | Build                                                        | Scenario                                                     |
+| ---------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| AppHost    | Current AppHost build                                        | All non-single-file apps<br />Framework-dependent single-file apps |
+| StaticHost | AppHost with HostFxr and HostPolicy statically linked.       | Self-contained single-file apps on Windows                   |
+| SuperHost  | StaticHost with CoreCLR runtime components statically linked | Self-contained single-file apps on Unix systems              |
 
-We can also provide an abstraction that abstracts away the physical location of a file (bundle or disk). For example, add a variant of  `GetFileStream` API that looks for a file in the bundle, and if not found, falls back to disk-lookup. However such abstractions are also easy to build outside of the .Net Framework.
+Ideally, we should use the SuperHost for self-contained single-file apps on Windows too. However, due to certain limitations in debugging experience and the ability to collect Watson dumps, etc., the CoreCLR libraries are left on disk beside the app.
 
-### Existing API
+The files typically published for self-contained apps on Windows are:
 
-We need to determine the semantics of current APIs such as `Assembly.Location` that return the information about an assembly's location on disk. 
+* The `App.Exe`-- StaticHost along with assemblies and configuration files bundled as a single-file app.
+* `coreclr.dll`(runtime), `clrjit.dll` (JIT compiler), and `clrcompression.dll` (native counterpart of BCL for certain compression algorithms).
+    * It may be possible to link these DLLs together as CoreCLR.dll, but this work is not prioritized, in deference to building the full super-host once debugging framework supports it.
+* mscordaccore.dll (to enable Watson dumps)
+
+Certain additional binaries may be optionally included with the app to enable debugging scenarios. 
+The work to not require these binaries as separate files on disk alongside the app is ongoing.
+
+* For F5 debugging on VS and VS-Core: `mscordbi.dll`, `libmscordbi.so`
+* For Linux mini-dumps: `createdump`, `libmscordaccore.so` 
+* For ETW / LTTng: `clretwrc.dll`, `libcoreclrtraceptprovider.so` 
+* For exception stack trace source information, error string resources on Windows: `Microsoft.DiaSymReader.Native.amd64.dll`, `mscorrc.debug.dll`, `mscorrc.dll`
+
+When targeting `win7` platform, several additional DLLs are necessary (`api-*.dll`) to handle API compatibility. These files must be alongside the AppHost for the app to even start execution.
+Therefore, we propose that targeting `win7-*` should not be supported when publishing apps as a single-file.
+
+## Dependency Resolution
+
+* When probing for assemblies, the [host probing logic](https://github.com/dotnet/runtime/blob/master/docs/design/features/host-probing.md#probing-paths) will treat bundled assemblies similar to assemblies in the app directory. The probe ordering will be in the order:  
+
+  * Servicing location
+  * The *single-file bundle*
+  * App directory 
+  * Framework directory(s) from higher to lower
+  * Shared store 
+  * Additional specified probing paths.
+
+* The host implements a bundle-probing to locate files embedded in the single-file bundle:
+
+  ```c++
+  /// <summary>
+  /// <param name="path"> Relative-path to the file being probed. </param>
+  /// <param name="size"> Out-param: size of the file, if found. </param>
+  /// <param name="path"> Out-param: offset within the bundle, if found</param>
+  /// <returns> true if the requested file is found in the bundle, 
+  ///           false otherwise. </returns>
+  /// </summary>
+  bool bundle_probe(const char *path, int64_t *size, int64_t *offset);
+  ```
+
+  This probe returns the size and offset of the requested file, if found, using the bundle manifest. However, if a bundled assembly is overridden by one found in a servicing location, the probe returns false.
+  
+* The assemblies bundled within the single-file are *not* enumerated in `TRUSTED_PLATFORM_ASSEMBLIES`. The absolute-path of assemblies on disk are listed in `TRUSTED_PLATFORM_ASSEMBLIES` as usual. 
+
+* Similarly, the paths to directories containing satellite assemblies within the bundle are not listed in `PLATFORM_RESOURCE_ROOTS`. 
+
+* The extraction directory (if any) will be added to `NATIVE_DLL_SEARCH_DIRECTORIES` as the first destination to probe for native binaries.
+
+* The default assembly resolution logic in the runtime:
+
+  * First attempts to locate the assembly within the bundle using the `bundle_probe` host-callback.  
+  * If the assembly is not found in the bundle, it attempts to locate the assembly via `TRUSTED_PLATFORM_ASSEMBLIES` (or within `PLATFORM_RESOURCE_ROOTS` for satellite assemblies). 
+  
+* The algorithm for resolving native binaries is unchanged.
+
+## The Runtime
+
+### PEImage loader
+
+* IL assemblies are loaded directly from the bundle.
+    * The portion of the single-file bundle containing the required assembly is memory mapped, and the contents are appropriately interpreted by the runtime.
+
+* ReadyToRun Assemblies
+    * On Linux, ReadyToRun assemblies are loaded directly from bundle. The various sections in the PE file are mapped at appropriate addresses, and offsets are fixed up.
+    * On Mac, ReadyToRun assemblies are loaded similar to Linux. However, Mojave hardened runtime doesn't allow executable mappings of a file. Therefore, the contents of an assembly are read from the bundle into pre-allocated executable memory.
+    * On Windows, due to [certain limitations](#Windows-Limitations) in memory mapping routines described below, ReadyToRun assemblies are loaded by memory mapping the file and copying sections to appropriate offsets.
+
+* ReadyToRun [Composite](https://github.com/dotnet/runtime/blob/master/docs/design/features/readytorun-composite-format-design.md) Assemblies are expected to be loaded similar to ReadyToRun assemblies. 
+
+#### Windows Limitations
+The Windows mapping routines have the following limitations:
+* [CreateFileMapping](https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-createfilemappinga) has no option to create a mapping for a part of the file (no offset argument).
+    Therefore, we cannot use the (SEC_IMAGE) attribute to perform automatic section-wise loading (circumventing alignment requirements) of bundled assemblies directly. Instead we need to map each section independently.
+* [MapViewOfFile]( https://docs.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-mapviewoffileex) can only map parts of a file aligned at [memory allocation granularity]( https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/ns-sysinfoapi-system_info), which is 64KB.
+    This means that each section within the assemblies should be aligned at 64KB – which is not guaranteed by the crossgen compiler. Therefore, without substantial changes to the runtime and the ready-to-run file format, we cannot load ready-to-run files using direct file mappings.
+
+We therefore map ReadyToRun assemblies as-is, and subsequently perform an in-memory copy of the sections to appropriate offsets. In the long term, the solution to the mapping problem would involve considerations such as:
+* Compile all assemblies in a version bubble into one PE assembly, with a few aligned sections.
+* Embed the big composite assembly into the host with proper alignment, so that the single-exe bundle can be loaded without copies at run time.
+
+### API Semantics
 
 #### `Assembly.Location`
 
-There are a few options to consider for the `Assembly.Location`  property of a bundled assembly:
+There are a few options to consider for the `Assembly.Location` property of a bundled assembly:
 
 * A fixed literal (ex: `null`) indicating that no actual location is available.
+* Throw an `AssemblyLoadedFromBundle` exception
+* The empty string, similar to assemblies loaded from [byte-array](https://docs.microsoft.com/en-us/dotnet/api/system.reflection.assembly.location?view=netcore-3.1#property-value),
 * The simple name of the assembly (with no path).
-* A special UNC notation such as `<bundle-path>/:/asm.dll` to denote files that come from the bundle. 
 * The path of the assembly as if it were not to be packaged into the single-file.
-* In the case of files spilled to disk (ex: ready-to-run assemblies) -- the actual location of the extracted file.
+* A special UNC notation such as `<bundle-path>/:/asm.dll` to denote files that come from the bundle. 
 * A configurable selection of the above, etc.
 
-We propose keeping the default behavior of `Assembly.Location`. That is, 
-
-* If the assembly is loaded directly from the bundle, return empty-string
-* If the assembly is extracted to disk, return the location of the extracted file.
+Proposed solution is for `Assembly.Location` to return the empty-string for bundled assemblies, which is the default behavior for assemblies loaded from memory.
 
 Most of the app development can be agnostic to whether the app is published as single-file or not. However, the parts of the app that deal with physical locations of files need to be aware of the single-file packaging. 
 
 #### `AppContext.BaseDirectory`
 
-A few options to consider for the `AppContext.BaseDirectory` are:
+`AppContext.BaseDirectory` will be the directory where the AppHost (the single-file bundle itself) resides. In contrast to [.NET Core 3.x single-file apps](design_3_0.md), .NET 5 single-file apps do not always self-extract on startup. Therefore, the details about extraction directory are not exposed through the `AppContext.BaseDirectory` API.  
 
-* The directory where embedded files are extracted out: This option enables easy access to content files spilled to disk. However, if no files need to be extracted to disk for an application bundle, there's no extraction directory. 
-* The extraction-directory if files are extracted, the AppHost directory otherwise. The limitation to this approach is that the value of  `AppContext.BaseDirectory`  changes with the way applications are packaged/executed.
-* The directory where `AppHost` binary resides (always).
-
-We propose that `AppContext.BaseDirectory`  should always be set to the directory where the `AppHost` bundle resides.  This scheme doesn't provide an obvious mechanism to access the contents of the extraction directory -- by design. The recommended method for accessing content files from the bundle are: 
-
-- Do not bundle application data files into the single-exe; instead them next to the bundle. This way, the application binary is a single-file, but not the whole application.
-- Embed data files as managed resources into application binary, and access them via resource management [APIs](<https://docs.microsoft.com/en-us/dotnet/api/system.reflection.assembly.getmanifestresourcestream?view=netcore-3.0>). 
+However, when single file apps are published with `IncludeAllContentInSingleFile` property set (which provides backward compatibility with .NET Core 3.x bundling behavior), `AppContext.BaseDirectory` returns the extraction directory, following  [.NET Core 3.x semantics](design_3_0.md#API-Impact).
 
 ## Testing
 
-* Unit Tests to achieve good coverage on apps using managed, ready-to-run, native code 
-* Tests for the newly added API 
-* Tests to verify that framework-dependent and self-contained apps can be published as single file.
-* Tests for ensure that every app model template supported by .NET Core (console, wpf, winforms, web, etc.) can be published as a single file.
-* A subset of CoreCLR Tests
-* Tests to ensure that MSIL files with embedded PDBs are handled correctly
-* End-to-End testing on real world apps
+* Unit Tests:
+  * Apps using managed, ready-to-run, native code 
+  * Framework-dependent and self-contained apps 
+  * Apps with content explicitly annotated for inclusion/exclusion in the single-file bundle
+  * IL files with embedded PDBs 
+  * PDBs included/excluded from bundle
+* Tests for ensure that every app model template supported by .NET 5 can be published as a single file.
+* Tests to ensure cross-platform publishing of single-file bundles.
+* Manual end-to-end testing on real world apps
 
 #### Measurements
 
-Measure publish size and run-time (first run, subsequent runs) for HelloWorld (framework-dependent and self-contained), Roslyn and MusicStore.
+Measure publish size and startup time for a few real-world apps.
 
 #### Telemetry
 
@@ -205,86 +268,9 @@ Collect telemetry for single-file published apps with respect to parameters such
 
 * Framework-dependent vs self-contained apps.
 * Whether the apps are Pure managed apps, ready-to run compiled apps, or have native dependencies.
-* Embedding of additional/data files, and use of file access API.
+* Embedding of additional/data files.
 
 ## Further Work
 
-#### Bundler Optimizations
-
-Since all the files of an app published as a single-file live together, we can perform the following optimizations
-
-- R2R compile the app and all of its dependent assemblies in a single version-bubble
-
-  Single-file apps compiled cross-platform may have this optimization disabled until the ready-to-run compiler  (`crossgen`) supports cross-compilation. 
-
-- Investigate whether collectively signing the files in an assembly saves space for certificates.
-
-#### Compression
-
-Currently the bundler does not compress the contents embedded at the end of the host binary. 
-Compressing the bundled files and meta-data can significantly reduce the size of the single-file output (by about 30%-50% as determined by prototyping).
-
-#### Single-file Plugins
-
-The above design should be extended to seamlessly support single-file publish for plugins.
-
-- The bundler tool will mostly work as-is, regardless of whether we publish an application or class-lib. The binary blob with dependencies can be appended to both native and managed binaries.
-- For host/runtime support, the options are:
-  - Implement plugins using existing infrastructure. For example: Take control of assembly/native binary loads via existing `AssemblyLoadContext` callbacks and events. Extract the files embedded within the single-file plugin using the `GetFileStream()` API and load them on demand.
-  - Have new API to load a single-file plugin, for example: `AssemblyLoadContext.LoadWithEmbeddedDependencies()`.
-
-#### VS Integration
-
-Developers should be able to use the feature easily from Visual Studio. The feature will start with text based support -- by explicitly setting the `PublishSingleFile` property in the project file. In future, we may provide a single-file publish-profile, or other UI triggers.
-
-## User Experience
-
-To summarize, here's the overall experience for creating a HelloWorld single-file app 
-
-*  Create a new HelloWorld app: `HelloWorld$ dotnet new console`
-
-#### Framework Dependent HelloWorld
-
-* Normal publish: `dotnet publish` 
-
-  * Publish directory contains the host `HelloWorld.exe` ,  the app `HelloWorld.dll`, configuration files `HelloWorld.deps.json`, `HelloWorld.runtimeconfig.json`, and the PDB-file `HelloWorld.pdb`.
-
-* Single-file publish: `dotnet publish -r win10-x64 --self-contained=false /p:PublishSingleFile=true`
-
-  * Publish directory contains: `HelloWorld.exe` `HelloWorld.pdb`
-
-  * `HelloWorld.dll`, `HelloWorld.deps.json`, and `HelloWorld.runtimeconfig.json` are embedded within `HelloWorld.exe`.
-
-* Run: `HelloWorld.exe`
-
-  * The app runs completely from the single-file, without the need for intermediate extraction to file.
-
-#### Self-Contained HelloWorld
-
-- Normal publish: `dotnet publish -r win10-x64`
-
-  * Publish directory contains 221 files including the host, the app, configuration files, the PDB-file and the runtime.
-
-- Single-file publish: `dotnet publish -r win10-x64 /p:PublishSingleFile=true`
-
-  - Publish directory contains: `HelloWorld.exe` `HelloWorld.pdb`
-  - The remaining 219 files are embedded within the host `HelloWorld.exe`.
-
-- Run: `HelloWorld.exe`
-
-  * The bundled app and configuration files are processed directly from the bundle.
-  * Remaining 216 files will be extracted to disk at startup. 
-  * If reuse of extracted files is enabled, subsequent runs of the app may skip the extraction step.
-
-
-Most applications are expected to work without any changes. However, apps with a strong expectation about absolute location of dependent files may need to be made aware of bundling and extraction aspects of single-file publishing. No difference is expected with respect to debugging and analysis of apps.
-
-## Related Work
-
-* [Mono/MkBundle](https://github.com/mono/mono/blob/master/mcs/tools/mkbundle) 
-* [Fody.Costura](https://github.com/Fody/Costura)
-* [Warp](https://github.com/dgiagio/warp)
-* [dotnet-warp](https://github.com/Hubert-Rybak/dotnet-warp)
-* [BoxedApp](https://docs.boxedapp.com/index.html)
-* [LibZ](https://github.com/MiloszKrajewski/LibZ)
-
+* **Compression**: Currently the bundler does not compress the contents embedded at the end of the host binary.  Compressing the bundled files and meta-data can significantly reduce the size of the single-file output (by about 30%-50% as determined by prototyping). 
+* **Single-file Plugins** Extended the above design to seamlessly support single-file publish for plugins.
