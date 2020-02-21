@@ -52,7 +52,7 @@ author for today's world:
 ![](pic02.png)
 
 There are a lot of names and version numbers. Knowing who is compatible with who
-is impossible with a decoder ring. We've simplified this greatly with .NET
+is impossible without a decoder ring. We've simplified this greatly with .NET
 Standard, but this still requires a table that maps .NET Standard versions to
 .NET implementation versions.
 
