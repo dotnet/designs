@@ -178,12 +178,12 @@ public static class SkiaSharpImage
 |                 | (+everything else inherited from net5)                     |                                   |
 | Tizen, Unity... | Will follow the Xamarin model                              |                                   |
 
-***Open Issue**. In case of Xamarin, there is a discussion of whether the
+_**Open Issue**. In case of Xamarin, there is a discussion of whether the
 convergence with .NET Core will be a breaking change for existing NuGet packages
 (for example, there is a desire to change their namespaces). In that case, we
-should not map it to the existing TFM as that would be pointless.*
+should not map it to the existing TFM as that would be pointless._
 
-***Open Issue**. Will the above scheme work for iPad?*
+_**Open Issue**. Will the above scheme work for iPad?_
 
 ### Mapping to properties
 
@@ -196,11 +196,11 @@ There are three existing MSBuild properties:
 | TargetFrameworkVersion (TFV)    | The version number | `2`, `3.0`, `3.1`                |
 | TargetFrameworkProfile (TFP)    | The profile        | `Client` or `Profile124`         |
 
-***Open Issue**. The SDK has this logic duplicated from NuGet because they need
+_**Open Issue**. The SDK has this logic duplicated from NuGet because they need
 to do this during evaluation where they can’t call custom targets. We could make
 this an MSBuild intrinsic, but that seems like a lot of work. Maybe we just live
 with the duplication. But bottom line is that we need to make that change in
-MSBuild too.*
+MSBuild too._
 
 * [@rainersigwald](https://github.com/rainersigwald): We've made it pretty far
   with duplicated logic, but it results in really ugly MSBuild, since it's not a
@@ -225,14 +225,14 @@ We're going to map the new entries as follows:
 | net5.0-ios     | .NETCoreApp   | 5.0     | ios     |
 | net5.0-win     | .NETCoreApp   | 5.0     | win     |
 
-***Open Issue**. Please note that `net5.0`+ will map the TFI to `.NETCoreApp`.
+_**Open Issue**. Please note that `net5.0`+ will map the TFI to `.NETCoreApp`.
 We need to announce this change so that package authors with custom .props and
-.targets are prepared. Link to DavKean’s doc on how to do it.*
+.targets are prepared. Link to DavKean’s doc on how to do it._
 
-***Open Issue**. We should try to keep the TFI out of the .nuspec file. It seems
+_**Open Issue**. We should try to keep the TFI out of the .nuspec file. It seems
 NuGet uses the long form `.NETFramework,Version=4.5` in the dependency groups.
 We may want to change NuGet to allow the short form there as well and update our
-packaging tools to re-write to short name on pack.
+packaging tools to re-write to short name on pack._
 
 Specifically:
 
