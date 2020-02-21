@@ -287,6 +287,7 @@ Today, implicit `#if` conditions get generated based on the
 #elif NETFRAMEWORK
 #endif
 ```
+
 With this proposal, the `#if NETCOREAPP` condition will still be available when
 targeting `net5.0`, `net6.0`, etc. and will also be turned on for
 `netcoreapp2.1`, `netcoreapp3.1`, etc. Is that intended? Do we want a new
@@ -462,7 +463,6 @@ different/less constrained OS, which might give rise to other TFMs, such as
 We don't plan to support varying API surface based on runtime characteristics
 (x86/x64, AOT/JIT etc). This will continue to be supported via
 the `runtime/<RID>` folder.
-
 
 ### Will the new TFMs simplify the project files too?
 
