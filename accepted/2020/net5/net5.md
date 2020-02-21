@@ -68,8 +68,8 @@ via a new syntax:
   flavors of .NET 5 that include `net5.0` plus OS-specific bindings.
 
 NuGet should use this next syntax to automatically understand that `net5.0` can
-be consumed from `net6-win` (but not the other way around). But more importantly,
-this notation will also enable developers to intuitively understand
+be consumed from `net6.0-win` (but not the other way around). But more
+importantly, this notation will also enable developers to intuitively understand
 compatibility relationships because they are expressed by naming, rather than by
 mapping tables. Yay!
 
@@ -165,17 +165,17 @@ public static class SkiaSharpImage
 |                 | netcoreapp1..3.1 (warning when WinForms/WPF is referenced) |                                   |
 |                 | netstandard1..2.1                                          |                                   |
 | net5.0-android  | xamarin.android                                            |                                   |
-|                 | (+everything else inherited from net5)                     |                                   |
+|                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-ios      | xamarin.ios                                                |                                   |
-|                 | (+everything else inherited from net5)                     |                                   |
+|                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-macos    | xamarin.macos                                              |                                   |
-|                 | (+everything else inherited from net5)                     |                                   |
+|                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-tvos     | xamarin.tvos                                               |                                   |
-|                 | (+everything else inherited from net5)                     |                                   |
+|                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-watchos  | xamarin.watchos                                            |                                   |
-|                 | (+everything else inherited from net5)                     |                                   |
+|                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-win      | netcoreapp1..3.1                                           | WinForms + WPF and probably WinUI |
-|                 | (+everything else inherited from net5)                     |                                   |
+|                 | (+everything else inherited from net5.0)                   |                                   |
 | Tizen, Unity... | Will follow the Xamarin model                              |                                   |
 
 _**Open Issue**. In case of Xamarin, there is a discussion of whether the
@@ -240,14 +240,14 @@ Specifically:
   pieces and build logic that needs to change in .NET SDK.
 
 * **net4x and earlier will continue to use .NETFramework as the TFI**. This
-  means that net4 and net5 aren't considered compatible by default, but the
-  compatibility will continue to be handled by the AssetTargetFallback in the
-  SDK/NuGet restore.
+  means that `net4x` and `net5.0` aren't considered compatible by default, but
+  the compatibility will continue to be handled by the AssetTargetFallback in
+  the SDK/NuGet restore.
 
 * **We'll use the existing profile concept to encode the OS selection.** It's
   worth noting that profiles today make things smaller whereas this use makes
   things larger. We believe this can be handled in the NuGet layer by using this
-  rule for net5 and up. While that's not ideal, it reduces the number of
+  rule for `net5.0` and up. While that's not ideal, it reduces the number of
   concepts we need to add.
 
 ### TFMs are a closed set
@@ -288,9 +288,10 @@ Today, implicit `#if` conditions get generated based on the
 #endif
 ```
 With this proposal, the `#if NETCOREAPP` condition will still be available when
-targeting `net5`, `net6`, etc. and will also be turned on for `netcoreapp2.1`,
-`netcoreapp3.1`, etc. Is that intended? Do we want a new implicit condition that
-is versionless but targets all TFMs above `net5`? That is, `#if NET`.
+targeting `net5.0`, `net6.0`, etc. and will also be turned on for
+`netcoreapp2.1`, `netcoreapp3.1`, etc. Is that intended? Do we want a new
+implicit condition that is versionless but targets all TFMs above `net5.0`? That
+is, `#if NET`.
 
 ### Persisting prerequisites
 
@@ -305,14 +306,14 @@ This work is captured [in this document](https://microsoft.sharepoint.com/:w:/t/
 
 ### What would we target?
 
-Everything that is universal or portable to many platforms will target `net5`.
+Everything that is universal or portable to many platforms will target `net5.0`.
 This includes most libraries but also ASP.NET Core and EF.
 
 Platform-specific libraries would target platform-specific flavors. For example,
-WinForms and WPF controls would target `net5-win`.
+WinForms and WPF controls would target `net5.0-win`.
 
 Cross-platform application models (Xamarin Forms, ASP.NET Core) and bridges
-(Xamarin Essentials) would at least target `net5` but might also additionally
+(Xamarin Essentials) would at least target `net5.0` but might also additionally
 target platform-specific flavors to light-up more APIs or features. This
 approach is also called bait & switch.
 
@@ -325,10 +326,10 @@ There are some places in the IDE where targeting information is displayed:
 ![](pic05.png)
 ![](pic06.png)
 
-| Rule                                                                                         | Affected UI                                                        |
-|----------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| For most UI, we should use the TFM short name (for example, `netcoreapp3.1`, `net5`, or `net5-ios`). | Solution Explorer Editor, Context Switcherm Debug Context Switcher |
-| For cases where we use branded display names, we should use the name .NET 5.                | Project Properties                                                 |
+| Rule                                                                                                     | Affected UI                                                        |
+|----------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| For most UI, we should use the TFM short name (for example, `netcoreapp3.1`, `net5.0`, or `net5.0-ios`). | Solution Explorer Editor, Context Switcherm Debug Context Switcher |
+| For cases where we use branded display names, we should use the name .NET 5.                             | Project Properties                                                 |
 
 ### Related work
 
@@ -349,10 +350,10 @@ this and make it a key capability that is available out-of-the-box.
 ### Why can't we just have a single TFM for .NET 5?
 
 Moving forward, we can assume that the base class library (BCL) of .NET is the
-same across all environments of .NET. One can think of net5 as .NET Standard but
-with an implementation (.NET Core).
+same across all environments of .NET. One can think of `net5.0` as .NET Standard
+but with an implementation (.NET Core).
 
-However, net5 will not include .NET projections of OS APIs, such as:
+However, `net5.0` will not include .NET projections of OS APIs, such as:
 
 * WinRT
 * iOS bindings
@@ -407,14 +408,14 @@ customers.
 
 There are two reasons why this isn't desirable:
 
-1.  **It results a combinatorial explosion**. A TFM in the form of `net5-win7`
+1.  **It results a combinatorial explosion**. A TFM in the form of `net5.0-win7`
     would (syntactically) make any combination of .NET and OS possible. This
     raises the question which combinations are supported, which puts us back
     into having to provide the customer with a decoder ring.
 
 2.  **It can make asset selection ill-defined**. Suppose the project is
-    targeting `net7-win10`. The package offers `net5-win10` and `net6-win7`. Now
-    neither asset would be better.
+    targeting `net7.0-win10`. The package offers `net5.0-win10.0` and
+    `net6.0-win7.0`. Now neither asset would be better.
 
 Developers will want to target different OS versions from a single code
 base/NuGet package, but that doesn't mean they will need to use multi-targeting.
@@ -437,24 +438,24 @@ that we're working on.
 
 Based on conversations with the Blazor team we decided to not create a TFM for
 WASM in the browser. That's because Blazor wants agility where code can
-transparently work on client and server. Thus, they will continue to use `net5`.
-The browser-specific APIs will be delivered as a NuGet package, using RIDs to
-provide a throwing and non-throwing implementation. Other parties will have to
-do the same thing.
+transparently work on client and server. Thus, they will continue to use
+`net5.0`. The browser-specific APIs will be delivered as a NuGet package, using
+RIDs to provide a throwing and non-throwing implementation. Other parties will
+have to do the same thing.
 
-### ~~Why is the TFM called net5-browser and net5-wasm?~~
+### ~~Why is the TFM called net5.0-browser and net5.0-wasm?~~
 
 *No longer applicable as we won't have a TFM for Blazor.*
 
 WASM isn't a platform (in the OS sense) as much as it is an instruction set
 architecture, so it's better to think of WASM as something like x86/x64. So, it
-might not make sense to define net5-wasm. Rather, it would make more sense to
-define net5-browser. The rationale is that the browser will run WASM in a
+might not make sense to define `net5.0-wasm`. Rather, it would make more sense to
+define `net5.0-browser`. The rationale is that the browser will run WASM in a
 sandboxed environment which equates to having different native API sets.
 
 Any host that controls the JS runtime (for example, Node.js) could decide to expose
 different/less constrained OS, which might give rise to other TFMs, such as
-net5-node.
+`net5.0-node`.
 
 ### What about native dependencies?
 
@@ -484,8 +485,8 @@ in via `UseXxx` properties, akin to how Windows Forms and WPF work in .NET Core
 today. The reason is that in many cases the TFM alone isn't specific enough to
 decide what kind of app are you building:
 
-* `net5`. Is a class library/console app, an ASP.NET Core app, or a Blazor app?
-* `net5-win`. Are you building a Windows Forms app, a WPF app, or a UWP app? Are
+* `net5.0`. Is a class library/console app, an ASP.NET Core app, or a Blazor app?
+* `net5.0-win`. Are you building a Windows Forms app, a WPF app, or a UWP app? Are
   you using both Windows Forms and WPF?
 
 The nice thing about properties is that they naturally compose. If certain
