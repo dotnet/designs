@@ -174,7 +174,7 @@ public static class SkiaSharpImage
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-watchos  | xamarin.watchos                                            |                                   |
 |                 | (+everything else inherited from net5.0)                   |                                   |
-| net5.0-win      | netcoreapp1..3.1                                           | WinForms + WPF and probably WinUI |
+| net5.0-win      | netcoreapp1..3.1                                           | WinForms + WPF                    |
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | Tizen, Unity... | Will follow the Xamarin model                              |                                   |
 
@@ -486,8 +486,8 @@ today. The reason is that in many cases the TFM alone isn't specific enough to
 decide what kind of app are you building:
 
 * `net5.0`. Is a class library/console app, an ASP.NET Core app, or a Blazor app?
-* `net5.0-win`. Are you building a Windows Forms app, a WPF app, or a UWP app? Are
-  you using both Windows Forms and WPF?
+* `net5.0-win`. Are you building a Windows Forms app or a WPF app? Are you using
+  both Windows Forms and WPF or just one?
 
 The nice thing about properties is that they naturally compose. If certain
 combinations aren't possible, they can relatively easily be blocked.
