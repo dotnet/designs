@@ -191,7 +191,7 @@ There are three existing MSBuild properties:
 
 | Property                        | Meaning            | Examples                         |
 |---------------------------------|--------------------|----------------------------------|
-| TargetFramework (TFM)           | The short name     | `net4`, `netcoreapp3.0`          |
+| TargetFramework (TFM)           | The friendly name  | `net4`, `netcoreapp3.0`          |
 | TargetFrameworkIdentifier (TFI) | The long name      | `.NETFramework` or `.NETCoreApp` |
 | TargetFrameworkVersion (TFV)    | The version number | `2`, `3.0`, `3.1`                |
 | TargetFrameworkProfile (TFP)    | The profile        | `Client` or `Profile124`         |
@@ -231,8 +231,8 @@ We need to announce this change so that package authors with custom .props and
 
 _**Open Issue**. We should try to keep the TFI out of the .nuspec file. It seems
 NuGet uses the long form `.NETFramework,Version=4.5` in the dependency groups.
-We may want to change NuGet to allow the short form there as well and update our
-packaging tools to re-write to short name on pack._
+We may want to change NuGet to allow the friendly name there as well and update
+our packaging tools to re-write to friendly name on pack._
 
 Specifically:
 
@@ -252,9 +252,9 @@ Specifically:
 
 ### TFMs are a closed set
 
-One question is whether third parties can extend the TFM space (that is, the part
-after the dash) without having to rely on changes in NuGet/MSBuild. Due to the
-expansion of short name into TFI & TFM this would be non-trivial.
+One question is whether third parties can extend the TFM space (that is, the
+part after the dash) without having to rely on changes in NuGet/MSBuild. Due to
+the expansion of friendly name into TFI & TFM this would be non-trivial.
 
 We may open this up in the future, but for now the consensus was that we'd
 prefer to have the specific list of names that are expanded by NuGet.
@@ -326,10 +326,10 @@ There are some places in the IDE where targeting information is displayed:
 ![](pic05.png)
 ![](pic06.png)
 
-| Rule                                                                                                     | Affected UI                                                        |
-|----------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| For most UI, we should use the TFM short name (for example, `netcoreapp3.1`, `net5.0`, or `net5.0-ios`). | Solution Explorer Editor, Context Switcherm Debug Context Switcher |
-| For cases where we use branded display names, we should use the name .NET 5.                             | Project Properties                                                 |
+| Rule                                                                                                        | Affected UI                                                        |
+|-------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| For most UI, we should use the TFM friendly name (for example, `netcoreapp3.1`, `net5.0`, or `net5.0-ios`). | Solution Explorer Editor, Context Switcherm Debug Context Switcher |
+| For cases where we use branded display names, we should use the name .NET 5.                                | Project Properties                                                 |
 
 ### Related work
 
