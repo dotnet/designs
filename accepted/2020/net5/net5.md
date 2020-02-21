@@ -68,7 +68,7 @@ via a new syntax:
   flavors of .NET 5 that include `net5.0` plus OS-specific bindings.
 
 NuGet should use this next syntax to automatically understand that `net5.0` can
-be consumed from net6-win (but not the other way around). But more importantly,
+be consumed from `net6-win` (but not the other way around). But more importantly,
 this notation will also enable developers to intuitively understand
 compatibility relationships because they are expressed by naming, rather than by
 mapping tables. Yay!
@@ -77,12 +77,12 @@ mapping tables. Yay!
 
 ### Vary implementation
 
-Ida is working on an Xamarin Forms application that supports Android, iOS, and
+Ida is working on a Xamarin Forms application that supports Android, iOS, and
 Windows. Her application needs GPS information, but only a very limited set.
 Since there is no portable GPS API, she writes her own little abstraction
 library using multi-targeting.
 
-By doing so she's able to encapsulate the GPS access without having to
+By doing so, she's able to encapsulate the GPS access without having to
 multi-target her entire application, just this one area.
 
 ```C#
@@ -120,8 +120,8 @@ public static class GpsLocation
 Ada is a developer on SkiaSharp, a cross-platform 2D graphics API for .NET
 platforms based on Google's Skia Graphics Library. The project is already using
 multi-targeting to provide different implementations for different platform. To
-make it easier to use, she's adding a new `SkipSharpImage` type, which
-represents a bitmap and be constructed via OS-provided data types. Ada uses
+make it easier to use, she's adding a new `SkiaSharpImage` type, which
+represents a bitmap and is constructed via OS-provided data types. Ada uses
 `#if` to expose different constructors on different platforms:
 
 ```C#
@@ -252,7 +252,7 @@ Specifically:
 
 ### TFMs are a closed set
 
-One question is whether third parties can extend the TFM space (i.e. the part
+One question is whether third parties can extend the TFM space (that is, the part
 after the dash) without having to rely on changes in NuGet/MSBuild. Due to the
 expansion of short name into TFI & TFM this would be non-trivial.
 
@@ -264,8 +264,8 @@ prefer to have the specific list of names that are expanded by NuGet.
 Due to the fact that we're planning to bump the major version every year, we
 have to think about what will happen with version parsing in case of two digit
 version numbers, such as `net10`. Since `net10` already has a meaning (.NET
-Framework 1.0) we need to keep it that way. To avoid suprises, we'll by default
-use dottet version numbers in project templates to push developers towards being
+Framework 1.0), we need to keep it that way. To avoid surprises, we'll by default
+use dotted version numbers in project templates to push developers towards being
 explicit.
 
 | Framework      | Identifier    | Version| Comment
@@ -279,7 +279,7 @@ explicit.
 
 * TODO
 
-Today, impliicit `#if` conditions get generated based off the
+Today, implicit `#if` conditions get generated based on the
 `TargetFrameworkIdentifier`, so users today have:
 
 ```C#
@@ -288,11 +288,11 @@ Today, impliicit `#if` conditions get generated based off the
 #endif
 ```
 With this proposal, the `#if NETCOREAPP` condition will still be available when
-targeting `net5`, `net6`, etc and will also be turned on for `netcoreapp2.1`,
+targeting `net5`, `net6`, etc. and will also be turned on for `netcoreapp2.1`,
 `netcoreapp3.1`, etc. Is that intended? Do we want a new implicit condition that
-is versionless but targets all TFMs above `net5`? i.e. `#if NET`.
+is versionless but targets all TFMs above `net5`? That is, `#if NET`.
 
-### Persisting pre-requisites
+### Persisting prerequisites
 
 We need to require a minimum version for the iOS/Android/Windows SDKs.
 
@@ -308,7 +308,7 @@ This work is captured [in this document](https://microsoft.sharepoint.com/:w:/t/
 Everything that is universal or portable to many platforms will target `net5`.
 This includes most libraries but also ASP.NET Core and EF.
 
-Platform-specific libraries would target platform-specific flavors, for example,
+Platform-specific libraries would target platform-specific flavors. For example,
 WinForms and WPF controls would target `net5-win`.
 
 Cross-platform application models (Xamarin Forms, ASP.NET Core) and bridges
@@ -327,8 +327,8 @@ There are some places in the IDE where targeting information is displayed:
 
 | Rule                                                                                         | Affected UI                                                        |
 |----------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| For most UI, we should use the TFM short name (e.g. `netcoreapp3.1`, `net5`, or `net5-ios`). | Solution Explorer Editor, Context Switcherm Debug Context Switcher |
-| For cases, where we use branded display names, we should use the name .NET 5.                | Project Properties                                                 |
+| For most UI, we should use the TFM short name (for example, `netcoreapp3.1`, `net5`, or `net5-ios`). | Solution Explorer Editor, Context Switcherm Debug Context Switcher |
+| For cases where we use branded display names, we should use the name .NET 5.                | Project Properties                                                 |
 
 ### Related work
 
@@ -385,7 +385,7 @@ We believe this isn't the right approach for two reasons:
     types which might change over time (think `Task<T>` or `Span<T>)`, so not
     every combination can work.
 
-We believe it's much easier if we enable code to use multi-targeting (i.e.
+We believe it's much easier if we enable code to use multi-targeting (that is,
 compile the same code for multiple platforms, like we do today.
 
 ### Is .NET 5 a superset of .NET Framework 4.x?
@@ -400,7 +400,7 @@ Framework and will be supported, but we already said we'll no longer add new
 features to it.
 
 Thus, new apps should start on .NET Core. By branding it as .NET 5, this
-recommendation is much more obvious to both, existing customers, as well as new
+recommendation is much more obvious to both existing customers and new
 customers.
 
 ### Why are the OS specific flavors not versioned by the OS?
@@ -419,9 +419,9 @@ There are two reasons why this isn't desirable:
 Developers will want to target different OS versions from a single code
 base/NuGet package, but that doesn't mean they will need to use multi-targeting.
 Multi-targeting is a very heavy hammer. Yes, many people are using it to target
-different versions of .NET (e.g. `net45` vs `net461`). But that's not
+different versions of .NET (for example, `net45` vs `net461`). But that's not
 necessarily because `#if` is the better experience, it's because it's simply not
-possible any other way, due to .NET runtime constraints (i.e. assembly
+possible any other way, due to .NET runtime constraints (that is, assembly
 references and type/member references need to be resolved by the JIT). This
 problem doesn't exist for OS APIs. Developers can generally build a single
 binary for multiple versions of an operating system. The calls to APIs
@@ -452,7 +452,7 @@ might not make sense to define net5-wasm. Rather, it would make more sense to
 define net5-browser. The rationale is that the browser will run WASM in a
 sandboxed environment which equates to having different native API sets.
 
-Any host that controls the JS runtime (e.g. node.js) could decide to expose
+Any host that controls the JS runtime (for example, Node.js) could decide to expose
 different/less constrained OS, which might give rise to other TFMs, such as
 net5-node.
 
@@ -477,9 +477,9 @@ the `runtime/<RID>` folder.
 > IOW are we going to have to support both formats moving forward? What about
 > converting apps?
 
-Generally it does not. The idea I've heard is that all project types will be
+Generally, it does not. The idea I've heard is that all project types will be
 unified to use `Sdk="Microsoft.NET.Sdk"` in order to make multi-targeting
-easier. Customizations (e.g. specific targets and references) would be brought
+easier. Customizations (for example, specific targets and references) would be brought
 in via `UseXxx` properties, akin to how Windows Forms and WPF work in .NET Core
 today. The reason is that in many cases the TFM alone isn't specific enough to
 decide what kind of app are you building:
@@ -489,14 +489,14 @@ decide what kind of app are you building:
   you using both Windows Forms and WPF?
 
 The nice thing about properties is that they naturally compose. If certain
-combinations aren't possible, they can relativelly easily be blocked.
+combinations aren't possible, they can relatively easily be blocked.
 
 However, at this point it's still unclear whether the SDK unification will work
 this way. One concern was that SDKs also bring in new item groups and might have
 conflicting defaults for properties; this works today because the SDK can bring
 in .props before the project file. When we rely on properties in the project
-file, we need to bring those in the .targets (i.e. the bottom of the project
-file). WHile not impossible, this might force us to have knowledge in the base
+file, we need to bring those in the .targets (that is, the bottom of the project
+file). While not impossible, this might force us to have knowledge in the base
 SDK that can't be easily extended via optional components.
 [@mhutch](https://github.com/mhutch) is working on a document specifically
 around SDK convergence.
