@@ -1807,43 +1807,83 @@ The other textual strings (e.g. GraphicalString) are not supported for reading a
 partial class AsnReader
 {
     /// <summary>
-    ///   Reads the next value as a UTCTime with tag UNIVERSAL 23.
+    ///   Reads the next value as character string with a UNIVERSAL tag appropriate to the specified
+    ///   encoding type, returning the decoded value as a <see cref="string"/>.
     /// </summary>
-    /// <param name="twoDigitYearMax">
-    ///   The largest year to represent with this value.
-    ///   The default value, 2049, represents the 1950-2049 range for X.509 certificates.
+    /// <param name="encodingType">
+    ///   A <see cref="UniversalTagNumber"/> corresponding to the value type to process.
     /// </param>
-    /// <returns>
-    ///   a DateTimeOffset representing the value encoded in the UTCTime.
-    /// </returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   <paramref name="encodingType"/> is not a known character string type.
+    /// </exception>
     /// <exception cref="CryptographicException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
-    ///   the contents are not valid under the current encoding rules
+    ///   the contents are not valid under the current encoding rules --OR--
+    ///   the string did not successfully decode
     /// </exception>
-    /// <seealso cref="System.Globalization.Calendar.TwoDigitYearMax"/>
-    /// <seealso cref="ReadUtcTime(System.Security.Cryptography.Asn1.Asn1Tag,int)"/>
-    public DateTimeOffset ReadUtcTime(int twoDigitYearMax = 2049) => throw null;
-    public DateTimeOffset ReadUtcTime(Asn1Tag expectedTag, int twoDigitYearMax = 2049) => throw null;
-
+    /// <seealso cref="TryReadPrimitiveCharacterStringBytes(UniversalTagNumber,out ReadOnlyMemory{byte})"/>
+    /// <seealso cref="TryCopyCharacterStringBytes(UniversalTagNumber,Span{byte},out int)"/>
+    /// <seealso cref="TryCopyCharacterString(UniversalTagNumber,Span{char},out int)"/>
+    /// <seealso cref="ReadCharacterString(Asn1Tag,UniversalTagNumber)"/>
+    public string ReadCharacterString(UniversalTagNumber encodingType) => throw null;
+    public string ReadCharacterString(Asn1Tag expectedTag, UniversalTagNumber encodingType) => throw null;
+               
+    public bool TryCopyCharacterString(
+        UniversalTagNumber encodingType,
+        Span<char> destination,
+        out int charsWritten) => throw null;
+    public bool TryCopyCharacterString(
+        Asn1Tag expectedTag,
+        UniversalTagNumber encodingType,
+        Span<char> destination,
+        out int charsWritten) => throw null;
+    
     /// <summary>
-    ///   Reads the next value as a GeneralizedTime with tag UNIVERSAL 24.
+    ///   Reads the next value as character string with a UNIVERSAL tag appropriate to the specified
+    ///   encoding type, returning the contents as an unprocessed <see cref="ReadOnlyMemory{byte}"/>
+    ///   over the original data.
     /// </summary>
-    /// <param name="disallowFractions">
-    ///   <c>true</c> to cause a <see cref="CryptographicException"/> to be thrown if a
-    ///   fractional second is encountered, such as the restriction on the PKCS#7 Signing
-    ///   Time attribute.
+    /// <param name="encodingType">
+    ///   A <see cref="UniversalTagNumber"/> corresponding to the value type to process.
+    /// </param>
+    /// <param name="contents">
+    ///   On success, receives a <see cref="ReadOnlyMemory{byte}"/> over the original data
+    ///   corresponding to the contents of the character string.
     /// </param>
     /// <returns>
-    ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.
+    ///   <c>true</c> and advances the reader if the value had a primitive encoding,
+    ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
     /// </returns>
+    /// <remarks>
+    ///   This method does not determine if the string used only characters defined by the encoding.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   <paramref name="encodingType"/> is not a known character string type.
+    /// </exception>
     /// <exception cref="CryptographicException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules
     /// </exception>
-    public DateTimeOffset ReadGeneralizedTime(bool disallowFractions = false) => throw null;
-    public DateTimeOffset ReadGeneralizedTime(Asn1Tag expectedTag, bool disallowFractions = false) => throw null;
+    /// <seealso cref="TryCopyCharacterStringBytes(UniversalTagNumber,Span{byte},out int)"/>
+    public bool TryReadPrimitiveCharacterStringBytes(
+        UniversalTagNumber encodingType,
+        out ReadOnlyMemory<byte> contents) => throw null;
+    public bool TryReadPrimitiveCharacterStringBytes(
+        Asn1Tag expectedTag,
+        UniversalTagNumber encodingType,
+        out ReadOnlyMemory<byte> contents) => throw null;
+
+    public bool TryCopyCharacterStringBytes(
+        UniversalTagNumber encodingType,
+        Span<byte> destination,
+        out int bytesWritten) => throw null;
+    public bool TryCopyCharacterStringBytes(
+        Asn1Tag expectedTag,
+        UniversalTagNumber encodingType,
+        Span<byte> destination,
+        out int bytesWritten) => throw null;
 }
 ```
 
