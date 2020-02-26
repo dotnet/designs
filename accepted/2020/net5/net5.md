@@ -329,7 +329,7 @@ There are some places in the IDE where targeting information is displayed:
 
 | Rule                                                                                                        | Affected UI                                                        |
 |-------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| For most UI, we should use the TFM friendly name (for example, `netcoreapp3.1`, `net5.0`, or `net5.0-ios`). | Solution Explorer Editor, Context Switcherm Debug Context Switcher |
+| For most UI, we should use the TFM friendly name (for example, `netcoreapp3.1`, `net5.0`, or `net5.0-ios`). | Solution Explorer Editor, Context Switcher, Debug Context Switcher |
 | For cases where we use branded display names, we should use the name .NET 5.                                | Project Properties                                                 |
 
 ### Related work
@@ -468,7 +468,7 @@ the `runtime/<RID>` folder.
 
 [@cartermp](https://github.com/cartermp) asked:
 
-> Does specifiying `net5.0-win` obviate the current three things you need to
+> Does specifying `net5.0-win` obviate the current three things you need to
 > specify?
 >
 > * netcoreapp3.x
