@@ -502,4 +502,23 @@ SDK that can't be easily extended via optional components.
 [@mhutch](https://github.com/mhutch) is working on a document specifically
 around SDK convergence.
 
+### Why is .NET 5.0's TFI still mapped to `.NETCoreApp`?
+
+In MSBuild you can't easily do comparisons like 
+
+```xml
+<PropertyGroup Condition="'$(TargetFramework)' >= 'net5.0'`">
+```
+
+because that would be a string comparison. Rather, you need to do comparisons
+like this:
+
+```xml
+<PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(TargetFrameworkVersion)' >= '3.0'">
+```
+
+By us mapping `net5.0` we break less of that code because existing code will
+treat it correctly (i.e. as a future version of .NET Core) and also avoid
+misclassification as .NET Framework.
+
 [os-versioning]: https://microsoft.sharepoint.com/:w:/t/DotNetTeam/EavsPfFy7lFLh7eQrdMN8QwBl05cGLPwrSzJeT8vEu32mw?e=knNQ6W
