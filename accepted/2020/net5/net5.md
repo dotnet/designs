@@ -407,7 +407,7 @@ customers.
 
 ### Why are the OS specific flavors not versioned by the OS?
 
-There are two reasons why this isn't desirable:
+There are a couple of reasons why this isn't desirable:
 
 1.  **It results a combinatorial explosion**. A TFM in the form of `net5.0-win7`
     would (syntactically) make any combination of .NET and OS possible. This
@@ -417,6 +417,25 @@ There are two reasons why this isn't desirable:
 2.  **It can make asset selection ill-defined**. Suppose the project is
     targeting `net7.0-win10`. The package offers `net5.0-win10.0` and
     `net6.0-win7.0`. Now neither asset would be better.
+
+3. **A single version isn't enough**. Logically, you need at least two version
+   numbers to support OS targeting:
+
+      * *Minimum OS API Level*. Consumers of the library must use an SDK that
+        support this version, or a higher version. This allows library authors
+        to use types from the OS bindings in their public API surface without
+        causing type resolution issues for the consumer.
+
+      * *Minimum OS version*. For OS calls, it's common to guard OS calls with
+        version checks. This allows library authors to light up for later OS
+        versions without having to produce multiple binaries. In order for that
+        to be sound, a project generally cannot have lower version than whatever
+        its libraries support.
+  
+   Some platform, such as Android, also have the notion of a *targeted OS
+   version* that indicates to the OS what behavior the author tested for. When
+   running on a later OS version, the OS might "quirk" the behavior to preserve
+   backwards compatibility.      
 
 Developers will want to target different OS versions from a single code
 base/NuGet package, but that doesn't mean they will need to use multi-targeting.
@@ -430,10 +449,17 @@ binary for multiple versions of an operating system. The calls to APIs
 introduced in later versions must be guarded, but this is generally understood,
 and we have some limited tooling already with plans to extend it.
 
-However, we do want to allow the developer to express a minimum version they
-require for the OS. It will likely be a property in the project file that is
-being persisted in the resulting NuGet package as well. There is a separate doc
-that we're working on.
+### How can I ensure my NuGet package/project can express OS requirements?
+
+We do want to allow the developer to express a minimum version they require for
+the OS. It will likely be expressed as additional properties in the project file
+that are also being persisted in the resulting NuGet package as well. It's not
+decided on whether violating the perquisites will always be an error. For
+example, we could decide to make *Minimum OS API Level* an error (because it
+might result in compilation errors) while making *Minimum OS version* a warning
+(because the consuming project could guard the method calls into the library).
+
+There is a [separate doc][os-versioning] that we're working on.
 
 ### Why is there no TFM for Blazor?
 
