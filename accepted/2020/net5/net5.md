@@ -303,7 +303,7 @@ We need to require a minimum version for the iOS/Android/Windows SDKs.
       version number
     - We'd need something with a version number
 
-This work is captured [in this document](https://microsoft.sharepoint.com/:w:/t/DotNetTeam/EavsPfFy7lFLh7eQrdMN8QwBl05cGLPwrSzJeT8vEu32mw?e=knNQ6W).
+This work is captured [in this document][os-versioning].
 
 ### What would we target?
 
@@ -501,3 +501,5 @@ file). While not impossible, this might force us to have knowledge in the base
 SDK that can't be easily extended via optional components.
 [@mhutch](https://github.com/mhutch) is working on a document specifically
 around SDK convergence.
+
+[os-versioning]: https://microsoft.sharepoint.com/:w:/t/DotNetTeam/EavsPfFy7lFLh7eQrdMN8QwBl05cGLPwrSzJeT8vEu32mw?e=knNQ6W
