@@ -430,9 +430,10 @@ There are a couple of reasons why this isn't desirable:
         version checks. This allows library authors to light up for later OS
         versions without having to produce multiple binaries. In order for that
         to be sound, a project generally cannot have lower version than whatever
-        its libraries support.
+        its libraries support, unless the consumer guards their calls into that
+        library.
   
-   Some platform, such as Android, also have the notion of a *targeted OS
+   Some platforms, such as Android, also have the notion of a *targeted OS
    version* that indicates to the OS what behavior the author tested for. When
    running on a later OS version, the OS might "quirk" the behavior to preserve
    backwards compatibility.      
