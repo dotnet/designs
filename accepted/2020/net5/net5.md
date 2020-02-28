@@ -529,6 +529,21 @@ SDK that can't be easily extended via optional components.
 [@mhutch](https://github.com/mhutch) is working on a document specifically
 around SDK convergence.
 
+### Why is there new TFM for Linux?
+
+The primary reason for OS specific TFMs is to vary API surface, not for varying
+behavior. RIDs allow varying behavior and have support for various Linux
+flavors. Specifically, TFMs aren't (primarily) meant to allow calling P/Invokes
+under `#if`, most of the time that should be done by doing runtime checks or by
+using RIDs. The primary reason for a TFM is to exclude large amounts of managed
+representations for OS technologies (WinForms, WPF, Apple's NS APIs, Android
+etc).
+
+Also, Android, iOS, macOS, and Windows share that they offer a stable ABI so
+that exchanging binaries makes sense. Linux is too generic of a concept for
+that, it's basically just the kernel, which again boils down to the only thing
+you can do is calling P/Invokes.
+
 ### Why is .NET 5.0's TFI still mapped to `.NETCoreApp`?
 
 In MSBuild you can't easily do comparisons like 
