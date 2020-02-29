@@ -230,7 +230,7 @@ Here is how the attribute would be applied:
 ```C#
 internal static class BclObsolete
 {
-    public const string Url = "http://aka.ms/obsolete/{0}";
+    public const string Url = "https://aka.ms/obsolete/{0}";
 
     // NOTE: Keep this sorted by the the ID's value,
     //       not the name of the field!
@@ -296,7 +296,7 @@ the attribute's message property, such as:
 ```C#
 namespace System.Collections
 {
-    [Obsolete("::BCL0006|http://aka.ms/obsolete/{0}")]
+    [Obsolete("::BCL0006|https://aka.ms/obsolete/{0}")]
     public class ArrayList
     {
         // ...
