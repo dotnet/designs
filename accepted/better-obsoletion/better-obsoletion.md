@@ -9,11 +9,11 @@ which is an ever-changing landscape and often puts additional constraints on the
 developer's code that didn't exist before.
 
 The approach to productivity in .NET is called "the pit of success", which is
-the idea that developers will more or less stumble their way via code completion
-towards the general vicinity of a correct solution. However, as the platform
-grows and ages, the amount of mistakes in the platform also grows. And more
-often than not the API that looks the most promising might be the wrong one to
-use. So it becomes important that we can point developers the right way.
+the idea that developers will stumble their way via code completion towards the
+general vicinity of a correct solution. However, as the platform grows and ages,
+the number of mistakes in the platform also grows. And often the API that looks
+the most promising might be the wrong one to use. So, it becomes important that
+we can point developers the right way.
 
 Since .NET Framework 1.0, we were able to mark APIs as obsoleted via a built-in
 attribute. Any usage of such an API results in the compiler emitting a
@@ -32,12 +32,12 @@ This obsoletion approach has a few benefits over the alternatives:
   binaries, not source code.
 
 * **Documentation**. Let's face it, developers only read documentation when
-  something doesn't work. Only few developers research guidance and
-  best-practice proactively. But even if they did: guidance changes over time
-  and some technologies that looked like good ideas turn out to be unviable. We
+  something doesn't work. Only few developers research guidance and best
+  practice proactively. But even if they did: guidance changes over time and
+  some technologies that looked like clever ideas turn out to be unviable. We
   need a mechanism that informs developers after the fact.
 
-Obsoletion via the `[Obsolete]` attribute works pretty well when:
+Obsoletion via the `[Obsolete]` attribute works well when:
 
 1. Only a few APIs are affected
 2. It's easy to remove their usage
@@ -50,7 +50,7 @@ In practice these requirements are often not satisfiable:
   often means obsoleting a *set of APIs*, such as types and static members.
 
 * **Not using obsoleted APIs isn't always practical**. It would be nice if we
-  could always remove dependencies on obsoleted technologies but this isn't
+  could always remove dependencies on obsoleted technologies, but this isn't
   always possible if they are used heavily in existing code bases. In those
   cases, you typically want a way to ignore obsoletion diagnostics regarding
   specific technologies but not others so that you don't accidentally start
@@ -59,14 +59,14 @@ In practice these requirements are often not satisfiable:
 * **Guidance is complex**. Obsoleted APIs rarely have a drop-in replacement.
   After all, we don't obsolete based on their naming or shape but usually due to
   fundamental design issues. That means the replacements are typically a nuanced
-  choice and require at least a page of explanation, rather than a one-liner. 
+  choice and require at least a page of explanation, rather than a one-liner.
 
 This document proposes changes to how APIs can be obsoleted in a more structured
 way.
 
 ## Scenarios and User Experience
 
-### Targeted Suppression
+### Targeted suppressions
 
 Abigail is a developer and maintains the business logic layer component for
 Fabrikam Billing Services. It was written in 2004 and makes heavy use of
@@ -80,15 +80,15 @@ Server. Abigail is now tasked to refactor that code to use REST-based services
 instead so that the application can eventually be converted to a cloud-based
 offering.
 
-Abigail would like to use the brand new JSON APIs so she updates the project
+Abigail would like to use the brand new JSON APIs, so she updates the project
 from .NET Core 2.1 to .NET Core 3.1. However, after upgrading she notices that
 we obsoleted non-generic collections and she gets a bunch of warnings against
 her code:
 
-| Code    | Description              | Project                        |
-|---------|--------------------------|--------------------------------|
-| BCL0006 | 'ArrayList' is obsolete  | Fabrikam.Billing.BusinessLogic |
-| BCL0006 | 'Hashtable' is obsolete  | Fabrikam.Billing.BusinessLogic |
+| Code    | Description             | Project                        |
+|---------|-------------------------|--------------------------------|
+| BCL0006 | 'ArrayList' is obsolete | Fabrikam.Billing.BusinessLogic |
+| BCL0006 | 'Hashtable' is obsolete | Fabrikam.Billing.BusinessLogic |
 
 Due to the heavy use, there are dozens of warnings like this throughout her
 code, so she doesn't want to use `#pragma warning disable` for each affected
@@ -97,7 +97,7 @@ non-generic collections by adding the ID `BCL0006` to the
 `Fabrikam.Billing.BusinessLogic` project's `NoWarn` list.
 
 Now the build produces zero warnings and she starts to add the networking
-component. After spending a few minutes online she finds a code sample from
+component. After spending a few minutes online, she finds a code sample from
 Stack Overflow that looks promising. After copy & pasting that into the code
 editor, she immediately gets another obsoletion warning:
 
@@ -108,7 +108,7 @@ editor, she immediately gets another obsoletion warning:
 Glad to have learned that, she continues to build her networking layer with the
 recommendation of `HttpClient`.
 
-## More Details
+### More details
 
 Bill is an architect and maintains the authentication and authorization related
 components in Fabrikam Billing. Based on guidance from 2005, the code uses
@@ -119,9 +119,9 @@ based authentication. Since most of the code base is now being upgraded to .NET
 Core 3.1, he starts by retargeting the project. After doing so, he gets a bunch
 of obsoletion warnings:
 
-| Code    | Description                 | Project               |
-|---------|-----------------------------|-----------------------|
-| BCL0001 | 'SecureString' is obsolete  | Fabrikam.Billing.Auth |
+| Code    | Description                | Project               |
+|---------|----------------------------|-----------------------|
+| BCL0001 | 'SecureString' is obsolete | Fabrikam.Billing.Auth |
 
 Trying to understand why, he clicks the warning ID `BCL0001` in the error list
 which takes him to a documentation page explaining the issues with
@@ -147,8 +147,8 @@ they also need to plan for removing their dependency on `SecureString`.
 ### Non-Goals
 
 * **Detecting specific usage patterns**. Sometimes, an API isn't obsoleted, just
-  a particular combination of arguments or specific values. If we need to
-  identify these, we'll author a custom analyzer.
+  a combination of arguments or specific values. If we need to identify these,
+  we'll author a custom analyzer.
 
 * **Being able to obsolete APIs in already shipped versions of .NET**. The
   attribute must be applied to the API surface that the compiler sees and thus
@@ -156,14 +156,13 @@ they also need to plan for removing their dependency on `SecureString`.
   versions of the platform. In other words, this doesn't support a sidecar file
   that can be applied to an existing version of .NET.
 
-* **Being able to remove APIs in later versions**. See
-  [the discussion](#why-is-being-able-to-delete-apis-not-a-goal) in the Q&A
-  section.
+* **Being able to remove APIs in later versions**. See [the
+  discussion](#why-is-being-able-to-delete-apis-not-a-goal) in the Q&A section.
 
 * **Hiding all obsoleted APIs from IntelliSense**. Whether or not an API should
-  be hidden is an independent decision. For more details, see
-  [the discussion](#should-obsoleted-members-be-hidden-from-intellisense) in the
-  Q&A section.
+  be hidden is an independent decision. For more details, see [the
+  discussion](#should-obsoleted-members-be-hidden-from-intellisense) in the Q&A
+  section.
 
 ## Design
 
@@ -178,7 +177,7 @@ We'd add the following properties to `ObsoleteAttribute`:
 ```C#
 namespace System
 {
-    public sealed class ObsoleteAttribute : Attribute
+    public partial class ObsoleteAttribute : Attribute
     {
         // Existing:
         //
@@ -191,32 +190,38 @@ namespace System
         // New:
         public string DiagnosticId { get; set; }
         public string UrlFormat { get; set; }
-        public string Url => UrlFormat == null ? null : string.Format(UrlFormat, DiagnosticId);
     }
 }
 ```
 
-Instead of taking the URL directly, the API takes a format string. This allows
-having a generic URL that includes the diagnostic ID. This avoids having to
-repeat the ID twice and thus making a copy & paste mistake.
+* `DiagnosticId`. Represents the ID the compiler will use when reporting a use
+  of the API. This relies on diagnostic IDs being unique, just like the rest of
+  the Roslyn analyzer facility. See [this
+  discussion](#what-happens-when-multiple-parties-accidentally-use-the-same-diagnostic-id)
+  on how we're planning to address the potential for conflicts.
 
-### Compiler Changes
+* `UrlFormat`. The URL that should be used by an IDE for navigating to
+  corresponding documentation. Instead of taking the URL directly, the API takes
+  a format string. This allows having a generic URL that includes the diagnostic
+  ID. This avoids having to repeat the ID twice and thus making a copy & paste
+  mistake.
+
+### Compiler/IDE Changes
 
 The compilers would be enlightened about these new properties and use them as
 follows:
 
 * If `DiagnosticId` is `null`, use the existing diagnostic ID (e.g. `CS0618` in
   C#). Otherwise, use `DiagnosticId`.
-    - The compiler should honor suppressions for the specified diagnostic id.
-* If `Url` is not `null`, use it as the diagnostic link when rendering them in
-  the IDE.
-* The compiler should assume that `Url` and `DiagnosticId` are independent
-  features, in other words both can be used, either, and neither.
+* The compiler should honor suppressions for the specified diagnostic id.
+* If `UrlFormat` is not `null`, use it as the diagnostic link when rendering
+  them in the IDE.
+* The compiler should assume that `UrlFormat` and `DiagnosticId` are independent
+  features, in other words both can be used, either, or neither.
 
-***OPEN ISSUE**: Should the compiler suppress all diagnostics from
-`ObsoleteAttributes` if the existing generic diagnostic ID is suppressed
-(e.g.`CS0618`) ? If not, the developer has no way to turn this feature off
-entirely.*
+_**OPEN ISSUE**: Should the compiler suppress all diagnostics from
+`ObsoleteAttribute` if the existing generic diagnostic ID is suppressed (e.g.
+`CS0618`)? If not, the developer has no way to turn this feature off entirely._
 
 ### Samples
 
@@ -235,13 +240,15 @@ internal static class BclObsolete
 
 namespace System.Collections
 {
-    [Obsolete(DiagnosticId = BclObsolete.NonGenericCollectionsId, UrlFormat=BclObsolete.Url)]
+    [Obsolete(DiagnosticId = BclObsolete.NonGenericCollectionsId,
+              UrlFormat = BclObsolete.Url)]
     public class ArrayList
     {
         // ...
     }
 
-    [Obsolete(DiagnosticId = BclObsolete.NonGenericCollectionsId, UrlFormat=BclObsolete.Url)]
+    [Obsolete(DiagnosticId = BclObsolete.NonGenericCollectionsId,
+              UrlFormat = BclObsolete.Url)]
     public class Hashtable
     {
         // ...
@@ -250,7 +257,8 @@ namespace System.Collections
 
 namespace System.Security
 {
-    [Obsolete(DiagnosticId = BclObsolete.SecureStringId, UrlFormat=BclObsolete.Url)]
+    [Obsolete(DiagnosticId = BclObsolete.SecureStringId,
+              UrlFormat = BclObsolete.Url)]
     public sealed class SecureString
     {
         // ...
@@ -258,18 +266,32 @@ namespace System.Security
 }
 ```
 
-***OPEN ISSUE**: We need to decide on guidance to avoid ID conflicts with the
+_**OPEN ISSUE**: We need to decide on guidance to avoid ID conflicts with the
 community. We should talk to the Roslyn analyzer team for best practices. Stake
-in the ground could be that we should a prefix like `BCL` that is owned by a
+in the ground could be that we should use a prefix like `BCL` that is owned by a
 single party and responsible to avoid duplicated numbers. Other parties would
-need to choose a different prefix.*
+need to choose a different prefix._
+
+### XML Serializer
+
+According to [@mconnew](https://github.com/mconnew), the XML Serializer throws
+an exception when serializing types that are marked as `[Obsolete]`. There seems
+to be two options to avoid breaking customers:
+
+1. We carefully only apply the `[Obsolete]` attribute to reference assemblies
+   and don't apply this on the implementation assembly. That's not ideal, but
+   doable.
+2. We change the XML serializer to not throw.
+
+_**OPEN ISSUE**: Close the loop with XML Serializer team and lock down what we
+should do._
 
 ### Rejected Alternatives
 
 #### String Encoding
 
-Instead of introducing new APIs, we could invent a textual format that we put
-in the attribute's message property, such as:
+Instead of introducing new APIs, we could invent a textual format that we put in
+the attribute's message property, such as:
 
 ```C#
 namespace System.Collections
@@ -282,8 +304,8 @@ namespace System.Collections
 }
 ```
 
-The benefit is that it doesn't require new API and that that the call sites
-are slightly more compact.
+The benefit is that it doesn't require new API and that that the call sites are
+slightly more compact.
 
 The downside is more cryptic use and weak contract between the compiler and the
 API surface, which might also result in accidental recognition.
@@ -303,28 +325,27 @@ namespace System
 
         public string DiagnosticId { get; set; }
         public string UrlFormat { get; set; }
-        public string Url => UrlFormat == null ? null : string.Format(UrlFormat, DiagnosticId);
     }
 }
 ```
 
 The irony is that this would effectively mean that we're obsoleting the
-`ObsoleteAttribute` which now begs the question whether we should mark it
-`[Obsolete]` or `[Deprecated]`.
+`ObsoleteAttribute` which would then raise the question whether we should mark
+it `[Obsolete]` or `[Deprecated]`.
 
 ## Q & A
 
 ### Why is providing coder fixers not a goal?
 
 Code fixers are actions in Roslyn's lightbulb menu that changes the code. It
-would sure be nice if we'd offer them for obsoleted APIs but we don't believe
+would sure be nice if we'd offer them for obsoleted APIs, but we don't believe
 this is viable for the vast amount of obsoletions:
 
 * **SecureString**. The fix is to not use passwords to begin with. Just making
   the `Password` property of type `string` isn't the right thing to do.
 
 * **Non-generic collections**. One can't just replace the types (first, generic
-  inference would be hard) but also we'd have to update usage patterns, for
+  inference would be hard) but also, we'd have to update usage patterns, for
   example that `Hashtable` returns `null` for missing keys.
 
 * **Remoting**. Requires moving to some other IPC technology. The code needs to
@@ -334,16 +355,17 @@ One could argue that even if the fixer could only get you 50% there, it's still
 better than nothing but we're not convinced that's the case. Sure, a fixer isn't
 necessarily obligated to introduce zero issues, but over promising by offering
 the fixer could easily result in subtle bugs and thus customer frustration. We
-should be honest here and don't claim it's easier than it actually is.
+should be honest here and don't claim it's easier than it is.
 
 ### Why is being able to delete APIs not a goal?
 
 Different layers of the stack have drastically different requirements for
 breaking changes. For the lower layers, our ability to make breaking changes and
-removing obsoleted features has proven very difficult. This has to do with the
-fact that .NET's success is largely built around the idea of sharing libraries,
-usually in binary form. Making changes there can disrupt the ecosystem for
-years. So our hopes to be able to remove problematic tech here seem slim.
+removing obsoleted features has proven exceedingly difficult. This has to do
+with the fact that .NET's success is largely built around the idea of sharing
+libraries, usually in binary form. Making changes there can disrupt the
+ecosystem for years. So, our hopes to be able to remove problematic tech here
+seem slim.
 
 At the same time, we've been able to remove APIs in higher layers, such as
 ASP.NET. It's much easier there because dependent code there tends to live in
@@ -353,7 +375,7 @@ application code, as opposed to libraries, so absorbing breaks there is easier.
 
 Obsoletion is a process that informs customers about problematic APIs. It's most
 useful for first time users of the API so that they don't take dependencies on
-less optimal technology. However, it's also a powerful tool for informing
+less optimal technologies. However, it's also a powerful tool for informing
 customers about potential issues they have in their code base. Neither of these
 goals require removing the API eventually.
 
@@ -371,3 +393,17 @@ specific obsoletions but not others. We could consider expanding
 `EditorBrowsable` by adding a diagnostic ID to it which determines would disable
 the hiding if the specific ID is suppressed (in other words, we'd link their
 behaviors). But that feels a bit over the top.
+
+### What happens when multiple parties accidentally use the same diagnostic ID?
+
+The feature needs to handle that multiple APIs use the same diagnostic ID (in
+fact, that's the feature so that related obsoletions can be grouped). If
+different parties inadvertently use the same diagnostic ID it just means that
+customers have no way to suppress them independently via NoWarn. They can still
+use `#pragma` suppressions if they want to.
+
+For 1st parties, the Roslyn team already tracks [diagnostic ranges in
+GitHub](https://github.com/dotnet/roslyn-analyzers/blob/master/src/Utilities/Compiler/DiagnosticCategoryAndIdRanges.txt).
+We should give clear guidance to developers to pick a prefix that they own. The
+Roslyn [might also want to reserve
+prefixes](https://github.com/dotnet/roslyn/issues/40351).
