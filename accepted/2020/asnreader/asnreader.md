@@ -1949,6 +1949,7 @@ public ref partial struct AsnValueReader
 - Should `AsnEncodingRules` either expand, or alias-expand, the acronyms?
 - Namespace: The preferred namespace is `System.BinaryEncodings.Asn1`, or a similar general approach to binary encodings (which will align with the CBOR feature also for .NET 5). The fallback is `System.Security.Cryptography.Asn1`, but the reader will be used by more than just cryptography (though that is its main consumer).
 - Distribution: Dual-building as an OOB netstandard2.0 package and an inbox netcoreapp-current package with no public contract.
+- Instead of using default parameters for the skipSortValidation, twoDigitYearMax, and disallowFractionalSeconds on the reader, should we add an AsnReaderOptions class (with properties for the mode, twoDigitYearMax, skipSortValidation, etc) and do proper overloads like `ReadSetOf() => ReadSetOf(_options.SkipSetSortValidation);`? This allows per-call configuration with reader-specific defaults instead of compile-time defaults.  The mode-only constructor would remain, with the default options being the current compile-defaults.
 
 ### Answered Questions
 
