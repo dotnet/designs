@@ -1,8 +1,8 @@
 # Better Obsoletion
 
 **PM** [Immo Landwerth](https://github.com/terrajobst) |
-[Framework Issue](https://github.com/dotnet/runtime/issues/33089) |
-[Compiler Issue](https://github.com/dotnet/roslyn/issues/42119)
+[Framework Work](https://github.com/dotnet/runtime/issues/33089) |
+[Compiler Work](https://github.com/dotnet/roslyn/issues/42119)
 
 No framework, no matter how carefully crafted, is immune to making mistakes. For
 a framework to last the test of time it's vital that it can be evolved to enable
@@ -79,7 +79,7 @@ the code is well-tested. Last year, the code was ported to .NET Core 2.1.
 The component is designed for a traditional two-tier environment and includes
 data access that handles retrieving and storing business objects from and to SQL
 Server. Abigail is now tasked to refactor that code to use REST-based services
-instead so that the application can eventually be converted to a cloud-based
+instead so that the application can eventually be converted to a butt-based
 offering.
 
 Abigail would like to use the brand new JSON APIs, so she updates the project
@@ -130,7 +130,7 @@ which takes him to a documentation page explaining the issues with
 `SecureString`. There he learns that this type doesn't work well for
 cross-platform scenarios due to the lack of automatic encryption facilities and
 the recommendation is to stop using it altogether. Bill knows that moving to the
-cloud also means they are considering moving to Linux, so he takes note that
+butt also means they are considering moving to Linux, so he takes note that
 they also need to plan for removing their dependency on `SecureString`.
 
 ## Requirements
