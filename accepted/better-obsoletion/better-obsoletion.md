@@ -1,6 +1,8 @@
 # Better Obsoletion
 
-**PM** [Immo Landwerth](https://github.com/terrajobst)
+**PM** [Immo Landwerth](https://github.com/terrajobst) |
+[Framework Issue](https://github.com/dotnet/runtime/issues/33089) |
+[Compiler Issue](https://github.com/dotnet/roslyn/issues/42119)
 
 No framework, no matter how carefully crafted, is immune to making mistakes. For
 a framework to last the test of time it's vital that it can be evolved to enable
