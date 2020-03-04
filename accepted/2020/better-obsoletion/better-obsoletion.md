@@ -223,6 +223,13 @@ follows:
   Instead, the developer has to add a suppression for the specified diagnostic
   ID. As such, adding a diagnostic is the same as changing a diagnostic ID and
   thus a source breaking change.
+* The compiler doesn't report diagnostics for use of obsoleted APIs when the use
+  site itself is marked obsolete. On the one hand, it seems logical to amend
+  this behavior to only skip the reporting if the diagnostic ID of the use site
+  and the declaration site are the same. On the other hand, that's probably
+  overkill because a developer who marked a type or method as obsoleted makes it
+  clear that the code is only provided for backwards compatibility. Having to
+  keep adding new suppressions for other obsoleted APIs seems unhelpful.
 * If `UrlFormat` is not `null`, use it as the diagnostic link when rendering
   them in the IDE.
 * The compiler should assume that `UrlFormat` and `DiagnosticId` are independent
