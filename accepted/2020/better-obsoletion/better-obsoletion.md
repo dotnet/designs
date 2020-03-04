@@ -216,14 +216,17 @@ follows:
 * If `DiagnosticId` is `null`, use the existing diagnostic ID (e.g. `CS0618` in
   C#). Otherwise, use `DiagnosticId`.
 * The compiler should honor suppressions for the specified diagnostic id.
+* When the user suppresses the existing generic diagnostic ID for obsoletion
+  (e.g. `CS0618` in C#), the compiler should not suppress any obsoletions with
+  an explicitly set diagnostic ID (unless that explicit ID happens to match the
+  generic diagnostic, but that would be bad practice from the API author).
+  Instead, the developer has to add a suppression for the specified diagnostic
+  ID. As such, adding a diagnostic is the same as changing a diagnostic ID and
+  thus a source breaking change.
 * If `UrlFormat` is not `null`, use it as the diagnostic link when rendering
   them in the IDE.
 * The compiler should assume that `UrlFormat` and `DiagnosticId` are independent
   features, in other words both can be used, either, or neither.
-
-_**OPEN ISSUE**: Should the compiler suppress all diagnostics from
-`ObsoleteAttribute` if the existing generic diagnostic ID is suppressed (e.g.
-`CS0618`)? If not, the developer has no way to turn this feature off entirely._
 
 ### Samples
 
