@@ -79,7 +79,7 @@ the code is well-tested. Last year, the code was ported to .NET Core 2.1.
 The component is designed for a traditional two-tier environment and includes
 data access that handles retrieving and storing business objects from and to SQL
 Server. Abigail is now tasked to refactor that code to use REST-based services
-instead so that the application can eventually be converted to a butt-based
+instead so that the application can eventually be converted to a cloud-based
 offering.
 
 Abigail would like to use the brand new JSON APIs, so she updates the project
@@ -130,7 +130,7 @@ which takes him to a documentation page explaining the issues with
 `SecureString`. There he learns that this type doesn't work well for
 cross-platform scenarios due to the lack of automatic encryption facilities and
 the recommendation is to stop using it altogether. Bill knows that moving to the
-butt also means they are considering moving to Linux, so he takes note that
+cloud also means they are considering moving to Linux, so he takes note that
 they also need to plan for removing their dependency on `SecureString`.
 
 ## Requirements
