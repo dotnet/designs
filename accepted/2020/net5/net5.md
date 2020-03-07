@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD026 -->
+<!-- markdownlint-disable MD045 -->
+
 # Target Framework Names in .NET 5
 
 **PM** [Immo Landwerth](https://github.com/terrajobst) |
@@ -38,7 +41,7 @@ their *implementations*.
 While we strive to provide an experience where you don't have to reason about
 the different kinds of .NET, we still don't want to fully abstract away the
 underlying OS, so you'll continue to be able to call OS specific APIs, be that
-via P/Invokes, WinRT, or the Xamarin bindings for iOS and Android APIs.
+via P/Invokes, WinRT, or the Xamarin bindings for iOS and Android.
 
 Now think about developers who start on this stack and can write any application
 for any of the platforms that .NET provides support for. The branding we
@@ -56,19 +59,19 @@ is impossible without a decoder ring. We've simplified this greatly with .NET
 Standard, but this still requires a table that maps .NET Standard versions to
 .NET implementation versions.
 
-The proposal is to reuse the existing net TFM and model OS-specific APIs on top
-via a new syntax:
+The proposal is to reuse the existing `net` TFM and model OS-specific APIs on
+top via a new syntax:
 
 * `net5.0`. This TFM is for code that runs everywhere. It combines and replaces
   the `netcoreapp` and `netstandard` names. This TFM will generally only include
   technologies that work cross-platform (modulo pragmatic concessions, like we
   already did in .NET Standard).
 
-* `net5.0-windows`, `net5.0-ios`, `net5.0-android`. These TFMs represent OS
+* `net5.0-android`, `net5.0-ios`, and `net5.0-windows`. These TFMs represent OS
   specific flavors of .NET 5 that include `net5.0` plus OS-specific bindings.
 
-NuGet should use this next syntax to automatically understand that `net5.0` can
-be consumed from `net6.0-windows` (but not the other way around). But more
+NuGet should use this nex syntax to automatically understand that `net5.0` can
+be consumed from `net6.0-windows` (but not the other way around). More
 importantly, this notation will also enable developers to intuitively understand
 compatibility relationships because they are expressed by naming, rather than by
 mapping tables. Yay!
@@ -119,7 +122,7 @@ public static class GpsLocation
 
 Ada is a developer on SkiaSharp, a cross-platform 2D graphics API for .NET
 platforms based on Google's Skia Graphics Library. The project is already using
-multi-targeting to provide different implementations for different platform. To
+multi-targeting to provide different implementations for different platforms. To
 make it easier to use, she's adding a new `SkiaSharpImage` type, which
 represents a bitmap and is constructed via OS-provided data types. Ada uses
 `#if` to expose different constructors on different platforms:
@@ -141,6 +144,89 @@ public static class SkiaSharpImage
 }
 ```
 
+### Upgrading the OS bindings
+
+Miguel is building Baby Shark, a popular iOS application. He started with .NET
+that supported iOS 13 but Apple just released iOS 14. He downloads the updated
+version of the .NET 5 SDK which now also includes support for iOS 14. In order
+to gain access to the new APIs that Apple has added, Miguel opens his project
+file which currently looks like this:
+
+```XML
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0-ios13.0</TargetFramework>
+  </PropertyGroup>
+
+  ...
+
+</Project>
+```
+
+He modifies the `<TargetFramework>` to be `net5.0-ios14.0`.
+
+### Lighting up on later OS versions
+
+Miguel doesn't want to cut off his users who are currently on iOS 13, so he
+wants to continue to have his application work on iOS 13 as well. To achieve
+that, Miguel modifies the project file by adding
+`<TargetPlatformMinimumVersion>`:
+
+```XML
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0-ios14.0</TargetFramework>
+    <TargetPlatformMinimumVersion>13.0</TargetPlatformMinimumVersion>
+  </PropertyGroup>
+
+  ...
+
+</Project>
+```
+
+However, since Miguel also uses the new `NSFizBuzz` API that Apple added in iOS
+14, he also modifies his source code to check for the operating system version
+before calling it:
+
+```C#
+public void OnClick(object sender, EventArgs e)
+{
+    if (Environment.OSVersion.Version >= new Version(14, 0))
+    {
+        NSFizBuzz();  
+    }
+}
+```
+
+### Consuming a library with a higher `TargetPlatformMinimumVersion`
+
+After using `NSFizzBuzz` directly for a while, Miguel notices that these OS APIs
+are a bit hard to use, so he looks for a .NET library. He finds
+`Monkey.FizzBuzz`, which he tries to reference, which succeeds. However, when
+building his application he gets the following warning:
+
+> warning NU1702: Package 'Monkey.FizzBuzz' was restored using 'net5.0-ios14'
+> and has 'TargetPlatformMinimumVersion' of '14.0' while the project has a value
+> of '13.0'. You should either upgrade your project to '14.0' or only make calls
+> into the library after checking that the OS version is '14.0' or higher.
+
+Since Miguel already guarded all method calls, he simply suppresses the warning.
+
+### Consuming a library with a higher `TargetPlatformVersion`
+
+After the success of using `Monkey.FizzBuzz` in his Baby Shark app, Miguel wants
+to use it everywhere now, so he decides to use it in his existing Laserizer 5000
+app. However, when he adds a reference to `Monkey.FizzBuzz`, he gets an error
+from NuGet:
+
+> error NU1202: Package 'Monkey.FizzBuzz' is not compatible with
+> 'net5.0-ios13.0'. Package 'Monkey.FizzBuzz' supports: net5.0-ios14.0
+
+So Miguel edits his project file by changing `net5.0-ios13.0` to
+`net5.0-ios14.0` which fixes the error.
+
 ## Requirements
 
 ### Goals
@@ -150,14 +236,19 @@ public static class SkiaSharpImage
 * Developers should be able to understand compatibility relationships without
   having to consult a mapping table.
 * Provide compatibility with existing concepts and NuGet packages
-* It would be great to get this into .NET 5 Preview 1
+* It would be great to get this into early previews of .NET 5
+* Support multi-targeting different versions of the same OS
+* Don't force multi-targeting for different versions of the same OS. It should
+  be possible to produce a single binary that can use newer APIs when calls are
+  properly guarded with an OS check.
 
 ### Non-Goals
 
 * Replace TFMs or expand runtime identifiers (RIDs)
-* Support multi-targeting between OS versions
 
 ## Design
+
+We'll have the following TFMs:
 
 | TFM             | Compatible With                                            | Comments                          |
 |-----------------|------------------------------------------------------------|-----------------------------------|
@@ -185,70 +276,209 @@ should not map it to the existing TFM as that would be pointless._
 
 _**Open Issue**. Will the above scheme work for iPad?_
 
+### OS versions
+
+The TFM will support an optional OS version, such as:
+
+* `net5.0-ios`
+* `net5.0-ios12.0`
+
+A TFM without an OS version will be interpreted as the lowest OS version that
+was supported by the corresponding `netX.Y` version.
+
+> *Note: One assumption here is that developers can always compile for the
+> latest OS API set and run on older OS versions so long they guard method calls
+> correctly. This is how P/Invokes, WinRT, iOS, and Android bindings work
+> today.*
+
+For example, say that when .NET 5 ships, the version of iOS that we include
+bindings for is iOS 13. That would mean that `net5.0-ios` and `net5.0-ios13.0`
+mean the exact same thing. Now lets say that Apple ships a new iOS 14 before
+.NET 6 is ready. We'd release a new version of the .NET 5 SDK that adds support
+for iOS 14. On machines with that SDK `net5.0-ios` still means `net5.0-ios13.0`.
+
+Please note that this mapping is specific for `net5.0`. When .NET 6 ships, we
+could decide that `net6.0-ios` means `net6.0-ios14.0`. But even when you use the
+.NET 6 SDK, when targeting .NET 5, `net5.0-ios` also still means
+`net5.0-ios13.0`. So these mappings are immutable.
+
+We have done this to simplify the experience for application models where the OS
+version is largely irrelevant, for example WinForms and WPF. Whether or not the
+template will put an OS version in the `<TargetFramework>` is up to each
+application model. Based on conversations, it seems we'll be landing on this:
+
+| TFM             | Project file includes OS version
+|-----------------|---------------------------------
+| net5.0-android  | Yes
+| net5.0-ios      | Yes
+| net5.0-macos    | Yes
+| net5.0-tvos     | Yes
+| net5.0-watchos  | Yes
+| net5.0-windows  | No
+
+Please note that by being able to put the OS version into the TFM one can also
+multi-target between OS versions:
+
+```XML
+<PropertyGroup>
+  <TargetFrameworks>net5.0-ios13.0;net5.0-ios14.0</TargetFrameworks>
+</PropertyGroup>
+```
+
+However, it's a bit misleading to think of the OS version number as the version
+of the operating system you're running on. Rather, it's the operating system's
+API you're compiling for.
+
 ### Mapping to properties
 
-There are three existing MSBuild properties:
+These are the relevant MSBuild properties:
 
-| Property                        | Meaning            | Examples                         |
-|---------------------------------|--------------------|----------------------------------|
-| TargetFramework (TFM)           | The friendly name  | `net4`, `netcoreapp3.0`          |
-| TargetFrameworkIdentifier (TFI) | The long name      | `.NETFramework` or `.NETCoreApp` |
-| TargetFrameworkVersion (TFV)    | The version number | `2`, `3.0`, `3.1`                |
-| TargetFrameworkProfile (TFP)    | The profile        | `Client` or `Profile124`         |
+| Property                              | Meaning                         | Examples                         |
+|---------------------------------------|---------------------------------|----------------------------------|
+| `TargetFramework` (TFM)               | The friendly name               | `net4`, `netcoreapp3.0`          |
+| `TargetFrameworkIdentifier` (TFI)     | The long name                   | `.NETFramework` or `.NETCoreApp` |
+| `TargetFrameworkVersion` (TFV)        | The version number              | `2`, `3.0`, `3.1`                |
+| `TargetFrameworkProfile` (TFP)        | The profile                     | `Client` or `Profile124`         |
+| `TargetPlatformIdentifier` (TPI)      | The OS platform                 | `ios`, `android`, `windows`      |
+| `TargetPlatformVersion` (TPV)         | The OS platform version         | `12.0` or `13.0`                 |
+| `TargetPlatformMinimumVersion` (TPMV) | The minimum OS platform version | `12.0` or `13.0`                 |
 
-_**Open Issue**. The SDK has this logic duplicated from NuGet because they need
-to do this during evaluation where they can’t call custom targets. We could make
-this an MSBuild intrinsic, but that seems like a lot of work. Maybe we just live
-with the duplication. But bottom line is that we need to make that change in
-MSBuild too._
+We're going to map the TFMs as follows:
 
-* [@rainersigwald](https://github.com/rainersigwald): We've made it pretty far
-  with duplicated logic, but it results in really ugly MSBuild, since it's not a
-  very expressive programming language. It also creates the potential for drift
-  between the two definitions. That said, exposing it directly would create a
-  new tight coupling between MSBuild and NuGet that hasn't historically existed.
-  It would probably require a direct dependency and update flow plus coherency
-  requirements on both .NET Core SDK and VS insertions. If the logic were in a
-  separate package (we've talked about pushing it down to the framework at
-  various times) it'd be great to just expose that. With the logic in NuGet,
-  it's reasonable either way, just different tradeoffs. I'm amenable to exposing
-  a property function, but maybe we should go down the road of not doing it at
-  first.
+| TF                 | TFI           | TFV     | TFP | TPI     | TPV | TPMV
+|--------------------|---------------|---------|-----|---------|-----|----------------
+| net4.X             | .NETFramework | 4.X     |     |         |     |
+| net5.0             | .NETCoreApp   | 5.0     |     |         |     |
+| net5.0-androidX.Y  | .NETCoreApp   | 5.0     |     | android | X.Y | X.Y (defaulted)
+| net5.0-iosX.Y      | .NETCoreApp   | 5.0     |     | ios     | X.Y | X.Y (defaulted)
+| net5.0-windowsX.Y  | .NETCoreApp   | 5.0     |     | windows | X.Y | X.Y (defaulted)
 
-We're going to map the new entries as follows:
+Specifically:
 
-| Framework      | Identifier    | Version | Profile |
-|----------------|---------------|---------|---------|
-| net48          | .NETFramework | 4.8     |         |
-| net5.0         | .NETCoreApp   | 5.0     |         |
-| net5.0-android | .NETCoreApp   | 5.0     | android |
-| net5.0-ios     | .NETCoreApp   | 5.0     | ios     |
-| net5.0-windows | .NETCoreApp   | 5.0     | win     |
+* **We'll continue to use .NETCoreApp as the TFI**. This reduces the number of
+  places build logic needs to change in MSBuild files (both built-in targets as
+  well as third party targets deployed via NuGet packages).
+
+* **net4x and earlier will continue to use .NETFramework as the TFI**. This
+  means that `net4x` and `net5.0` aren't considered compatible by default, but
+  the compatibility will continue to be provided by .NET Framework compatibility
+  mode we introduced in .NET Standard 2.0. It's handled via
+  `AssetTargetFallback` in NuGet restore which also means consumers from
+  `net5.0` will continue to get a proper warning.
+
+* **TargetPlatformMinimumVersion is defaulted to TargetPlatformVersion**.
+  However, the customer can override this in the project file to a lower version
+  (using a higher version than `TargetPlatformVersion` should generate an
+  error).
 
 _**Open Issue**. Please note that `net5.0`+ will map the TFI to `.NETCoreApp`.
 We need to announce this change so that package authors with custom .props and
-.targets are prepared. Link to DavKean’s doc on how to do it._
+.targets are prepared. Link to DavKean's doc on how to do it._
 
 _**Open Issue**. We should try to keep the TFI out of the .nuspec file. It seems
 NuGet uses the long form `.NETFramework,Version=4.5` in the dependency groups.
 We may want to change NuGet to allow the friendly name there as well and update
 our packaging tools to re-write to friendly name on pack._
 
-Specifically:
+_**Open Issue**. The SDK has this logic duplicated from NuGet because they need
+to do this during evaluation where they can't call custom targets. We could make
+this an MSBuild intrinsic, but that seems like a lot of work. Maybe we just live
+with the duplication. But bottom line is that we need to make that change in
+MSBuild too._
 
-* **We'll continue to use .NETCoreApp as the TFI**. This reduces the number of
-  pieces and build logic that needs to change in .NET SDK.
+> "We've made it pretty far with duplicated logic, but it results in really ugly
+> MSBuild, since it's not a very expressive programming language. It also
+> creates the potential for drift between the two definitions. That said,
+> exposing it directly would create a new tight coupling between MSBuild and
+> NuGet that hasn't historically existed. It would probably require a direct
+> dependency and update flow plus coherency requirements on both .NET Core SDK
+> and VS insertions. If the logic were in a separate package (we've talked about
+> pushing it down to the framework at various times) it'd be great to just
+> expose that. With the logic in NuGet, it's reasonable either way, just
+> different tradeoffs. I'm amenable to exposing a property function, but maybe
+> we should go down the road of not doing it at first." --
+> [@rainersigwald](https://github.com/rainersigwald)
 
-* **net4x and earlier will continue to use .NETFramework as the TFI**. This
-  means that `net4x` and `net5.0` aren't considered compatible by default, but
-  the compatibility will continue to be handled by the AssetTargetFallback in
-  the SDK/NuGet restore.
+### NuGet pack behavior
 
-* **We'll use the existing profile concept to encode the OS selection.** It's
-  worth noting that profiles today make things smaller whereas this use makes
-  things larger. We believe this can be handled in the NuGet layer by using this
-  rule for `net5.0` and up. While that's not ideal, it reduces the number of
-  concepts we need to add.
+We need to update the .nuspec format to allow embedding target platform
+information per TFM. For that, I propose to add a `platforms` element under
+`metadata`. For each `netX.Y-{os}{version}`, it should contain a `platform` that
+ties the TFM as specified to their corresponding `TargetPlatformVersion` and
+`TargetPlatformMinimumVersion` entries:
+
+```xml
+<package xmlns="...">
+  <metadata>
+    <id>ClassLibrary3</id>
+    <version>1.0.0</version>
+    <authors>ClassLibrary3</authors>
+    <owners>ClassLibrary3</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Package Description</description>
+    <platforms>
+      <platform targetFramework="net5.0-ios"
+                platformVersion="14.0"
+                platformMinimumVersion="13.0" />
+      <platform targetFramework="net6.0-ios14"
+                platformVersion="14.0"
+                platformMinimumVersion="14.0" />
+      </platform>
+    </platforms>
+  </metadata>
+</package>
+```
+
+We want to make sure that we preserve the TFM from the project file:
+
+* **TFM doesn't contain an OS**. If the TFM is just the neutral `netX.Y` TFM
+  then the .nuspec's `<platform>` element shouldn't list the TFM. If there are
+  no `<platform>` elements, the `<platforms>` element should be omitted as well.
+
+* **TFM has an OS but no OS version**. If the user omits the OS version number
+  from the project's `<TargetFramework>` property, all usages of the TFM should
+  not contain an OS version number, including the project's output directory,
+  the `lib` folder in the NuGet package, and other corresponding entries in the
+  .nuspec. However, the effective OS version will be recorded in the .nuspec's
+  `<platform>` element that corresponds to the TFM.
+  
+* **TFM has both OS and OS version**. If the project did contain an OS version
+  for `<TargetFramework>` this should also be reflected by the project's output
+  directory, `lib` folder, and TFM references in the .nuspec.
+  
+This means that in some cases the `platformVersion` attribute will have
+redundant information but it will also always be the source of truth. It allows
+NuGet to know the OS version even if the OS version isn't included in the TFM.
+
+For cases where someones wants to pack two `lib` folders like this:
+
+* `net5.0-ios`
+* `net5.0-ios13.0`
+
+and `net5.0-ios`'s is mapped to be platform version `13.0`, the `pack` operation
+should fail because both `lib` folders are representing the same target (the
+same applies to other usages of the TFM in the `ref` and `runtime` folders).
+
+### NuGet installation behavior
+
+The TFM part before the dash will behave as today: projects can reference the
+same or an older version of `netX.Y`, but not a newer version. Trying to do
+should result in a package installation failure. The OS portion will follow the
+same rules.
+
+The rationale is the same for both: when the library author compiled for a
+higher version, it had access to more APIs, which the consuming project doesn't
+have. This can cause compilation errors due to unresolved types as well as
+runtime errors due to unresolved members.
+
+The world is a bit different for `TargetPlatformMinimumVersion`. NuGet should
+allow installation of packages whose `TargetPlatformMinimumVersion` is higher
+than the consuming project. The rationale here is that the consuming project
+might only want to use the library on higher versions of the operating system
+and can conditionally call the library code. The behavior should be similar to
+`AssetTargetFallback` where installation of the package succeeds but each time
+the project is built a warning is produced, which must be suppressible by using
+the `<NoWarn>` property in the project file or on the `<PackageReference>` item.
 
 ### TFMs are a closed set
 
@@ -277,7 +507,7 @@ explicit.
 
 ### Preprocessor Symbols
 
-* TODO
+_**Open Issue**. Figure out preprocessor symbols._
 
 Today, implicit `#if` conditions get generated based on the
 `TargetFrameworkIdentifier`, so users today have:
@@ -294,17 +524,6 @@ targeting `net5.0`, `net6.0`, etc. and will also be turned on for
 implicit condition that is versionless but targets all TFMs above `net5.0`? That
 is, `#if NET`.
 
-### Persisting prerequisites
-
-We need to require a minimum version for the iOS/Android/Windows SDKs.
-
-* Probably like how we did WinForms/WPF
-    - WinForms/WPF uses a framework reference which by design doesn't have a
-      version number
-    - We'd need something with a version number
-
-This work is captured [in this document][os-versioning].
-
 ### What would we target?
 
 Everything that is universal or portable to many platforms will target `net5.0`.
@@ -313,7 +532,7 @@ This includes most libraries but also ASP.NET Core and EF.
 Platform-specific libraries would target platform-specific flavors. For example,
 WinForms and WPF controls would target `net5.0-windows`.
 
-Cross-platform application models (Xamarin Forms, ASP.NET Core) and bridges
+Cross-platform application models (Xamarin Forms, ASP.NET Core) and bridge packs
 (Xamarin Essentials) would at least target `net5.0` but might also additionally
 target platform-specific flavors to light-up more APIs or features. This
 approach is also called bait & switch.
@@ -323,8 +542,11 @@ approach is also called bait & switch.
 There are some places in the IDE where targeting information is displayed:
 
 ![](pic03.png)
+
 ![](pic04.png)
+
 ![](pic05.png)
+
 ![](pic06.png)
 
 | Rule                                                                                                        | Affected UI                                                        |
@@ -369,23 +591,23 @@ packages would use platform checks or catch `PlatformNotSupportedException`.
 
 We believe this isn't the right approach for two reasons:
 
-1.  **Number of moving pieces**. Imagine what a simple class library would look
-    like that just wants to provide an abstraction over a single concept, such
-    as the GPS. It would transitively depend on all OS bindings. Regardless of
-    the platform you're building your application for, the output folder would
-    have to include all bindings across OS platforms, with all being throwing
-    implementations except for the one that your app is targeting. While we
-    could build tooling (such as a linker) that could remove this and replace
-    the call sites with throw statements, it seems backwards to first create
-    this mess and then rely on tooling to clean it up. It would be better to
-    avoid this problem by construction.
+1. **Number of moving pieces**. Imagine what a simple class library would look
+   like that just wants to provide an abstraction over a single concept, such as
+   the GPS. It would transitively depend on all OS bindings. Regardless of the
+   platform you're building your application for, the output folder would have
+   to include all bindings across OS platforms, with all being throwing
+   implementations except for the one that your app is targeting. While we could
+   build tooling (such as a linker) that could remove this and replace the call
+   sites with throw statements, it seems backwards to first create this mess and
+   then rely on tooling to clean it up. It would be better to avoid this problem
+   by construction.
 
-2.  **Versioning issues**. By making the OS bindings available on top of the
-    .NET platform the consumer is now able to upgrade the .NET platform and the
-    OS bindings independently, which makes it hard to explain what combinations
-    are supported. In practice, the OS bindings will want to depend on .NET
-    types which might change over time (think `Task<T>` or `Span<T>)`, so not
-    every combination can work.
+2. **Versioning issues**. By making the OS bindings available on top of the .NET
+   platform the consumer is now able to upgrade the .NET platform and the OS
+   bindings independently, which makes it hard to explain what combinations are
+   supported. In practice, the OS bindings will want to depend on .NET types
+   which might change over time (think `Task<T>` or `Span<T>)`, so not every
+   combination can work.
 
 We believe it's much easier if we enable code to use multi-targeting (that is,
 compile the same code for multiple platforms, like we do today.
@@ -405,18 +627,20 @@ Thus, new apps should start on .NET Core. By branding it as .NET 5, this
 recommendation is much more obvious to both existing customers and new
 customers.
 
-### Why are the OS specific flavors not versioned by the OS?
+### ~~Why are the OS specific flavors not versioned by the OS?~~
+
+*No longer applicable as we decided to allow that.*
 
 There are a couple of reasons why this isn't desirable:
 
-1.  **It results a combinatorial explosion**. A TFM in the form of
-    `net5.0-windows7` would (syntactically) make any combination of .NET and OS
-    possible. This raises the question which combinations are supported, which
-    puts us back into having to provide the customer with a decoder ring.
+1. **It results a combinatorial explosion**. A TFM in the form of
+   `net5.0-windows7` would (syntactically) make any combination of .NET and OS
+   possible. This raises the question which combinations are supported, which
+   puts us back into having to provide the customer with a decoder ring.
 
-2.  **It can make asset selection ill-defined**. Suppose the project is
-    targeting `net7.0-windows10`. The package offers `net5.0-windows10.0` and
-    `net6.0-windows7.0`. Now neither asset would be better.
+2. **It can make asset selection ill-defined**. Suppose the project is targeting
+   `net7.0-windows10`. The package offers `net5.0-windows10.0` and
+   `net6.0-windows7.0`. Now neither asset would be better.
 
 3. **A single version isn't enough**. Logically, you need at least two version
    numbers to support OS targeting:
@@ -436,7 +660,7 @@ There are a couple of reasons why this isn't desirable:
    Some platforms, such as Android, also have the notion of a *targeted OS
    version* that indicates to the OS what behavior the author tested for. When
    running on a later OS version, the OS might "quirk" the behavior to preserve
-   backwards compatibility.      
+   backwards compatibility.
 
 Developers will want to target different OS versions from a single code
 base/NuGet package, but that doesn't mean they will need to use multi-targeting.
@@ -517,7 +741,7 @@ decide what kind of app are you building:
   using both Windows Forms and WPF or just one?
 
 The nice thing about properties is that they naturally compose. If certain
-combinations aren't possible, they can relatively easily be blocked.
+combinations aren't possible, they can be blocked relatively easily.
 
 However, at this point it's still unclear whether the SDK unification will work
 this way. One concern was that SDKs also bring in new item groups and might have
@@ -529,7 +753,7 @@ SDK that can't be easily extended via optional components.
 [@mhutch](https://github.com/mhutch) is working on a document specifically
 around SDK convergence.
 
-### Why is there new TFM for Linux?
+### Why is there no TFM for Linux?
 
 The primary reason for OS specific TFMs is to vary API surface, not for varying
 behavior. RIDs allow varying behavior and have support for various Linux
@@ -546,7 +770,7 @@ you can do is calling P/Invokes.
 
 ### Why is .NET 5.0's TFI still mapped to `.NETCoreApp`?
 
-In MSBuild you can't easily do comparisons like 
+In MSBuild you can't easily do comparisons like:
 
 ```xml
 <PropertyGroup Condition="'$(TargetFramework)' >= 'net5.0'`">
