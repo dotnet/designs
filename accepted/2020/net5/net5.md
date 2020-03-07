@@ -259,7 +259,7 @@ We'll have the following TFMs:
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-ios      | xamarin.ios                                                |                                   |
 |                 | (+everything else inherited from net5.0)                   |                                   |
-| net5.0-macos    | xamarin.macos                                              |                                   |
+| net5.0-macos    | xamarin.mac                                                |                                   |
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-tvos     | xamarin.tvos                                               |                                   |
 |                 | (+everything else inherited from net5.0)                   |                                   |
