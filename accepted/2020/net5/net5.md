@@ -64,11 +64,11 @@ via a new syntax:
   technologies that work cross-platform (modulo pragmatic concessions, like we
   already did in .NET Standard).
 
-* `net5.0-win`, `net5.0-ios`, `net5.0-android`. These TFMs represent OS specific
-  flavors of .NET 5 that include `net5.0` plus OS-specific bindings.
+* `net5.0-windows`, `net5.0-ios`, `net5.0-android`. These TFMs represent OS
+  specific flavors of .NET 5 that include `net5.0` plus OS-specific bindings.
 
 NuGet should use this next syntax to automatically understand that `net5.0` can
-be consumed from `net6.0-win` (but not the other way around). But more
+be consumed from `net6.0-windows` (but not the other way around). But more
 importantly, this notation will also enable developers to intuitively understand
 compatibility relationships because they are expressed by naming, rather than by
 mapping tables. Yay!
@@ -174,7 +174,7 @@ public static class SkiaSharpImage
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-watchos  | xamarin.watchos                                            |                                   |
 |                 | (+everything else inherited from net5.0)                   |                                   |
-| net5.0-win      | netcoreapp1..3.1                                           | WinForms + WPF                    |
+| net5.0-windows  | netcoreapp1..3.1                                           | WinForms + WPF                    |
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | Tizen, Unity... | Will follow the Xamarin model                              |                                   |
 
@@ -223,7 +223,7 @@ We're going to map the new entries as follows:
 | net5.0         | .NETCoreApp   | 5.0     |         |
 | net5.0-android | .NETCoreApp   | 5.0     | android |
 | net5.0-ios     | .NETCoreApp   | 5.0     | ios     |
-| net5.0-win     | .NETCoreApp   | 5.0     | win     |
+| net5.0-windows | .NETCoreApp   | 5.0     | win     |
 
 _**Open Issue**. Please note that `net5.0`+ will map the TFI to `.NETCoreApp`.
 We need to announce this change so that package authors with custom .props and
@@ -311,7 +311,7 @@ Everything that is universal or portable to many platforms will target `net5.0`.
 This includes most libraries but also ASP.NET Core and EF.
 
 Platform-specific libraries would target platform-specific flavors. For example,
-WinForms and WPF controls would target `net5.0-win`.
+WinForms and WPF controls would target `net5.0-windows`.
 
 Cross-platform application models (Xamarin Forms, ASP.NET Core) and bridges
 (Xamarin Essentials) would at least target `net5.0` but might also additionally
@@ -409,14 +409,14 @@ customers.
 
 There are a couple of reasons why this isn't desirable:
 
-1.  **It results a combinatorial explosion**. A TFM in the form of `net5.0-win7`
-    would (syntactically) make any combination of .NET and OS possible. This
-    raises the question which combinations are supported, which puts us back
-    into having to provide the customer with a decoder ring.
+1.  **It results a combinatorial explosion**. A TFM in the form of
+    `net5.0-windows7` would (syntactically) make any combination of .NET and OS
+    possible. This raises the question which combinations are supported, which
+    puts us back into having to provide the customer with a decoder ring.
 
 2.  **It can make asset selection ill-defined**. Suppose the project is
-    targeting `net7.0-win10`. The package offers `net5.0-win10.0` and
-    `net6.0-win7.0`. Now neither asset would be better.
+    targeting `net7.0-windows10`. The package offers `net5.0-windows10.0` and
+    `net6.0-windows7.0`. Now neither asset would be better.
 
 3. **A single version isn't enough**. Logically, you need at least two version
    numbers to support OS targeting:
@@ -495,7 +495,7 @@ the `runtime/<RID>` folder.
 
 [@cartermp](https://github.com/cartermp) asked:
 
-> Does specifying `net5.0-win` obviate the current three things you need to
+> Does specifying `net5.0-windows` obviate the current three things you need to
 > specify?
 >
 > * netcoreapp3.x
@@ -513,8 +513,8 @@ today. The reason is that in many cases the TFM alone isn't specific enough to
 decide what kind of app are you building:
 
 * `net5.0`. Is a class library/console app, an ASP.NET Core app, or a Blazor app?
-* `net5.0-win`. Are you building a Windows Forms app or a WPF app? Are you using
-  both Windows Forms and WPF or just one?
+* `net5.0-windows`. Are you building a Windows Forms app or a WPF app? Are you
+  using both Windows Forms and WPF or just one?
 
 The nice thing about properties is that they naturally compose. If certain
 combinations aren't possible, they can relatively easily be blocked.
