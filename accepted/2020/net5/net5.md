@@ -400,9 +400,16 @@ MSBuild too._
 ### NuGet pack behavior
 
 We need to update the .nuspec format to allow embedding target platform
-information per TFM. For that, I propose to add a `platforms` element under
-`metadata`. For each `netX.Y-{os}{version}`, it should contain a `platform` that
-ties the TFM as specified to their corresponding `TargetPlatformVersion` and
+information per TFM.
+
+For that, I propose to add a `platforms` element under `metadata`.
+
+> **Note** This is just meant to be a strawman for NuGet so we can talk about
+> semantics. The NuGet team should specify the actual encoding. Once spec is
+> available, we'll link it from here.
+
+For each `netX.Y-{os}{version}`, it should contain a `platform` that ties the
+TFM as specified to their corresponding `TargetPlatformVersion` and
 `TargetPlatformMinVersion` entries:
 
 ```xml
