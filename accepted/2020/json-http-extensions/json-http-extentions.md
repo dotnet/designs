@@ -91,8 +91,9 @@ public async Task CreateCustomerAsync<T>(Customer customer)
 ### Goals
 
 * Must work on .NET Standard 2.1, but 2.0 would be preferred.
-* We need to ship this at Build with Blazor (prerelease is OK, but it needs to
-  be an official release on nuget.org)
+* ~~We need to ship this at Build with Blazor (prerelease is OK, but it needs to
+  be an official release on nuget.org)~~
+* We need stable release by Build nuget.org and a preview by mid March
 * Build a pit-of-success for `HttpClient` and `System.Text.Json` when you are
   the client (servers are often clients too!)
 * Make it terse to do the common things – based on experience it is also the
