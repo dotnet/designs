@@ -226,6 +226,18 @@ from NuGet:
 So Miguel edits his project file by changing `net5.0-ios13.0` to
 `net5.0-ios14.0` which fixes the error.
 
+### Using a higher `TargetPlatformVersion` than the current SDK
+
+Claire has the first release of the .NET 5 SDK that only ships bindings
+for iOS 13. She clones Miguel's Baby Shark repo from GitHub and tries to
+build it on her machine. Since Baby Shark targtes `net5.0-ios14.0` she
+gets a build error:
+
+> error NETSDK1045: The current .NET SDK does not support targeting iOS 14.0.
+> Either target iOS 13.0, or use a version of the .NET SDK that supports iOS
+> 14.0. [BabyShark.csproj]
+
+
 ## Requirements
 
 ### Goals
