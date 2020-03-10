@@ -420,8 +420,8 @@ _**Open Issue**. Review with WinForms/WPF & Windows folks._
 
 * When would the WinRT APIs be referenced? Should they show up by default
   (assuming the project specified they correct version for the WinRT bindings)
-  or should there be an equivalent for `UseWinForms`? We probably don't want an
-  opt-in for the foundational WinRT APIs but maybe for the UI layer.
+  or should there be an equivalent for `UseWindowsForms`? We probably don't want
+  an opt-in for the foundational WinRT APIs but maybe for the UI layer.
 
 ### NuGet pack behavior
 
