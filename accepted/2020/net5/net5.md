@@ -397,6 +397,167 @@ MSBuild too._
 > we should go down the road of not doing it at first." --
 > [@rainersigwald](https://github.com/rainersigwald)
 
+### MSBuild version comparisons
+
+In SDK-style projects there are two kinds of MSBuild files that are
+automatically included into each project:
+
+* `*.props`: These files are included at the top of the user's project file and
+  are used to define a set of default properties that the user's project file
+  can use.
+
+* `*.targets`. These files are included at the bottom of the user's project
+  file, usually meant to define build targets and additional properties/items
+  that need to depend on properties defined by the user.
+
+Furthermore, MSBuild has a two pass evaluation model: first, it evaluates all
+properties and then all items.
+
+Why is all of this important? Because it controls which properties the user can
+rely on in their project file.
+
+Often, a user wants to express a condition like "include this file if you're
+compiling for .NET 5 or higher". Logically one would like to express it like
+this:
+
+```xml
+<ItemGroup Condition="'$(TargetFramework)' >= 'net5.0'`">
+```
+
+but this doesn't work because that would be a string comparison, not a version
+comparison. Instead, the user has to write it like this:
+
+```xml
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(TargetFrameworkVersion)' >= '3.0'">
+```
+
+This works for conditions on item groups because they are evaluated after
+properties. Since the user's project file defines the `TargetFramework`
+property, the SDK logic that expands it into the other properties such as
+`TargetFrameworkIdentifier` and `TargetFrameworkVersion` has to live in
+`*.targets`, i.e. at the bottom of the project file. That means these
+automatically expanded properties aren't available for the user when defining
+other properties. This happens to work for items because items are evaluated
+after all properties are evaluated.
+
+Concretely, this means the user cannot define properties like this:
+
+```XML
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETStandard'">
+    <SomeProperty>Some .NET Standard specific value<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <SomeProperty>Some .NET Core specific value<SomeProperty>
+  </PropertyGroup>
+
+</Project>
+```
+
+In the past, we've seen people working this around by using string processing
+functions against the `TargetFramework` property, which is less than ideal.
+
+Ideally, we'd expose functionality such that the user can do version checks:
+
+```XML
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup TargetFramework="netstandard">
+    <SomeProperty>Some value that applies to all versions of .NET Standard<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup TargetFramework=">=netcoreapp2.0">
+    <SomeProperty>Some value that applies to .NET Core 2.0 and later<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup TargetFramework="==net5.0-ios13.0">
+    <SomeProperty>Some value that only applies to .NET 5 + iOS 13.0<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup TargetPlatform="windows">
+    <SomeProperty>Some value that applies to all version of Windows<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup TargetPlatform=">=ios-12.0">
+    <SomeProperty>Some value that applies to iOS 12.0 and later<SomeProperty>
+  </PropertyGroup>
+
+</Project>
+```
+
+The idea is:
+
+* Property groups, properties, and item groups get new attributes
+  `TargetFramework` and `TargetPlatform`.
+* The value can be prefixed with an optional conditional operator `==`, `!=`,
+  `<`, `<=`, `>`, and `>=`. If the operator is omitted, `==` is assumed.
+* `TargetFramework` supports comparisons with a friendly TFM name. This can
+  include an OS flavor for symmetry. If the `TargetFramework` property includes
+  an OS flavor but the attribute doesn't, the comparison only applies to the TFM
+  without the OS flavor. In other words a condition of
+  `TargetFramework=">=net5.0"` will result in `true` if the project targets
+  `net5.0`, `net6.0`, as well as `net6.0-android12.0`.
+
+Alternatively, we could invent new syntax that allows parsing of constitutes
+like this:
+
+```XML
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework::Identifier)=='netstandard'">
+    <SomeProperty>Some value that applies to all versions of .NET Standard<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework::Name)>='netcoreapp2.0'">
+    <SomeProperty>Some value that applies to .NET Core 2.0 and later<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework::Name)=='net5.0-ios13.0'">
+    <SomeProperty>Some value that only applies to .NET 5 + iOS 13.0<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework::Platform)=='windows'">
+    <SomeProperty>Some value that applies to all version of Windows<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(TargetFramework::Platform)>='ios-12.0'">
+    <SomeProperty>Some value that applies to iOS 12.0 and later<SomeProperty>
+  </PropertyGroup>
+
+</Project>
+```
+
+And lastly, we could just define new intrinsic functions on some type,
+but this will make using them a mouthful:
+
+```XML
+  <PropertyGroup Condition="`'$([MSBuild]::TargetFrameworkIdentifier($(TargetFramework)))' == '.NETStandard'`">
+    <SomeProperty>Some value that applies to all versions of .NET Standard<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="`'$([MSBuild]::IsTargetFrameworkOrLater($(TargetFramework)))', 'net5.0'))`">
+    <SomeProperty>Some value that applies to .NET 5 or later<SomeProperty>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="`'$([MSBuild]::IsTargetPlatformOrLater($(TargetFramework)))', 'ios12.0'))`">
+    <SomeProperty>Some value that applies to iOS 12 or later<SomeProperty>
+  </PropertyGroup>
+```
+
 ### Window-specific behavior
 
 _**Open Issue**. Review with WinForms/WPF & Windows folks._
@@ -814,14 +975,14 @@ you can do is calling P/Invokes.
 In MSBuild you can't easily do comparisons like:
 
 ```xml
-<PropertyGroup Condition="'$(TargetFramework)' >= 'net5.0'`">
+<ItemGroup Condition="'$(TargetFramework)' >= 'net5.0'`">
 ```
 
 because that would be a string comparison. Rather, you need to do comparisons
 like this:
 
 ```xml
-<PropertyGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(TargetFrameworkVersion)' >= '3.0'">
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(TargetFrameworkVersion)' >= '3.0'">
 ```
 
 By us mapping `net5.0` we break less of that code because existing code will
