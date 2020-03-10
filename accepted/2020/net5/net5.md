@@ -397,6 +397,20 @@ MSBuild too._
 > we should go down the road of not doing it at first." --
 > [@rainersigwald](https://github.com/rainersigwald)
 
+### Window-specific behavior
+
+_**Open Issue**. Review with WinForms/WPF & Windows folks._
+
+* We need to define what the Windows version number is. It should probably be
+  the minimum for WPF/WinForms (because that makes the most sense until we ship
+  support for WinRT in .NET 5). Generally speaking, we expect UWP flavors to
+  burn in into the project file, just like iOS and Android.
+
+* When would the WinRT APIs be referenced? Should they show up by default
+  (assuming the project specified they correct version for the WinRT bindings)
+  or should there be an equivalent for `UseWinForms`? We probably don't want an
+  opt-in for the foundational WinRT APIs but maybe for the UI layer.
+
 ### NuGet pack behavior
 
 We need to update the .nuspec format to allow embedding target platform
