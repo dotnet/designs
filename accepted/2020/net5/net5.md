@@ -170,15 +170,14 @@ He modifies the `<TargetFramework>` to be `net5.0-ios14.0`.
 
 Miguel doesn't want to cut off his users who are currently on iOS 13, so he
 wants to continue to have his application work on iOS 13 as well. To achieve
-that, Miguel modifies the project file by adding
-`<TargetPlatformMinimumVersion>`:
+that, Miguel modifies the project file by adding `<TargetPlatformMinVersion>`:
 
 ```XML
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0-ios14.0</TargetFramework>
-    <TargetPlatformMinimumVersion>13.0</TargetPlatformMinimumVersion>
+    <TargetPlatformMinVersion>13.0</TargetPlatformMinVersion>
   </PropertyGroup>
 
   ...
@@ -200,7 +199,7 @@ public void OnClick(object sender, EventArgs e)
 }
 ```
 
-### Consuming a library with a higher `TargetPlatformMinimumVersion`
+### Consuming a library with a higher `TargetPlatformMinVersion`
 
 After using `NSFizzBuzz` directly for a while, Miguel notices that these OS APIs
 are a bit hard to use, so he looks for a .NET library. He finds
@@ -208,8 +207,8 @@ are a bit hard to use, so he looks for a .NET library. He finds
 building his application he gets the following warning:
 
 > warning NU1702: Package 'Monkey.FizzBuzz' was restored using 'net5.0-ios14'
-> and has 'TargetPlatformMinimumVersion' of '14.0' while the project has a value
-> of '13.0'. You should either upgrade your project to '14.0' or only make calls
+> and has 'TargetPlatformMinVersion' of '14.0' while the project has a value of
+> '13.0'. You should either upgrade your project to '14.0' or only make calls
 > into the library after checking that the OS version is '14.0' or higher.
 
 Since Miguel already guarded all method calls, he simply suppresses the warning.
@@ -341,7 +340,7 @@ These are the relevant MSBuild properties:
 | `TargetFrameworkProfile` (TFP)        | The profile                     | `Client` or `Profile124`         |
 | `TargetPlatformIdentifier` (TPI)      | The OS platform                 | `ios`, `android`, `windows`      |
 | `TargetPlatformVersion` (TPV)         | The OS platform version         | `12.0` or `13.0`                 |
-| `TargetPlatformMinimumVersion` (TPMV) | The minimum OS platform version | `12.0` or `13.0`                 |
+| `TargetPlatformMinVersion` (TPMV)     | The minimum OS platform version | `12.0` or `13.0`                 |
 
 We're going to map the TFMs as follows:
 
@@ -366,10 +365,9 @@ Specifically:
   `AssetTargetFallback` in NuGet restore which also means consumers from
   `net5.0` will continue to get a proper warning.
 
-* **TargetPlatformMinimumVersion is defaulted to TargetPlatformVersion**.
-  However, the customer can override this in the project file to a lower version
-  (using a higher version than `TargetPlatformVersion` should generate an
-  error).
+* **TargetPlatformMinVersion is defaulted to TargetPlatformVersion**. However,
+  the customer can override this in the project file to a lower version (using a
+  higher version than `TargetPlatformVersion` should generate an error).
 
 _**Open Issue**. Please note that `net5.0`+ will map the TFI to `.NETCoreApp`.
 We need to announce this change so that package authors with custom .props and
@@ -405,7 +403,7 @@ We need to update the .nuspec format to allow embedding target platform
 information per TFM. For that, I propose to add a `platforms` element under
 `metadata`. For each `netX.Y-{os}{version}`, it should contain a `platform` that
 ties the TFM as specified to their corresponding `TargetPlatformVersion` and
-`TargetPlatformMinimumVersion` entries:
+`TargetPlatformMinVersion` entries:
 
 ```xml
 <package xmlns="...">
@@ -471,11 +469,11 @@ higher version, it had access to more APIs, which the consuming project doesn't
 have. This can cause compilation errors due to unresolved types as well as
 runtime errors due to unresolved members.
 
-The world is a bit different for `TargetPlatformMinimumVersion`. NuGet should
-allow installation of packages whose `TargetPlatformMinimumVersion` is higher
-than the consuming project. The rationale here is that the consuming project
-might only want to use the library on higher versions of the operating system
-and can conditionally call the library code. The behavior should be similar to
+The world is a bit different for `TargetPlatformMinVersion`. NuGet should allow
+installation of packages whose `TargetPlatformMinVersion` is higher than the
+consuming project. The rationale here is that the consuming project might only
+want to use the library on higher versions of the operating system and can
+conditionally call the library code. The behavior should be similar to
 `AssetTargetFallback` where installation of the package succeeds but each time
 the project is built a warning is produced, which must be suppressible by using
 the `<NoWarn>` property in the project file or on the `<PackageReference>` item.
