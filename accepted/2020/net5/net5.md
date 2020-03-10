@@ -507,22 +507,44 @@ explicit.
 
 ### Preprocessor Symbols
 
-_**Open Issue**. Figure out preprocessor symbols._
+Today, SDK-style projects automatically define `#if` symbols based on the
+friendly TFM representation. This includes both versionless- as well as
+version-specific symbols:
 
-Today, implicit `#if` conditions get generated based on the
-`TargetFrameworkIdentifier`, so users today have:
+TFM             | Project-style | Automatic Defines
+----------------|---------------|-------------------------------------
+`net45`         | CSPROJ        |
+`net45`         | SDK-style     | `NETFRAMEWORK`, `NET45`
+`net48`         | CSPROJ        |
+`net48`         | SDK-style     | `NETFRAMEWORK`, `NET48`
+`netcoreapp3.1` | SDK-style     | `NETCOREAPP`, `NETCOREAPP3_1`
 
-```C#
-#if NETCOREAPP
-#elif NETFRAMEWORK
-#endif
-```
+For .NET 5 and higher we plan to define the following symbols:
 
-With this proposal, the `#if NETCOREAPP` condition will still be available when
-targeting `net5.0`, `net6.0`, etc. and will also be turned on for
-`netcoreapp2.1`, `netcoreapp3.1`, etc. Is that intended? Do we want a new
-implicit condition that is versionless but targets all TFMs above `net5.0`? That
-is, `#if NET`.
+TFM                 | Project-style | Automatic Defines
+--------------------|---------------|-------------------------------------
+`netX.Y`            | SDK-style     | `NETCOREAPP`, `NET`, `NETX_Y`
+`netX.Y-iosA.B`     | SDK-style     | `NETCOREAPP`, `NET`, `NETX_Y`, `IOS`
+`netX.Y-androidA.B` | SDK-style     | `NETCOREAPP`, `NET`, `NETX_Y`, `ANDROID`
+`netX.Y-windowsA.B` | SDK-style     | `NETCOREAPP`, `NET`, `NETX_Y`, `WINDOWS`
+
+Specifically:
+
+* We continue to define `NETCOREAPP` for backwards compatibility with existing
+  `#if` code.
+* Moving forward we'll use `NET` as the versionless symbol (for .NET Framework
+  we used `NETFRAMEWORK`, so no conflict there).
+* We'll follow the rule-based creation in SDK-style projects which takes the
+  friendly TFM name without the OS flavor, makes it upper-case and replaces
+  special characters with an underscore.
+* We'll only define versionless symbols for the OS flavor (because
+  multi-targeting between OS versions will be rare).
+
+_**Open Issue**. Review defines with Xamarin folks._
+
+_**Open Issue**. Should we also define symbols for previous versions? For
+example, on .NET 6, should we define `NET6_0` as well as `NET6_0_OR_HIGHER`, and
+`NET5_0_OR_HIGHER`? This could simplify `#if` logic._
 
 ### What would we target?
 
