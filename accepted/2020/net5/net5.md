@@ -70,7 +70,7 @@ top via a new syntax:
 * `net5.0-android`, `net5.0-ios`, and `net5.0-windows`. These TFMs represent OS
   specific flavors of .NET 5 that include `net5.0` plus OS-specific bindings.
 
-NuGet should use this nex syntax to automatically understand that `net5.0` can
+NuGet should use this new syntax to automatically understand that `net5.0` can
 be consumed from `net6.0-windows` (but not the other way around). More
 importantly, this notation will also enable developers to intuitively understand
 compatibility relationships because they are expressed by naming, rather than by
@@ -604,7 +604,7 @@ There are some places in the IDE where targeting information is displayed:
 
 | Rule                                                                                                        | Affected UI                                                        |
 |-------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| For most UI, we should use the TFM friendly name (for example, `netcoreapp3.1`, `net5.0`, or `net5.0-ios`). | Solution Explorer Editor, Context Switcher, Debug Context Switcher |
+| For most UI, we should use the TFM friendly name (for example, `netcoreapp3.1`, `net5.0`, or `net5.0-ios`). | Solution Explorer, Editor Context Switcher, Debug Context Switcher |
 | For cases where we use branded display names, we should use the name .NET 5.                                | Project Properties                                                 |
 
 ### Related work
