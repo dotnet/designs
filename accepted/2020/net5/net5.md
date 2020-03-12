@@ -359,9 +359,9 @@ We're going to map the TFMs as follows:
 |--------------------|---------------|---------|-----|---------|-----|----------------
 | net4.X             | .NETFramework | 4.X     |     |         |     |
 | net5.0             | .NETCoreApp   | 5.0     |     |         |     |
-| net5.0-androidX.Y  | .NETCoreApp   | 5.0     |     | android | X.Y | X.Y (defaulted)
-| net5.0-iosX.Y      | .NETCoreApp   | 5.0     |     | ios     | X.Y | X.Y (defaulted)
-| net5.0-windowsX.Y  | .NETCoreApp   | 5.0     |     | windows | X.Y | X.Y (defaulted)
+| net5.0-androidX.Y  | .NETCoreApp   | 5.0     |     | Android | X.Y | X.Y (defaulted)
+| net5.0-iosX.Y      | .NETCoreApp   | 5.0     |     | iOS     | X.Y | X.Y (defaulted)
+| net5.0-windowsX.Y  | .NETCoreApp   | 5.0     |     | Windows | X.Y | X.Y (defaulted)
 
 Specifically:
 
