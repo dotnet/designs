@@ -546,12 +546,12 @@ TFM             | Project-style | Automatic Defines
 
 For .NET 5 and higher we plan to define the following symbols:
 
-TFM                 | Project-style | Automatic Defines
---------------------|---------------|-------------------------------------
-`netX.Y`            | SDK-style     | `NETCOREAPP`, `NET`, `NETX_Y`
-`netX.Y-iosA.B`     | SDK-style     | `NETCOREAPP`, `NET`, `NETX_Y`, `IOS`
-`netX.Y-androidA.B` | SDK-style     | `NETCOREAPP`, `NET`, `NETX_Y`, `ANDROID`
-`netX.Y-windowsA.B` | SDK-style     | `NETCOREAPP`, `NET`, `NETX_Y`, `WINDOWS`
+TFM                 | Automatic Defines
+--------------------|-------------------------------------------------------
+`netX.Y`            | `NETCOREAPP`, `NET`, `NETX_Y`
+`netX.Y-iosA.B`     | `NETCOREAPP`, `NET`, `NETX_Y`, `IOS`, `IOSA_B`
+`netX.Y-androidA.B` | `NETCOREAPP`, `NET`, `NETX_Y`, `ANDROID`, `ANDROIDA_B`
+`netX.Y-windowsA.B` | `NETCOREAPP`, `NET`, `NETX_Y`, `WINDOWS`, `WINDOWSA_B`
 
 Specifically:
 
@@ -562,14 +562,26 @@ Specifically:
 * We'll follow the rule-based creation in SDK-style projects which takes the
   friendly TFM name without the OS flavor, makes it upper-case and replaces
   special characters with an underscore.
-* We'll only define versionless symbols for the OS flavor (because
-  multi-targeting between OS versions will be rare).
+* For OS flavors we'll do the same, i.e. create versionless as well as version
+  specific symbols.
 
-_**Open Issue**. Review defines with Xamarin folks._
+In order to make it easier to update code, especially when doing
+multi-targeting, we should make them additive, so that when targeting `net6.0`
+both `NET6_0` and `NET5_0` are defined. The same applies to OS bindings.
+Examples:
 
-_**Open Issue**. Should we also define symbols for previous versions? For
-example, on .NET 6, should we define `NET6_0` as well as `NET6_0_OR_HIGHER`, and
-`NET5_0_OR_HIGHER`? This could simplify `#if` logic._
+* `net5.0`
+  * `NETCOREAPP`, `NETCOREAPP3_1` (for backwards compatibility)
+  * `NET`, `NET5_0`  
+* `net6.0`
+  * (same as `net5.0`)
+  * `NET6_0`  
+* `net5.0-ios13.0`
+  * (same as `net5.0`)
+  * `IOS`, `IOS13_0`
+* `net5.0-ios14.0`
+  * (same as `net5.0-ios13`)
+  * `IOS14_0`
 
 ### What would we target?
 
