@@ -347,7 +347,7 @@ These are the relevant MSBuild properties:
 | `TargetFrameworkIdentifier` (TFI)     | The long name                   | `.NETFramework` or `.NETCoreApp` |
 | `TargetFrameworkVersion` (TFV)        | The version number              | `2`, `3.0`, `3.1`                |
 | `TargetFrameworkProfile` (TFP)        | The profile                     | `Client` or `Profile124`         |
-| `TargetPlatformIdentifier` (TPI)      | The OS platform                 | `ios`, `android`, `windows`      |
+| `TargetPlatformIdentifier` (TPI)      | The OS platform                 | `iOS`, `Android`, `Windows`      |
 | `TargetPlatformVersion` (TPV)         | The OS platform version         | `12.0` or `13.0`                 |
 | `TargetPlatformMinVersion` (TPMV)     | The minimum OS platform version | `12.0` or `13.0`                 |
 
