@@ -77,7 +77,7 @@ The values declared on this attribute are expected to be accessible by extractin
 The concrete subclasses are `IntroducedAttribute`, `ObsoletedAttribute` and `RemovedAttribute` subclasses, which take of the following form:
 
 ```csharp
-public sealed class IntroducedAttribute : AvailabilityAttribute
+public sealed class IntroducedAttribute : PlatformAvailabilityAttribute
 {
     public IntroducedAttribute(
     string platform,
@@ -243,4 +243,3 @@ There will be a Roslyn analyzer that will squiggle calls to any method or proper
 
 - [Swift](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html) `[@available](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html)` [attribute](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html)
 - [Xamarin.iOS/Mac](https://docs.microsoft.com/en-us/dotnet/api/objcruntime.availabilitybaseattribute?view=xamarin-ios-sdk-12) `AvailabilityBaseAttribute` and its subclasses
-
