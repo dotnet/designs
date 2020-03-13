@@ -109,11 +109,11 @@ If and when C# support target typing for enums, we could add convenience overloa
 [Removed (.macOS, 10, 12)]
 ```
 
-***NOTE****: These attributes would only be needed on reference assemblies. They would not be needed at runtime. They could be removed by the linker, and we could also strip them from the implementation assemblies that we ship ourselves.*
+> NOTE: These attributes would only be needed on reference assemblies. They would not be needed at runtime. They could be removed by the linker, and we could also strip them from the implementation assemblies that we ship ourselves.
 
 # Runtime Checks
 
-***NOTE****: See* [*this issue*](https://github.com/dotnet/runtime/issues/33331) *for a more active/current discussion of runtime check APIs.*
+> NOTE: See [this issue](https://github.com/dotnet/runtime/issues/33331) for a more active/current discussion of runtime check APIs.
 
 The following method will be added to the `RuntimeInformation` class in the `System.Runtime.InteropServices` namespace:
 
@@ -144,7 +144,7 @@ public static bool RuntimeInformation.CheckOS(
 
 As with the availability attributes, there could be an additional overload that used enums and target typing to improve readability.
 
-***NOTE****: The linker, JIT and/or AOT compiler could treat these method as intrinsics with constant values, which would enable it to eliminate unnecessary fallback code when consuming portable libraries or libraries with a lower OS minimum version than the app itself.*
+> NOTE: The linker, JIT and/or AOT compiler could treat these method as intrinsics with constant values, which would enable it to eliminate unnecessary fallback code when consuming portable libraries or libraries with a lower OS minimum version than the app itself.
 
 # MSBuild Properties
 
@@ -183,11 +183,11 @@ public sealed class OSMinimumVersion
 
 As with `PlatformAvailabilityAttribute` , the `PlatformIdentifier` property is included so that platform-agnostic assemblies can participate in platform minimum version annotations and checks.
 
-The MSBuild step that generates and injects TFM assembly attributes will be updated to generate this attribute when the `MinimumPlatformVersion` and `TargetPlatformIdentifier` properties are set. 
+The MSBuild step that generates and injects TFM assembly attributes will be updated to generate this attribute when the `MinimumPlatformVersion` and `TargetPlatformIdentifier` properties are set.
 
 Platform-neutral assemblies, i.e. assemblies that target a platform-neutral TFM such as `net5`, will have to declare the attribute explicitly.
 
-> NOTE: This seems a bit inconsistent. As a user, I’d expect `Minimum{OSName}Version` properties to work in platform-neutral assemblies too, but handling all those properties when building platform-neutral assemblies would be problematic as it would centralize the definitions of all of the platform-specific `MinimumVersion` properties into the* `Microsoft.Net.Sdk` targets.
+> NOTE: This seems a bit inconsistent. As a user, I’d expect `Minimum{OSName}Version` properties to work in platform-neutral assemblies too, but handling all those properties when building platform-neutral assemblies would be problematic as it would centralize the definitions of all of the platform-specific `MinimumVersion` properties into the `Microsoft.Net.Sdk` targets.
 >
 >Perhaps we could use items and metadata instead of platform-specific properties, e.g. `<PlatformInfo Include="ios" MinimumVersion="15.0" />`. For platform-specific projects, we could allow the simpler `MinimumPlatformVersion` property by mapping it into one of these items, e.g. `<PlatformInfo Include="$(TargetPlatformIdentifier)" Version="$(MinimumPlatformVersion)" Condition="'$(TargetPlatformIdentifier)' != ''" />`.
 
