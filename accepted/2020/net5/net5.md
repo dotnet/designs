@@ -279,11 +279,6 @@ We'll have the following TFMs:
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | Tizen, Unity... | Will follow the Xamarin model                              |                                   |
 
-_**Open Issue**. In case of Xamarin, there is a discussion of whether the
-convergence with .NET Core will be a breaking change for existing NuGet packages
-(for example, there is a desire to change their namespaces). In that case, we
-should not map it to the existing TFM as that would be pointless._
-
 _**Open Issue**. Will the above scheme work for iPad?_
 
 ### OS versions
