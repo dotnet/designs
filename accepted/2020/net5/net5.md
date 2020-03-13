@@ -230,13 +230,12 @@ So Miguel edits his project file by changing `net5.0-ios13.0` to
 
 Claire has the first release of the .NET 5 SDK that only ships bindings
 for iOS 13. She clones Miguel's Baby Shark repo from GitHub and tries to
-build it on her machine. Since Baby Shark targtes `net5.0-ios14.0` she
+build it on her machine. Since Baby Shark targets `net5.0-ios14.0` she
 gets a build error:
 
 > error NETSDK1045: The current .NET SDK does not support targeting iOS 14.0.
 > Either target iOS 13.0, or use a version of the .NET SDK that supports iOS
 > 14.0. [BabyShark.csproj]
-
 
 ## Requirements
 
@@ -463,14 +462,14 @@ TFM as specified to their corresponding `TargetPlatformVersion` and
 We want to make sure that we preserve the TFM from the project file:
 
 * **TFM doesn't contain an OS**. If the TFM is just the neutral `netX.Y` TFM
-  then the .nuspec's `<platform>` element shouldn't list the TFM. If there are
+  then the `.nuspec`'s `<platform>` element shouldn't list the TFM. If there are
   no `<platform>` elements, the `<platforms>` element should be omitted as well.
 
 * **TFM has an OS but no OS version**. If the user omits the OS version number
   from the project's `<TargetFramework>` property, all usages of the TFM should
   not contain an OS version number, including the project's output directory,
   the `lib` folder in the NuGet package, and other corresponding entries in the
-  .nuspec. However, the effective OS version will be recorded in the .nuspec's
+  .nuspec. However, the effective OS version will be recorded in the `.nuspec`'s
   `<platform>` element that corresponds to the TFM.
   
 * **TFM has both OS and OS version**. If the project did contain an OS version
@@ -590,7 +589,7 @@ Cross-platform application models (Xamarin Forms, ASP.NET Core) and bridge packs
 target platform-specific flavors to light-up more APIs or features. This
 approach is also called bait & switch.
 
-### Target Framework Names
+### TFMs in the UI
 
 There are some places in the IDE where targeting information is displayed:
 
