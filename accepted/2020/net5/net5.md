@@ -621,7 +621,7 @@ There are some places in the IDE where targeting information is displayed:
 To support multi-targeting end-to-end the TFM unification isn't enough. We also
 need to unify the SDKs between .NET Core, Windows desktop, Xamarin, and
 maybe ASP.NET Core. Without it, multi-targeting doesn't work without having to use
-3rd party tools, such as Oren's
+3rd party tools, such as Claire's
 [MSBuild.Extras](https://github.com/onovotny/MSBuildSdkExtras).
 
 We should also make it easier to catch cases where some APIs aren't universally
