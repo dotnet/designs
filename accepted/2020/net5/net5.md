@@ -281,6 +281,9 @@ We'll have the following TFMs:
 
 _**Open Issue**. Will the above scheme work for iPad?_
 
+_**Open Issue**. Can we use a syntax that differentiates revving the bindings
+from the OS?, such as `net5.0-ios13.0-r1` or `net5.0-ios13.0A`?_
+
 ### OS versions
 
 The TFM will support an optional OS version, such as:
