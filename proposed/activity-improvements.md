@@ -34,11 +34,12 @@ The developer needs to wrap their region of code in a using statement that creat
 ### 2. Monitoring agent wants to listen to activities
 
 A monitoring agent can create an ActivityListener which represents their subscription to activity callbacks like this.
-
+```C#
         ActivityListener listener = ActivityListener.CreateAndStart(
            shouldCreateActivity: (name, parentContext, links) => true,
            onActivityStarted: (activity) => { ... },
            onActivityStopped: (activity) => { ... });
+```
 It is up to the listener to do extract information from the Activity object and respond to the callbacks however they like, probably by serializing a message to a remote service that will aggregate the telemetry.
 
 There is also an option to derive from ActivityListener for more fined grained control and to override potential future extensibility points.
