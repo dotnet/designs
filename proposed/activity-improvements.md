@@ -123,7 +123,7 @@ We are simplifying the pattern to something like:
 
 ```C#
     // StartNew can return null if no listener is enabled. Activity now is Disposable too which automatically stop the activity if it is created and started.
-    using (Activity activity = Activity.StartNew("Azure.Core.Http.Request")
+    using (Activity? activity = Activity.StartNew("Azure.Core.Http.Request")
     {
         activity?.AddTag..
     }
