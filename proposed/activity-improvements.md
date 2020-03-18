@@ -36,7 +36,7 @@ The developer needs to wrap their region of code in a using statement that creat
 A monitoring agent can create a listener which represents their subscription to activity callbacks like this.
 ```C#
 
-IDisposable listener = Activity.StartListnening(
+IDisposable listener = Activity.StartListening(
            shouldCreateActivity: (name, parentContext, kind, tags, links) => true,
            onActivityStarted: (activity) => { ... },
            onActivityStopped: (activity) => { ... });
@@ -224,7 +224,7 @@ namespace System.Diagnostics
 
         public bool TryGetContext(out ActivityContext context)
 
-        public static IDisposable StartListnening(
+        public static IDisposable StartListening(
                                                  Func<string, ActivityContext, ActivityKind, IEnumerable<System.Collections.Generic.KeyValuePair<string,string>>?, IEnumerable<ActivityLink>?, bool> shouldCreateActivity, 
                                                  Action<Activity> onActivityStarted, 
                                                  Action<Activity> onActivityStopped);
