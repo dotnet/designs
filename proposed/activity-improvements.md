@@ -33,16 +33,16 @@ The developer needs to wrap their region of code in a using statement that creat
 
 ### 2. Monitoring agent wants to listen to activities
 
-A monitoring agent can create an ActivityListener which represents their subscription to activity callbacks like this.
+A monitoring agent can create a listener which represents their subscription to activity callbacks like this.
 ```C#
-        ActivityListener listener = ActivityListener.CreateAndStart(
-           shouldCreateActivity: (name, parentContext, links) => true,
+
+IDisposable listener = Activity.StartListnening(
+           shouldCreateActivity: (name, parentContext, kind, tags, links) => true,
            onActivityStarted: (activity) => { ... },
            onActivityStopped: (activity) => { ... });
+
 ```
 It is up to the listener to do extract information from the Activity object and respond to the callbacks however they like, probably by serializing a message to a remote service that will aggregate the telemetry.
-
-There is also an option to derive from ActivityListener for more fined grained control and to override potential future extensibility points.
 
 [TODO]: We could flesh out what we expect it look like end-to-end to use this with OpenTelemetry and perhaps some UI? It would help newcomers understand but I don't think it is a blocking issue for the current set of collaborators.
 
@@ -129,33 +129,12 @@ We are simplifying the pattern to something like:
     }
 ```
 
-- Last, we are introducing ActivityListener which can easily be used to listen to Activity objects for starting and stopping events. The new listener will help in the OT implementation as OT listen to the Activity events. It is now reasonable for a listener such as OpenTelemetry to observe Activity instrumentation from any code component in the app by the ActivityListener. Previously OpenTelemetry would have needed apriori knowledge of the strings that would be used for DiagnosticSource name and IsEnabled() callbacks for each Activity it wanted to receive callbacks for. When trying to create a new Activity object through the new introduced factory methods `StartNew`, the listener will have the opportunity to get a callback to decide if interested in having the Activity object get created or it can be sampled out to avoid the object creation if nobody else is listening or other listeners are not interested in such activity too. The listener will work with Activity's objects created using `new Activity(...)` so the listener will work with old written code using this pattern and can listen to the start and stop events for such Activity objects.
+- Last, we are introducing Activity.StartListening which can easily be used to listen to Activity objects for starting and stopping events. This mechanism will help in the OT implementation as OT listen to the Activity events. It is now reasonable for a listener such as OpenTelemetry to observe Activity instrumentation from any code component in the app by the Activity.StartListening. Previously OpenTelemetry would have needed apriori knowledge of the strings that would be used for DiagnosticSource name and IsEnabled() callbacks for each Activity it wanted to receive callbacks for. When trying to create a new Activity object through the new introduced factory methods `StartNew`, the listener will have the opportunity to get a callback to decide if interested in having the Activity object get created or it can be sampled out to avoid the object creation if nobody else is listening or other listeners are not interested in such activity too. The listener will work with Activity's objects created using `new Activity(...)` so the listener will work with old written code using this pattern and can listen to the start and stop events for such Activity objects.
 
-Here is a couple of examples of how to create a listener and start it. 
+Here is example of how to create a listener and start it.
 
 ```C#
-        // The following pattern is useful for the Dependency Injection scenario to allow easily creating the listener with the reflection without the need to subclass and override the listener methods.
-        ActivityListener listener = ActivityListener.CreateAndStart(shouldCreateActivity: (name, parentContext, links) => true, onActivityStarted: (activity) => { ... }, onActivityStopped: (activity) => { ... });
-
-       // The following pattern is for apps or services need to write more code and add more properties to the listener as the DI pattern would not be good enough for them.
-        private class CustomListener : ActivityListener
-        {
-            private bool _listenToActivities;
-            public CustomListener(bool listenToActivities = true)
-            {
-                _listenToActivities = listenToActivities;
-                Start();
-            }
-
-            public List<string> StartedActivityNames { get; set; } = new List<string>();
-            public List<string> StoppedActivityNames { get; set; } = new List<string>();
-
-            // ShouldCreateActivity can be used to do more filtering if needed
-            public override bool ShouldCreateActivity(string activityName, ActivityContext parent, IEnumerable<ActivityLink> links) => _listenToActivities; 
-
-            public override void OnActivityStarted(Activity a) => StartedActivityNames.Add(a.OperationName);
-            public override void OnActivityStopped(Activity a) => StoppedActivityNames.Add(a.OperationName);
-        }
+        IDisposable listener = Activity.StartListening(shouldCreateActivity: (name, parentContext, kind, tags, links) => true, onActivityStarted: (activity) => { ... }, onActivityStopped: (activity) => { ... });
 ```
 
 
@@ -240,7 +219,15 @@ namespace System.Diagnostics
         public System.Diagnostics.Activity AddLink(ActivityLink link) 
 
         public static System.Diagnostics.Activity? StartNew(string name) 
-        public static System.Diagnostics.Activity? StartNew(string name, System.Diagnostics.ActivityContext context, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, DateTimeOffset startTime = default) 
+        public static System.Diagnostics.Activity? StartNew(string name, ActivityContext context, IEnumerable<ActivityLink>? links = null, DateTimeOffset statTime = default) 
+        public static System.Diagnostics.Activity? StartNew(string name, ActivityContext context, ActivityKind kind, IEnumerable<System.Collections.Generic.KeyValuePair<string,string>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default) 
+
+        public bool TryGetContext(out ActivityContext context)
+
+        public static IDisposable StartListnening(
+                                                 Func<string, ActivityContext, ActivityKind, IEnumerable<System.Collections.Generic.KeyValuePair<string,string>>?, IEnumerable<ActivityLink>?, bool> shouldCreateActivity, 
+                                                 Action<Activity> onActivityStarted, 
+                                                 Action<Activity> onActivityStopped);
 
         public void SetCustomProperty(string propertyName, object? propertyValue)
         public object? GetCustomProperty(string propertyName) 
@@ -249,30 +236,6 @@ namespace System.Diagnostics
     }
 }
 
-```
-
-### ActivityListener 
-
-```C#
-
-namespace System.Diagnostics
-{
-    public class ActivityListener : IDisposable
-    {
-        protected ActivityListener()  
-        public static ActivityListener CreateAndStart(Func<string, ActivityContext, IEnumerable<ActivityLink>?, bool> shouldCreateActivity, Action<Activity> onActivityStarted, Action<Activity> onActivityStopped) 
-
-        public void Start()
-
-        public virtual bool ShouldCreateActivity(string activityName, ActivityContext parent, IEnumerable<ActivityLink>? links)
-   
-        public virtual void OnActivityStarted(Activity a)
-        public virtual void OnActivityStopped(Activity a)
-
-        public void Dispose()
-        protected virtual void Dispose(bool disposing)
-   }
-}
 ```
 
 Q & A 
