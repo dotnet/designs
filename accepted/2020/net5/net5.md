@@ -279,8 +279,6 @@ We'll have the following TFMs:
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | Tizen, Unity... | Will follow the Xamarin model                              |                                   |
 
-_**Open Issue**. Will the above scheme work for iPad?_
-
 _**Open Issue**. Can we use a syntax that differentiates revving the bindings
 from the OS?, such as `net5.0-ios13.0-r1` or `net5.0-ios13.0A`?_
 
@@ -386,25 +384,6 @@ _**Open Issue**. We should try to keep the TFI out of the .nuspec file. It seems
 NuGet uses the long form `.NETFramework,Version=4.5` in the dependency groups.
 We may want to change NuGet to allow the friendly name there as well and update
 our packaging tools to re-write to friendly name on pack._
-
-_**Open Issue**. The SDK has this logic duplicated from NuGet because they need
-to do this during evaluation where they can't call custom targets. We could make
-this an MSBuild intrinsic, but that seems like a lot of work. Maybe we just live
-with the duplication. But bottom line is that we need to make that change in
-MSBuild too._
-
-> "We've made it pretty far with duplicated logic, but it results in really ugly
-> MSBuild, since it's not a very expressive programming language. It also
-> creates the potential for drift between the two definitions. That said,
-> exposing it directly would create a new tight coupling between MSBuild and
-> NuGet that hasn't historically existed. It would probably require a direct
-> dependency and update flow plus coherency requirements on both .NET Core SDK
-> and VS insertions. If the logic were in a separate package (we've talked about
-> pushing it down to the framework at various times) it'd be great to just
-> expose that. With the logic in NuGet, it's reasonable either way, just
-> different tradeoffs. I'm amenable to exposing a property function, but maybe
-> we should go down the road of not doing it at first." --
-> [@rainersigwald](https://github.com/rainersigwald)
 
 ### Window-specific behavior
 
