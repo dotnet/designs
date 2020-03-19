@@ -1,0 +1,113 @@
+# Feature switch
+The functionality available in the .NET Core frameworks is getting bigger and wider with every release. Applications typically don't need or want all of it. With technologies like the linker we have the ability to remove parts of the framework which the app doesn't use. These technologies have limitations base don existing public API patterns and code behavior, sometimes they can't determine what the app really needs. This proposal adds a way to explicitly disable functionality in the framework.
+
+## Goals
+* Ability to declaratively turn-off functionality in the framework (and potentially any library/app)
+* Same behavior all the time - regardless of linker being used or not (`Debug` build behaves the same as published `Release` app).
+* Ability to set different defaults based on the type of application (Blazor, Xamarin, …)
+
+
+## Expected usage
+### Size
+By disabling functionality which is otherwise always available the linker can trim more code from the app reducing its size.
+For example
+* Disable support for FTP in [`HttpRequest.Create`](https://docs.microsoft.com/en-us/dotnet/api/system.net.webrequest.create?view=netcore-3.1#System_Net_WebRequest_Create_System_String_) (this is an example of a factory API which based on a string picks up features)
+* Disable security algorithms which are not in use by the app. For example [`AsymmetricalAlgorithm.Create(string)`](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.asymmetricalgorithm.create?view=netcore-3.1#System_Security_Cryptography_AsymmetricAlgorithm_Create_System_String_) can create a large list of algorithms (another factory API).
+
+### Security
+Disable functionality which is not recommended anymore for security reasons. The app may choose to disable such functionality and thus guarantee that nothing in the app can use it.
+For example:
+* Disable `BinaryFormatter`
+* Disable some cryptography algorithms which are not considered secure anymore. For example [`HashAlgorithm.Create(string)`](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.hashalgorithm.create?view=netcore-3.1#System_Security_Cryptography_HashAlgorithm_Create_System_String_) can create SHA1
+
+### Linker friendliness
+There are smaller features which are problematic from the linker perspective (they use reflection in a hard-to-analyze manner) and are only very rarely used. Disabling the feature would allow the linker to analyze the app without reporting warnings and decrease the application size.
+For example:
+* Disable the ability to read random types from resources (`ResourceManager`) - almost all apps only ever read strings from resources. In fact this functionality is already disabled when reading resources from a standalone files.
+
+
+## Similar functionality
+Runtime/libraries already contains several similar "feature switches". There are places where the code detects availability of some functionality - for example extended instruction sets. Based on the presence of the functionality the code has two branches, one using the new functionality to get better behavior and a fallback version. These are effectively also feature switches, but these are based on presence of either hardware or runtime functionality and not turned off explicitly.
+
+An example of usage of these switches in the [`Vector` classes](https://github.com/dotnet/runtime/blob/8a83488465f101e3ec2620cb1eb2a8c3d7cc1a1c/src/libraries/System.Private.CoreLib/src/System/Runtime/Intrinsics/Vector128.cs#L399-L413).
+
+
+## Existing functionality
+### Linker can propagate constant values
+Linker has an ability to propagate constant values throughout the code and based on them remove branches in the code which are not reachable. This is implemented in the [`RemoveUnreachableBlocksStep`](https://github.com/mono/linker/blob/master/src/linker/Linker.Steps/RemoveUnreachableBlocksStep.cs). This can be used for example to remove branches based on availability of hardware features (see the example above with `Vector`), but really any branch dependent on a value which can be determined to be constant can be trimmed with this.
+
+### Linker can substitute method bodies
+Linker has a feature where it can take an XML file which specifies methods (and fields) which should be replaced with a constant value (or throw). This can be used for example for the `GlobalizationMode.get_Invariant` to make it always return `true` on certain platforms. See [mono/linker#848](https://github.com/mono/linker/pull/848) for the initial change. The main implementation is in [`BodySubstituterStep`](https://github.com/mono/linker/blob/master/src/linker/Linker.Steps/BodySubstituterStep.cs).
+
+When combined with the constant value propagation this can be used to remove "features" from the code based on input to the build.
+
+### Runtime/libraries already have some feature switches
+Globalization has a feature where it can always use only invariant culture and nothing else. For reference: [design doc](https://github.com/dotnet/runtime/blob/master/docs/design/features/globalization-invariant-mode.md) and the [base of the implementation](https://github.com/dotnet/runtime/blob/4f9ae42d861fcb4be2fcd5d3d55d5f227d30e723/src/coreclr/src/System.Private.CoreLib/src/System/Globalization/GlobalizationMode.cs). This has SDK integration to set it up in `.runtimeconfig.json` but it doesn't have linker integration.
+
+There's also a discussion to setup the build of runtime/libraries to automatically trim based on target configuration - [here](https://github.com/dotnet/runtime/issues/31785). The intent of this change is not feature switches, but it's in the same area.
+
+### Runtime/libraries already have compatibility switches
+For example `CoreLib` already has several switches like `Switch.System.Globalization.FormatJapaneseFirstYearAsNumber`. These are typically small "tweaks" to the behavior of the runtime/libraries. They are internally exposed as static properties on [`LocalAppContextSwitches`](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/LocalAppContextSwitches.cs) with the value coming from `.runtimeconfig.json` via [`AppContext.TryGetSwitch`](https://docs.microsoft.com/en-us/dotnet/api/system.appcontext.trygetswitch?view=netcore-3.1).
+
+
+## Proposal
+The purpose of the proposed changes is to introduce patterns and functionality to support them to make introduction of new feature switches easier and consistent.
+
+### Unified pattern for defining switches and their properties
+Each feature switch should have a read-only static property defined and all the decisions about the feature's availability should be based on a simple condition using such property. Depending on the impact of the feature switch the property may or may not be a public API.
+
+Feature switches for large areas of functionality which may span multiple libraries should be exposed as public APIs to make it easy and consistent. For example if there would be a feature switch to disable support for HTTP2 there should be a public API property indicating the desired behavior. This is because it's likely that even libraries outside of core libraries may need to change their behavior based on the property. Having one property in this case would enable linker to trim branches across multiple libraries in a consistent way.
+
+Feature switches for localized functionality which is not likely to span multiple libraries can use only internal properties.
+
+*Note: `CoreLib` for example already has `LocalAppContextSwitches` which does basically exactly this. We could simply extend it to usage of feature switches not just compatibility switches.*
+
+*Question: It's unclear why `GlobalizationMode.Invariant` is not based on this behavior - but maybe it needs native runtime integration.*
+
+### Unified pattern for feature definition in MSBuild
+Introduce a standard pattern how to define these properties in the SDK. Basically a way to define a property and have it automatically passed through to `.runtimeconfig.json` as well as linker substitutions.
+
+This requires a mapping between the MSBuild property name, the full name of the feature switch for runtime configuration (which would show up in `.runtimeconfig.json`) and the read-only static property in the managed code which is used to branch the behavior. 
+
+*Note that it seems likely that some of switches may require 1:many mapping because they're targeting existing code which uses multiple properties to determine the presence of the feature.*
+
+Ultimately some of these switches may also need VS UI integration, but for now most of the feature switches should be perfectly fine with only MSBuild properties.
+
+The ability to specify these from MSBuild projects as properties also means that different templates and SDKs can set different defaults - so for example Blazor or Xamarin SDKs may choose to turn off some of these features by default.
+
+### Generate the right input for the linker in SDK
+Currently there's no integration of the substitutions feature in the linker with the `ILLink` task/targets. Introduce a standard way to  define the content of `substitutions.xml` from the SDK (MSBuild items/properties) and then implement the file generation in the `ILLink` task and pass it to the linker.
+
+*Or change linker to not use the XML format and instead take the input on command line.*
+
+
+## Open questions
+
+### Boolean only or more complex values
+Should the feature switches always represent simple on/off statements and thus be represented as boolean properties? In some cases the simple boolean may necessitate presence of multiple similar feature switches. For example the security algorithms case described above. In the extreme each such algorithm would have its own feature switch - this would obviously create confusion. We could potentially allow feature switches to have string values from a predefined set to solve this problem.
+
+### Which components own the mapping between different representations of feature switches
+There are 3 different representations to each feature switch
+* The MSBuild property - for example `InvariantGlobalization` - this is used by developers to turn the feature on/off.
+* The runtime property in `.runtimeconfig.json` - for example `System.Globalization.Invariant` - this is used at runtime to alter the behavior of the code (via the IL property below)
+* The IL property which is used in the code - for example `System.Globalization.GlobalizationMode.Invariant, System.Private.CoreLib` - this is used by the linker to fix the value of the property and propagate that to remove unused code.
+
+The mapping between MSBuild property and runtime property pretty much has to be part of the SDK (in the MSBuild somewhere) as the SDK already generates the `.runtimeconfig.json` and this needs to be part of it. The second mapping to the IL property can take several options:
+* Also int he SDK - becomes an input to the ILLink task
+* Encoded as attributes in the BCL - we could add a new attribute to the IL properties to mark which runtime options they map to - linker can create the mapping from these attributes. In this case the ILLink task would take the runtime properties as input
+* Inferred by the linker - in the extreme linker might be able to track the calls to `AppContext.TryGetSwitch` and perform enough data flow analysis to determine the value of the IL property from the runtime property value. In this case the ILLink task would also take runtime properties as input
+
+### Testing challenges
+Having feature switches which are exposed as public knobs means that the number of valid and supported configurations of libraries grows in a significant way. Testing each feature switch in isolation is not that costly, but making sure there are no unintended interactions might be problematic.
+
+### Stability
+Using `AppContext.TryGetSwitch` as the underlying runtime store of these switches is consistent with the intent of that API (and the API has been present in the .NET libraries for a long time). Unfortunately there are no guarantees that the value will never change, in fact there's an API `AppContext.SetSwitch` which is designed to change the value at runtime. Fixing the values of these switches in the linker would make usage of the `SetSwitch` API ineffective and rather confusing.
+
+*Note that the existing compatibility switches in `CoreLib` already have this problem and the current design seems to be to ignore it. That is the value is read from `AppContext` the first time it's needed and cached.*
+
+
+## References
+
+Very similar functionality has been proposed before in [dotnet/designs#42](https://github.com/dotnet/designs/pull/42). The main differences proposed here:
+* Feature switches apply at runtime as well as in the linker. The previous proposal was only for linker.
+* Feature switches are represented as "if/else" branches in the code and with IL properties. The previous proposal used attributes on methods.
