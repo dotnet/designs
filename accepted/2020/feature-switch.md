@@ -3,7 +3,7 @@ The functionality available in the .NET Core frameworks is getting bigger and wi
 
 ## Goals
 * Ability to declaratively turn-off functionality in the framework (and potentially any library/app)
-* Same behavior all the time - regardless of linker being used or not (`Debug` build behaves the same as published `Release` app).
+* Consistent behavior across different build configurations - the app should get the exact same behavior whether the linker was used on it or not
 * Ability to set different defaults based on the type of application (Blazor, Xamarin, …)
 
 
@@ -11,7 +11,7 @@ The functionality available in the .NET Core frameworks is getting bigger and wi
 ### Size
 By disabling functionality which is otherwise always available the linker can trim more code from the app reducing its size.
 For example
-* Disable support for FTP in [`HttpRequest.Create`](https://docs.microsoft.com/en-us/dotnet/api/system.net.webrequest.create?view=netcore-3.1#System_Net_WebRequest_Create_System_String_) (this is an example of a factory API which based on a string picks up features)
+* Disable support for compiled regular expressions. The constructor for regular expression [`Regex(string, RegexOptions)`](https://docs.microsoft.com/en-us/dotnet/api/system.text.regularexpressions.regex.-ctor?view=netcore-3.1#System_Text_RegularExpressions_Regex__ctor_System_String_System_Text_RegularExpressions_RegexOptions_) uses the second parameter to determine if it should pre-compile the regular expression or interpret it each time. The code ot pre-compile the expression is relatively large and if the app doesn't use this feature it can be removed. But linker typically won't be able to determine that since it's a dynamic behavior.
 * Disable security algorithms which are not in use by the app. For example [`AsymmetricalAlgorithm.Create(string)`](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.asymmetricalgorithm.create?view=netcore-3.1#System_Security_Cryptography_AsymmetricAlgorithm_Create_System_String_) can create a large list of algorithms (another factory API).
 
 ### Security
@@ -60,9 +60,9 @@ Feature switches for large areas of functionality which may span multiple librar
 
 Feature switches for localized functionality which is not likely to span multiple libraries can use only internal properties.
 
-*Note: `CoreLib` for example already has `LocalAppContextSwitches` which does basically exactly this. We could simply extend it to usage of feature switches not just compatibility switches.*
+It's up to each feature what is the behavior when it's turned off. In lot of cases the code would probably throw an exception, but in some cases it may be able to fallback to different implementation. For example if HTTP2 is disabled the code may be able to use HTTP1 transparently.
 
-*Question: It's unclear why `GlobalizationMode.Invariant` is not based on this behavior - but maybe it needs native runtime integration.*
+*Implementation note: The property which is used to determine if the feature is on or off should be written and used in such a way that tiering optimizations would be possible and JIT could trim away the "unused" code. Pattern which should achieve this in most cases is to get a read-only static bool property.*
 
 ### Unified pattern for feature definition in MSBuild
 Introduce a standard pattern how to define these properties in the SDK. Basically a way to define a property and have it automatically passed through to `.runtimeconfig.json` as well as linker substitutions.
@@ -94,7 +94,15 @@ There are 3 different representations to each feature switch
 
 The mapping between MSBuild property and runtime property pretty much has to be part of the SDK (in the MSBuild somewhere) as the SDK already generates the `.runtimeconfig.json` and this needs to be part of it. The second mapping to the IL property can take several options:
 * Also int he SDK - becomes an input to the ILLink task
-* Encoded as attributes in the BCL - we could add a new attribute to the IL properties to mark which runtime options they map to - linker can create the mapping from these attributes. In this case the ILLink task would take the runtime properties as input
+* Encoded as attributes in the BCL - we could add a new attribute to the IL properties to mark which runtime options they map to - linker can create the mapping from these attributes. In this case the ILLink task would take the runtime properties as input. For example:
+```C#
+internal static class GlobalizationMode
+{
+    [FeatureSwitch("System.Globalization.Invariant")]
+    internal static bool Invariant { get; }
+}
+```
+
 * Inferred by the linker - in the extreme linker might be able to track the calls to `AppContext.TryGetSwitch` and perform enough data flow analysis to determine the value of the IL property from the runtime property value. In this case the ILLink task would also take runtime properties as input
 
 ### Testing challenges
@@ -108,6 +116,4 @@ Using `AppContext.TryGetSwitch` as the underlying runtime store of these switche
 
 ## References
 
-Very similar functionality has been proposed before in [dotnet/designs#42](https://github.com/dotnet/designs/pull/42). The main differences proposed here:
-* Feature switches apply at runtime as well as in the linker. The previous proposal was only for linker.
-* Feature switches are represented as "if/else" branches in the code and with IL properties. The previous proposal used attributes on methods.
+Very similar functionality has been proposed before in [dotnet/designs#42](https://github.com/dotnet/designs/pull/42). The main differences proposed here is to use "if/else" branches in the code and with IL properties to represent feature switches. The previous proposal used attributes on methods.
