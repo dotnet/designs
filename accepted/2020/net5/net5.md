@@ -279,9 +279,6 @@ We'll have the following TFMs:
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | Tizen, Unity... | Will follow the Xamarin model                              |                                   |
 
-_**Open Issue**. Can we use a syntax that differentiates revving the bindings
-from the OS?, such as `net5.0-ios13.0-r1` or `net5.0-ios13.0A`?_
-
 ### OS versions
 
 The TFM will support an optional OS version, such as:
@@ -334,6 +331,45 @@ multi-target between OS versions:
 However, it's a bit misleading to think of the OS version number as the version
 of the operating system you're running on. Rather, it's the operating system's
 API you're compiling for.
+
+People should really think of the TFM's OS version as the version number of the
+.NET OS bindings. Under normal circumstances we'll rev that version in lock step
+with the OS. This will make it easy to understand which version you need to gain
+access to the APIs. However, there are cases where that's not possible. For
+example, iOS API bindings aren't fully generated; they require manual work.
+Depending on how large the API surface in a given OS update is we might decide
+to finish the bindings for the most useful OS APIs first and add other bindings
+later (which we have done in the past). If the OS normally ships APIs in
+*major.minor* then we can use the third digit to indicate binding-only updates.
+However, we don't control the OS version so in principle there is no guarantee
+that they don't ship new APIs in third- or fourth digit updates.
+
+Let's look at a concrete example. Assume that we shipped .NET 5 with iOS 13.0
+support and Apple released an update to iOS with new APIs, say iOS 13.1. Let's
+say it takes us a few updates to finish binding them all:
+
+TFM                | Description
+-------------------|----------------------------
+`net5.0-ios13.0`   | The entirety of iOS 13.0
+`net5.0-ios13.1.1` | First batch of bindings for iOS 13.1.
+`net5.0-ios13.1.2` | Second batch of bindings for iOS 13.1.
+`net5.0-ios13.1.3` | Third batch of bindings for iOS 13.1.
+
+Now let's say that Apple decides to ship an iOS 13.1.1 with new APIs as well. As
+you can see, we already used that number to indicate the first batch of 13.1
+APIs. No biggie, we'd just bind these APIs in the next available train, which
+happens to be `net5.0-ios13.1.4`.
+
+We don't expect this to be too confusing because we generally encourage people
+to compile against the latest available OS API set and use
+`TargetPlatformMinVersion` in order to run on older versions. The reference
+assembly for the OS bindings will also include an attribute per API indicating
+which OS version is required. These attributes, as well as
+`TargetPlatformMinVersion`, will always be set to actual OS versions.
+
+So in practice we don't expect people having to match TFMs to specific OS
+version but it's good to have numbers that are "close" enough to give project
+maintainers some idea of what's available to them.
 
 ### Mapping to properties
 
