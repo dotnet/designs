@@ -128,7 +128,7 @@ represents a bitmap and is constructed via OS-provided data types. Ada uses
 `#if` to expose different constructors on different platforms:
 
 ```C#
-public static class SkiaSharpImage
+public class SkiaSharpImage
 {
 #if ANDROID
     public SkiaSharpImage(Android.Media.Image nativeImage) { /* ... */  }
