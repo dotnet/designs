@@ -237,9 +237,9 @@ follows:
   features, in other words both can be used, either, or neither.
 * If `UrlFormat` is provided without a `DiagnosticId` the compiler will use the
   `DiagnosticId` that it uses by default as the format argument to `UrlFormat`.
-  For C# this could be `CS0618`, `CS0619`, `CS1062`, or `CS1063`. The internal
-  error codes don't consider leading zeroes, but the padding is important when
-  we actually do the format substitution.
+  For C# this could be `CS0618`, for example, but will vary depending on context.
+  The internal error codes don't consider leading zeroes, but
+  the padding is important when we actually do the format substitution.
 * It's legal for `UrlFormat` to not contain a `{0}` placeholder, in which case
   the provided `UrlFormat` is treated as the final URL. If more than one format
   specifier is included, the compiler will ignore `UrlFormat` entirely.
