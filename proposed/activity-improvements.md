@@ -1,4 +1,4 @@
-# Improve Activity API usability and OpenTelemetry integration
+ # Improve Activity API usability and OpenTelemetry integration
 
 \[Github issue](https://github.com/dotnet/runtime/issues/31373) has past discussion.
 
@@ -6,13 +6,11 @@
 
 **Dev** @tarekgh
 
+.NET has long had [System.Diagnostics.Activity](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity?view=netcore-3.1) and [System.Diagnostics.DiagnosticListener](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.diagnosticlistener?view=netcore-3.1) to support [distributed tracing](https://docs.microsoft.com/en-us/azure/azure-monitor/app/distributed-tracing) scenarios. Code that receives, processes, and transmits requests creates Activity objects which have correlation ids. These Activities are published via DiagnosticListener to telemetry monitoring agents such as Application Insights running in the same process. The telemetry agent can then log the information to a remote store where it can be aggregated and visualized to help developers understand the overall flow of work in a distributed system.
 
+Today distributed tracing instrumentation is predominantly only added to a few critical libraries such as ASP.NET's Kestrel web server or the HttpClient implementation in the BCL. Even if other libraries or app developers wanted to add this instrumentation to their code, the current design makes it difficult - we want to fix that.  We have also been participating in the [OpenTelemetry](https://opentelemetry.io/) project which is defining a multi-language multi-vendor standard for how distributed tracing should work. Our goal is to ensure that .NET integrates smoothly. For app developers this means that you can add a reference to the OpenTelemetry NuGet package and all the Activity-based instrumentation in your codebase, your 3rd party libraries, and the runtime will light up and get collected. For library authors this means that you can write to a platform standard API that doesn't force any specific dependency on the library users, but lights up in a predictable way when OpenTelemetry (or any other agent) is present.
 
- .NET has long had [System.Diagnostics.Activity](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity?view=netcore-3.1) and [System.Diagnostics.DiagnosticListener](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.diagnosticlistener?view=netcore-3.1) to support [distributed tracing](https://docs.microsoft.com/en-us/azure/azure-monitor/app/distributed-tracing) scenarios. Code that receives, processes, and transmits requests creates Activity objects which have correlation ids. These Activities are published via DiagnosticListener to telemetry monitoring agents such as Application Insights running in the same process. The telemetry agent can then log the information to a remote store where it can be aggregated and visualized to help developers understand the overall flow of work in a distributed system.
-
-Today distributed tracing instrumentation is predominantly only added to a few critical libraries such as ASP.NET's Kestrel web server or the HttpClient implementation in the BCL. Even if other libraries or app developers wanted to add this instrumentation to their code, the current design makes it difficult - we want to fix that.  We have also been participating in the [OpenTelemetry](https://opentelemetry.io/) project which is defining a multi-language multi-vendor standard for how distributed tracing should work. Our goal is to ensure that .NET integrates smoothly. For app developers this means that you can add a reference to the OpenTelemetry NuGet package and all the Activity-based instrumentation in your codebase, your 3rd party libraries, and the runtime will light up and get collected. For library authors this means that you can write to a platform standard API that doesn't force any specific dependency on the library users, but lights up in a predictable way when OpenTelemetry (or any other agent) is present.  
-
-We expect to achieve this by additions to the Activity object model and a new ActivityListener type. These additions should provide stronger contracts between in-proc producers and consumers of distributed tracing data, a richer set of information that Activity can represent, and streamlined calling patterns for typical scenarios. It is also our mutual goal with the OT community to eliminate the current OT TelemetrySpan type and use Activity as the .NET representation of OT's Span concept.
+We expect to achieve this by additions to the Activity object model and a new way to listen to the Activity events (e.g. Start and Stop) which created from specific source or listen to all Activities created from all sources. These additions should provide stronger contracts between in-proc producers and consumers of distributed tracing data, a richer set of information that Activity can represent, and streamlined calling patterns for typical scenarios. It is also our mutual goal with the OT community to eliminate the current OT Telemetry Span type and use Activity as the .NET representation of OT's Span concept.
 
 ## Scenarios and User Experience
 
@@ -21,26 +19,27 @@ We expect to achieve this by additions to the Activity object model and a new Ac
 The developer needs to wrap their region of code in a using statement that creates the Activity and assigns it a name. It is possible that the activity reference will be null if there is nothing in the process listening for this telemetry or if only a sub-set of telemetry is being sampled.
 
 ```C#
-    using (Activity? activity = Activity.StartNew("MyLibrary.Subcomponent.FooOperation")
+    static ActivitySource source =  new ActivitySource("MyLibrary.Subcomponent", new Version(1, 0, 0, 0));
+    ...
+    using (Activity? activity = source.StartActivity("FooOperation")
     {
         // optionally the activity can be enriched with extra data
         activity?.AddTag("userId", userId);
         activity?.AddTag("fooParam", foo);
-            
+
         // the developer's original code goes here
     }
 ```
 
-### 2. Monitoring agent wants to listen to activities
+### 2. Monitoring agent wants to listen to activities created from specific ActivitySource
 
 A monitoring agent can create a listener which represents their subscription to activity callbacks like this.
 ```C#
-
-IDisposable listener = Activity.StartListening(
-           shouldCreateActivity: (name, parentContext, kind, tags, links) => true,
-           onActivityStarted: (activity) => { ... },
-           onActivityStopped: (activity) => { ... });
-
+IDisposable listener = source.AddActivityListener(
+                            getActivityCreationOption: (source, name, kind, parentContext, tags, links) =>
+                                                        ActivityCreationOptions.AllowData,
+                            onActivityStarted: activity => { ... },
+                            onActivityStopped: activity => { ... });
 ```
 It is up to the listener to do extract information from the Activity object and respond to the callbacks however they like, probably by serializing a message to a remote service that will aggregate the telemetry.
 
@@ -57,7 +56,7 @@ The current design of DiagnosticListener and the conventions used by existing in
 
 #### 2. Activity collection can be filtered with a predicate on name
 
-We are assuming that most Activity information is desirable by default, but the monitoring agent should be able to filter out noisy or problematic instrumentation. Each Activity has a name and the agent should be able to efficiently decide if it wants the telemetry given the name.
+We are assuming that most Activity information is desirable by default, but the monitoring agent should be able to filter out noisy or problematic instrumentation. The agent can efficiently decide if it wants to listen to Activities which created from specific source/Component (ActivitySource).
 
 #### 3. Activity needs API representations of OpenTelemetry Span concepts
 
@@ -69,7 +68,7 @@ Some of the existing patterns of API usage are awkward and don't appeal to many 
 
 #### 5. Back compat
 
-Any scenarios that currently work using Activity and/or DiagnosticListener must continue to work with no code changes. Also the performance for these scenarios can't meaningfully regress.
+Any scenarios that currently work using Activity and/or DiagnosticListener must continue to work with no code changes. Also the performance for these scenarios can't meaningfully regress. Our new Activity listening mechanism should be faster than conventional listening.
 
 ### Non-goals
 
@@ -78,20 +77,20 @@ Any scenarios that currently work using Activity and/or DiagnosticListener must 
 3. Matching OpenTelemetry specification naming or behaviors that would directly conflict with .Net's existing precedent for Activity. We'll do our best to enable the use-cases OpenTelemetry is trying to achieve via some other means in these cases.
 
 
-
 Design
 =================
 
 [This is copied from Tarek's writeup in [the existing issue](https://github.com/dotnet/runtime/issues/31373) ]
 
 ## Rationale and Use Cases
-The proposal here is mainly targetting closing the gap between the .NET Libraries and OpenTelemetry (OT) tracing APIs (mainly the OT Span class). We also enhance and simplify the usage of the Activity for easier code patterns. Here are the details of this proposal:
+The proposal here is mainly targeting closing the gap between the .NET Libraries and OpenTelemetry (OT) tracing APIs (mainly the OT Span class). We also enhance and simplify the usage of the Activity for easier code patterns. Here are the details of this proposal:
 
 - .NET Libraries have the `Activity` class which the object allows libraries and apps to publish tracing information. OT currently under development and not released yet. OT currently proposing the `Span` class which mostly used for the same purpose of Activity. OT Span supports more properties than Activity which allows more tracing scenarios. This proposal is offering the additions needed to be added to the Activity class which helps to address the same scenarios that Span does and possibly allow OT to fully get rid of Span to reduce the confusion which developers can run into to decide if need to use Activity or use Span. We are introducing the following types and properties which will be used inside the Activity class:
     - ActivityContext which conforms to the w3c TraceContext specification. The context contains the trace Id, Span Id, Trace state and Trace flags.
     - ActivityLink which can point to ActivityContexts inside a single Trace or across different Traces. Links can be used to represent batched operations where Activity was initiated by multiple initiating Activities each representing a single incoming item being processed in the batch.
     - ActivityKind describes the relationship between the Activity, its parents, and its children in a Trace.
-    - Allow attaching any object to the Activity object through the `Set/GetCustomProperty` for the sake of the extendability without manually subclassing Activity or maintaining a dictionary mapping activity to the other objects. examples of that, OT implementation still depends on Activity and maintains a table mapping from Activity to Span. another example is some teams were working around the lack of missing Links and Contexts features and manually doing extra work to include these features. Although we are adding the Links and Contexts, we can get more future scenarios to extend Activity.
+    - ActivityEvent to attach specific event to teh Activity. Events have a time associated with the moment when they are added to the Activity.
+    - Allow attaching any object to the Activity object through the `Set/GetCustomProperty` for the sake of the extendability without manually sub-classing Activity or maintaining a dictionary mapping activity to the other objects. Examples of that, OT implementation still depends on Activity and maintains a table mapping from Activity to Span. Another example is some teams were working around the lack of missing Links and Contexts features and manually doing extra work to include these features. Although we are adding the Links and Contexts, we can get more future scenarios to extend Activity (e.g. attaching the status codes/exceptions).
 
 - The current usage pattern of the Activity is not neat. here is an example of the current usage:
 ```C#
@@ -122,21 +121,37 @@ Note in the pattern, the code trying to avoid creating the Activity object if th
 We are simplifying the pattern to something like:
 
 ```C#
-    // StartNew can return null if no listener is enabled. Activity now is Disposable too which automatically stop the activity if it is created and started.
-    using (Activity? activity = Activity.StartNew("Azure.Core.Http.Request")
+    static ActivitySource source =  new ActivitySource("Azure.Core.Http", new Version(4, 0, 0, 0));
+    ...
+
+    // StartActivity can return null if no listener is enabled. Activity now is Disposable too which automatically stop the activity if it is created and started.
+    using (Activity? activity = source.StartActivity("Request")
     {
         activity?.AddTag..
     }
 ```
 
-- Last, we are introducing Activity.StartListening which can easily be used to listen to Activity objects for starting and stopping events. This mechanism will help in the OT implementation as OT listen to the Activity events. It is now reasonable for a listener such as OpenTelemetry to observe Activity instrumentation from any code component in the app by the Activity.StartListening. Previously OpenTelemetry would have needed apriori knowledge of the strings that would be used for DiagnosticSource name and IsEnabled() callbacks for each Activity it wanted to receive callbacks for. When trying to create a new Activity object through the new introduced factory methods `StartNew`, the listener will have the opportunity to get a callback to decide if interested in having the Activity object get created or it can be sampled out to avoid the object creation if nobody else is listening or other listeners are not interested in such activity too. The listener will work with Activity's objects created using `new Activity(...)` so the listener will work with old written code using this pattern and can listen to the start and stop events for such Activity objects.
+- Last, we are introducing ActivitySource type which can be used to efficiently listening to Activities created from specific component/sources or all sources. It is now reasonable for a listener such as OpenTelemetry to observe Activity instrumentation from any code component in the app by the `ActivitySource.AddActivityListener()`. Previously OpenTelemetry would have needed appropriate  knowledge of the strings that would be used for DiagnosticSource name and IsEnabled() callbacks for each Activity it wanted to receive callbacks for. When trying to create a new Activity object through the new introduced factory methods `ActivitySource.StartActivity`, the listener will have the opportunity to get a callback to decide if interested in having the Activity object get created or it can be sampled out to avoid the object creation if nobody else is listening or other listeners are not interested in such activity too. We provide a way to listen to ActivitySource object creation too to get the opportunity for listening to Activities created for such sources. Also, we are providing `Activity.Source` property to return the source of the Activity. Activities created using `new Activity(...)` will be attached to a singleton source object which can be used too to listen to the Activities created using the Activity constructors.
+ActivitySource will provide a way to listen to other sources creation using `ActivitySource.AddListener` which will notify the listeners for every ActivitySource object previously created or objects are going to be created in the future.
 
-Here is example of how to create a listener and start it.
+Here is example of how to create a listener for ActivitySource creation event.
 
 ```C#
-        IDisposable listener = Activity.StartListening(shouldCreateActivity: (name, parentContext, kind, tags, links) => true, onActivityStarted: (activity) => { ... }, onActivityStopped: (activity) => { ... });
+    ActivitySource.AddListener(source => { ... });
 ```
 
+Here is example of how to create a listener for Activities events.
+
+```C#
+    static ActivitySource source =  new ActivitySource("MyLibrary.Subcomponent", new Version(1, 0, 0, 0));
+
+    ...
+
+    IDisposable listener = source.AddActivityListener(
+                            getActivityCreationOption: (source, name, kind, parentContext, tags, links) => ActivityCreationOptions.AllowData,
+                            onActivityStarted: activity => { ... },
+                            onActivityStopped: activity => { ... });
+```
 
 ## Proposed API
 
@@ -169,41 +184,130 @@ namespace System.Diagnostics
  ### ActivityContext
 
 ```C#
+namespace System.Diagnostics
+{
+    /// <summary>
     /// ActivityContext representation conforms to the w3c TraceContext specification. It contains two identifiers
     /// a TraceId and a SpanId - along with a set of common TraceFlags and system-specific TraceState values.
+    /// </summary>
     public readonly struct ActivityContext : IEquatable<ActivityContext>
     {
-        public ActivityContext(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags traceFlags, string? traceState = null)
+        public ActivityContext(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags traceFlags, string? traceState = null);
         public ActivityTraceId TraceId { get; }
         public ActivitySpanId SpanId { get; }
         public ActivityTraceFlags TraceFlags { get; }
         public string? TraceState { get; }
 
-        public static bool operator ==(ActivityContext context1, ActivityContext context2)
-        public static bool operator !=(ActivityContext context1, ActivityContext context2)
-        public bool Equals(ActivityContext context)
-        public override bool Equals(object? obj)
-        public override int GetHashCode()
+        public static bool operator ==(ActivityContext context1, ActivityContext context2);
+        public static bool operator !=(ActivityContext context1, ActivityContext context2) ;
+        public bool Equals(ActivityContext context);
+        public override bool Equals(object? obj);
+        public override int GetHashCode();
     }
+}
+```
+
+### ActivityEvent
+```C#
+
+namespace System.Diagnostics
+{
+    /// A text annotation associated with a collection of attributes.
+    /// Event has name and optionally has timestamps and attributes
+    public sealed class ActivityEvent
+    {
+        /// Initializes a new instance of the <see cref="ActivityEvent"/> class.
+        public ActivityEvent(string name) : this(name, DateTimeOffset.UtcNow, s_emptyAttributes);
+        public ActivityEvent(string name, DateTimeOffset timestamp) : this(name, timestamp, s_emptyAttributes);
+        public ActivityEvent(string name, IReadOnlyDictionary<string, object> attributes);
+        public ActivityEvent(string name, DateTimeOffset timestamp, IReadOnlyDictionary<string, object> attributes);
+
+        public string Name { get; }
+        public DateTimeOffset Timestamp { get; }
+        public IReadOnlyDictionary<string, object> Attributes { get; }
+    }
+}
 ```
 
  ### ActivityLink
+
 ```C#
 namespace System.Diagnostics
 {
-    /// <summary>
     /// Activity may be linked to zero or more other <see cref="ActivityContext"/> that are causally related.
     /// Links can point to ActivityContexts inside a single Trace or across different Traces.
     /// Links can be used to represent batched operations where a Activity was initiated by multiple initiating Activities,
     /// each representing a single incoming item being processed in the batch.
     public readonly struct ActivityLink
     {
-        public ActivityLink(ActivityContext context) 
-        public ActivityLink(ActivityContext context, IDictionary<string, object>? attributes)
+        public ActivityLink(ActivityContext context);
+        public ActivityLink(ActivityContext context, IDictionary<string, object>? attributes);
         public ActivityContext Context { get; }
         public IDictionary<string, object>? Attributes { get; }
     }
 }
+```
+
+### ActivityCreationOptions
+
+```C#
+namespace System.Diagnostics
+{
+    // ActivityCreationOptions contains values telling if decide to create the Activity object
+    // and with what state
+    // This enum value will be returned from the callback of the Activity listener object which created by ActivitySource.AddActivityListener.
+    public enum ActivityCreationOptions
+    {
+        /// Don't allow creating the Activity object.
+        NoCreate,
+
+        /// Create the Activity but drop recording events and tags.
+        NoDataAllowed,
+
+        /// Create the Activity and allow recording events and tags
+        AllowData,
+
+        /// Create the Activity, allow recording events and tags, and turn on ActivityTraceFlags.Recorded (i.e. Allow Sampling).
+        AllowDataAndSampling
+    }
+}
+```
+
+### ActivitySource
+
+```C#
+
+namespace System.Diagnostics
+{
+    /// ActivitySource is the type that help create and start Activity and allow listening to the Activity events too.
+    public sealed class ActivitySource : IDisposable
+    {
+        /// Construct an ActivitySource object with the input name and component version
+        public ActivitySource(string name, Version version);
+
+        /// Returns the ActivitySource name.
+        public string Name { get; }
+
+        /// Returns the ActivitySource version.
+        public Version Version { get; }
+
+        /// Creates a new Activity object if there is any listener to the Activity, returns null otherwise.
+        public Activity? StartActivity(string name, ActivityKind kind = ActivityKind.Internal);
+
+        public Activity? StartActivity(string name, ActivityKind kind, ActivityContext context, IEnumerable<KeyValuePair<string, string?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default);
+
+        /// Dispose the ActivitySource object and remove the current instance from the global list. empty the listeners list too.
+        public void Dispose();
+
+        /// Add a listener to the Activity starting and stopping events.
+        public IDisposable AddActivityListener(
+                                Func<ActivitySource, string, ActivityKind, ActivityContext, IEnumerable<KeyValuePair<string, string?>>?, IEnumerable<ActivityLink>?, ActivityCreationOptions> getActivityCreationOption,
+                                Action<Activity> onActivityStarted,
+                                Action<Activity> onActivityStopped);
+
+        /// Add a listener to listen to ActivitySource creation events.
+        public static IDisposable AddListener(Action<ActivitySource> OnSourceAttaching);
+    }
 ```
 
 ### Activity
@@ -211,34 +315,33 @@ namespace System.Diagnostics
 ```C#
 namespace System.Diagnostics
 {
-    public partial class Activity : IDisposable // added IDisposable 
+    public partial class Activity : IDisposable // added IDisposable
     {
         ....
-        public System.Diagnostics.ActivityKind Kind { get; set; }
-        public System.Collections.Generic.IEnumerable<ActivityLink> Links { get; }
-        public System.Diagnostics.Activity AddLink(ActivityLink link) 
+        public ActivityKind Kind { get; set; } = ActivityKind.Internal;
+        public string DisplayName { get; set; }
+        public ActivitySource Source { get; }
 
-        public static System.Diagnostics.Activity? StartNew(string name) 
-        public static System.Diagnostics.Activity? StartNew(string name, ActivityContext context, IEnumerable<ActivityLink>? links = null, DateTimeOffset statTime = default) 
-        public static System.Diagnostics.Activity? StartNew(string name, ActivityContext context, ActivityKind kind, IEnumerable<System.Collections.Generic.KeyValuePair<string,string>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default) 
+        public Activity AddEvent(ActivityEvent e);
+        public IEnumerable<ActivityEvent> Events { get; }
 
-        public bool TryGetContext(out ActivityContext context)
+        public Activity AddLink(ActivityLink link);
+        public IEnumerable<ActivityLink> Links { get; }
 
-        public static IDisposable StartListening(
-                                                 Func<string, ActivityContext, ActivityKind, IEnumerable<System.Collections.Generic.KeyValuePair<string,string>>?, IEnumerable<ActivityLink>?, bool> shouldCreateActivity, 
-                                                 Action<Activity> onActivityStarted, 
-                                                 Action<Activity> onActivityStopped);
+        public bool TryGetContext(out ActivityContext context);
 
-        public void SetCustomProperty(string propertyName, object? propertyValue)
-        public object? GetCustomProperty(string propertyName) 
+        public bool AllowData { get; set;}
 
-        public void Dispose() 
+        public void SetCustomProperty(string propertyName, object? propertyValue);
+        public object? GetCustomProperty(string propertyName);
+
+        public void Dispose();
     }
 }
 
 ```
 
-Q & A 
+Q & A
 ================
 
 [TODO] There is a bunch of discussion in https://github.com/dotnet/runtime/issues/31373 that hasn't been replicated here. If those discussions continue it is probably worthwhile to put conclusions (with needed context here)
