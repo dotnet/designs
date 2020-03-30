@@ -3,7 +3,8 @@
 **PM** [Immo Landwerth](https://github.com/terrajobst) |
 **Work Items** [Framework](https://github.com/dotnet/runtime/issues/33089) |
 [Roslyn](https://github.com/dotnet/roslyn/issues/42119) |
-[F#](https://github.com/dotnet/fsharp/issues/8654)
+[F#](https://github.com/dotnet/fsharp/issues/8654) |
+[IDE](https://github.com/dotnet/roslyn/issues/42103)
 
 No framework, no matter how carefully crafted, is immune to making mistakes. For
 a framework to last the test of time it's vital that it can be evolved to enable
