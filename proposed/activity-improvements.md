@@ -125,7 +125,7 @@ We are simplifying the pattern to something like:
     ...
 
     // StartActivity can return null if no listener is enabled. Activity now is Disposable too which automatically stop the activity if it is created and started.
-    using (Activity? activity = source.StartActivity("Request")
+    using (Activity? activity = source.StartActivity("Request"))
     {
         activity?.AddTag..
     }
