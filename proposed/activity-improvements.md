@@ -36,8 +36,9 @@ The developer needs to wrap their region of code in a using statement that creat
 A monitoring agent can create a listener which represents their subscription to activity callbacks like this.
 ```C#
 IDisposable listener = source.AddActivityListener(
-                            getActivityCreationOption: (source, name, kind, parentContext, tags, links) =>
-                                                        ActivityCreationOptions.AllowData,
+                            listenToSource: (activitySource) => { ... },
+                            getActivityDataRequestUsingContext: (source, name, kind, parentContext, tags, links) => { ...},
+                            getActivityDataRequestUsingParentId: (source, name, kind, parentId, tags, links) => { ...},
                             onActivityStarted: activity => { ... },
                             onActivityStopped: activity => { ... });
 ```
@@ -131,26 +132,18 @@ We are simplifying the pattern to something like:
     }
 ```
 
-- Last, we are introducing ActivitySource type which can be used to efficiently listening to Activities created from specific component/sources or all sources. It is now reasonable for a listener such as OpenTelemetry to observe Activity instrumentation from any code component in the app by the `ActivitySource.AddActivityListener()`. Previously OpenTelemetry would have needed appropriate  knowledge of the strings that would be used for DiagnosticSource name and IsEnabled() callbacks for each Activity it wanted to receive callbacks for. When trying to create a new Activity object through the new introduced factory methods `ActivitySource.StartActivity`, the listener will have the opportunity to get a callback to decide if interested in having the Activity object get created or it can be sampled out to avoid the object creation if nobody else is listening or other listeners are not interested in such activity too. We provide a way to listen to ActivitySource object creation too to get the opportunity for listening to Activities created for such sources. Also, we are providing `Activity.Source` property to return the source of the Activity. Activities created using `new Activity(...)` will be attached to a singleton source object which can be used too to listen to the Activities created using the Activity constructors.
-ActivitySource will provide a way to listen to other sources creation using `ActivitySource.AddListener` which will notify the listeners for every ActivitySource object previously created or objects are going to be created in the future.
-
-Here is example of how to create a listener for ActivitySource creation event.
-
-```C#
-    ActivitySource.AddListener(source => { ... });
-```
+- Last, we are introducing ActivitySource type which can be used to efficiently listening to Activities created from specific component/sources or all sources. It is now reasonable for a listener such as OpenTelemetry to observe Activity instrumentation from any code component in the app by the `ActivitySource.AddActivityListener()`. Previously OpenTelemetry would have needed appropriate  knowledge of the strings that would be used for DiagnosticSource name and IsEnabled() callbacks for each Activity it wanted to receive callbacks for. When trying to create a new Activity object through the new introduced factory methods `ActivitySource.StartActivity`, the listener will have the opportunity to get a callback to decide if interested in having the Activity object get created or it can be sampled out to avoid the object creation if nobody else is listening or other listeners are not interested in such activity too.
+When calling `ActivitySource.AddActivityListener()`, the provided callback `ListenToSource(activitySource)` will get called for every ActivitySource previously created and still active to decide if need to listen to Activities created from such ActivitySource. Also, this callback will get called for every future created ActivitySource.
 
 Here is example of how to create a listener for Activities events.
 
 ```C#
-    static ActivitySource source =  new ActivitySource("MyLibrary.Subcomponent", new Version(1, 0, 0, 0));
-
-    ...
-
-    IDisposable listener = source.AddActivityListener(
-                            getActivityCreationOption: (source, name, kind, parentContext, tags, links) => ActivityCreationOptions.AllowData,
-                            onActivityStarted: activity => { ... },
-                            onActivityStopped: activity => { ... });
+    IDisposable listener = ActivitySource.AddActivityListener(
+                                listenToSource: (activitySource) => { ... },
+                                getActivityDataRequestUsingContext: (source, name, kind, parentContext, tags, links) => { ...},
+                                getActivityDataRequestUsingParentId: (source, name, kind, parentId, tags, links) => { ...},
+                                onActivityStarted: activity => { ... },
+                                onActivityStopped: activity => { ... });
 ```
 
 ## Proposed API
@@ -248,27 +241,30 @@ namespace System.Diagnostics
 }
 ```
 
-### ActivityCreationOptions
+### ActivityDataRequest
 
 ```C#
 namespace System.Diagnostics
 {
-    // ActivityCreationOptions contains values telling if decide to create the Activity object
-    // and with what state
-    // This enum value will be returned from the callback of the Activity listener object which created by ActivitySource.AddActivityListener.
-    public enum ActivityCreationOptions
+    /// Used by ActivityListener to indicate what amount of data should be collected for this Activity
+    /// Requesting more data causes greater performance overhead to collect it.
+    public enum ActivityDataRequest
     {
-        /// Don't allow creating the Activity object.
-        NoCreate,
+        /// The Activity object doesn't need to be created
+        None,
 
-        /// Create the Activity but drop recording events and tags.
-        NoDataAllowed,
+        /// The Activity object needs to be created. It will have Name, Source, Id and Baggage.
+        /// Other properties are unnecessary and will be ignored by this listener.
+        PropagationData,
 
-        /// Create the Activity and allow recording events and tags
-        AllowData,
+        /// The activity object should be populated with all the propagation info and also all other
+        /// properties such as Links, Tags, and Events. Activity.IsAllDataRequested will return true.
+        AllData,
 
-        /// Create the Activity, allow recording events and tags, and turn on ActivityTraceFlags.Recorded (i.e. Allow Sampling).
-        AllowDataAndSampling
+        /// The activity object should be populated the same as the AllData case and additionally
+        /// Activity.IsRecorded is set true. For activities using W3C trace ids this sets a flag bit in the
+        /// ID that will be propagated downstream requesting that trace is recorded everywhere.
+        AllDataAndRecorded
     }
 }
 ```
@@ -291,22 +287,56 @@ namespace System.Diagnostics
         /// Returns the ActivitySource version.
         public Version Version { get; }
 
+        /// Check if there is any listeners for this ActivitySource.
+        /// This property can be helpful to tell if there is no listener, then no need to create Activity object
+        /// and avoid creating the objects needed to create Activity (e.g. ActivityContext)
+        /// Example of that is http scenario which can avoid reading the context data from the wire.
+        public bool HasListeners { get; }
+
         /// Creates a new Activity object if there is any listener to the Activity, returns null otherwise.
         public Activity? StartActivity(string name, ActivityKind kind = ActivityKind.Internal);
 
-        public Activity? StartActivity(string name, ActivityKind kind, ActivityContext context, IEnumerable<KeyValuePair<string, string?>>? tags = null, IEnumerable<ActivityLink>? links = null, DateTimeOffset startTime = default);
+        /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity events, returns null otherwise.
+        public Activity? StartActivity(
+                            string name,
+                            ActivityKind kind,
+                            ActivityContext parentContext, IEnumerable<KeyValuePair<string, string?>>? tags = null,
+                            IEnumerable<ActivityLink>? links = null,
+                            DateTimeOffset startTime = default);
+
+        /// Creates a new <see cref="Activity"/> object if there is any listener to the Activity events, returns null otherwise.
+        public Activity? StartActivity(
+                            string name,
+                            ActivityKind kind,
+                            string parentId,
+                            IEnumerable<KeyValuePair<string, string?>>? tags = null,
+                            IEnumerable<ActivityLink>? links = null,
+                            DateTimeOffset startTime = default);
 
         /// Dispose the ActivitySource object and remove the current instance from the global list. empty the listeners list too.
         public void Dispose();
 
         /// Add a listener to the Activity starting and stopping events.
         public IDisposable AddActivityListener(
-                                Func<ActivitySource, string, ActivityKind, ActivityContext, IEnumerable<KeyValuePair<string, string?>>?, IEnumerable<ActivityLink>?, ActivityCreationOptions> getActivityCreationOption,
+                                System.Func<ActivitySource, bool> listenToSource,
+                                Func<
+                                    ActivitySource,
+                                    string,
+                                    ActivityKind,
+                                    ActivityContext,
+                                    IEnumerable<KeyValuePair<string, string?>>?,
+                                    IEnumerable<System.Diagnostics.ActivityLink>?,
+                                    ActivityDataRequest> getActivityDataRequestUsingContext,
+                                Func<
+                                    ActivitySource,
+                                    string,
+                                    ActivityKind,
+                                    ActivityContext,
+                                    IEnumerable<KeyValuePair<string, string?>>?,
+                                    IEnumerable<System.Diagnostics.ActivityLink>?,
+                                    ActivityDataRequest> getActivityDataRequestUsingParentId,
                                 Action<Activity> onActivityStarted,
                                 Action<Activity> onActivityStopped);
-
-        /// Add a listener to listen to ActivitySource creation events.
-        public static IDisposable AddListener(Action<ActivitySource> OnSourceAttaching);
     }
 ```
 
@@ -318,7 +348,7 @@ namespace System.Diagnostics
     public partial class Activity : IDisposable // added IDisposable
     {
         ....
-        public ActivityKind Kind { get; set; } = ActivityKind.Internal;
+        public ActivityKind Kind { get; } = ActivityKind.Internal;
         public string DisplayName { get; set; }
         public ActivitySource Source { get; }
 
@@ -328,9 +358,9 @@ namespace System.Diagnostics
         public Activity AddLink(ActivityLink link);
         public IEnumerable<ActivityLink> Links { get; }
 
-        public bool TryGetContext(out ActivityContext context);
+        public ActivityContext Context { get; }
 
-        public bool AllowData { get; set;}
+        public bool IsAllDataRequested { get; set;}
 
         public void SetCustomProperty(string propertyName, object? propertyValue);
         public object? GetCustomProperty(string propertyName);
