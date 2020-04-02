@@ -1,4 +1,4 @@
-# Platform Specific HttpClient Support to dotnet/runtime
+# Platform Specific HttpClient Support in dotnet/runtime
 
 ## Overview
 The underlying networking libraries and capabilities in iOS, Android, and Wasm have required us to implement custom **HttpMessageHandler** classes using platform-specific APIs. Because each platform has unique API, different release pressures, and deeper infrastructure dependencies, the Mono team pushed the platform implementation into the individual SDKs. 
@@ -22,7 +22,6 @@ HttpClient client = new HttpClient(new HttpClientHandler());
 ```
 
 There are several reasons why using `SocketHttpHandler` is not desirable or not even possible on some platforms
-
 
 * Lack of platform native TLS support for better performance
 * Bloats the application size
@@ -400,25 +399,35 @@ No build magic and more shared code prospect, as well as the ability to test Htt
 
 The decision is to use different approaches for each platform for .NET5. We might consider unifying the approaches eventually but not in .NET5 time-frame.
 
+A new feature like setting will be introduced which will allow controlling the implicit handler selection. The internal property will be available inside System.Net.Http namespace and mapped to msbuild property or AppContext setting.
+
+```
+namespace System.Net.Http
+​​{
+​​  public partial class HttpClientHandler
+​​  {
+​​    internal static HandlerType DefaultHandlerType { get; } = HttpClientHandlerType.PlatformNative;
+​​  }
+}
+```
+
+The implementation has to use the property in the way to allow the illinker to remove the unnecessary dependency of unused handler when the type is not used elsewhere.
+
 ### Xamarin.iOS/Xamarin.tvOS
-Follow proposal #2b and call into static entry point at 
+Follow proposal #2b and hook up existing `NSUrlSessionHandler` using `Activator.CreateInstance ("Foundation.NSUrlSessionHandler, Xamarin.iOS/Xamarin.tvOS")​`. The actual implementation will remain inside xamarin/xamarin-macios​ in repo.
 
-port [NSUrlSessionHandler](https://github.com/xamarin/xamarin-macios/blob/master/src/Foundation/NSUrlSessionHandler.cs)
-
-The plan ignores CFNetworkHandler and other legacy handlers. They will stay in `xamarin/xamarin-macios` and will be available only when constructed manually. The default- platform-handler selection logic will switch only between NSUrlSessionHandler and SocketHttpHandler.
+The plan ignores CFNetworkHandler and other legacy handlers. They will stay in `xamarin/xamarin-macios` and will be available only when constructed manually. The implementation logic inside HttpClientHandler will rely on DefaultHandlerType selection to set the implicit handler behaviour between NSUrlSessionHandler and SocketHttpHandler.
 
 ### Xamarin.Mac
-There won’t be any platform specific handlers available for Xamarin.Mac as we’ll use existing osx RID based build of libraries. The existing SocketHttpHandler is what .NET Core supports today and have all features available for cross platform support (e.g. gRPC) for .NET.
+There won’t be any platform specific handlers implicitly called by HttpClient OSX RID build of libraries (Runtime Pack). The existing SocketHttpHandler is what .NET Core supports today and have all features available for cross platform support (e.g. gRPC) for .NET. Xamarin.Mac could still ship any platform specific handler but they won’t be used unless explicitly constructed and passed to `HttpClient​` constructor.
 
 ### Xamarin.Android
 
-Follow proposal #2b and hook up existing AndroidClientHandler using `Activator.CreateInstance (``"``Xamarin.Android.Net.AndroidClientHandler.cs, Mono.Android``"``)`. The whole AndroidClientHandler implementation will remain inside `xamarin/xamarin-android`.
+Follow proposal #2b and hook up existing AndroidClientHandler using `Activator.CreateInstance (``"``Xamarin.Android.Net.AndroidClientHandler, Mono.Android``"``)`. The whole AndroidClientHandler implementation will remain inside `xamarin/xamarin-android`.
 
 Only RID specific version of System.Net.Http will be built as there won’t be any new API available as part of `dotnet/runtime` version.
 
 The code will most likely have to include special linker annotations to keep the dependency on the constructor inside external “unknown” assembly.
-
-- [ ] TODO: How to look up type with full name in external assembly .NET Core   
 
 ### WebAssembly
 Follow proposal #5 and port WasmHttpMessageHandler to dotnet/runtime together with wasm interop layer.
