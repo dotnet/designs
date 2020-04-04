@@ -19,7 +19,7 @@ We expect to achieve this by additions to the Activity object model and a new wa
 The developer needs to wrap their region of code in a using statement that creates the Activity and assigns it a name. It is possible that the activity reference will be null if there is nothing in the process listening for this telemetry or if only a sub-set of telemetry is being sampled.
 
 ```C#
-    static ActivitySource source =  new ActivitySource("MyLibrary.Subcomponent", new Version(1, 0, 0, 0));
+    static ActivitySource source =  new ActivitySource("MyLibrary.Subcomponent", "1.0.0.0");
     ...
     using (Activity? activity = source.StartActivity("FooOperation")
     {
@@ -122,7 +122,7 @@ Note in the pattern, the code trying to avoid creating the Activity object if th
 We are simplifying the pattern to something like:
 
 ```C#
-    static ActivitySource source =  new ActivitySource("Azure.Core.Http", new Version(4, 0, 0, 0));
+    static ActivitySource source =  new ActivitySource("Azure.Core.Http", "4.0.0.0");
     ...
 
     // StartActivity can return null if no listener is enabled. Activity now is Disposable too which automatically stop the activity if it is created and started.
@@ -231,12 +231,18 @@ namespace System.Diagnostics
     /// Links can point to ActivityContexts inside a single Trace or across different Traces.
     /// Links can be used to represent batched operations where a Activity was initiated by multiple initiating Activities,
     /// each representing a single incoming item being processed in the batch.
-    public readonly struct ActivityLink
+    public readonly struct ActivityLink : IEquatable<ActivityLink>
     {
         public ActivityLink(ActivityContext context);
         public ActivityLink(ActivityContext context, IDictionary<string, object>? attributes);
         public ActivityContext Context { get; }
         public IDictionary<string, object>? Attributes { get; }
+        
+        public override bool Equals(object? obj);
+        public bool Equals(ActivityLink link);
+        public static bool operator ==(ActivityLink link1, ActivityLink link2);
+        public static bool operator !=(ActivityLink link1, ActivityLink link2);
+        public override int GetHashCode();
     }
 }
 ```
@@ -279,19 +285,19 @@ namespace System.Diagnostics
     public sealed class ActivitySource : IDisposable
     {
         /// Construct an ActivitySource object with the input name and component version
-        public ActivitySource(string name, Version version);
+        public ActivitySource(string name, string version);
 
         /// Returns the ActivitySource name.
         public string Name { get; }
 
         /// Returns the ActivitySource version.
-        public Version Version { get; }
+        public string Version { get; }
 
         /// Check if there is any listeners for this ActivitySource.
         /// This property can be helpful to tell if there is no listener, then no need to create Activity object
         /// and avoid creating the objects needed to create Activity (e.g. ActivityContext)
         /// Example of that is http scenario which can avoid reading the context data from the wire.
-        public bool HasListeners { get; }
+        public bool HasListeners();
 
         /// Creates a new Activity object if there is any listener to the Activity, returns null otherwise.
         public Activity? StartActivity(string name, ActivityKind kind = ActivityKind.Internal);
@@ -355,7 +361,6 @@ namespace System.Diagnostics
         public Activity AddEvent(ActivityEvent e);
         public IEnumerable<ActivityEvent> Events { get; }
 
-        public Activity AddLink(ActivityLink link);
         public IEnumerable<ActivityLink> Links { get; }
 
         public ActivityContext Context { get; }
