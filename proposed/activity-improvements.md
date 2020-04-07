@@ -1,6 +1,6 @@
  # Improve Activity API usability and OpenTelemetry integration
 
-\[Github issue](https://github.com/dotnet/runtime/issues/31373) has past discussion.
+[Github issue](https://github.com/dotnet/runtime/issues/31373) has past discussion.
 
 **PM** @shirhatti, anksr
 
