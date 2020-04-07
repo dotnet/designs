@@ -37,7 +37,7 @@ For .NET 5, iOS, Android, and WPF/Windows Forms project will all use the same `M
 
 ## Workload guidance
 
-The bulk of functionality from orkloads will be contained in workload "packs", which will be the unit of delivery for workloads.  This will include MSBuild targets and tasks.  The assets from the packs will be laid out under the dotnet root folder, probably in `packs/<Pack ID>/<Pack Version>` or a similar folder.
+The bulk of functionality from workloads will be contained in workload "packs", which will be the unit of delivery for workloads.  This will include MSBuild targets and tasks.  The assets from the packs will be laid out under the dotnet root folder, probably in `packs/<Pack ID>/<Pack Version>` or a similar folder.
 
 Workloads will also provide a manifest package which describes which packs are necessary for which workloads.  The manifest will specify the name and version for each pack that is available for a given .NET SDK release band, as well as which packs are required for each logical workload.  The manifest for workloads will be present even when the workloads it describes are not installed.
 
@@ -197,7 +197,7 @@ The .NET SDK (Microsoft.NET.Sdk) should:
 
 ### VS behavior
 
-When the VS project system loads a project, it should check the evaluation resort for `MissingWorkloadPack` items.  If there are any, then it should raise the VS event to veto the project load and trigger the in-product acquisition experience for those workloads.
+When the VS project system loads a project, it should check the evaluation result for `MissingWorkloadPack` items.  If there are any, then it should raise the VS event to veto the project load and trigger the in-product acquisition experience for those workloads.
 
 In the same way that the SDK error generation does, the project system should map from the missing workload packs to the missing workloads via the workload manifests.  Additionally, it will need to map from the workload IDs that the .NET SDK uses to the right IDs that VS will use to install the workloads.  That mapping should either be defined in the workload manifest or in another file that is part of the same packgae.
 
