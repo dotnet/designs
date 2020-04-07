@@ -13,7 +13,7 @@ In .NET 5, we will add support for iOS and Android.  The .NET SDK (formerly know
 - When opening a project in Visual Studio where the project depends on a workload that is not installed, Visual Studio will use the in-product acquisition experience to pop up a dialog box that notifies the developer what workloads are required, where they can click through to install the workload.
 - When building a project from the command line where the project depends on a workload that is not installed, a friendly error message will be generated specifying which workloads are required, and how to install them (ie by running the VS installer)
 - Improve existing experiences involving SDK resolvers
-  - Improve experience in VS when opening a project with a project.json that specifies an SDK that can't be found
+  - Improve experience in VS when opening a project with a global.json that specifies an SDK that can't be found
   - When using the NuGet package MSBuild SDK resolver, the UI should not hang while the NuGet package is acquired
 
 The following may not be delivered in .NET 5, but the design should support it:
@@ -235,4 +235,3 @@ Unable to locate the .NET Core SDK. Check that it is installed and that the vers
 We would like to change the experience for this in Visual Studio.  If the requested SDK from global.json is not found, we'd like to fall back to using the SDK that would have been resolved if there was no global.json.  This will allow the project to successfully load and be browsed in Visual Studio.  We would then fail the build with an error indicating that the requested SDK wasn't available.
 
 We can do this by having the MSBuild SDK resolver fall back to the default SDK resolution when it fails to find the version requested in global.json.  In that case, it can set a property or add an item in the returned SdkResult.  Then the .NET SDK can have a target that will check for that item or property and fail the build if it is set.
-
