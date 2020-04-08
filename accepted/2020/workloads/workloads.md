@@ -65,7 +65,9 @@ Install tools must follow these rules for workloads it installs:
 * The workload manifest is included as a required dependency for all variants of the workload (some packs might be optional).
 * All referenced packs are included, matching the version specified in the workload manifest.
 
-It should never be obvious to users that there is a compositional model at play. In particular, .NET tools should not produce errors because the workload manifest and required files are out of alignment in some way.
+Install tools that do not install the manifest or that do not install all the files required by the manifest will create undefined environments that will produce undefined results for users. It may be possible to detect these error cases in .NET tools, and provide the appropriate feedback to users, but likely not in all cases.
+
+The compositional model can be considered fragile. It is likely that we will need to expose a CLI command to validate a .NET Core installation/environment, in order to produce a detailed log that can be examined and shared. 
 
 The .NET CLI will expose a more extensive set of commands for interacting with workloads. The CLI may allow installing more than just workloads, such that the noun it exposes is not `workload` but something more general (TBD; `bundle` is used as the stand-in for a better term in the following examples). In this parlance, a workload is one kind of bundle.
 
