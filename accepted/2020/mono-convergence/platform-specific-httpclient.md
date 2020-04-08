@@ -106,7 +106,7 @@ public static class HttpClientHandlers
 }
 ```
 
-```
+```c#
 public class HttpClient
 {
   public HttpClient()
