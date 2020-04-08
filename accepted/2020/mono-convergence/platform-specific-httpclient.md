@@ -11,7 +11,7 @@ The purpose of this document is to outline how such an approach could work for .
 SocketHttpHandler, which is the current implementation under HttpClientHandler in dotnet/runtime, works great on desktop but it has limitations on platforms where sockets are not available or don’t offer the required level of control. The intention is to have the most common HttpClient construction to work out of the box on all platforms and use the platform most reliable HTTP provider.
 
 **Example**
-```
+```c#
 // This should use the default message handler for the application. Either as
 // preselected by the framework or set in the Project Options for the project.
 
@@ -57,8 +57,8 @@ The handler which is purely managed and behaves generally the same across all pl
 
 The CFNetwork handler is based in the old Network Stack API provided by Apple. This handler, while it has better performance, lacks features compared with the other ones. It is mostly around for legacy reasons such as:
 
-    * Support old servers that do not work with NSUrlSessionHandler
-    * Support old devices that do not support the newer NSUrlSessionHandler.
+* Support old servers that do not work with NSUrlSessionHandler
+* Support old devices that do not support the newer NSUrlSessionHandler.
 
 **NSUrlSession Handler**
 
@@ -99,7 +99,7 @@ In general, keeping the platform dependant handlers away from .NET Core BCL and 
 ### Proposal #1: Use static state
 
 Extend HttpClient to be configurable via static configuration type.
-```
+```c#
 public static class HttpClientHandlers
 {
   public static HttpClientHandler DefaultPlatformHandler { get; internal set; }
@@ -131,7 +131,7 @@ REJECTED.  It only supports `new HttpClient()`, not `new HttpClient(new HttpClie
 Make HttpClientHandler a partial class, make all its members virtual, and on iOS/Android have the implementation of the class wrap an HttpClientHandler instance field. The instantiation of the underlying instance will have the flexibility to be controlled by platform implementation.
 
 **Located in dotnet/runtime repo**
-```
+```c#
 public class HttpClientHandler
 {
   readonly HttpClientHandler platformInstance;
@@ -160,7 +160,7 @@ public class HttpClientHandler
 The example of how this could look like for whole type is at [https://github.com/mono/mono/blob/master/mcs/class/System.Net.Http/HttpClientHandler.cs](https://github.com/mono/mono/blob/master/mcs/class/System.Net.Http/HttpClientHandler.cs)
 
 **Located in xamarin/xamarin-macios repo**
-```
+```c#
 // ios SDK part
 public class CFNetworkHandler : HttpClientHandler
 {
@@ -193,7 +193,7 @@ This subsection covers various options we have to construct the underlying platf
 **Proposal 2a: ILLinker Magic**
 
 Each SDK would write optional ILLinker custom step which would rewrite construction logic for platform instance with implementation which is controlled by SDK.
-```
+```c#
 // System.Net.Http.dll (for iOS, Android, etc)
 
 public class HttpClientHandler
@@ -222,7 +222,7 @@ public class HttpClientHandler
 **Proposal 2b: Use Reflection**
 
 The construction code would use reflection call to static method for platform where the late binding is required.
-```
+```c#
 // System.Net.Http.dll
 
 public class HttpClientHandler
@@ -245,7 +245,7 @@ public class HttpClientHandler
 **Proposal 2c: Introduce a new System.Net.Http.HandlerFactory.dll assembly**
 
 .NET introduce a new assembly which the only purpose will be to hold the factory contract for the handler construction. All other types will remain in System.Net.Http.dll which will make the build complicated due to circular references.
-```
+```c#
 // System.Net.Http.HandlerFactory.dll
 public static class HttpHandlerFactory
 {
@@ -270,7 +270,7 @@ public HttpClientHandler ()
 **Proposal 2d: Add SDK reference assemblies with factory contract to dotnet/runtime**
 
 This is what Mono does today. The reference assemblies which describe the factory method contract will be available during dotnet/runtime build and used for each RID specific build of System.Net.Http.dll.
-```
+```c#
 // System.Net.Http.dll
 public HttpClientHandler ()
 {
@@ -287,7 +287,7 @@ public HttpClientHandler ()
 The assembly called System.Net.Http.Private.dll would be introduced and would include only implementation of HttpClientHandler. The implementation then would be fully platform specific (per RID) and **for Xamarin like SDKs coming from their optional SDK pack**. For the desktop version version we could just leave HttpClientHandler in implementation version of System.Net.Http.dll.
 
 **Located in dotnet/runtime repo**
-```
+```c#
 // System.Net.Http.dll
 
 #if iOS || android || tvOS || wasm
@@ -297,7 +297,7 @@ The assembly called System.Net.Http.Private.dll would be introduced and would in
 ```
 
 **Located in xamarin/xamarin-macios repo**
-```
+```c#
 // Sample implementation in System.Net.Http.Private.dll build as part of Xamarin.iOS
 public class HttpClientHandler
 {
@@ -336,7 +336,7 @@ This is very light-weight solution which pushes a lot of responsibility to optio
 We could also use have only shared ref version of HttpClientHandler but then every optional SDKs would have to create their own copy of proxy logic as described in **Proposal #2**.
 
 **Located in dotnet/runtime repo**
-```
+```c#
 // System.Net.Http.dll - ref for TFM net5.0-ios
 public class HttpClientHandler
 {
@@ -352,7 +352,7 @@ public class HttpClientHandler
 }
 ```
 
-```
+```c#
 // System.Net.Http.dll
 
 #if iOS
@@ -397,11 +397,11 @@ No build magic and more shared code prospect, as well as the ability to test Htt
 
 ## The plan for .NET 5
 
-The decision is to use different approaches for each platform for .NET5. We might consider unifying the approaches eventually but not in .NET5 time-frame.
+The decision is to use different approaches for each platform for .NET 5. We might consider unifying the approaches eventually but not in .NET 5 time-frame.
 
 A new feature like setting will be introduced which will allow controlling the implicit handler selection. The internal property will be available inside System.Net.Http namespace and mapped to msbuild property or AppContext setting.
 
-```
+```c#
 namespace System.Net.Http
 ​​{
 ​​  public partial class HttpClientHandler
@@ -411,7 +411,7 @@ namespace System.Net.Http
 }
 ```
 
-The implementation has to use the property in the way to allow the illinker to remove the unnecessary dependency of unused handler when the type is not used elsewhere.
+The implementation has to use the property in the way to allow the ILLinker to remove the unnecessary dependency of unused handler when the type is not used elsewhere.
 
 ### Xamarin.iOS/Xamarin.tvOS
 Follow proposal #2b and hook up existing `NSUrlSessionHandler` using `Activator.CreateInstance ("Foundation.NSUrlSessionHandler, Xamarin.iOS/Xamarin.tvOS")​`. The actual implementation will remain inside xamarin/xamarin-macios​ in repo.
@@ -432,12 +432,12 @@ The code will most likely have to include special linker annotations to keep the
 ### WebAssembly
 Follow proposal #5 and port WasmHttpMessageHandler to dotnet/runtime together with wasm interop layer.
 
-The public implementation of WasmHttpMessageHandler will be packaged into special NuGet which will be create to hold only this public type. The interop layer needed to support this handler will be also included into the NuGet package. To match existing naming it will be called
+The public implementation of WasmHttpMessageHandler will be packaged into special NuGet which will be created to hold only this public type. The interop layer needed to support this handler will be also included into the NuGet package. To match existing naming it will be called
 
 * System.Net.Http.WebAssemblyHttpHandler
 
 ## Future plans
-If we manage to extract Objective-C or Java interop into special subcomponents we might be able to switch to solution which will allow us to ship and test everything inbox (inside dotnet/runtime).
+If we manage to extract Objective-C or Java interop into special subcomponents we might be able to switch to solution which will allow us to ship and test everything inbox (inside `dotnet/runtime` repo).
 
 ### Xamarin.iOS/Xamarin.tvOS/Xamarin.watchOS
 Follow proposal #5 and port [NSUrlSessionHandler](https://github.com/xamarin/xamarin-macios/blob/master/src/Foundation/NSUrlSessionHandler.cs) to `dotnet/runtime` repo and extend existing interop layer to include bridge to platform specific APIs to support the implementation. The sources will be located under [src/libraries/System.Het.Http/](https://github.com/dotnet/runtime/tree/master/src/libraries/System.Net.Http/). 
