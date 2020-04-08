@@ -47,7 +47,7 @@ Workloads will be composed and distributed as a set of packs. Packs are just a c
 
 The target framework will be used as the primary currency in project files that establish a link to a workload. As part of a related effort, [target frameworks are being updated in .NET 5](https://github.com/dotnet/designs/blob/master/accepted/2020/net5/net5.md) to include operating system information. This change will enable a direct link to OS-specific workloads. For example, a project that targets `net5-android` will need the .NET 5 Android workload (Xamarin.Android). A project that multi-targets `net5-android` and `net5-ios` will also need the .NET 5 iOS workload (Xamarin.iOS).
 
-The set of TFM to workload mappings will be finite, and defined by the workloads. The SDK will carry a copy of this mapping, but will defer to information carried as part of installed workloads when they present newer information.
+The set of TFM to workload mappings defined by the workloads. The SDK will carry a copy of this mapping, but will defer to information carried as part of installed workloads when they present newer information.
 
 ### Acquisition
 
@@ -68,13 +68,13 @@ The .NET CLI will expose a more extensive set of commands for interacting with w
 * `dotnet bundle restore [project]` -- Installs one or more workloads in terms of the dependent workloads found in one or more referenced projects. One can think of restore installing the default bundle for a workload. The workload may expose other opt-in bundles.
 * `dotnet bundle update [bundle | project]` -- Updates a bundle, in terms of a project, by name, or as part of updating all known bundles.
 
-We don't intend for the .NET CLI-based installation to be mix-and-matched with a package tool (like APT). Instead, we are thinking that an installation tool would provide a mapping file that mapped its packages to workloads, so that `dotnet bunble restore` could provide meaningful error messages that direct users to install workloads via the installation tools. We still need to spend more time defining interactions between the .NET CLI and an installation tools.
+We don't intend for the .NET CLI-based installation to be mix-and-matched with a package tool (like APT). Instead, we are thinking that an installation tool would provide a mapping file that mapped its packages to workloads, so that `dotnet bundle restore` could provide meaningful error messages that direct users to install workloads via the installation tools. We still need to spend more time defining interactions between the .NET CLI and an installation tools.
 
 In addition to being optional, workloads will be updatable. The SDK will include a mechanism to discover if a workload manifest pack has been updated. An updated manifest could represent bug fixes or new features (like updated bindings for an operating system update). If a manifest has been updated, the user will be notified, and have the opportunity to acquire the new version. Updates will not be automatic. This is roughly similar to the combination of `apt-get update` and `apt-get upgrade` with the [Debian package manager](https://en.wikipedia.org/wiki/APT_(software)).
 
 ### SDK and workload versioning
 
-Another benefit of the existing monolithic SDK is that the workloads it includes are known to be compatible with core SDK components, like the C# compiler, NuGet, MSBuild, and the SDK targets. Over time, we have developed the concept of an SDK version train. These are represented by SDK version hundreds bands like `3.1.100` and `3.1.200`. These version trains were created to align with Visual Studio versions, like `16.4` and `16.5`. We do this because those same core SDK components are shared between Visual Studio and the .NET SDK, and need to stay in alignment. In addition, new major versions of those components, possibly containing a new language version, can be delivered in these updates. We expect that workload manifests will need to be re-published for each SDK version train. That's an unfortunate requirement, however, the SDK version trains are a compatibility boundary that we would like to maintain.
+Another benefit of the existing monolithic SDK is that the workloads it includes are known to be compatible with core SDK components, like the C# compiler, NuGet, MSBuild, and the SDK targets. Over time, we have developed the concept of an SDK feature bands. These are represented by SDK version hundreds bands like `3.1.100` and `3.1.200`. These feature bands align with Visual Studio versions, like `16.4` and `16.5`. We do this because those same core SDK components are shared between Visual Studio and the .NET SDK. In addition, new major versions of those components, possibly containing a new language version, can be delivered in feature bands. We expect that workload manifests will need to be re-published for each SDK feature band. 
 
 ## Timing
 
