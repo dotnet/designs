@@ -254,7 +254,7 @@ public static class HttpHandlerFactory
 }
 ```
 
-```
+```c#
 // System.Net.Http.dll
 public HttpClientHandler ()
 {
