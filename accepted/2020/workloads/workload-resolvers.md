@@ -9,7 +9,7 @@ In .NET 5, we will add support for iOS and Android.  The .NET SDK (formerly know
 
 ## Experiences
 
-- Projects using workloads just work if the workloads are installed
+- Projects dependent on a workload just work if the workload is installed
 - When opening a project in Visual Studio where the project depends on a workload that is not installed, Visual Studio will use the in-product acquisition experience to pop up a dialog box that notifies the developer what workloads are required, where they can click through to install the workload.
 - When building a project from the command line where the project depends on a workload that is not installed, a friendly error message will be generated specifying which workloads are required, and how to install them (ie by running the VS installer)
 - Improve existing experiences involving SDK resolvers
@@ -39,13 +39,13 @@ For .NET 5, iOS, Android, and WPF/Windows Forms project will all use the same `M
 
 The bulk of functionality from workloads will be contained in workload "packs", which will be the unit of delivery for workloads.  This will include MSBuild targets and tasks.  The assets from the packs will be laid out under the dotnet root folder, probably in `packs/<Pack ID>/<Pack Version>` or a similar folder.
 
-Workloads will also provide a manifest package which describes which packs are necessary for which workloads.  The manifest will specify the name and version for each pack that is available for a given .NET SDK release band, as well as which packs are required for each logical workload.  The manifest for workloads will be present even when the workloads it describes are not installed.
+Workloads will also provide a manifest package which describes which packs are necessary for which workloads.  The manifest will specify the name and version for each pack that is available for a given .NET SDK feature band, as well as which packs are required for each logical workload.  The manifest for workloads will be present even when the workloads it describes are not installed.
 
 ### Workload Manifest Targets Files
 
 In addition to the manifest file itself (likely in json format), the workload manifest package will include a `WorkloadManifest.targets` file which should import the necessary .targets files from the workload pack if a project depends on the workload.  The `WorkloadManifest.targets` files from all workload manifests will be imported into all projects that use Microsoft.NET.Sdk.
 
-The `WorkloadManifest.targets` should use MSBuild Sdk imports to import .targets files from an workload pack.  This should be done conditionally based on properties that determine whether the workload should be used.  For example, the Android workload manifest targets file might look like this:
+The `WorkloadManifest.targets` should use MSBuild Sdk imports to import .targets files from a workload pack.  This should be done conditionally based on properties that determine whether the workload should be used.  For example, the Android workload manifest targets file might look like this:
 
 ```xml
 <Import Project="Sdk.targets" Sdk="Xamarin.Android.Sdk"
@@ -96,7 +96,7 @@ This would import the iOS targets from the Xamarin.iOS.Sdk.15.0 workload pack if
 
 Workloads may also provide MSBuild logic in an `AutoImport.props` file in the Sdk folder of the workload pack which will be imported before the body of the project file.  We expect this to be use for default globs, for example to specify that all .xaml files should be included as `Page` items.
 
-However, `AutoImport.props` files from workloads are subject to restrictions and must be carefully authored.  This is because since they need to be imported before the body of the project is evaluated, they can't be included conditionally based on the properties in the project that define whether the workload is in use.  So the `AutoImport.props` files from all workload packs will be imported for all projects using Microsoft.NET.Sdk.
+However, `AutoImport.props` files from workloads are subject to restrictions and must be carefully authored.  This is because since they need to be imported before the body of the project is evaluated, they can't be included conditionally based on the properties in the project that define whether the workload is in use.  So the `AutoImport.props` files from all workload packs will be imported for all projects using `Microsoft.NET.Sdk`.
 
 MSBuild uses multiple phases for evaluation, and properties and imports are evaluated in a phase before items.  This means it is possible to have conditions on item or `ItemGroup` elements in a .props file that depend on properties that are defined in the body of the project or in .targets files.
 
@@ -177,7 +177,7 @@ However, if the requested SDK name is `Microsoft.NET.SDK.WorkloadAutoImportProps
 The .NET SDK (Microsoft.NET.Sdk) should:
 
 - Set the `WorkloadManifestRoot` property to a path where workload manifest packages for the current version band will be laid out.
-  - This should be `<DOTNET ROOT>/workloadmanifests/<VERSION BAND>/`
+  - This should be `<DOTNET ROOT>/workloadmanifests/<FEATURE VERSION BAND>/`
   - For example, `c:\Program Files\dotnet\workloadmanifests\5.0.100\`
   - Workload manifest packages should be laid out in folders under the root corresponding to the name of the workload manifest, but should not include a version in the path.  They should be updated in-place.  This allows the SDK to import all of the active `WorkloadManifest.targets` files with a simple wildcard import
 - Include the following .targets import:
@@ -199,7 +199,7 @@ The .NET SDK (Microsoft.NET.Sdk) should:
 
 When the VS project system loads a project, it should check the evaluation result for `MissingWorkloadPack` items.  If there are any, then it should raise the VS event to veto the project load and trigger the in-product acquisition experience for those workloads.
 
-In the same way that the SDK error generation does, the project system should map from the missing workload packs to the missing workloads via the workload manifests.  Additionally, it will need to map from the workload IDs that the .NET SDK uses to the right IDs that VS will use to install the workloads.  That mapping should either be defined in the workload manifest or in another file that is part of the same packgae.
+In the same way that the SDK error generation does, the project system should map from the missing workload packs to the missing workloads via the workload manifests.  Additionally, it will need to map from the workload IDs that the .NET SDK uses to the right IDs that VS will use to install the workloads.  That mapping should either be defined in the workload manifest or in another file that is part of the same package.
 
 QUESTION: Will it be OK to put this mapping of .NET workload IDs to VS workload/component IDs in the workload manifest packages?  Or do we need to supply it some other way?
 
