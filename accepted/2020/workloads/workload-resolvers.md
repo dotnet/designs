@@ -29,7 +29,7 @@ For .NET 5, iOS, Android, and WPF/Windows Forms project will all use the same `M
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0-android42</TargetFramework>
+    <TargetFramework>net5.0-android21</TargetFramework>
   </PropertyGroup>
 
 </Project>
