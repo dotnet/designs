@@ -195,7 +195,7 @@ Platform-neutral assemblies, i.e. assemblies that target a platform-neutral TFM 
 
 When generating a NuGet package using MSBuild, any platform minimum version constraints expressed in the project file will be listed in the `.nuspec`  manifest in a `<platformInfo>` child of the `<metadata>` element. This element and all of its children are optional. They expose the same information as the assembly annotation attributes, but avoid the need for consumers to read the assembly metadata. This could potentially be validated and/or automated by NuGet..
 
-Within the `<platformInfo>` there are child elements corresponding to the TFM short names (used by NuGet as the folder name) of the reference assemblies in the NuGet. If the element represents a platform-specific TFM (e.g. `net5-ios14.0` or `net6-android9.0`) then it must have a `minimumVersion` attribute representing the minimum platform version for that platform:
+Within the `<platformInfo>` element, there are child elements corresponding to the TFM short names (used by NuGet as the folder name) of the reference assemblies in the NuGet. If the element represents a platform-specific TFM (e.g. `net5.0-ios14.0` or `net6.0-android9.0`) then it must have a `minimumVersion` attribute representing the minimum platform version for that platform:
 
 ```xml
 <metadata>
