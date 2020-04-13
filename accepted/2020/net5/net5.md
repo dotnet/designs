@@ -591,10 +591,10 @@ Examples:
 
 * `net5.0`
   * `NETCOREAPP`, `NETCOREAPP3_1` (for backwards compatibility)
-  * `NET`, `NET5_0`  
+  * `NET`, `NET5_0`
 * `net6.0`
   * (same as `net5.0`)
-  * `NET6_0`  
+  * `NET6_0`
 * `net5.0-ios13.0`
   * (same as `net5.0`)
   * `IOS`, `IOS13_0`
