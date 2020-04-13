@@ -311,14 +311,14 @@ version is largely irrelevant, for example WinForms and WPF. Whether or not the
 template will put an OS version in the `<TargetFramework>` is up to each
 application model. Based on conversations, it seems we'll be landing on this:
 
-| TFM             | Project file includes OS version
-|-----------------|---------------------------------
-| net5.0-android  | Yes
-| net5.0-ios      | Yes
-| net5.0-macos    | Yes
-| net5.0-tvos     | Yes
-| net5.0-watchos  | Yes
-| net5.0-windows  | No
+TFM             | Project file includes OS version
+----------------|---------------------------------
+net5.0-android  | Yes
+net5.0-ios      | Yes
+net5.0-macos    | Yes
+net5.0-tvos     | Yes
+net5.0-watchos  | Yes
+net5.0-windows  | No
 
 Please note that by being able to put the OS version into the TFM one can also
 multi-target between OS versions:
@@ -376,25 +376,25 @@ maintainers some idea of what's available to them.
 
 These are the relevant MSBuild properties:
 
-| Property                              | Meaning                         | Examples                         |
-|---------------------------------------|---------------------------------|----------------------------------|
-| `TargetFramework` (TFM)               | The friendly name               | `net4`, `netcoreapp3.0`          |
-| `TargetFrameworkIdentifier` (TFI)     | The long name                   | `.NETFramework` or `.NETCoreApp` |
-| `TargetFrameworkVersion` (TFV)        | The version number              | `2`, `3.0`, `3.1`                |
-| `TargetFrameworkProfile` (TFP)        | The profile                     | `Client` or `Profile124`         |
-| `TargetPlatformIdentifier` (TPI)      | The OS platform                 | `iOS`, `Android`, `Windows`      |
-| `TargetPlatformVersion` (TPV)         | The OS platform version         | `12.0` or `13.0`                 |
-| `TargetPlatformMinVersion` (TPMV)     | The minimum OS platform version | `12.0` or `13.0`                 |
+Property                              | Meaning                         | Examples
+--------------------------------------|---------------------------------|---------------------------------
+`TargetFramework` (TFM)               | The friendly name               | `net4`, `netcoreapp3.0`
+`TargetFrameworkIdentifier` (TFI)     | The long name                   | `.NETFramework` or `.NETCoreApp`
+`TargetFrameworkVersion` (TFV)        | The version number              | `2`, `3.0`, `3.1`
+`TargetFrameworkProfile` (TFP)        | The profile                     | `Client` or `Profile124`
+`TargetPlatformIdentifier` (TPI)      | The OS platform                 | `iOS`, `Android`, `Windows`
+`TargetPlatformVersion` (TPV)         | The OS platform version         | `12.0` or `13.0`
+`TargetPlatformMinVersion` (TPMV)     | The minimum OS platform version | `12.0` or `13.0`
 
 We're going to map the TFMs as follows:
 
-| TF                 | TFI           | TFV     | TFP | TPI     | TPV | TPMV
-|--------------------|---------------|---------|-----|---------|-----|----------------
-| net4.X             | .NETFramework | 4.X     |     |         |     |
-| net5.0             | .NETCoreApp   | 5.0     |     |         |     |
-| net5.0-androidX.Y  | .NETCoreApp   | 5.0     |     | Android | X.Y | X.Y (defaulted)
-| net5.0-iosX.Y      | .NETCoreApp   | 5.0     |     | iOS     | X.Y | X.Y (defaulted)
-| net5.0-windowsX.Y  | .NETCoreApp   | 5.0     |     | Windows | X.Y | X.Y (defaulted)
+TF                 | TFI           | TFV     | TFP | TPI     | TPV | TPMV
+-------------------|---------------|---------|-----|---------|-----|----------------
+net4.X             | .NETFramework | 4.X     |     |         |     |
+net5.0             | .NETCoreApp   | 5.0     |     |         |     |
+net5.0-androidX.Y  | .NETCoreApp   | 5.0     |     | Android | X.Y | X.Y (defaulted)
+net5.0-iosX.Y      | .NETCoreApp   | 5.0     |     | iOS     | X.Y | X.Y (defaulted)
+net5.0-windowsX.Y  | .NETCoreApp   | 5.0     |     | Windows | X.Y | X.Y (defaulted)
 
 Specifically:
 
@@ -542,12 +542,12 @@ Framework 1.0), we need to keep it that way. To avoid surprises, we'll by defaul
 use dotted version numbers in project templates to push developers towards being
 explicit.
 
-| Framework      | Identifier    | Version| Comment
-|----------------|---------------|--------|----------------------------------
-| net5           | .NETCoreApp   | 5.0    | Will work, but shouldn't be used.
-| net5.0         | .NETCoreApp   | 5.0    |
-| net10          | .NETFramework | 1.0    |
-| net10.0        | .NETCoreApp   | 10.0   |
+Framework      | Identifier    | Version| Comment
+---------------|---------------|--------|----------------------------------
+net5           | .NETCoreApp   | 5.0    | Will work, but shouldn't be used.
+net5.0         | .NETCoreApp   | 5.0    |
+net10          | .NETFramework | 1.0    |
+net10.0        | .NETCoreApp   | 10.0   |
 
 ### Preprocessor Symbols
 
@@ -627,10 +627,10 @@ There are some places in the IDE where targeting information is displayed:
 
 ![](pic06.png)
 
-| Rule                                                                                                        | Affected UI                                                        |
-|-------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| For most UI, we should use the TFM friendly name (for example, `netcoreapp3.1`, `net5.0`, or `net5.0-ios`). | Solution Explorer, Editor Context Switcher, Debug Context Switcher |
-| For cases where we use branded display names, we should use the name .NET 5.                                | Project Properties                                                 |
+Rule                                                                                                        | Affected UI
+------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------
+For most UI, we should use the TFM friendly name (for example, `netcoreapp3.1`, `net5.0`, or `net5.0-ios`). | Solution Explorer, Editor Context Switcher, Debug Context Switcher
+For cases where we use branded display names, we should use the name .NET 5.                                | Project Properties
 
 ### Related work
 
