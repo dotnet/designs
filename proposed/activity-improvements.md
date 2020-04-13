@@ -306,7 +306,8 @@ namespace System.Diagnostics
         public Activity? StartActivity(
                             string name,
                             ActivityKind kind,
-                            ActivityContext parentContext, IEnumerable<KeyValuePair<string, string?>>? tags = null,
+                            ActivityContext parentContext, 
+                            IEnumerable<KeyValuePair<string, string?>>? tags = null,
                             IEnumerable<ActivityLink>? links = null,
                             DateTimeOffset startTime = default);
 
