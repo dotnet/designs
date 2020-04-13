@@ -280,6 +280,86 @@ We'll have the following TFMs:
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | Tizen, Unity... | Will follow the Xamarin model                              |                                   |
 
+### Precedences
+
+We need to decide what precedences we want the new TFMs to have in relation to
+the old ones as well as in relation with the new universally portable TFM
+`net5.0` (and higher).
+
+Let's look at two examples:
+
+* **Example A**
+  * Project targets `net6.0-ios`
+  * Package offers
+    * `net6.0`
+    * `net5.0-ios`
+* **Example B**
+  * Project targets `net6.0-ios`
+  * Package offers
+    * `net6.0`
+    * `xamarin.ios`
+
+There are effectively two options:
+
+1. Prefer platform-specific assets, regardless how old their version is.
+2. Prefer the assets that are closer in version number.
+
+Example | Option (1)    | Option (2)
+--------|---------------|--------------
+A       | `net5.0-ios`  | `net6.0`
+B       | `xamarin.ios` | `net6.0`
+
+We prefer Option (2). @mhutch described it best:
+
+> I prefer the Option (2) because it allows re-converging to platform-neutral:
+> in both A and B, if `net6.0` added functionality that meant that the iOS
+> specific implementation was no longer necessary, then the package would not
+> need to have `net6.0-ios` assets.
+>
+> If the `net5.0-ios` assembly has iOS-specific _functionality_, then when the
+> package adds `net6.0` it should also add `net6.0-ios`, else it feels to me
+> like a broken package.
+
+@dsplaisted also added this:
+
+> One of the main benefits of the target framework changes in .NET 5 and on is
+> that it aligns the version numbers of the platform specific targets
+> (`net5.0-ios`) with the portable target (`net5.0`). This makes it easy to
+> understand the version compatibility rules. It also means that we can have a
+> simple and easy understand rule for choosing the best asset that is more
+> likely to produce a result that matches the intent of a package author.
+
+And finally @ericstj added that the current model (where we prefer
+platform-specific assets, regardless of version number) isn't helpful:
+
+> Option (2) makes sense to me. I don't recall a place where we've actually
+> preferred that RIDs had precedence over TFM. Usually it's a problem and
+> results in bloated packages. I like reversing the precedence here.
+
+This leads to these rules:
+
+1. Select list of applicable assets
+   * This will include `netX.Y`, `netX.Y-*`, and `xamarin.*` if they are
+     considered compatible
+   * This will not include assets that use an OS/OS version that is incompatible
+     with the project.
+2. Group `netX.Y*` by X.Y and sort groups from highest to lowest
+3. If the first group contains both a `netX.Y` and a `netX.Y-*` or a
+   `xamarin.*`, pick `netX.Y-*`. If multiple entries for `netX.Y-*` exist, pick
+   the highest version.
+4. If no groups were produced, pick the appropriate TFM based on existing rules
+   (this covers .NET Standard, PCLs, and general asset target fallback).
+
+Then intention is:
+
+1. We slice the package assets to find the latest .NET version that is
+   compatible with the project.
+2. If the latest .NET version provides both a platform-specific- and a portable
+   asset, we'll prefer the platform-specific asset.
+3. If multiple platform-specific assets exist, we'll use the one with the
+   highest compatible OS version.
+4. Stay backwards compatible with existing .NET Standard rules.
+
 ### OS versions
 
 The TFM will support an optional OS version, such as:
