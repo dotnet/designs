@@ -129,16 +129,15 @@ iOS 15. After upgrading Miguel gets the following diagnostic:
 
 > 'UIApplicationExitsOnSuspend' has been removed since iOS 15.0
 
-Doh! After reading more details, he releases that he can just stop calling this
+Doh! After reading more details, he realizes that he can just stop calling this
 API because Apple automatically suspends apps leaving the foreground when they
-don't require background execution. However, since he still supports iOS 12, he
-need
+don't require background execution. So he deletes the code that calls the API.
 
 ### Finding usage of platform-specific APIs
 
 Alejandra is working at Fabrikam, where she's tasked with porting their asset
-management system to .NET Core. The application consists of several web
-services, a desktop application, and a set of libraries that are shared.
+management system to .NET 5. The application consists of several web services, a
+desktop application, and a set of libraries that are shared.
 
 She begins by porting the core business logic libraries to .NET 5. After
 porting, she's getting a diagnostic in the code below:
