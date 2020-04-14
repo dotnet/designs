@@ -262,6 +262,9 @@ namespace System.Runtime.InteropServices
         // public static OSPlatform Windows { get; }
         public static OSPlatform Android { get; }
         public static OSPlatform iOS { get; }
+        public static OSPlatform macOS { get; }
+        public static OSPlatform tvOS { get; }
+        public static OSPlatform watchOS { get; }
     }
 
     public partial static class RuntimeInformation
