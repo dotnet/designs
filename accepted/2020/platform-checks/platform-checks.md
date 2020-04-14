@@ -234,7 +234,7 @@ After that, the diagnostic disappears automatically.
 ### Non-Goals
 
 * Modelling partially portable APIs (that is APIs are applicable to more than
-  one platform but no all platforms). Those should Be modeled as capability
+  one platform but not all platforms). Those should be modeled as capability
   APIs, as as `RuntimeInformation.IsDynamicCodeSupported` for ref emit. This
   would be a separate analyzer.
 * Shipping the platform-specific analyzer and/or annotations out-of-band.
@@ -308,11 +308,11 @@ namespace System.Runtime.Versioning
                     AllowMultiple=false, Inherited=true)]
     public sealed class AddedInOSPlatformAttribute : OSPlatformAttribute
     {
-        public PlatformSpecificAttribute(string osPlatform,
-                                         int major,
-                                         int minor,
-                                         int build,
-                                         int revision);
+        public AddedInOSPlatformAttribute(string osPlatform,
+                                          int major,
+                                          int minor,
+                                          int build,
+                                          int revision);
     }
 
     [AttributeUsage(AttributeTargets.Assembly |
@@ -326,11 +326,11 @@ namespace System.Runtime.Versioning
                     AllowMultiple=false, Inherited=true)]
     public sealed class RemovedInOSPlatformAttribute : OSPlatformAttribute
     {
-        public PlatformSpecificAttribute(string osPlatform,
-                                         int major,
-                                         int minor,
-                                         int build,
-                                         int revision);
+        public RemovedInOSPlatformAttribute(string osPlatform,
+                                            int major,
+                                            int minor,
+                                            int build,
+                                            int revision);
     }
 
     [AttributeUsage(AttributeTargets.Assembly |
@@ -344,11 +344,11 @@ namespace System.Runtime.Versioning
                     AllowMultiple=false, Inherited=true)]
     public sealed class ObsoletedInOSPlatformAttribute : OSPlatformAttribute
     {
-        public PlatformSpecificAttribute(string osPlatform,
-                                         int major,
-                                         int minor,
-                                         int build,
-                                         int revision);
+        public ObsoletedInOSPlatformAttribute(string osPlatform,
+                                              int major,
+                                              int minor,
+                                              int build,
+                                              int revision);
         public string Url { get; set; }
     }
 }
@@ -372,8 +372,8 @@ determined by (1).
 
 If (2) is platform-specific it is combined with (1):
 
-* If the platforms between and (2) are disjoint (such as iOS and Windows), the
-  information from (1) is discarded.
+* If the platforms between (1) and (2) are disjoint (such as iOS and Windows),
+  the information from (1) is discarded.
 * Otherwise the platform context's minimum version is the maximum of the
   versions determined by (1) and (2).
 
