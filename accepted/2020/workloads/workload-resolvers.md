@@ -160,10 +160,9 @@ We will create an MSBuild SDK resolver to handle workloads.  Its behavior should
 - Look up the Name of the requested SDK in the workload manifests, matching to the workload pack IDs
 - If a matching workload pack is found in a workload manifest, then get its version number, and use that version number to generate the path where that workload pack would be installed.  This should be the following, or similar: `<DOTNET ROOT>/packs/<PACK ID>/<PACK VERSION>/Sdk`
 - If the workload pack is installed (ie the path (except the final `Sdk`) exists), then return the generated path
-- If the workload pack is not installed, then the returned `SdkResult` should:
-  - Have `Success` set to true
-  - Return no SDK paths
-  - Include a `MissingWorkloadPack` item to add to the evaluation result.  The identity should be the name of the workload pack / MSBuild SDK that was requested.  It should have `Version` metadata set to the version that was read from the workload manifest.
+- If the workload pack is not installed, then the resolver should return a successful `SdkResult` which:
+  - Has no resolved SDK Paths
+  - Includes a `MissingWorkloadPack` item to add to the evaluation result.  The identity should be the name of the workload pack / MSBuild SDK that was requested.  It should have `Version` metadata set to the version that was read from the workload manifest.
 
 However, if the requested SDK name is `Microsoft.NET.SDK.WorkloadAutoImportPropsLocator`, then the resolver should instead behave as follows:
 
@@ -213,7 +212,7 @@ The additional features we plan to add to MSBuild SDK resolvers will also enable
 
 ## NuGet SDK Resolver
 
-MSBuild includes a [NuGet-based MSBuild SDK resolver](https://docs.microsoft.com/en-us/visualstudio/msbuild/how-to-use-project-sdk?view=vs-2019#how-project-sdks-are-resolved).  It will be used if a version number is specified for the SDK, either in the SDK attribute or in a global.json file.
+MSBuild includes a [NuGet-based MSBuild SDK resolver](https://docs.microsoft.com/en-us/visualstudio/msbuild/how-to-use-project-sdk?view=vs-2019#how-project-sdks-are-resolved) which allow custom SDKs to be downloaded via NuGet.  If a version number is specified for the SDK, either in the SDK attribute or in a global.json file, the NuGet SDK Resolver will try to resolve that SDK to a NuGet package with the specified version number..
 
 The MSBuild evaluation blocks on the NuGet restore of the SDK packages, which can include network operations.  This can cause a poor experience in VS, as it can happen on the UI thread.
 
