@@ -275,10 +275,10 @@ namespace System.Runtime.InteropServices
 
         // Allows checking for the OS with a < version comparison
         // Used to guard APIs that were obsoleted or removed in the given OS release.
-        public static bool IsOSPlatformAndEarlier(OSPlatform osPlatform, int major);
-        public static bool IsOSPlatformAndEarlier(OSPlatform osPlatform, int major, int minor);
-        public static bool IsOSPlatformAndEarlier(OSPlatform osPlatform, int major, int minor, int build);
-        public static bool IsOSPlatformAndEarlier(OSPlatform osPlatform, int major, int minor, int build, int revision);
+        public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major);
+        public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor);
+        public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor, int build);
+        public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor, int build, int revision);
     }
 }
 
@@ -410,7 +410,7 @@ public void Case2()
 ```
 
 Diagnostics (2) and (3) are analogous except the guard is provided by
-`RuntimeInformation.IsOSPlatformAndEarlier()`.
+`RuntimeInformation.IsOSPlatformEarlierThan()`.
 
 ### Code Fixers
 
