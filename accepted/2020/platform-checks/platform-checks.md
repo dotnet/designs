@@ -290,13 +290,13 @@ namespace System.Runtime.InteropServices
 
 namespace System.Runtime.Versioning
 {
-    public abstract class OSPlatformAttribute : Attribute
+    public abstract class OSPlatformVersionAttribute  : Attribute
     {
-        protected OSPlatformAttribute(string osPlatform,
-                                      int major,
-                                      int minor,
-                                      int build,
-                                      int revision);
+        protected OSPlatformVersionAttribute (string osPlatform,
+                                              int major,
+                                              int minor,
+                                              int build,
+                                              int revision);
         public string PlatformIdentifier { get; }
         public int Major { get; }
         public int Minor { get; }
@@ -313,9 +313,9 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
                     AllowMultiple=false, Inherited=true)]
-    public sealed class AddedInOSPlatformAttribute : OSPlatformAttribute
+    public sealed class AddedInOSPlatformVersionAttribute  : OSPlatformVersionAttribute
     {
-        public AddedInOSPlatformAttribute(string osPlatform,
+        public AddedInOSPlatformVersionAttribute (string osPlatform,
                                           int major,
                                           int minor,
                                           int build,
@@ -331,9 +331,9 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
                     AllowMultiple=false, Inherited=true)]
-    public sealed class RemovedInOSPlatformAttribute : OSPlatformAttribute
+    public sealed class RemovedInOSPlatformVersionAttribute  : OSPlatformVersionAttribute
     {
-        public RemovedInOSPlatformAttribute(string osPlatform,
+        public RemovedInOSPlatformVersionAttribute (string osPlatform,
                                             int major,
                                             int minor,
                                             int build,
@@ -349,9 +349,9 @@ namespace System.Runtime.Versioning
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
                     AllowMultiple=false, Inherited=true)]
-    public sealed class ObsoletedInOSPlatformAttribute : OSPlatformAttribute
+    public sealed class ObsoletedInOSPlatformVersionAttribute  : OSPlatformVersionAttribute
     {
-        public ObsoletedInOSPlatformAttribute(string osPlatform,
+        public ObsoletedInOSPlatformVersionAttribute (string osPlatform,
                                               int major,
                                               int minor,
                                               int build,
@@ -366,7 +366,7 @@ namespace System.Runtime.Versioning
 To determine the platform context of the call site the analyzer must consider
 the following two configurations:
 
-1. **Call-site**. Application of `AddedInOSPlatformAttribute` to the containing
+1. **Call-site**. Application of `AddedInOSPlatformVersionAttribute` to the containing
    member, type, module, or assembly.
 
 2. **Project** The project TFMs and `TargetPlatformMinVersion`. If the project
@@ -432,8 +432,9 @@ provides here is educational and avoids having to lookup the correct version
 numbers.
 
 For diagnostic (1) we should also offer a fixer that allows it to be marked as
-platform specific by applying `AddedInOSPlatformAttribute`. If the attribute is
-already applied, it should offer to change the platform and version.
+platform specific by applying `AddedInOSPlatformVersionAttribute`. If the
+attribute is already applied, it should offer to change the platform and
+version.
 
 ## Q & A
 
