@@ -95,7 +95,7 @@ After doing this, he gets a diagnostic in this code:
 > 'NSFizzBuff' requires iOS 14 or later.
 
 ```C#
-static void ProvideExtraPop()
+private static void ProvideExtraPop()
 {
     NSFizzBuff();
 }
@@ -105,7 +105,7 @@ He invokes the Roslyn code fixer which suggests to guard the call. This results
 in the following code:
 
 ```C#
-static void ProvideExtraPop()
+private static void ProvideExtraPop()
 {
     if (RuntimeInformation.IsOSPlatformOrLater(OSPlatform.iOS, 14))
         NSFizzBuff();
