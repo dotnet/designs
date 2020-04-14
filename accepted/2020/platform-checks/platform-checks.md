@@ -231,6 +231,9 @@ After that, the diagnostic disappears automatically.
       dependency.
     - Library consumers don't have to install a NuGet package to get diagnostics
       when using platform-specific APIs
+* The analyzer must be satisfy the quality bar in order to be turned on by
+  default
+    - No false positives, low noise.
 
 ### Non-Goals
 
