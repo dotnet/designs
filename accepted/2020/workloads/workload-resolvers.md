@@ -104,7 +104,7 @@ So workloads may include MSBuild items in the `AutoImport.props` file if they ar
 
 Note that in contrast to the `WorkloadManifest.targets` file, which is part of the workload manifest package, the `AutoImport.props` files are part of the workload packs (under the Sdk folder).  This is so that they can be imported only if the workload is installed, rather than imported for all workloads whether they are installed or not.  This reduces the impact of a bug in an `AutoImport.props` file, and means that if there is an issue in the .props file, it can be worked around by uninstalling the workload.
 
-As an example, here is a slightly simplified version of what the .props file for WPF might look like:
+As an example, here is a slightly simplified version of what the `AutoImport.props` file for WPF might look like:
 
 ```xml
 <Project>
