@@ -118,7 +118,9 @@ After upgrading to iOS 14 Miguel also got the following diagnostic:
 
 > 'UIApplicationExitsOnSuspend' has been deprecated since iOS 13.1
 
-Miguel decides that he'll tackle that problem later as he needs to ship now.
+Miguel decides that he'll tackle that problem later as he needs to ship now,so
+he invokes the generic "Suppress in code" code fixer which surrounds his code
+with `#pragma warning disable`.
 
 ### Detecting removal of OS APIs
 
