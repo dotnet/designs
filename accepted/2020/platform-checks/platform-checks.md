@@ -451,6 +451,23 @@ We have an existing project [dotnet/platform-compat], available as the
 This is intended to become the productized version of
 [Microsoft.DotNet.Analyzers.Compatibility].
 
+### What set of version numbers are you going to use?
+
+Specifically, are we going to use the "marketing" version numbers or what the
+system returns as version numbers?
+
+This is related to the problem that some operating systems, such as Windows,
+have quirked the OS API to lie to the application in order to make it compatible
+(because way too often apps get version checks wrong).
+
+The version is part of the reason why we don't expose a version number but
+instead perform the checking on behalf of the user. In general, the
+implementation will do whatever it needs to get the real version number.
+
+As far as the reference assembly is concerned, the expectation is that the
+bindings will be annotated with the version information as documented by the
+native operating system SDK.
+
 [dotnet/platform-compat]: https://github.com/dotnet/platform-compat
 [API Analyzer]: https://devblogs.microsoft.com/dotnet/introducing-api-analyzer/
 [Microsoft.DotNet.Analyzers.Compatibility]: https://www.nuget.org/packages/Microsoft.DotNet.Analyzers.Compatibility
