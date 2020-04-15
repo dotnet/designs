@@ -14,9 +14,9 @@ There are three different OS version values that may be relevant for apps and li
 
 The OS API Version is part of the target framework, e.g. `net5.0-ios15.0` has an OS API version of `15.0`. It affects which framework reference assemblies the app is compiled against. It does not affect which OS versions the app can run on (for well behaved platforms where backwards ABI compatibility is preserved), and hence app developers should target the latest OS API version by default. There are some exceptions: an app project may target an older OS API version to allow the project to continue to build on older versions of the SDK that do not support the more recent API versions, or a developer may wish to limit the API surface shown in IntelliSense so that it’s easier to avoid newer APIs. The latter case could perhaps be better supported in future by IDE experiences such filtering IntelliSense by platform version.
 
-For libraries that are distributed as NuGets, it is useful to be able to multi-target across multiple API versions. This allows NuGets to access features available in newer API versions while continuing to ship updates for consumption by apps and libraries that (for whatever reason) target older API versions. By making the OS API version part of the target framework moniker (TFM), we take advantage of all the existing TFM-based mechanisms for multi-targeting builds against multiple versions of the API, selecting multi-targeted builds of a library from NuGets, and validating binary compatibility of references.
+For libraries that are distributed as NuGet packages, it is useful to be able to multi-target across multiple API versions. This allows NuGet packages to access features available in newer API versions while continuing to ship updates for consumption by apps and libraries that (for whatever reason) target older API versions. By making the OS API version part of the target framework moniker (TFM), we take advantage of all the existing TFM-based mechanisms for multi-targeting builds against multiple versions of the API, selecting multi-targeted builds of a library from NuGet packages, and validating binary compatibility of references.
 
-The OS API Version is expected to have a clear and obvious mapping to an OS version. For example, the API binding for iOS 15.0 would have an API version of 15.0. However, small increases in the servicing or revision components of the API version are permitted for revisions to the bindings, for example API version 15.0.1 might be a revised binding for iOS 15.0.
+The OS API Version is expected to have a clear and obvious mapping to an OS version. For example, the API binding for iOS 15.0 would have an API version of 15.0. However, small increases in the last two components of the API version are permitted for revisions to the bindings, for example API version 15.0.1 might be a revised binding for iOS 15.0.
 
 Per the [.NET 5 TFM spec](https://github.com/dotnet/designs/blob/master/accepted/2020/net5/net5.md), the MSBuild targets will extract this value from the TFM and assign it to the `TargetPlatformVersion` property.
 
@@ -48,7 +48,7 @@ public abstract class PlatformAvailabilityAttribute
 {
     internal PlatformAvailabilityAttribute(
         string platformIdentifier,
-        int majorVersion, int minorVersion, int servicingVersion, int revisionVersion
+        int majorVersion, int minorVersion, int buildVersion, int revisionVersion
         string message
     ) {}
     public AvailabilityKind AvailabilityKind { get; }
@@ -80,10 +80,10 @@ public sealed class IntroducedAttribute : PlatformAvailabilityAttribute
         string platform,
         int majorVersion,
         int minorVersion = 0,
-        int servicingVersion = 0,
+        int buildVersion = 0,
         int revisionVersion = 0,
         string message = null
-    ) : base(platform, majorVersion, minorVersion, servicingVersion, revisionVersion, message) {}
+    ) : base(platform, majorVersion, minorVersion, buildVersion, revisionVersion, message) {}
 }
 ```
 
@@ -92,8 +92,8 @@ These attributes are used as follows:
 
 ```csharp
 [Introduced(PlatformIdentifier.macOS, 10, 2)]
-[Deprecated(PlatformIdentifier.macOS, 10, 9)
-[Removed(PlatformIdentifier.macOS, 10, 12, 1)
+[Deprecated(PlatformIdentifier.macOS, 10, 9)]
+[Removed(PlatformIdentifier.macOS, 10, 12, 1)]
 public class Foo : NSObject { ... }
 ```
 
@@ -103,8 +103,8 @@ If and when C# support target typing for enums, we could add convenience overloa
 
 ```csharp
 [Introduced (.macOS, 10, 1)]
-[Obsoleted (.macOS, 10, 8)
-[Removed (.macOS, 10, 12)
+[Obsoleted (.macOS, 10, 8)]
+[Removed (.macOS, 10, 12)]
 ```
 
 > ***NOTE***: These annotations are only needed on reference assemblies, as they are not used at runtime. They should be omitted or stripped from the implementation assemblies that are shipped as part of .NET, and it is recommended that third -party assemblies do so too. If any remain in a compiled app, they should be removed by the linker.
@@ -117,7 +117,7 @@ The following method will be added to the `RuntimeInformation` class in the `Sys
 
 ```csharp
 public static bool CheckOSVersion(
-    int majorVersion, int minorVersion = 0, int servicingVersion = 0
+    int majorVersion, int minorVersion = 0, int buildVersion = 0, int revisionVersion = 0
 );
 ```
 
@@ -136,7 +136,7 @@ There will be another method on `RuntimeInformation` that checks the OS as well 
 ```csharp
 public static bool CheckOS(
     string platformIdentifier,
-    int majorVersion, int minorVersion = 0, int servicingVersion = 0
+    int majorVersion, int minorVersion = 0, int buildVersion = 0, int revisionVersion = 0
 );
 ```
 
@@ -172,7 +172,7 @@ public sealed class OSMinimumVersionAttribute
 {
     public OSMinimumVersionAttribute(
         string platformIdentifier,
-        int majorVersion, int minorVersion, int servicingVersion
+        int majorVersion, int minorVersion, int buildVersion, int revisionVersion
     ) {}
     public string PlatformIdentifier { get; }
     public Version Version { get; }
@@ -189,7 +189,7 @@ Like the API annotation attributes, the `OSMinimumVersionAttribute` attribute is
 
 ## NuGet Manifest
 
-When generating a NuGet package using MSBuild, any platform minimum version constraints expressed in the project file will be listed in the `.nuspec` manifest in a `<platformInfo>` child of the `<metadata>` element. This element and all of its children are optional. They expose the same information as the assembly annotation attributes, but avoid the need for consumers to read the assembly metadata. This could potentially be validated and/or automated by NuGet..
+When generating a NuGet package using MSBuild, any platform minimum version constraints expressed in the project file will be listed in the `.nuspec` manifest in a `<platformInfo>` child of the `<metadata>` element. This element and all of its children are optional. They expose the same information as the assembly annotation attributes, but avoid the need for consumers to read the assembly metadata. This could potentially be validated and/or automated by NuGet.
 
 Within the `<platformInfo>` element, there are child elements corresponding to the TFM short names (used by NuGet as the folder name) of the reference assemblies in the NuGet. If the element represents a platform-specific TFM (e.g. `net5.0-ios14.0` or `net6.0-android9.0`) then it must have a `minimumVersion` attribute representing the minimum platform version for that platform:
 
@@ -237,3 +237,4 @@ There will be a Roslyn analyzer that will squiggle calls to any method or proper
 # See Also
 - [Swift](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html) `[@available](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html)` [attribute](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html)
 - [Xamarin.iOS/Mac](https://docs.microsoft.com/en-us/dotnet/api/objcruntime.availabilitybaseattribute?view=xamarin-ios-sdk-12) `AvailabilityBaseAttribute` and its subclasses
+
