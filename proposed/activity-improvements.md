@@ -34,14 +34,23 @@ The developer needs to wrap their region of code in a using statement that creat
 ### 2. Monitoring agent wants to listen to activities created from specific ActivitySource
 
 A monitoring agent can create a listener which represents their subscription to activity callbacks like this.
+
 ```C#
-IDisposable listener = source.AddActivityListener(
-                            listenToSource: (activitySource) => { ... },
-                            getActivityDataRequestUsingContext: (source, name, kind, parentContext, tags, links) => { ...},
-                            getActivityDataRequestUsingParentId: (source, name, kind, parentId, tags, links) => { ...},
-                            onActivityStarted: activity => { ... },
-                            onActivityStopped: activity => { ... });
+ActivityListener listener = new ActivityListener
+{
+    ActivityStopped = (activity) => { ... },
+    ActivityStarted = (activity) => { ... },
+    ShouldListenTo = (activitySource) => ...,
+    GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> options) => ...,
+    GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> options) => ... 
+};
+ActivitySource.AddActivityListener(listener);
+
+...
+    
+listener.Dispose();  
 ```
+
 It is up to the listener to do extract information from the Activity object and respond to the callbacks however they like, probably by serializing a message to a remote service that will aggregate the telemetry.
 
 [TODO]: We could flesh out what we expect it look like end-to-end to use this with OpenTelemetry and perhaps some UI? It would help newcomers understand but I don't think it is a blocking issue for the current set of collaborators.
@@ -84,16 +93,18 @@ Design
 [This is copied from Tarek's writeup in [the existing issue](https://github.com/dotnet/runtime/issues/31373) ]
 
 ## Rationale and Use Cases
+
 The proposal here is mainly targeting closing the gap between the .NET Libraries and OpenTelemetry (OT) tracing APIs (mainly the OT Span class). We also enhance and simplify the usage of the Activity for easier code patterns. Here are the details of this proposal:
 
 - .NET Libraries have the `Activity` class which the object allows libraries and apps to publish tracing information. OT currently under development and not released yet. OT currently proposing the `Span` class which mostly used for the same purpose of Activity. OT Span supports more properties than Activity which allows more tracing scenarios. This proposal is offering the additions needed to be added to the Activity class which helps to address the same scenarios that Span does and possibly allow OT to fully get rid of Span to reduce the confusion which developers can run into to decide if need to use Activity or use Span. We are introducing the following types and properties which will be used inside the Activity class:
-    - ActivityContext which conforms to the w3c TraceContext specification. The context contains the trace Id, Span Id, Trace state and Trace flags.
-    - ActivityLink which can point to ActivityContexts inside a single Trace or across different Traces. Links can be used to represent batched operations where Activity was initiated by multiple initiating Activities each representing a single incoming item being processed in the batch.
-    - ActivityKind describes the relationship between the Activity, its parents, and its children in a Trace.
-    - ActivityEvent to attach specific event to teh Activity. Events have a time associated with the moment when they are added to the Activity.
-    - Allow attaching any object to the Activity object through the `Set/GetCustomProperty` for the sake of the extendability without manually sub-classing Activity or maintaining a dictionary mapping activity to the other objects. Examples of that, OT implementation still depends on Activity and maintains a table mapping from Activity to Span. Another example is some teams were working around the lack of missing Links and Contexts features and manually doing extra work to include these features. Although we are adding the Links and Contexts, we can get more future scenarios to extend Activity (e.g. attaching the status codes/exceptions).
+  - ActivityContext which conforms to the w3c TraceContext specification. The context contains the trace Id, Span Id, Trace state and Trace flags.
+  - ActivityLink which can point to ActivityContexts inside a single Trace or across different Traces. Links can be used to represent batched operations where Activity was initiated by multiple initiating Activities each representing a single incoming item being processed in the batch.
+  - ActivityKind describes the relationship between the Activity, its parents, and its children in a Trace.
+  - ActivityEvent to attach specific event to teh Activity. Events have a time associated with the moment when they are added to the Activity.
+  - Allow attaching any object to the Activity object through the `Set/GetCustomProperty` for the sake of the extendability without manually sub-classing Activity or maintaining a dictionary mapping activity to the other objects. Examples of that, OT implementation still depends on Activity and maintains a table mapping from Activity to Span. Another example is some teams were working around the lack of missing Links and Contexts features and manually doing extra work to include these features. Although we are adding the Links and Contexts, we can get more future scenarios to extend Activity (e.g. attaching the status codes/exceptions).
 
 - The current usage pattern of the Activity is not neat. here is an example of the current usage:
+
 ```C#
 var activityListener = new DiagnosticSource("Azure.Core.Http");
 
@@ -133,17 +144,25 @@ We are simplifying the pattern to something like:
 ```
 
 - Last, we are introducing ActivitySource type which can be used to efficiently listening to Activities created from specific component/sources or all sources. It is now reasonable for a listener such as OpenTelemetry to observe Activity instrumentation from any code component in the app by the `ActivitySource.AddActivityListener()`. Previously OpenTelemetry would have needed appropriate  knowledge of the strings that would be used for DiagnosticSource name and IsEnabled() callbacks for each Activity it wanted to receive callbacks for. When trying to create a new Activity object through the new introduced factory methods `ActivitySource.StartActivity`, the listener will have the opportunity to get a callback to decide if interested in having the Activity object get created or it can be sampled out to avoid the object creation if nobody else is listening or other listeners are not interested in such activity too.
-When calling `ActivitySource.AddActivityListener()`, the provided callback `ListenToSource(activitySource)` will get called for every ActivitySource previously created and still active to decide if need to listen to Activities created from such ActivitySource. Also, this callback will get called for every future created ActivitySource.
+  When calling `ActivitySource.AddActivityListener()`, the provided callback `ListenToSource(activitySource)` will get called for every ActivitySource previously created and still active to decide if need to listen to Activities created from such ActivitySource. Also, this callback will get called for every future created ActivitySource.
 
 Here is example of how to create a listener for Activities events.
 
 ```C#
-    IDisposable listener = ActivitySource.AddActivityListener(
-                                listenToSource: (activitySource) => { ... },
-                                getActivityDataRequestUsingContext: (source, name, kind, parentContext, tags, links) => { ...},
-                                getActivityDataRequestUsingParentId: (source, name, kind, parentId, tags, links) => { ...},
-                                onActivityStarted: activity => { ... },
-                                onActivityStopped: activity => { ... });
+ActivityListener listener = new ActivityListener
+{
+    ActivityStopped = (activity) => { ... },
+    ActivityStarted = (activity) => { ... },
+    ShouldListenTo = (activitySource) => ...,
+    GetRequestedDataUsingParentId = (ref ActivityCreationOptions<string> options) => ...,
+    GetRequestedDataUsingContext = (ref ActivityCreationOptions<ActivityContext> options) => ... 
+};
+
+ActivitySource.AddActivityListener(listener);
+
+...
+    
+listener.Dispose();  
 ```
 
 ## Proposed API
@@ -157,19 +176,19 @@ namespace System.Diagnostics
     public enum ActivityKind
     {
         // Indicates that the Activity represents an internal operation within an application, as opposed to an operation with remote parents or children.
-        Internal = 1,
+        Internal = 0,
 
         /// Server activity represents request incoming from external component.
-        Server = 2,
+        Server = 1,
 
         /// Client activity represents outgoing request to the external component.
-        Client = 3,
+        Client = 2,
 
         /// Producer activity represents output provided to external components.
-        Producer = 4,
+        Producer = 3,
 
         /// Consumer activity represents output received from an external component.
-        Consumer = 5,
+        Consumer = 4,
     }
 }
 ```
@@ -191,9 +210,9 @@ namespace System.Diagnostics
         public ActivityTraceFlags TraceFlags { get; }
         public string? TraceState { get; }
 
-        public static bool operator ==(ActivityContext context1, ActivityContext context2);
-        public static bool operator !=(ActivityContext context1, ActivityContext context2) ;
-        public bool Equals(ActivityContext context);
+        public static bool operator ==(ActivityContext left, ActivityContext right);
+        public static bool operator !=(ActivityContext left, ActivityContext right) ;
+        public bool Equals(ActivityContext value);
         public override bool Equals(object? obj);
         public override int GetHashCode();
     }
@@ -201,23 +220,23 @@ namespace System.Diagnostics
 ```
 
 ### ActivityEvent
-```C#
 
+```C#
 namespace System.Diagnostics
 {
     /// A text annotation associated with a collection of attributes.
     /// Event has name and optionally has timestamps and attributes
-    public sealed class ActivityEvent
+    public struct ActivityEvent
     {
         /// Initializes a new instance of the <see cref="ActivityEvent"/> class.
         public ActivityEvent(string name) : this(name, DateTimeOffset.UtcNow, s_emptyAttributes);
         public ActivityEvent(string name, DateTimeOffset timestamp) : this(name, timestamp, s_emptyAttributes);
-        public ActivityEvent(string name, IReadOnlyDictionary<string, object> attributes);
-        public ActivityEvent(string name, DateTimeOffset timestamp, IReadOnlyDictionary<string, object> attributes);
+        public ActivityEvent(string name, IEnumerable<string, object> attributes);
+        public ActivityEvent(string name, DateTimeOffset timestamp, IEnumerable<string, object> attributes);
 
         public string Name { get; }
         public DateTimeOffset Timestamp { get; }
-        public IReadOnlyDictionary<string, object> Attributes { get; }
+        public IEnumerable<string, object> Attributes { get; }
     }
 }
 ```
@@ -233,15 +252,14 @@ namespace System.Diagnostics
     /// each representing a single incoming item being processed in the batch.
     public readonly struct ActivityLink : IEquatable<ActivityLink>
     {
-        public ActivityLink(ActivityContext context);
-        public ActivityLink(ActivityContext context, IDictionary<string, object>? attributes);
+        public ActivityLink(ActivityContext context, IEnumerable<string, object>? attributes = null);
         public ActivityContext Context { get; }
-        public IDictionary<string, object>? Attributes { get; }
+        public IEnumerable<string, object>? Attributes { get; }
         
         public override bool Equals(object? obj);
-        public bool Equals(ActivityLink link);
-        public static bool operator ==(ActivityLink link1, ActivityLink link2);
-        public static bool operator !=(ActivityLink link1, ActivityLink link2);
+        public bool Equals(ActivityLink value);
+        public static bool operator ==(ActivityLink left, ActivityLink right);
+        public static bool operator !=(ActivityLink left, ActivityLink right);
         public override int GetHashCode();
     }
 }
@@ -275,10 +293,46 @@ namespace System.Diagnostics
 }
 ```
 
+### ActivityCreationOptions
+
+```c#
+namespace System.Diagnostics
+{
+    public struct ActivityCreationOptions<T>
+    {
+        public ActivitySource Source { get; }
+        public string Name { get; }
+        public ActivityKind Kind { get; }
+        public T Parent { get; }
+        public IEnumerable<KeyValuePair<string, string?>> Tags { get; }
+        public IEnumerable<ActivityLink> Links { get; }
+    }
+}
+```
+
+### ActivityListener
+
+```C#
+namespace System.Diagnostics
+{
+    public delegate ActivityDataRequest GetRequestedData<T>(ref ActivityCreationOptions<T> options);
+
+    public sealed class ActivityListener : IDisposable
+    {
+        public ActivityListener() { }
+        public Action<Activity> ActivityStopped { get; set; }
+        public Action<Activity> ActivityStarted { get; set; }
+        public Func<ActivitySource, bool> ShouldListenTo { get; set; }
+        public GetRequestedData<string> GetRequestedDataUsingParentId { get; set; }
+        public GetRequestedData<ActivityContext> GetRequestedDataUsingContext { get; set; }
+        public void Dispose() { }
+    }    
+}
+```
+
 ### ActivitySource
 
 ```C#
-
 namespace System.Diagnostics
 {
     /// ActivitySource is the type that help create and start Activity and allow listening to the Activity events too.
@@ -324,26 +378,7 @@ namespace System.Diagnostics
         public void Dispose();
 
         /// Add a listener to the Activity starting and stopping events.
-        public IDisposable AddActivityListener(
-                                System.Func<ActivitySource, bool> listenToSource,
-                                Func<
-                                    ActivitySource,
-                                    string,
-                                    ActivityKind,
-                                    ActivityContext,
-                                    IEnumerable<KeyValuePair<string, string?>>?,
-                                    IEnumerable<System.Diagnostics.ActivityLink>?,
-                                    ActivityDataRequest> getActivityDataRequestUsingContext,
-                                Func<
-                                    ActivitySource,
-                                    string,
-                                    ActivityKind,
-                                    ActivityContext,
-                                    IEnumerable<KeyValuePair<string, string?>>?,
-                                    IEnumerable<System.Diagnostics.ActivityLink>?,
-                                    ActivityDataRequest> getActivityDataRequestUsingParentId,
-                                Action<Activity> onActivityStarted,
-                                Action<Activity> onActivityStopped);
+        public static void AddActivityListener(ActivityListener listener) { }
     }
 ```
 
@@ -372,6 +407,7 @@ namespace System.Diagnostics
         public object? GetCustomProperty(string propertyName);
 
         public void Dispose();
+        protected virtual void Dispose(bool disposing);
     }
 }
 
@@ -404,25 +440,25 @@ Q\) How do you envision the listener registration? I guess it is unlikely that p
 
 [Noah] This ActivityListener ([https://github.com/noahfalk/ActivitiesExperiment/blob/master/ActivitiesExample/Usage/OTel/ActivityListener.cs\#L12]) was an example of code that OpenTelemetry could write to listen to all sources. I don't feel sold on it either FWIW, but it didn't seem that hard to me to enumerate all the sources.
 
- 
+ 
 
 Q\) Does this mean we might need a "meta-registry for non-default registries"? Would you give one scenario?
 
 [Noah] My only intent in exposing a non-default registry was to allow people to make a test of their telemetry and run those tests in parallelized unit test framework. I was not anticipating that people would use it in their production scenarios and none of the events registered a non-default registry would be captured by OpenTelemetry.
 
- 
+ 
 
 Q\) Would you consider something like IActivityListener.Start and IActivityListener.Stop?
 
 [Noah] Did you mean rename ActivityScopeStarted -\> Start and ActivityScopeStopped -\> Stop or were you thinking of new methods that have some other behavior? In general I think we should be open to consider anything at this stage : ) This is by no means a final or near-final design.
 
- 
+ 
 
 Q\) I think the simplest approach for a developer is to create/start/stop Activity.
 
 [Noah] It is simpler but so far I have been discouraged from it because of performance implications. I'm open to alternate opinions though. In high performance scenarios I'd expect most telemetry to be filtered/sampled away so the cost that we have pay to execute the instrumentation code prior to the sampling/filtering decision is the hot path. Ideally we'd like that path to be as close to zero cost as possible. The amortized CPU cost to allocate an Activity object and call Start()/Stop() is \~700ns. ASP.Net has a goal to have a tech empower Fortunes scenario running at 70,000ns per request so every invocation of this pattern represents 1% of the total request CPU budget. Some optimizations are possible, but the only way I see to significantly speed it up is to use an API that has different semantics. In particular Activity Start/Stop is required to allocate an Activity object, compute timestamps, and register the Activity in async-local storage always but an alternate API wouldn't need to have that constraint.
 
- 
+ 
 
 Q\) Making Activity as IDisposable and calling Stop on Dispose might also be a user-friendly approach which .NET team should consider.
 
