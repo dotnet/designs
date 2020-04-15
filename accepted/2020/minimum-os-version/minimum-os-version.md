@@ -1,8 +1,8 @@
-# .NET 5 OS Compatibility Annotations and Checks
+# .NET 5 Minimum OS Versioning
 
 # Introduction
 
-It is common for apps and libraries to support running on older versions of the OS than the version against which they were compiled, while progressively lighting up with newer functionality on OS versions that support it. This pattern involves using runtime checks to guard against calling APIs that are not available, and is encouraged and widely used on the Xamarin platforms (iOS, Android, Mac etc).
+It is common for apps and libraries to support running on older versions of the OS than the version against which they were compiled. This pattern involves using runtime checks to guard against calling APIs that are not available, and is encouraged and widely used on the Xamarin platforms (iOS, Android, Mac etc).
 
 This document proposes a set of standard mechanisms and patterns for OS version compatibility annotations and runtime API checks that can be used across all .NET platforms to increase consistency of developer experience.
 
@@ -25,6 +25,8 @@ Per the [.NET 5 TFM spec](https://github.com/dotnet/designs/blob/master/accepted
 The OS Target Version is used on certain platforms to enable backwards compatibility behaviors so that old apps continue to run correctly when API behaviors change in newer OS versions. For example, when an app that targeted Android 9.0 was run on Android 10.0, the OS might “quirk” the API behavior to continue to match the 9.0 behavior, but apps that targeted 10.0 or newer would get the newer API behavior.
 
 Handling of the OS target Version is out of the scope of this document. Although it would be good to have a standard pattern in how this is defined across platforms, it’s not a universal concept, and doesn’t easily map into useful tooling. It’s also an app-level setting, and not useful for libraries except perhaps for warning of potential incompatibility, but that would have a very high false positive rate.
+
+> NOTE: Using the existing `TargetPlatformVersion` property to represent the API version may be confusing for platforms such as Android that allow having different values for the target version and API version.
 
 ## OS Minimum Version
 
