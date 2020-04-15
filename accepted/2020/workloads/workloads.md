@@ -14,7 +14,7 @@ This document is an overview. The following documents detail specific design top
 
 * Manifest spec (still coming)
 * [.NET 5 OS API Versioning](https://github.com/dotnet/designs/pull/97)
-* [MSBuild SDK Resolvers and optional workloads in .NET 5](https://github.com/dotnet/designs/pull/104)
+* [MSBuild SDK Resolvers and optional workloads in .NET 5](workload-resolvers.md)
 
 ## Goals
 
