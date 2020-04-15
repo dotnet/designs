@@ -468,6 +468,18 @@ As far as the reference assembly is concerned, the expectation is that the
 bindings will be annotated with the version information as documented by the
 native operating system SDK.
 
+### What about `Environment.OSVersion`?
+
+Should the analyzer consider checks again `Environment.OSVersion`?
+
+No. In fact, we should obsolete `Environment.OSVersion`. Two reasons:
+
+1. `Environment.OSVersion` doesn't return the correct version number today (it's
+   shimmed). We could change but that would just further the lifetime of a
+   broken API. Instead, we should push folks to
+   `RuntimeInformation.IsOSPlatformOrLater()`.
+2. It makes the analyzer more complex and more prone to false positives
+
 [dotnet/platform-compat]: https://github.com/dotnet/platform-compat
 [API Analyzer]: https://devblogs.microsoft.com/dotnet/introducing-api-analyzer/
 [Microsoft.DotNet.Analyzers.Compatibility]: https://www.nuget.org/packages/Microsoft.DotNet.Analyzers.Compatibility
