@@ -480,8 +480,32 @@ No. In fact, we should obsolete `Environment.OSVersion`. Two reasons:
    `RuntimeInformation.IsOSPlatformOrLater()`.
 2. It makes the analyzer more complex and more prone to false positives
 
+### What about APIs that don't work on specific operating systems?
+
+For example, there are some APIs that work on Windows and Linux, but not on
+macOS.
+
+I used to think in those terms but I don't think that's useful because it gets
+complicated fast. I think we're better off modelling these as two distinct
+concepts:
+
+1. **Platform specific APIs**. These are specific to a particular OS. Examples: Registry, WinForms, NS*.
+2. **Partially portable APIs**. These are features that aren't OS specific but
+   can only be implemented on some operating systems/execution environments.
+   Examples: RefEmit, file system access, thread creation.
+
+I think we can safely model (1) with OS checks because the set of supported OS
+is fixed and known a priori, so burning metadata in the reference assemblies is
+fine.
+
+For (2) I think we're better of modelling them as capability APIs so that when
+the support matrix changes, less code is broken. We can try to formalize
+capability APIs as well and [provide an analyzer for that][capability-checks]
+but I consider that out of scope for this feature.
+
 [dotnet/platform-compat]: https://github.com/dotnet/platform-compat
 [API Analyzer]: https://devblogs.microsoft.com/dotnet/introducing-api-analyzer/
 [Microsoft.DotNet.Analyzers.Compatibility]: https://www.nuget.org/packages/Microsoft.DotNet.Analyzers.Compatibility
 [net5-tfms]: https://github.com/dotnet/designs/blob/master/accepted/2020/net5/net5.md
 [os-minimum-version]: https://github.com/dotnet/designs/pull/97
+[capability-checks]: https://github.com/dotnet/designs/pull/111
