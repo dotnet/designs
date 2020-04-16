@@ -156,6 +156,8 @@ These per-platform properties will not work when building platform-neutral assem
 
 > ***NOTE***: `{PlatformIdentifier}MinimumVersion` was chosen over `Minimum{PlatformIdentifier}Version` as it it's more easily searchable and sorts/group more easily with other OS-specific properties.
 
+> ***NOTE***: UWP projects already have a `TargetPlatformMinVersion` property. However, the TFM spec uses `TargetPlatformVersion` to represent the *API* version, which is a different *kind* of version than the OS version, so here we instead use `OSMinimumVersion` to indicate the distinction and for alignment with the `OSTargetVersion` on platforms where that is relevant.
+
 # Assembly Level Minimum Version
 
 We cannot provide useful errors or warnings at an assembly level when a project references a library with a higher minimum version, as it may guard usage of that library with runtime checks.
