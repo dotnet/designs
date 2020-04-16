@@ -292,11 +292,11 @@ namespace System.Runtime.Versioning
 {
     public abstract class OSPlatformVersionAttribute  : Attribute
     {
-        protected OSPlatformVersionAttribute (string osPlatform,
-                                              int major,
-                                              int minor,
-                                              int build,
-                                              int revision);
+        protected OSPlatformVersionAttribute(string osPlatform,
+                                             int major,
+                                             int minor,
+                                             int build,
+                                             int revision);
         public string PlatformIdentifier { get; }
         public int Major { get; }
         public int Minor { get; }
@@ -315,11 +315,11 @@ namespace System.Runtime.Versioning
                     AllowMultiple=false, Inherited=true)]
     public sealed class AddedInOSPlatformVersionAttribute  : OSPlatformVersionAttribute
     {
-        public AddedInOSPlatformVersionAttribute (string osPlatform,
-                                          int major,
-                                          int minor,
-                                          int build,
-                                          int revision);
+        public AddedInOSPlatformVersionAttribute(string osPlatform,
+                                                 int major,
+                                                 int minor,
+                                                 int build,
+                                                 int revision);
     }
 
     [AttributeUsage(AttributeTargets.Assembly |
@@ -333,11 +333,11 @@ namespace System.Runtime.Versioning
                     AllowMultiple=false, Inherited=true)]
     public sealed class RemovedInOSPlatformVersionAttribute  : OSPlatformVersionAttribute
     {
-        public RemovedInOSPlatformVersionAttribute (string osPlatform,
-                                            int major,
-                                            int minor,
-                                            int build,
-                                            int revision);
+        public RemovedInOSPlatformVersionAttribute(string osPlatform,
+                                                   int major,
+                                                   int minor,
+                                                   int build,
+                                                   int revision);
     }
 
     [AttributeUsage(AttributeTargets.Assembly |
@@ -351,7 +351,7 @@ namespace System.Runtime.Versioning
                     AllowMultiple=false, Inherited=true)]
     public sealed class ObsoletedInOSPlatformVersionAttribute  : OSPlatformVersionAttribute
     {
-        public ObsoletedInOSPlatformVersionAttribute (string osPlatform,
+        public ObsoletedInOSPlatformVersionAttribute(string osPlatform,
                                               int major,
                                               int minor,
                                               int build,
