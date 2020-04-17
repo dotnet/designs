@@ -226,17 +226,17 @@ namespace System.Diagnostics
 {
     /// A text annotation associated with a collection of attributes.
     /// Event has name and optionally has timestamps and attributes
-    public struct ActivityEvent
+    public readonly struct ActivityEvent
     {
         /// Initializes a new instance of the <see cref="ActivityEvent"/> class.
         public ActivityEvent(string name) : this(name, DateTimeOffset.UtcNow, s_emptyAttributes);
         public ActivityEvent(string name, DateTimeOffset timestamp) : this(name, timestamp, s_emptyAttributes);
-        public ActivityEvent(string name, IEnumerable<string, object> attributes);
-        public ActivityEvent(string name, DateTimeOffset timestamp, IEnumerable<string, object> attributes);
+        public ActivityEvent(string name, IEnumerable<KeyValuePair<string, object>>? attributes);
+        public ActivityEvent(string name, DateTimeOffset timestamp, IEnumerable<KeyValuePair<string, object>>? attributes);
 
         public string Name { get; }
         public DateTimeOffset Timestamp { get; }
-        public IEnumerable<string, object> Attributes { get; }
+        public IEnumerable<KeyValuePair<string, object>>? Attributes { get; }
     }
 }
 ```
@@ -252,9 +252,9 @@ namespace System.Diagnostics
     /// each representing a single incoming item being processed in the batch.
     public readonly struct ActivityLink : IEquatable<ActivityLink>
     {
-        public ActivityLink(ActivityContext context, IEnumerable<string, object>? attributes = null);
+        public ActivityLink(ActivityContext context, IEnumerable<KeyValuePair<string, object>>? attributes = null);
         public ActivityContext Context { get; }
-        public IEnumerable<string, object>? Attributes { get; }
+        public IEnumerable<KeyValuePair<string, object>>? Attributes { get; }
         
         public override bool Equals(object? obj);
         public bool Equals(ActivityLink value);
