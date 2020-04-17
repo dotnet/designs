@@ -298,8 +298,9 @@ namespace System.Diagnostics
 ```c#
 namespace System.Diagnostics
 {
-    public struct ActivityCreationOptions<T>
+    public readonly struct ActivityCreationOptions<T>
     {
+        public ActivityCreationOptions(ActivitySource source, string name, T parent, ActivityKind kind = ActivityKind.Internal, IEnumerable<KeyValuePair<string, string?>> Tags = null, IEnumerable<ActivityLink> Links = null)
         public ActivitySource Source { get; }
         public string Name { get; }
         public ActivityKind Kind { get; }
