@@ -1,7 +1,7 @@
 # Security support for new .NET 5 platforms
 
 ## Overview
-Currently in .NET Core, we have a solid [strategy](https://github.com/dotnet/corefx/blob/master/Documentation/architecture/cross-platform-cryptography.md) for dealing with cryptography on Linux and OSX.  At the native level, `System.Security.Cryptography.Native` relies upon OpenSSL for Linux and `System.Security.Cryptography.Native.Apple` relies upon platform specific API’s for OSX.  
+Currently in .NET Core, we have a solid [strategy](https://github.com/dotnet/runtime/blob/master/docs/design/features/cross-platform-cryptography.md) for dealing with cryptography on Linux and OSX.  At the native level, `System.Security.Cryptography.Native` relies upon OpenSSL for Linux and `System.Security.Cryptography.Native.Apple` relies upon platform specific API’s for OSX.  
 
 With the introduction of Android, iOS, and Wasm workloads, there are implications to consider that may alter our strategy and require additional work.  This document seeks to describe the implications and what options we may have.
 
@@ -19,23 +19,24 @@ There is currently no platform level API’s that can work with Android, so any 
 
 **System.Security.Cryptography.Native**
 
-The current dependency on OpenSSL could work as there seems to be support for building on Android.  This is nice because it would seemingly ‘just fit’ with what we already have.  However, there are some things to take into consideration:
+Since Xamarin's reliance on a fork of BoringSSL is not viable, the current .NET dependency on OpenSSL could work for us. There is support for either building on Android or taking a maven dependency that Google hosts (https://maven.google.com/).  This is nice because it would seemingly ‘just fit’ with what we already have.  However, any dependency we take on poses the following challenges:
 
-* Do we fork a copy of OpenSSL and build from that?
-* What is our process for shipping security vulnerability updates?
+* Can / should we take on the maven dependency?  What are the potential pitfalls?  
+* Do we fork a copy instead and build it?  
+* What is our process for shipping security vulnerability updates?  Can we take on this responsibility?
 * Should we consider alternatives?
   * [https://tls.mbed.org/](https://tls.mbed.org/) - only solves the TLS part
   * Any others?
 
 **System.Net.Security.Native**
 
-For authentication scenarios, we’ve relied on libgss to do the work.  It is currently unknown if we *can* support it on Android.  Some initial [discovery](https://github.com/dotnet/runtime/issues/32680#issuecomment-599307356) has been started by a community member and would need to be expanded on / validated.
+In the past, Xamarin relied upon a custom implementation that poses maintainability / portability challenges.  Since .NET has relied upon libgss to do the work, it makes sense to see if libgss could do the work.  Unfortunately, it is currently unknown if we *can* support it on Android.  Some initial [discovery](https://github.com/dotnet/runtime/issues/32680#issuecomment-599307356) has been started by a community member and would need to be expanded on / validated.  Additionally, we should consider prototyping [Kerberos.Net](https://github.com/dotnet/Kerberos.NET/) as that might be a viable managed solution.
 
 To move forward, we should try to decide on the best approach.
 
 Do we:
 * Investigate libgss further and flush out all the dependencies / challenges?
-* Bring most / all functionality into a managed implementation?  What does that look like?  Who would do it?
+* Prototype Kerberos.NET.  What does that look like?  Who would do it?
 
 ## iOS/tvOS
 iOS, similar to OSX, has platform level API’s that System.Security.Cryptography.Native.Apple hooks into.  Thankfully, we have found that most just work and so we would need to decide what to do about the set that a does not (simply PNSE?).
