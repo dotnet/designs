@@ -150,6 +150,11 @@ The `Microsoft.Net.Sdk` targets will extract the OS API Version component from t
 
 Project files may specify an `OSMinimumVersion`, and if they do not it will default to OS Version equivalent to the OS API version specified in the `TargetPlatformVersion` value. The `OSMinimumVersion` must not be higher than the `TargetPlatformVersion`, and this will be validated at the start of the build.
 
+> ***NOTE:*** The mapping from `TargetPlatformVersion` to default `OSMinimumVersion` varies between platforms, so it must be defined and implemented by platform tools authors.
+> In some cases the initial release of the bindings for a given OS version might be missing some API bindings that are later added in a bindings revision. This mapping is left to platform tooling authors as versioning schemes differ between platforms.
+>
+> For example, the iOS tooling might define that API version `14.0.*` maps to OS version `14.0`, using the first two components of the API version to represent the OS version and the third to represent a revision to the bindings. On the other hand, the macOS tooling might need a third component for the OS version and define that API version `10.12.0.*` maps to OS version `10.12.0`, while the Windows tooling might not need binding revisions and hence have a direct 1:1 mapping.
+
 It is recommended that platforms define more specifically named versions of this property of the form `{PlatformIdentifier}MinimumVersion`, for example `IOSMinimumVersion` or `WindowsMinimumVersion`, and that their targets assign this value to `OSMinimumVersion` if it is set. This will simplify use of the property when multi-targeting.
 
 These per-platform properties will not work when building platform-neutral assemblies, as that would require centralizing definitions of all of the platform-specific `MinimumVersion` properties into the `Microsoft.Net.Sdk` targets. We may at some point add some other way to specify `OSMinimumVersion` values for multiple OSes for a single platform-neutral assembly, perhaps using items, but for now such assemblies must use assembly attributes directly.
