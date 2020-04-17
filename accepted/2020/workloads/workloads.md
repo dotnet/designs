@@ -13,7 +13,7 @@ This proposal is intended for components that are part of or directly associated
 This document is an overview. The following documents detail specific design topics:
 
 * Manifest spec (still coming)
-* [.NET 5 OS API Versioning](https://github.com/dotnet/designs/pull/97)
+* [.NET 5 OS API Versioning](../minimum-os-version/minimum-os-version.md)
 * [MSBuild SDK Resolvers and optional workloads in .NET 5](workload-resolvers.md)
 
 ## Goals
