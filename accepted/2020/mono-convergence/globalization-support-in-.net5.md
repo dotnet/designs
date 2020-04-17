@@ -1,7 +1,7 @@
 # Globalization Support in .NET 5
 
 ## Overview
-Globalization in the .NET Core space has been handled by taking a dependency on the [icu4c](http://site.icu-project.org/home) library and p-invoking into it from managed code.  This model has been successful for desktop and server modes mostly because they can afford to take on the disk space ICU requires.   However, in the size restricted workloads, this is quite a different story as there are differences in platform support and tolerance of taking on a significantly sized dependency.
+Globalization in the .NET Core space has been handled by taking a dependency on the [icu4c](http://site.icu-project.org/home) library and p-invoking into it from managed code.  This model has been successful for desktop and server modes mostly because they can afford to take on the disk space ICU requires. However, in the size restricted workloads, this is quite a different story as there are differences in platform support and tolerance of taking on a significantly sized dependency.
 
 The purpose of this document is to describe what globalization support, if any, Android, iOS/tvOS, and WebAssembly have and what options there are should ICU not suffice.
 
@@ -18,6 +18,7 @@ The implementation files which reference globalization interop are:
 * [System.Private.CoreLib/src/System/Globalization/TextInfo.Unix.cs](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/TextInfo.Unix.cs)
 * [System.Private.CoreLib/src/System/Globalization/CompareInfo.Unix.cs](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/CompareInfo.Unix.cs)
 * [System.Private.CoreLib/src/System/Globalization/JapaneseCalendar.Unix.cs](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/JapaneseCalendar.Unix.cs)
+* [https://github.com/dotnet/runtime/blob/88cc71b26ba1eb430aaeeebddcd5675b3009f2ee/src/libraries/System.Private.CoreLib/src/System/TimeZoneInfo.Unix.cs#L127](https://github.com/dotnet/runtime/blob/88cc71b26ba1eb430aaeeebddcd5675b3009f2ee/src/libraries/System.Private.CoreLib/src/System/TimeZoneInfo.Unix.cs#L127)
 
 Existing test coverage checks the implementation which is available. It does not have any expected list of data included therefore does not check whether same set of data is available everywhere.
 
@@ -70,13 +71,13 @@ A default build of ICU normally results in over 16 MB of data, and a substantial
 
 The packages have to be split to implementation and data part and ideally the data parts will be also sliced in the way that the developers can select only relevant data for their app if they for example don’t target Chinese market.
 
-### Data Library Customizer 
+### Data Library Customizer (TBD)
 There is a [tool](http://www.icu-project.org/docs/demo/datacustom_help.html) built by ICU which allow customizing what kind of data will be included in the final data set. We need to explore if that something we could leverage either for the data islands or even as something using during build process.
 
 Additional documentation about the tool is [here](https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/buildtool.md)
 
 ## App Local ICU for Windows
-Windows teams is working on packaging ICU for .NET needs. The package will be available as NuGet package and we could explore to use similar mechanism for iOS/tvOS packaging.
+Windows teams is working on packaging ICU for .NET needs. It will be available as NuGet package and we could explore to use a similar mechanism for iOS/tvOS packaging (although Windows will contain the whole data file). 
 
 ## .NET 5 Work
 The public tracking issue is available at [https://github.com/dotnet/runtime/issues/33652](https://github.com/dotnet/runtime/issues/33652)
