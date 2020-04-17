@@ -414,7 +414,7 @@ namespace System.Net.Http
 The implementation has to use the property in the way to allow the ILLinker to remove the unnecessary dependency of unused handler when the type is not used elsewhere.
 
 ### Xamarin.iOS/Xamarin.tvOS
-Follow proposal #2b and hook up existing `NSUrlSessionHandler` using `Activator.CreateInstance ("Foundation.NSUrlSessionHandler, Xamarin.iOS/Xamarin.tvOS")​`. The actual implementation will remain inside xamarin/xamarin-macios​ in repo.
+Follow proposal #2b "Use Reflection" and hook up existing `NSUrlSessionHandler` using `Activator.CreateInstance ("Foundation.NSUrlSessionHandler, Xamarin.iOS/Xamarin.tvOS")​`. The actual implementation will remain in `xamarin/xamarin-macios`​ repo.
 
 The plan ignores CFNetworkHandler and other legacy handlers. They will stay in `xamarin/xamarin-macios` and will be available only when constructed manually. The implementation logic inside HttpClientHandler will rely on DefaultHandlerType selection to set the implicit handler behaviour between NSUrlSessionHandler and SocketHttpHandler.
 
@@ -423,14 +423,14 @@ There won’t be any platform specific handlers implicitly called by HttpClient 
 
 ### Xamarin.Android
 
-Follow proposal #2b and hook up existing AndroidClientHandler using `Activator.CreateInstance (``"``Xamarin.Android.Net.AndroidClientHandler, Mono.Android``"``)`. The whole AndroidClientHandler implementation will remain inside `xamarin/xamarin-android`.
+Follow proposal #2b "Use Reflection" and hook up existing AndroidClientHandler using `Activator.CreateInstance ("Xamarin.Android.Net.AndroidClientHandler, Mono.Android")`. The whole AndroidClientHandler implementation will remain in `xamarin/xamarin-android` repo.
 
 Only RID specific version of System.Net.Http will be built as there won’t be any new API available as part of `dotnet/runtime` version.
 
 The code will most likely have to include special linker annotations to keep the dependency on the constructor inside external “unknown” assembly.
 
 ### WebAssembly
-Follow proposal #5 and port WasmHttpMessageHandler to dotnet/runtime together with wasm interop layer.
+Follow proposal #5 "All HttpHandlers are fully implemented inbox" and port WasmHttpMessageHandler to dotnet/runtime together with wasm interop layer.
 
 The public implementation of WasmHttpMessageHandler will be packaged into special NuGet which will be created to hold only this public type. The interop layer needed to support this handler will be also included into the NuGet package. To match existing naming it will be called
 
@@ -440,7 +440,7 @@ The public implementation of WasmHttpMessageHandler will be packaged into specia
 If we manage to extract Objective-C or Java interop into special subcomponents we might be able to switch to solution which will allow us to ship and test everything inbox (inside `dotnet/runtime` repo).
 
 ### Xamarin.iOS/Xamarin.tvOS/Xamarin.watchOS
-Follow proposal #5 and port [NSUrlSessionHandler](https://github.com/xamarin/xamarin-macios/blob/master/src/Foundation/NSUrlSessionHandler.cs) to `dotnet/runtime` repo and extend existing interop layer to include bridge to platform specific APIs to support the implementation. The sources will be located under [src/libraries/System.Het.Http/](https://github.com/dotnet/runtime/tree/master/src/libraries/System.Net.Http/). 
+Follow proposal #5 "All HttpHandlers are fully implemented inbox" and port [NSUrlSessionHandler](https://github.com/xamarin/xamarin-macios/blob/master/src/Foundation/NSUrlSessionHandler.cs) to `dotnet/runtime` repo and extend existing interop layer to include bridge to platform specific APIs to support the implementation. The sources will be located under [src/libraries/System.Het.Http/](https://github.com/dotnet/runtime/tree/master/src/libraries/System.Net.Http/). 
 
 The publicly available version of the NSUrlSessionHandler will be distributed in separate NuGet. Following new packages will be created to carry the implementation for each TFM. The result of that will be that the same implementation will be included in multiple assemblies
 
