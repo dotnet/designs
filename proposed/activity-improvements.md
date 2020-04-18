@@ -339,7 +339,7 @@ namespace System.Diagnostics
     public sealed class ActivitySource : IDisposable
     {
         /// Construct an ActivitySource object with the input name and component version
-        public ActivitySource(string name, string version);
+        public ActivitySource(string name, string version = "");
 
         /// Returns the ActivitySource name.
         public string Name { get; }
