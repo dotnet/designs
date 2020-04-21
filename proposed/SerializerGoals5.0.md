@@ -1,26 +1,32 @@
 # Overview and goals
 
-Apri 20th, 2020.
+April 21th, 2020.
 
 This document provides options and recommendations for 5.0 to handle overlapping serializer goals including reach, faster cold startup performance, reducing memory usage, and smaller size-on-disk.
 
 ## Reach
-Achieved by limiting or removing dependencies on Reflection.Emit and `Type.MakeGenericType`. This allows the serializer to be used on additional runtimes including [Xamarin iOS](https://github.com/dotnet/runtime/issues/31326).
+Achieved by limiting, removing or adding fallbacks for runtime code generation so that AOT optimized platforms including [Xamarin iOS](https://github.com/dotnet/runtime/issues/31326) can use System.Text.Json.
 
-Ideally we add a high-performance emit replacement for targeted scenarios such as property setters, getters and constructors.
+In particular, iOS does not allow for any type of code generation whether Reflection.Emit, IL generation or IL->native through JITing. This means the IL is either compiled AOT (Ahead-Of-Time) to native code before deploying to the device, or that the IL is interpreted at runtime.
 
-Some serializers do not have a non-emit fallback. Although System.Text.Json has a fallback for emit, it does not have a fallback for its usage of `Type.MakeGenericType`.
+The options to consider, in priority order include:
+1) Minimize the serializer's runtime code generation. For example, in 5.0, we are planning on avoiding `Type.MakeGenericType` when instantiating the converter for POCOs -- the converter will close the `JsonConverter<T>` generic at build time with `JsonConverter<System.Object>`.
+2) Add "loosely-typed" fallbacks to the serializer for cases that cannot be refactored; these fallacks will box to Object when using value types or use standard invoke-based reflection. This results in slower performance. Some serializers do have a Reflection.Emit fallback (Newtonsoft) and others do not (Jil and Utf8Json). System.Text.Json has a fallback for its usages of Reflection.Emit, but it does not have a fallback for its usage of `Type.MakeGenericType and .MakeGenericMethod` which does cause issues on iOS.
+3) Generate code for POCOs that avoids using the unsupported features. This also has higher runtime performance than the loosely-typed fallbacks.
+4) Add a high-performance replacement for targeted scenarios including property getters, property setters, constructors and as a stretch `Type.MakeGenericType and .MakeGenericMethod`.
+5) If possible, add or extend runtime interpreter support for missing cases. Xamarin (and .NET Native) has an interpreter mode.
+6) Throw PlatformNotSupportedException for when there is no alternative.
 
 ## Faster startup performance
 
 This is important for scenarios including [micro-services](https://github.com/dotnet/runtime/issues/1568) where processes start and exit frequently. It is also important for benchmarks including TechEmpower.
 
-The serializer has fast startup compared to most other serializers including Newtonsoft's JSON.Net, JIL and Utf8Json. Startup perf is mostly affected by generating IL - the Jil serializer is the most aggressive here and has the highest startup cost.
+The serializer has fast startup compared to most other serializers including Newtonsoft's Json.NET, JIL and Utf8Json. Startup perf is mostly affected by generating IL - the Jil serializer is the most aggressive here and has the highest startup cost.
 
 There is no stated goal for 5.0 to make the steady-state CPU performance faster than it is now in 5.0 for general sceanrios, although we do not want to noticably regress steady-state performance while addressing the stated goals including improving startup performance. It is possible some code-gen options described later may have steady-state performance gains, but again that is not a stated goal.
 
 <details>
-  <summary>5.0 master startup benchmarks</summary>
+  <summary>5.0 master startup benchmarks (click to expand)</summary>
 
 A small POCO was used (`LoginViewModel` benchmark test class).
 
@@ -33,36 +39,50 @@ A small POCO was used (`LoginViewModel` benchmark test class).
 </details>
 
 ## Reduced memory usage
-Reducing private bytes (non-shared or per-process) memory is important for Bing scenarios amongst others.
-    - This can be done by reducing emit\`Type.MakeGenericType` and by capturing POCO metadata in generated code instead of RAM.
+Reducing private bytes (non-shared per-process) memory is important for Bing scenarios and other scenarios that have many process using the same POCOs or start and stop many processes. Shared memory can be amortized across many processes plus is already there when a new processes starts and thus requires no additional overhead to generate.
+
+This can be done by:
+- Avoiding runtime code generation including Reflection.Emit or JITting.
+- Capturing POCO metadata in generated code instead of RAM.
 
 ## Reduced size-on-disk
-Primarily this is for faster downloads of the runtime and applications
+Primarily this is for faster downloads of the runtime and applications.
 
-The runtime can be made smaller by removing emit support. Some runtimes including iOS do not support dynamic code generation (emit or jitting) due to policy and thus require AOT (Ahead-Of-Time compilation).
+The runtime and BCL can be made smaller by removing Reflection.Emit support.
 
-The application can be made smaller by support aggressive linking behavior (e.g. "tree-shaking"). This can be done in a number of ways outside the scope of this document. However, approaches in this document that do code-gen may automatically handle this due to generated calls to members.
+Although outside the scope of this document, an application can be made smaller by running ILLinker (e.g. "tree-shaking"). Serializer scenarios are generally unsuited for linking but can be somewhat mitigated by using metadata to declare what members to preserve. The code-gen approaches in this document, depending on implementation, may help with this since they generate direct calls to members that are detectable by the linker.
 
 # Serializer design background
-Today the serializer avoids using Reflection.Emit on non-.NET scenarios through the use of an #ifdef. However, the serializer still uses emit indirectly through `Type.MakeGenericType`. Note that Xamarin stubs `MakeGenericType` and tries to support these on iOS by pre-generating types via AOT but there are still issues with this (including not being able to determine all possible `<T>` variants).
+## Runtime code dependencies
+For performance, today the serializer uses Reflection.Emit when calling property getters, property setters and constructors. When field support is added, Reflection.Emit will also be used to get and set fields.
 
+For reach scenarios, the serializer avoids Reflection.Emit in the NetStandard 2.0 library through the use of an #ifdef. It is possible to do this without an #ifdef through use of `RuntimeFeature.IsDynamicCodeSupported` but since that is only supported on NetStandard 2.1 the #ifdef is currently more practical (instead of generating an additional 2.1 library) especially considering the 5.0 plan for unified libraries.
+
+However, even in the NetStandard build, the serializer still depends on runtime code generation through `Type.MakeGenericType and .MakeGenericMethod` thus this "reach" support is broken today in the serializer.
+
+Note that Xamarin stubs `MakeGenericType` and tries to support these on iOS by pre-generating types via AOT but there are still issues with this (including not being able to determine all possible `<T>` variants).
+
+## Custom converters
 The existing serializer makes use of custom converters which is a class that knows how to implement a Read(...) and Write(...) method. There are 3 types of converters:
 1. Value. The only type of custom converters that can be implemented publically today (by the community).
 2. Collection. Used internally for IEnumerable Types.
-3. Object. Used internally for all other Types.
+3. Object. Used internally for all other Types -- these contain serializable members and are often called "POCO" types.
 
-The converters are stored on the `JsonSerializerOptions` in a dictionary keyed on the Type to convert. A single converter may know how to convert multiple Types.
+All serialization and deserialization of every Type goes through a single base class `JsonConverter` which has many benefits including the ability for types to compose though generics (`List<Dictionary<string,MyPOCO>>`) or properties (`MyProc.MyArray[0].MyChildPoco.MyProperty`), the ability to replace a converter and overall code re-use and consistency.
 
-Internal converters use metadata for a given Type which is obtained from using reflection (to look for properties and JsonAttribute-derived attributes on a Type and its members). This metadata is then merged with values from the `JsonSerializerOptions` instance which is possible since options instance is immutable once the first (de)serialization occurs.
+Instances of the converters are stored on `JsonSerializerOptions` in a dictionary keyed on the Type to convert. A single converter may know how to convert multiple Types.
 
-The immutable semantics of the options also help in other ways:
-- The metadata could be embedded into code generation (to avoid the reflection cost of looking up the metadata).
-- The metadata could be used to control how code is generated if the generated code has branching or other logic that can be determined based upon the metadata (for example, having a custom property lookup mechanism for each Type).
-- Avoids locks and issues that would occur if another thread changes the options.
+## Metadata APIs
+Internal converters inspect a combined view of metadata for a given Type. This metadata was originally obtained from using reflection (to look for properties and JsonAttribute-derived attributes on a Type and its members) and then merged with values from the `JsonSerializerOptions` instance. Merging the static reflection data with the run-time options is possible since options instance is immutable once the first (de)serialization occurs.
 
-A custom Value converter (implemented by the community) does not have access to the metadata since the metadata types are internal. This has been an issue for some scenarios and opening up the metadata APIs has been requested.
+The immutable semantics of the options class also helps in other ways:
+- The metadata could be embedded into code generation. This avoids the reflection cost of looking up the metadata and moves the memory storage from private bytes (per-process) to on-disk shared bytes (readonly memory accessed by several processes).
+- The metadata could be used to control how code is generated if the generated code has branching or other logic that can be determined based upon the metadata. For example, a custom property lookup mechanism can be created per Type in an optimal fashion by building a B-tree from the beginning characters of the Type's known properties.
+- Avoids locks and issues that would occur if another thread is alloed to change the options once serialization starts.
 
-The built-in converters do have access to metadata. The metadata is maintained internally by a `JsonClassInfo` object for every type. For Object converters (meaning non-Value and non-Collection converters) there is also an instance of a `JsonPropertyInfo` object for every property.
+A custom Value converter (implemented by the community) does not have access to the metadata since these APIs are internal. This has been an issue for some scenarios and opening up the metadata APIs has been requested.
+
+The built-in converters have access to metadata APIs. The metadata is maintained internally by a `JsonClassInfo` object for every type. For Object converters (meaning non-Value and non-Collection converters) there is also an instance of a `JsonPropertyInfo` object for every property.
 
 # Startup performance costs
 The overhead of deserializing a simple 4-property POCO is around **22ms** for the first run (<1ms for second run). This was measured in 5.0 master as of 3/27/2020 and tested on an Intel i7 3.2GHz.
@@ -70,12 +90,12 @@ The overhead of deserializing a simple 4-property POCO is around **22ms** for th
 Breaking this apart:
 - System (non-serializer related) (~5ms)
   - ~2ms due to a one-time hit of loading and initializing SSE2 hardware intrinsics (in System.Runtime.Intrisics). SSE2 support was added during 5.0 to improve peformance of escaping JSON during serialization. It is commonly used elsewhere, however, so this can normally be subtracted from raw serializer numbers.
-  - ~3ms for loading\initializing other assembly dependencies including using the Reader for the first time. There is some additional research here to determine where this hit is coming from, as 3.1 does not have this overhead. It may be that SSE2 contributes more than 2ms overhead.
+  - ~3ms for loading and initializing other assembly dependencies including using the Reader for the first time. There is some additional research here to determine where this hit is coming from, as 3.1 does not have this overhead. It may be that SSE2 contributes more than 2ms overhead.
 - Serializer (~17ms)
   - ~5ms for main API overhead and initialization of the `JsonSerializerOptions`. This includes cache creation for built-in converters. Also, this is also the amount of time it takes to use a custom converter (that uses the writer) for the test POCO.
     - Includes ~1ms for creating the built-in `System.Uri` converter (loads the `System.Private.Uri.dll` assembly).
   - ~3ms due to direct and indirect use Reflection.Emit.
-    - Direct: Reflection.Emit for property setters\getters and constructors.
+    - Direct: Reflection.Emit for getters, setters and constructors.
     - Indirect: usage of `Type.MakeGenericType` and `Type.MakeGenericMethod` so converters for value types can avoid boxing.
   - ~9ms usage of System.Reflection (and perhaps other items not yet accounted for) to initialize metadata. This includes inspecting each property for attributes.
 
@@ -97,7 +117,7 @@ Some early issues created to start tracking the work:
 - [Add deferred loading of System.Private.Uri assembly by the serializer](https://github.com/dotnet/runtime/issues/35029). Minor startup gains; low-hanging fruit.
 
 ## Reflection features
-As described in the [System.Reflection roadmap](https://github.com/dotnet/runtime/issues/31895) it is possible to add new APIs that will eliminate common usages of Reflection.Emit including getters\setter\constructors. This will help with the direct usage of Reflection.Emit, but not the indirect usage.
+As described in the [System.Reflection roadmap](https://github.com/dotnet/runtime/issues/31895) it is possible to add new APIs that will eliminate common usages of Reflection.Emit including getters, setters and constructors. This will help with the direct usage of Reflection.Emit, but not the indirect usage.
 
 Note that AOT code-gen options likely eliminate the need for new reflection features for those POCOs that are code-gen'd. However, we can't assume or force all POCOs to be code-gen'd.
 
@@ -106,17 +126,17 @@ Misc other thoughts:
     - Another fallback would apply to a code-gen option where the generated POCO code closes the generic collections at build time. i.e. instantiate (or reference) a `JsonConverter<List<int>>` directly in the generated code instead of relying on the serializer to close `JsonConverter<T>` to `JsonConverter<List<int>>`.
 
 ## Converter code-gen
-A prototype was created for this by @layomia.
+A (prototype)[https://github.com/layomia/jsonconvertergenerator] was created for this by @layomia.
 
 It used a simple (non-Roslyn) code generator using the existing custom Value converter model. Various serializer features (null handling, property lookup on deserialization, reference handling, async support, use of custom converters, etc) would need to be baked into the generated code. Thus the resuling code generation will be large, complex and not servicable. At the extreme (with no new helper methods exposed the serializer), each converter would need to implement all of the various features of the serializer.
 
 ## Metadata provider code-gen
 A run-time only prototype (not the actual generator) was created for this by @steveharter (see sample generated code below). It makes public the existing internal metadata classes including `JsonClassInfo` and `JsonPropertyInfo`.
 
-It allows for minimal code gen and overlaps with other requested features including property ordering, before\after callbacks and programmatic reading\writing of metadata.
+It allows for minimal code gen and overlaps with other requested features including property ordering, before and after callbacks, and programmatic reading and writing of metadata.
 
 <details>
-  <summary>Snippets from prototype</summary>
+  <summary>Snippets from prototype (click to expand)</summary>
 
 ```cs
 public class WeatherForecast
@@ -138,7 +158,7 @@ public class WeatherForecast
         options.Classes.TryAdd(typeof(WeatherForecast), classInfo);
     }
 
-    // A nested code-generated private class to expose metadadata and handle get\set.
+    // A nested code-generated private class to expose metadadata and handle get and set.
     private class ClassInfo : JsonClassInfo
     {
         public ClassInfo(JsonSerializerOptions options) : base(typeof(WeatherForecast), options)
@@ -210,13 +230,13 @@ public class WeatherForecast
 </details>
 
 ## Object converter + code-gen
-This is simular to "Metadata provider code-gen" but includes exposing a new type of "object converter". This type of converter, however, exposes the raw reader\writer and has performance issues with Streams due to requiring read-ahead.
+This is similar to "Metadata provider code-gen" but includes exposing a new type of "object converter". This type of converter, however, exposes the raw reader and writer and thus has performance issues with Streams due to requiring "read-ahead" which means the JSON is ensured to be complete to the end of the current JSON level and not encounter end-of-buffer scenarios within a converter.
 
 # Code-Gen
-For the options that use code-gen there are several issues to discuss; this is covered in other documention but one open issue is to determine what Types to add code-gen for. The two basic approaches are automatic and explicit:
+For the options that use code-gen there are several issues to discuss; this is covered in [other documentation](https://gist.github.com/layomia/5221e73374fd74dc360e74731dacfdb5) but one open issue is to determine what Types to add code-gen for. The two basic approaches are automatic and explicit:
 - Automatic options:
-  - Look to calls to the serialzer and code-gen types passed to it (and all other Types reachable those roots).
-  - Generate code for all candidate types (concrete non-struct types?).
+  - Look to calls to the serializer and code-gen the Types passed to it, and all other Types reachable from those roots.
+  - Generate code for all candidate types such as concrete reference types.
   - ...
 - Explicit options:
   - Require an attribute to determine POCOs.
@@ -230,7 +250,7 @@ Below is the listing of options; severe limimations are adorned with an &#x274C;
 
 | | Minimal | Reflection features | Code-gen option: explicit | Code-gen option: metadata provider | Code-gen option: "object" custom converter |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| **Goal: reach (without code-gen)** | yes | no | N\A | N\A | N\A |
+| **Goal: reach (without code-gen)** | yes | no | N/A | N/A | N/A |
 | *Removes all Reflection.Emit?* | no | yes | yes | yes | yes |
 | *Removes all Type.MakeGenericType?* | no | no &#x274C; (possibly with other new features) | possibly | possibly | possibly |
 | | | | | | |
@@ -240,7 +260,7 @@ Below is the listing of options; severe limimations are adorned with an &#x274C;
 | *Startup overhead for additional properties* | pay-per-property | pay-per-property | none (or minor) | pay-per-property | pay-per-property |
 | *Startup overhead for additional POCOs* | pay-per-type | pay-per-type | none (or minor) | pay-per-type | pay-per-type |
 | *Steady state CPU improvement?* | no | no | yes | no | no |
-| *Steady state regression?* | no | not expected | not expected but needs fast property lookup design | expected minor on property getter\setters | expected minor on property getter\setters |
+| *Steady state regression?* | no | not expected | not expected but needs fast property lookup design | expected minor on property get and set | expected minor on property get and set |
 | *Fast Stream perf (no read-ahead)* | yes | yes | possible but hard &#x274C; | yes | possible but hard &#x274C; |
 | | | | | | |
 | **Goal: reduced memory usage** | 
@@ -249,9 +269,9 @@ Below is the listing of options; severe limimations are adorned with an &#x274C;
 | **Goal: reduced size-on-disk**
 | *Supports smaller runtime with no Emit* | no | yes | no | no | no
 | *Could support linker "tree shaking"* | no | possible for the default ctor only | yes | yes | yes
-| *POCO code gen size* | n\a | n\a | large &#x274C; | small | small |
+| *POCO code gen size* | N/A | N/A | large &#x274C; | small | small |
 | | | | | | |
-| **Serviceability** | best | best | poor\none (needs a "kill" feature for security) &#x274C; | good | good |
+| **Serviceability** | best | best | poor or none (needs a "kill" feature for security) &#x274C; | good | good |
 | | | | | | |
 | **Investment cost**
 | *Investment level* | several smaller features | medium - likely will be done eventually | larger | larger | larger |
@@ -273,9 +293,9 @@ The "Minimal" option has the subfeature "improve detection of lack of reflection
 
 The "Reflection features" option may or may not be implemented for 5.0, but is likely to be implemented eventually due to high demand.
 
-The "Metadata code-gen" option does not require "Reflection features" although if "Reflection features" is implemented then the code generation may be reduced (i.e. no code generation necessary for property setters\getters\constructors).
+The "Metadata code-gen" option does not require "Reflection features" although if "Reflection features" is implemented then the code generation may be reduced (i.e. no code generation necessary for getters, setters and constructors).
 
 **The recommended plan for 5.0 (in sequence):**
 1. *Required*: implement the required features for the "Minimal" option.
 2. *Optional*: Implement "Reflection features". If the result is noticably slower in the steady-state scenarios then we may need to consider contingency plans such as options to control whether to use IL emit or not -- i.e. startup vs. steady-state tradeoffs.
-3. *Optional*: pending performance and\or overlap with other scenarios, implement "Metadata code-gen". This avoids all usages of System.Reflection including looking up properties and attributes. There may or may not be generated code for property getters\setters\constructors depending on the performance of "Reflection features" and linker "tree shaking" requirements.
+3. *Optional*: pending performance or overlap with other scenarios, implement "Metadata code-gen". This avoids all usages of System.Reflection including looking up properties and attributes. There may or may not be generated code for getters, setters or constructors depending on the performance of "Reflection features" and linker "tree shaking" requirements.
