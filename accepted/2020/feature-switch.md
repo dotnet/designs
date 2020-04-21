@@ -62,7 +62,7 @@ Feature switches for localized functionality which is not likely to span multipl
 
 It's up to each feature what is the behavior when it's turned off. In lot of cases the code would probably throw an exception, but in some cases it may be able to fallback to different implementation. For example if HTTP2 is disabled the code may be able to use HTTP1 transparently.
 
-The property's value will be burned in by the linker when a corresponding feature switch is set at link time. The value to burn in is defined by a `substitutions.xml` carried with the assembly that defines the property.
+The property's value will be burned in by the linker when a corresponding feature switch is set at link time. The value to burn in is defined by an embedded `substitutions.xml` carried with the assembly that defines the property.
 
 *Implementation note: The property which is used to determine if the feature is on or off should be written and used in such a way that tiering optimizations would be possible and JIT could trim away the "unused" code. Pattern which should achieve this in most cases is to get a read-only static bool property.*
 
@@ -77,11 +77,60 @@ Ultimately some of these switches may also need VS UI integration, but for now m
 
 The ability to specify these from MSBuild projects as properties also means that different templates and SDKs can set different defaults - so for example Blazor or Xamarin SDKs may choose to turn off some of these features by default.
 
+Example definition of a feature flag with SDK support in [`Microsoft.NET.Sdk.targets`](https://github.com/dotnet/sdk/blob/36ef8b2aa8e5d579c921704bdab69a7407936889/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets) or by SDK components:
+```xml
+<ItemGroup>
+    ...
+    <RuntimeHostConfigurationOption Include="System.Runtime.OptionalBehavior"
+                                    Condition="'$(OptionalBehavior)' != ''"
+                                    Value="$(OptionalBehavior)" />
+    ...
+</ItemGroup>
+```
+
+The name of the property should be picked so that it's clear what `true`/`false` mean. In this case, the idea is that `false` means the feature will be disabled. Other cases (for example `InvariantGlobalization`) might have the opposite polarity.
+
 ### Generate the right input for the linker in SDK
 
-The names/values from `RuntimeHostConfigurationOptions` will be passed to the ILLink task, which will apply any feature substitutions defined in `substitutions.xml`. The substitutions file format will be extended to condition the substitutions based on the feature name/value.
+All names/values from `RuntimeHostConfigurationOptions` will be passed to the ILLink task, which will apply any feature substitutions defined in [`substitutions.xml`](https://github.com/mono/linker/blob/master/src/linker/README.md#using-custom-substitutions). The substitutions file format will be extended to condition the substitutions based on the feature name/value. Any `RuntimeHostConfigurationOptions` which do not have feature implementations in `substitutions.xml` will not result in any modifications to the IL.
 
-The assembly defining a feature will carry an embedded `substitutions.xml` that defines the implementation of the corresponding IL property when the feature switch is set.
+Example of a feature implementation:
+
+```xml
+<linker feature="System.Runtime.OptionalBehavior" value="false">
+  <assembly fullname="System.Runtime.FeatureDefiningAssembly">
+    <type fullname="System.Runtime.FeatureDefiningType">
+      <method signature="bool IsOptionalFeatureEnabled()" body="stub" value="false">
+      </method>
+    </type>
+  </assembly>
+</linker>
+```
+
+Example of setting a feature property from MSBuild.
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <!-- disable the OptionalBehavior feature -->
+    <OptionalBehavior>false</OptionalBehavior>
+  </PropertyGroup>
+</Project>
+```
+
+Similarly, SDK components could set default values for feature properties:
+```xml
+<Project>
+  <!-- build logic for an SDK component -->
+...
+  <PropertyGroup>
+    <OptionalBehavior Condition="'$(OptionalBehavior)' == ''">false</OptionalBehavior>
+  </PropertyGroup>
+...
+</Project>
+```
+SDK authors as always need to ensure that logic is imported in the correct order to allow users to override these default values, if allowed.
 
 ## Open questions
 
