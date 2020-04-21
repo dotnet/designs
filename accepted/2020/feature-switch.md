@@ -62,24 +62,26 @@ Feature switches for localized functionality which is not likely to span multipl
 
 It's up to each feature what is the behavior when it's turned off. In lot of cases the code would probably throw an exception, but in some cases it may be able to fallback to different implementation. For example if HTTP2 is disabled the code may be able to use HTTP1 transparently.
 
+The property's value will be burned in by the linker when a corresponding feature switch is set at link time. The value to burn in is defined by a `substitutions.xml` carried with the assembly that defines the property.
+
 *Implementation note: The property which is used to determine if the feature is on or off should be written and used in such a way that tiering optimizations would be possible and JIT could trim away the "unused" code. Pattern which should achieve this in most cases is to get a read-only static bool property.*
 
 ### Unified pattern for feature definition in MSBuild
 Introduce a standard pattern how to define these properties in the SDK. Basically a way to define a property and have it automatically passed through to `.runtimeconfig.json` as well as linker substitutions.
 
-This requires a mapping between the MSBuild property name, the full name of the feature switch for runtime configuration (which would show up in `.runtimeconfig.json`) and the read-only static property in the managed code which is used to branch the behavior. 
+This requires a mapping between the MSBuild property name, the full name of the feature switch for runtime configuration (which would show up in `.runtimeconfig.json`) and the read-only static property in the managed code which is used to branch the behavior. The mappings will be defined by [`RuntimeHostConfigurationOptions`](https://github.com/dotnet/sdk/blob/36ef8b2aa8e5d579c921704bdab69a7407936889/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L347) which includes an AppContext configuration name and its value based on the values of user-facing MSBuild properties, and by `substitutions.xml` files embedded in the assembly defining the features.
 
-*Note that it seems likely that some of switches may require 1:many mapping because they're targeting existing code which uses multiple properties to determine the presence of the feature.*
+*Note that it seems likely that some of switches may require 1:many mapping because they're targeting existing code which uses multiple properties to determine the presence of the feature. The `substitutions.xml` will allow 1:many mappings if needed.*
 
 Ultimately some of these switches may also need VS UI integration, but for now most of the feature switches should be perfectly fine with only MSBuild properties.
 
 The ability to specify these from MSBuild projects as properties also means that different templates and SDKs can set different defaults - so for example Blazor or Xamarin SDKs may choose to turn off some of these features by default.
 
 ### Generate the right input for the linker in SDK
-Currently there's no integration of the substitutions feature in the linker with the `ILLink` task/targets. Introduce a standard way to  define the content of `substitutions.xml` from the SDK (MSBuild items/properties) and then implement the file generation in the `ILLink` task and pass it to the linker.
 
-*Or change linker to not use the XML format and instead take the input on command line.*
+The names/values from `RuntimeHostConfigurationOptions` will be passed to the ILLink task, which will apply any feature substitutions defined in `substitutions.xml`. The substitutions file format will be extended to condition the substitutions based on the feature name/value.
 
+The assembly defining a feature will carry an embedded `substitutions.xml` that defines the implementation of the corresponding IL property when the feature switch is set.
 
 ## Open questions
 
