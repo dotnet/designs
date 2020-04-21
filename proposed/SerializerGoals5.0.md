@@ -21,7 +21,7 @@ The options to consider, in priority order include:
 
 This is important for scenarios including [micro-services](https://github.com/dotnet/runtime/issues/1568) where processes start and exit frequently. It is also important for benchmarks including TechEmpower.
 
-The serializer has fast startup compared to most other serializers including Newtonsoft's Json.NET, JIL and Utf8Json. Startup perf is mostly affected by generating IL - the Jil serializer is the most aggressive here and has the highest startup cost.
+The serializer has fast startup compared to most other serializers including Newtonsoft's Json.NET, Jil and Utf8Json. Startup perf is mostly affected by generating IL - the Jil serializer is the most aggressive here and has the highest startup cost (but in many cases has the fastest steady-state performance).
 
 There is no stated goal for 5.0 to make the steady-state CPU performance faster than it is now in 5.0 for general sceanrios, although we do not want to noticably regress steady-state performance while addressing the stated goals including improving startup performance. It is possible some code-gen options described later may have steady-state performance gains, but again that is not a stated goal.
 
@@ -50,7 +50,7 @@ Primarily this is for faster downloads of the runtime and applications.
 
 The runtime and BCL can be made smaller by removing Reflection.Emit support.
 
-Although outside the scope of this document, an application can be made smaller by running ILLinker (e.g. "tree-shaking"). Serializer scenarios are generally unsuited for linking but can be somewhat mitigated by using metadata to declare what members to preserve. The code-gen approaches in this document, depending on implementation, may help with this since they generate direct calls to members that are detectable by the linker.
+Although outside the scope of this document, an application can be made smaller by running ILLinker (e.g. "tree-shaking"). Serializers generated at runtime are generally problematic for linking but can be somewhat mitigated by using metadata to declare what members to preserve. The code-gen approaches in this document, depending on implementation, may help with this since they generate direct calls to members that are detectable by the linker.
 
 # Serializer design background
 ## Runtime code dependencies
@@ -131,7 +131,7 @@ A (prototype)[https://github.com/layomia/jsonconvertergenerator] was created for
 It used a simple (non-Roslyn) code generator using the existing custom Value converter model. Various serializer features (null handling, property lookup on deserialization, reference handling, async support, use of custom converters, etc) would need to be baked into the generated code. Thus the resuling code generation will be large, complex and not servicable. At the extreme (with no new helper methods exposed the serializer), each converter would need to implement all of the various features of the serializer.
 
 ## Metadata provider code-gen
-A run-time only prototype (not the actual generator) was created for this by @steveharter (see sample generated code below). It makes public the existing internal metadata classes including `JsonClassInfo` and `JsonPropertyInfo`.
+A run-time only [prototype](https://github.com/steveharter/runtime/tree/ExtConverters) which does not include the actual code generator was created by @steveharter (see sample generated code below). It makes public the existing internal metadata classes including `JsonClassInfo` and `JsonPropertyInfo`.
 
 It allows for minimal code gen and overlaps with other requested features including property ordering, before and after callbacks, and programmatic reading and writing of metadata.
 
@@ -230,7 +230,7 @@ public class WeatherForecast
 </details>
 
 ## Object converter + code-gen
-This is similar to "Metadata provider code-gen" but includes exposing a new type of "object converter". This type of converter, however, exposes the raw reader and writer and thus has performance issues with Streams due to requiring "read-ahead" which means the JSON is ensured to be complete to the end of the current JSON level and not encounter end-of-buffer scenarios within a converter.
+This is similar to "Metadata provider code-gen" but includes exposing a [new type of "object converter"](https://github.com/dotnet/runtime/issues/1562) for POCOs. This type of converter, however, exposes the raw reader and writer and thus has a slight performance degradation with Streams due to requiring "read-ahead". Read-ahead means the serializer ensures the JSON that will be obtained by the converter through the reader will not encounter end-of-buffer.
 
 # Code-Gen
 For the options that use code-gen there are several issues to discuss; this is covered in [other documentation](https://gist.github.com/layomia/5221e73374fd74dc360e74731dacfdb5) but one open issue is to determine what Types to add code-gen for. The two basic approaches are automatic and explicit:
@@ -297,5 +297,5 @@ The "Metadata code-gen" option does not require "Reflection features" although i
 
 **The recommended plan for 5.0 (in sequence):**
 1. *Required*: implement the required features for the "Minimal" option.
-2. *Optional*: Implement "Reflection features". If the result is noticably slower in the steady-state scenarios then we may need to consider contingency plans such as options to control whether to use IL emit or not -- i.e. startup vs. steady-state tradeoffs.
+2. *Optional*: Implement "Reflection features". If the result is noticeably slower in the steady-state scenarios then we may need to consider contingency plans such as options to control whether to use IL emit or not -- i.e. startup vs. steady-state tradeoffs.
 3. *Optional*: pending performance or overlap with other scenarios, implement "Metadata code-gen". This avoids all usages of System.Reflection including looking up properties and attributes. There may or may not be generated code for getters, setters or constructors depending on the performance of "Reflection features" and linker "tree shaking" requirements.
