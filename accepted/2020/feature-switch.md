@@ -81,9 +81,9 @@ Example definition of a feature flag with SDK support in [`Microsoft.NET.Sdk.tar
 ```xml
 <ItemGroup>
     ...
-    <RuntimeHostConfigurationOption Include="System.Runtime.OptionalBehavior"
-                                    Condition="'$(OptionalBehavior)' != ''"
-                                    Value="$(OptionalBehavior)" />
+    <RuntimeHostConfigurationOption Include="System.Runtime.OptionalFeatureBehavior"
+                                    Condition="'$(OptionalUserFacingBehavior)' != ''"
+                                    Value="$(OptionalUserFacingBehavior)" />
     ...
 </ItemGroup>
 ```
@@ -97,10 +97,10 @@ All names/values from `RuntimeHostConfigurationOptions` will be passed to the IL
 Example of a feature implementation:
 
 ```xml
-<linker feature="System.Runtime.OptionalBehavior" value="false">
-  <assembly fullname="System.Runtime.FeatureDefiningAssembly">
+<linker>
+  <assembly fullname="System.Runtime.FeatureDefiningAssembly" feature="System.Runtime.OptionalFeatureBehavior" featurevalue="false">
     <type fullname="System.Runtime.FeatureDefiningType">
-      <method signature="bool IsOptionalFeatureEnabled()" body="stub" value="false">
+      <method signature="System.Boolean get_IsOptionalFeatureEnabled()" body="stub" value="false">
       </method>
     </type>
   </assembly>
