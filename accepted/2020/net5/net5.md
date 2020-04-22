@@ -559,9 +559,6 @@ Concretely, this means the following:
     * `GetDotNetFrameworkName()` should continue to return what it does today –
       the long form of the target framework information, without platform
       information
-        * We should consider using `[Obsolete]` for `GetDotNetFrameworkName()`,
-          and creating a new, separate API that always returns the short form
-          and is more usefully named.
     * Add a new `GetPlatformName()` method which returns the long form of the
       platform information. This is similar in format to the `FrameworkName`,
       but does not include a "v" before the version.
