@@ -62,16 +62,16 @@ Feature switches for localized functionality which is not likely to span multipl
 
 It's up to each feature what is the behavior when it's turned off. In lot of cases the code would probably throw an exception, but in some cases it may be able to fallback to different implementation. For example if HTTP2 is disabled the code may be able to use HTTP1 transparently.
 
-The property's value will be burned in by the linker when a corresponding feature switch is set at link time. The value to burn in is defined by an embedded `substitutions.xml` carried with the assembly that defines the property.
+The property's value will be burned in by the linker when a corresponding feature switch is set at link time. The value to burn in is defined by an embedded `ILLink.Substitutions.xml` carried with the assembly that defines the property.
 
 *Implementation note: The property which is used to determine if the feature is on or off should be written and used in such a way that tiering optimizations would be possible and JIT could trim away the "unused" code. Pattern which should achieve this in most cases is to get a read-only static bool property.*
 
 ### Unified pattern for feature definition in MSBuild
 Introduce a standard pattern how to define these properties in the SDK. Basically a way to define a property and have it automatically passed through to `.runtimeconfig.json` as well as linker substitutions.
 
-This requires a mapping between the MSBuild property name, the full name of the feature switch for runtime configuration (which would show up in `.runtimeconfig.json`) and the read-only static property in the managed code which is used to branch the behavior. The mappings will be defined by [`RuntimeHostConfigurationOptions`](https://github.com/dotnet/sdk/blob/36ef8b2aa8e5d579c921704bdab69a7407936889/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L347) which includes an AppContext configuration name and its value based on the values of user-facing MSBuild properties, and by `substitutions.xml` files embedded in the assembly defining the features.
+This requires a mapping between the MSBuild property name, the full name of the feature switch for runtime configuration (which would show up in `.runtimeconfig.json`) and the read-only static property in the managed code which is used to branch the behavior. The mappings will be defined by [`RuntimeHostConfigurationOptions`](https://github.com/dotnet/sdk/blob/36ef8b2aa8e5d579c921704bdab69a7407936889/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L347) which includes an AppContext configuration name and its value based on the values of user-facing MSBuild properties, and by `ILLink.Substitutions.xml` files embedded in the assembly defining the features.
 
-*Note that it seems likely that some of switches may require 1:many mapping because they're targeting existing code which uses multiple properties to determine the presence of the feature. The `substitutions.xml` will allow 1:many mappings if needed.*
+*Note that it seems likely that some of switches may require 1:many mapping because they're targeting existing code which uses multiple properties to determine the presence of the feature. The `ILLink.Substitutions.xml` will allow 1:many mappings if needed.*
 
 Ultimately some of these switches may also need VS UI integration, but for now most of the feature switches should be perfectly fine with only MSBuild properties.
 
@@ -92,7 +92,7 @@ The name of the property should be picked so that it's clear what `true`/`false`
 
 ### Generate the right input for the linker in SDK
 
-All names/values from `RuntimeHostConfigurationOptions` will be passed to the ILLink task, which will apply any feature substitutions defined in [`substitutions.xml`](https://github.com/mono/linker/blob/master/src/linker/README.md#using-custom-substitutions). The substitutions file format will be extended to condition the substitutions based on the feature name/value. Any `RuntimeHostConfigurationOptions` which do not have feature implementations in `substitutions.xml` will not result in any modifications to the IL.
+All names/values from `RuntimeHostConfigurationOptions` will be passed to the ILLink task, which will apply any feature substitutions defined in [`ILLink.Substitutions.xml`](https://github.com/mono/linker/blob/master/src/linker/README.md#using-custom-substitutions). The substitutions file format will be extended to condition the substitutions based on the feature name/value. Any `RuntimeHostConfigurationOptions` which do not have feature implementations in `ILLink.Substitutions.xml` will not result in any modifications to the IL.
 
 Example of a feature implementation:
 
