@@ -289,15 +289,15 @@ the old ones as well as in relation with the new universally portable TFM
 Let's look at two examples:
 
 * **Example A**
-  * Project targets `net6.0-ios`
-  * Package offers
-    * `net6.0`
-    * `net5.0-ios`
+    * Project targets `net6.0-ios`
+    * Package offers
+        * `net6.0`
+        * `net5.0-ios`
 * **Example B**
-  * Project targets `net6.0-ios`
-  * Package offers
-    * `net6.0`
-    * `xamarin.ios`
+    * Project targets `net6.0-ios`
+    * Package offers
+        * `net6.0`
+        * `xamarin.ios`
 
 There are effectively two options:
 
@@ -670,17 +670,17 @@ both `NET6_0` and `NET5_0` are defined. The same applies to OS bindings.
 Examples:
 
 * `net5.0`
-  * `NETCOREAPP`, `NETCOREAPP3_1` (for backwards compatibility)
-  * `NET`, `NET5_0`
+    * `NETCOREAPP`, `NETCOREAPP3_1` (for backwards compatibility)
+    * `NET`, `NET5_0`
 * `net6.0`
-  * (same as `net5.0`)
-  * `NET6_0`
+    * (same as `net5.0`)
+    * `NET6_0`
 * `net5.0-ios13.0`
-  * (same as `net5.0`)
-  * `IOS`, `IOS13_0`
+    * (same as `net5.0`)
+    * `IOS`, `IOS13_0`
 * `net5.0-ios14.0`
-  * (same as `net5.0-ios13`)
-  * `IOS14_0`
+    * (same as `net5.0-ios13`)
+    * `IOS14_0`
 
 ### What would we target?
 
