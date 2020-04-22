@@ -502,6 +502,53 @@ NuGet uses the long form `.NETFramework,Version=4.5` in the dependency groups.
 We may want to change NuGet to allow the friendly name there as well and update
 our packaging tools to re-write to friendly name on pack._
 
+### Mapping to long names
+
+As [mentioned earlier](#mapping-to-properties), TFMs have multiple formats. The
+most common ones are the friendly name (`netstandard2.0`) and the long name
+(`.NETStandard, Version=2.0`). NuGet also uses some other encodings (such as
+`.NETStandard2.0`).
+
+All places that have to refer to a NuGet asset need a naming encoding that can
+represent the new TFMs which now also includes platform information. We'd like
+to avoid using a long name like
+
+```text
+.NETCoreApp, Version=5.0, Platform=iOS, PlatformVersion=13.0
+```
+
+The reason being that the NuGet short name is essentially used to encode both a
+target framework and a target platform, both of which already have a canonical
+long name form.
+
+Since the friendly name has become the primary name that developers author in
+the developer experience (project file, NuGet folder names, etc) we'd like to
+standardize on that encoding. Unfortunately, NuGet itself isn't consistent with
+using the friendly name today. We generally don't want to break backwards
+compatibility, that is existing frameworks should be encoded in the way they are
+encoded today, be that friendly name, long name or some custom encoding.
+
+However, for frameworks in the .NET 5 era (and later) we want to consistently
+use the friendly name. This includes (but is not limited to) the following
+artifacts:
+
+* NuSpec file
+* Lock file
+* Assets file
+
+The same applies to public APIs (for example, NuGet or the dependency model) that
+return framework names: .NET 5 era TFMs should use the friendly names, all other
+TFMs should be returned in whatever encoding they are returned today.
+
+Moving forward, there is a desire to extend the `<TargetFrameworks>` support in
+MSBuild to support arbitrary strings and have the project file use conditions to
+initialize each inner build to the appropriate target framework & target
+platform. In this scenario the asset file will have to store package information
+in groups whose is no longer a TFM but whatever the string was that the user put
+in `<TargetFrameworks>`. By using the friendly name we're moving closer to this
+direction, because it provides symmetry between what strings are used in
+`<TargetFrameworks>` and what strings are used in the asset files.
+
 ### Window-specific behavior
 
 _**Open Issue**. Review with WinForms/WPF & Windows folks._
