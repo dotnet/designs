@@ -113,8 +113,8 @@ Example of setting a feature property from MSBuild.
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
-    <!-- disable the OptionalBehavior feature -->
-    <OptionalBehavior>false</OptionalBehavior>
+    <!-- disable the OptionalUserFacingBehavior feature -->
+    <OptionalUserFacingBehavior>false</OptionalUserFacingBehavior>
   </PropertyGroup>
 </Project>
 ```
@@ -125,7 +125,7 @@ Similarly, SDK components could set default values for feature properties:
   <!-- build logic for an SDK component -->
 ...
   <PropertyGroup>
-    <OptionalBehavior Condition="'$(OptionalBehavior)' == ''">false</OptionalBehavior>
+    <OptionalUserFacingBehavior Condition="'$(OptionalUserFacingBehavior)' == ''">false</OptionalUserFacingBehavior>
   </PropertyGroup>
 ...
 </Project>
@@ -133,28 +133,6 @@ Similarly, SDK components could set default values for feature properties:
 SDK authors as always need to ensure that logic is imported in the correct order to allow users to override these default values, if allowed.
 
 ## Open questions
-
-### Boolean only or more complex values
-Should the feature switches always represent simple on/off statements and thus be represented as boolean properties? In some cases the simple boolean may necessitate presence of multiple similar feature switches. For example the security algorithms case described above. In the extreme each such algorithm would have its own feature switch - this would obviously create confusion. We could potentially allow feature switches to have string values from a predefined set to solve this problem.
-
-### Which components own the mapping between different representations of feature switches
-There are 3 different representations to each feature switch
-* The MSBuild property - for example `InvariantGlobalization` - this is used by developers to turn the feature on/off.
-* The runtime property in `.runtimeconfig.json` - for example `System.Globalization.Invariant` - this is used at runtime to alter the behavior of the code (via the IL property below)
-* The IL property which is used in the code - for example `System.Globalization.GlobalizationMode.Invariant, System.Private.CoreLib` - this is used by the linker to fix the value of the property and propagate that to remove unused code.
-
-The mapping between MSBuild property and runtime property pretty much has to be part of the SDK (in the MSBuild somewhere) as the SDK already generates the `.runtimeconfig.json` and this needs to be part of it. The second mapping to the IL property can take several options:
-* Also int he SDK - becomes an input to the ILLink task
-* Encoded as attributes in the BCL - we could add a new attribute to the IL properties to mark which runtime options they map to - linker can create the mapping from these attributes. In this case the ILLink task would take the runtime properties as input. For example:
-```C#
-internal static class GlobalizationMode
-{
-    [FeatureSwitch("System.Globalization.Invariant")]
-    internal static bool Invariant { get; }
-}
-```
-
-* Inferred by the linker - in the extreme linker might be able to track the calls to `AppContext.TryGetSwitch` and perform enough data flow analysis to determine the value of the IL property from the runtime property value. In this case the ILLink task would also take runtime properties as input
 
 ### Testing challenges
 Having feature switches which are exposed as public knobs means that the number of valid and supported configurations of libraries grows in a significant way. Testing each feature switch in isolation is not that costly, but making sure there are no unintended interactions might be problematic.
@@ -168,3 +146,33 @@ Using `AppContext.TryGetSwitch` as the underlying runtime store of these switche
 ## References
 
 Very similar functionality has been proposed before in [dotnet/designs#42](https://github.com/dotnet/designs/pull/42). The main differences proposed here is to use "if/else" branches in the code and with IL properties to represent feature switches. The previous proposal used attributes on methods.
+
+
+## Considered designs
+
+### Boolean only or more complex values
+Should the feature switches always represent simple on/off statements and thus be represented as boolean properties? In some cases the simple boolean may necessitate presence of multiple similar feature switches. For example the security algorithms case described above. In the extreme each such algorithm would have its own feature switch - this would obviously create confusion. We could potentially allow feature switches to have string values from a predefined set to solve this problem.
+
+*For now we'll start with support for simple boolean and possibly also numeric values (enums). The design as proposed does not prevent any type of value to be used, it's just a matter of supporting it in the linker.*
+
+### Which components own the mapping between different representations of feature switches
+There are 3 different representations to each feature switch
+* The MSBuild property - for example `OptionalUserFacingBehavior` - this is used by developers to turn the feature on/off.
+* The runtime property in `.runtimeconfig.json` - for example `System.Runtime.OptionalFeatureBehavior` - this is used at runtime to alter the behavior of the code (via the IL property below)
+* The IL property which is used in the code - for example `System.Runtime.FeatureDefiningType.get_IsOptionalFeatureEnabled, System.Runtime.FeatureDefiningAssembly` - this is used by the linker to fix the value of the property and propagate that to remove unused code.
+
+The mapping between MSBuild property and runtime property pretty much has to be part of the SDK (in the MSBuild somewhere) as the SDK already generates the `.runtimeconfig.json` and this needs to be part of it. The second mapping to the IL property can take several options:
+* Also in the SDK - becomes an input to the ILLink task
+* Encoded as attributes in the BCL - we could add a new attribute to the IL properties to mark which runtime options they map to - linker can create the mapping from these attributes. In this case the ILLink task would take the runtime properties as input. For example:
+```C#
+internal static class FeatureDefiningType
+{
+    [FeatureSwitch("System.Runtime.OptionalFeatureBehavior")]
+    internal static bool IsOptionalFeatureEnabled { get; }
+}
+```
+
+* Inferred by the linker - in the extreme linker might be able to track the calls to `AppContext.TryGetSwitch` and perform enough data flow analysis to determine the value of the IL property from the runtime property value. In this case the ILLink task would also take runtime properties as input.
+* Encoded in the `substitutions.xml` file (typically embedded in the assembly which it applies to).
+
+*For now we decided to store these in the `substitutions.xml` as it allows for great flexibility. If this proves too complex for 3rd party feature switches we could add the attribute approach as an alternative.*
