@@ -69,7 +69,7 @@ The property's value will be burned in by the linker when a corresponding featur
 ### Unified pattern for feature definition in MSBuild
 Introduce a standard pattern how to define these properties in the SDK. Basically a way to define a property and have it automatically passed through to `.runtimeconfig.json` as well as linker substitutions.
 
-This requires a mapping between the MSBuild property name, the full name of the feature switch for runtime configuration (which would show up in `.runtimeconfig.json`) and the read-only static property in the managed code which is used to branch the behavior. The mappings will be defined by [`RuntimeHostConfigurationOptions`](https://github.com/dotnet/sdk/blob/36ef8b2aa8e5d579c921704bdab69a7407936889/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L347) which includes an AppContext configuration name and its value based on the values of user-facing MSBuild properties, and by `ILLink.Substitutions.xml` files embedded in the assembly defining the features.
+This requires a mapping between the MSBuild property name, the full name of the feature switch for runtime configuration (which would show up in `.runtimeconfig.json`) and the read-only static property in the managed code which is used to branch the behavior. The mappings will be defined by [`RuntimeHostConfigurationOptions`](https://github.com/dotnet/sdk/blob/36ef8b2aa8e5d579c921704bdab69a7407936889/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L347) which includes an AppContext configuration name and its value based on the values of user-facing MSBuild properties, and by `ILLink.Substitutions.xml` files embedded in the assembly defining the features. `RuntimeHostConfigurationOptions` will have optional boolean `Link` metadata which indicates that the feature setting should be optimized by the linker.
 
 *Note that it seems likely that some of switches may require 1:many mapping because they're targeting existing code which uses multiple properties to determine the presence of the feature. The `ILLink.Substitutions.xml` will allow 1:many mappings if needed.*
 
@@ -83,7 +83,8 @@ Example definition of a feature flag with SDK support in [`Microsoft.NET.Sdk.tar
     ...
     <RuntimeHostConfigurationOption Include="System.Runtime.OptionalFeatureBehavior"
                                     Condition="'$(OptionalUserFacingBehavior)' != ''"
-                                    Value="$(OptionalUserFacingBehavior)" />
+                                    Value="$(OptionalUserFacingBehavior)"
+                                    Link="true" />
     ...
 </ItemGroup>
 ```
