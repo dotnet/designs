@@ -546,7 +546,7 @@ Concretely, this means the following:
       the target framework and target platform information (and probably the
       RID) separately (see [NuGet/Home#5154](https://github.com/NuGet/Home/issues/5154)).
 * `packages.lock.json`
-    * **Use friendly name for .NET 5 and newer**
+    * **Use friendly name for .NET 5 and higher**
     * For other target frameworks use current encoding (i.e. long form)
     * This allows old and new tooling to be used in the same repo
 * `.nuspec` files
@@ -555,13 +555,8 @@ Concretely, this means the following:
       other targets
     * This will preserve compatibility with older clients, and can be considered
       mostly an implementation detail of NuGet
-* `NuGetFramework` APIs
-    * `GetDotNetFrameworkName()` should continue to return what it does today –
-      the long form of the target framework information, without platform
-      information
-    * Add a new `GetPlatformName()` method which returns the long form of the
-      platform information. This is similar in format to the `FrameworkName`,
-      but does not include a "v" before the version.
+* `GetDotNetFrameworkName()` NuGet API
+    * **Use friendly name for .NET 5 and higher**
 * Package Manager UI in VS
     * [Use short form](#tfms-in-the-ui)
 
