@@ -538,8 +538,7 @@ TFMs should be returned in whatever encoding they are returned today.
 Concretely, this means the following:
 
 * `project.assets.json`
-    * **Always use friendly name**. This file doesn't need to be shared between
-      older SDK versions.
+    * **Use friendly name for .NET 5 and higher**
     * Eventually we'd like to update the format so that the keys to the target
       are not necessarily parseable TFMs, but can be arbitrary strings defined
       in the `<TargetFrameworks>` property. That would mean we'd need to store
