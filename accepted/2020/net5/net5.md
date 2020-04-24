@@ -19,11 +19,11 @@ Framework, Silverlight, .NET Micro Framework, .NET Portable Class Libraries,
 doesn't even include what the Mono community built. While this evolution of .NET
 can be explained (and was properly motivated) it created a massive tax: the
 concept count. If you're new to .NET, where would you start? What is the latest
-stack? You may say, “of course that's .NET Core” but how would anyone know that
+stack? You may say, "of course that's .NET Core" but how would anyone know that
 by just looking at the names?
 
 We've simplified the world with .NET Standard, in that class library authors
-don't have to think about all the different “boxes” that represent different
+don't have to think about all the different "boxes" that represent different
 implementations of .NET. It did that by unifying the *API surface* of the
 various .NET implementations. Ironically, this resulted in us having to add yet
 another box, namely .NET Standard.
@@ -501,6 +501,64 @@ _**Open Issue**. We should try to keep the TFI out of the .nuspec file. It seems
 NuGet uses the long form `.NETFramework,Version=4.5` in the dependency groups.
 We may want to change NuGet to allow the friendly name there as well and update
 our packaging tools to re-write to friendly name on pack._
+
+### Mapping to long names
+
+As [mentioned earlier](#mapping-to-properties), TFMs have multiple formats. The
+most common ones are the friendly name (`netstandard2.0`) and the long name
+(`.NETStandard, Version=2.0`). NuGet also uses some other encodings (such as
+`.NETStandard2.0`).
+
+All places that have to refer to a NuGet asset need a naming encoding that can
+represent the new TFMs which now also includes platform information. We'd like
+to avoid using a long name like
+
+```text
+.NETCoreApp, Version=5.0, Platform=iOS, PlatformVersion=13.0
+```
+
+The reason being that the NuGet short name is essentially used to encode both a
+target framework and a target platform, both of which already have a canonical
+long name form.
+
+Since the friendly name has become the primary name that developers author in
+the developer experience (project file, NuGet folder names, etc) we'd like to
+standardize on that encoding. Unfortunately, NuGet itself isn't consistent with
+using the friendly name today. We generally don't want to break backwards
+compatibility, that is existing frameworks should be encoded in the way they are
+encoded today, be that friendly name, long name or some custom encoding.
+
+However, for frameworks in the .NET 5 era (and later) we want to consistently
+use the friendly name.
+
+The same applies to public APIs (for example, NuGet or the dependency model) that
+return framework names: .NET 5 era TFMs should use the friendly names, all other
+TFMs should be returned in whatever encoding they are returned today.
+
+Concretely, this means the following:
+
+* `project.assets.json`
+    * **Always use friendly name**. This file doesn't need to be shared between
+      older SDK versions.
+    * Eventually we'd like to update the format so that the keys to the target
+      are not necessarily parseable TFMs, but can be arbitrary strings defined
+      in the `<TargetFrameworks>` property. That would mean we'd need to store
+      the target framework and target platform information (and probably the
+      RID) separately (see [NuGet/Home#5154](https://github.com/NuGet/Home/issues/5154)).
+* `packages.lock.json`
+    * **Use friendly name for .NET 5 and higher**
+    * For other target frameworks use current encoding (i.e. long form)
+    * This allows old and new tooling to be used in the same repo
+* `.nuspec` files
+    * **Use friendly name for .NET 5 and higher**
+    * Use existing nuspec form (which is neither friendly- nor long name) for
+      other targets
+    * This will preserve compatibility with older clients, and can be considered
+      mostly an implementation detail of NuGet
+* `GetDotNetFrameworkName()` NuGet API
+    * **Use friendly name for .NET 5 and higher**
+* Package Manager UI in VS
+    * [Use short form](#tfms-in-the-ui)
 
 ### Window-specific behavior
 
