@@ -198,7 +198,7 @@ A workload or framework reference that referenced `"foo.framework"` would get `"
 
 Here is a *hypothetical* example manifest. It's not prescriptive but demonstrates concepts an patterns that can be used by platform implementations. It is annotated with comments, although **comments are not permitted in real manifests**.
 
-```json
+```json5
 {
     "version": 5,
     "workloads": {
@@ -350,7 +350,7 @@ The version numbers of the *unversioned packs* are then updated, and the `Worklo
 
 Here is an manifest snippet. It only uses a single pack, but concrete examples would have versioned copies of most of their packs and workloads.
 
-```json
+```json5
 "workloads": {
     "ios-build-14": {
         "kind": "build",
