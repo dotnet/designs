@@ -19,23 +19,23 @@ The options to consider, in priority order include:
 
 ## Faster startup performance
 
-This is important for scenarios including [micro-services](https://github.com/dotnet/runtime/issues/1568) where processes start and exit frequently. It is also important for benchmarks including TechEmpower.
+This is important for scenarios including [micro-services](https://github.com/dotnet/runtime/issues/1568) where processes start and exit frequently.
 
 The serializer has fast startup compared to most other serializers including Newtonsoft's Json.NET, Jil and Utf8Json. Startup perf is mostly affected by generating IL - the Jil serializer is the most aggressive here and has the highest startup cost (but in many cases has the fastest steady-state performance).
 
-There is no stated goal for 5.0 to make the steady-state CPU performance faster than it is now in 5.0 for general sceanrios, although we do not want to noticably regress steady-state performance while addressing the stated goals including improving startup performance. It is possible some code-gen options described later may have steady-state performance gains, but again that is not a stated goal.
+There is no stated goal for 5.0 to make the steady-state CPU performance faster than it is now in 5.0 for general scenarios, although we do not want to noticably regress steady-state performance while addressing the stated goals including improving startup performance. It is possible some code-gen options described later may have steady-state performance gains, but again that is not a stated goal.
 
 <details>
   <summary>5.0 master startup benchmarks (click to expand)</summary>
 
-A small POCO was used (`LoginViewModel` benchmark test class).
+A small POCO was used (`LoginViewModel` benchmark test class). Measurements were taken "cold" from deserializing hard-coded JSON directly and from serializing a populated object directly meaning there was no previous loading of the serialization assembly or inspecting POCO types for custom attributes beforehand.
 
-| Serializer |  Serialize (us)  | Serialize ratio | Deserialize (us) | Deserialize ratio |
+| Serializer |  Serialize Mean (us)  | Serialize ratio | Deserialize Mean (us) | Deserialize ratio |
 | :-- | :-- | :-- | :-- | :--
-| **System.Text.Json** | 4,720 | 1.00 | 19,379 | 1.00 
-| **Json.NET** | 24,916 | 5.28 | 102,226 | 5.28 
-| **Utf8Json** | 7,290 | 1.54 | 106,817 | 5.51 
-| **Jil** | 66,456 | 14.08 | 170,548 | 8.80 
+| **System.Text.Json** | 27,887 | 1.00 | 26,864 | 1.00 
+| **Json.NET** | 81,872 | 2.94 | 80,307 | 2.99
+| **Utf8Json** | 69,681 | 2.50 | 69,383 | 2.58
+| **Jil** | 103,760 | 3.72 | 97,679 | 3.64
 </details>
 
 ## Reduced memory usage
@@ -43,7 +43,7 @@ Reducing private bytes (non-shared per-process) memory is important for Bing sce
 
 This can be done by:
 - Avoiding runtime code generation including Reflection.Emit or JITting.
-- Capturing POCO metadata in generated code instead of RAM.
+- Minimize cached state held by the serializer if it can call into generated code to obtain or process the values. For example, it is possible to write a JSON property name with hard-coded escaped values instead of allocating a string or `JsonEncodedText` instance to hold the value.
 
 ## Reduced size-on-disk
 Primarily this is for faster downloads of the runtime and applications.
@@ -104,12 +104,12 @@ Breaking this apart:
 **This option should be assumed as a prerequisite for all of the other options below.**
 
 Basic features include:
-- Avoid reflection emit when it is not supported
-- Improve caching
+- Avoid runtime code generation when it is not supported.
+- Improve caching.
 - Other smaller features TBD.
 
-Reflection emit is used both directly and indirectly by the serializer:
-  - Directly: used to generate getters, setters and calls to constructors.
+Runtime code generation is used:
+  - Directly: used to generate getters, setters and calls to constructors via Reflection.Emit APIs.
   - Indirectly: used to support strongly-typed converters for value types that avoid boxing. This includes usages of `Type.MakeGenericType` (and possibly `Type.MakeGenericMethod` pending additional research).
 
 Some early issues created to start tracking the work:
@@ -117,7 +117,7 @@ Some early issues created to start tracking the work:
 - [Add deferred loading of System.Private.Uri assembly by the serializer](https://github.com/dotnet/runtime/issues/35029). Minor startup gains; low-hanging fruit.
 
 ## Reflection features
-As described in the [System.Reflection roadmap](https://github.com/dotnet/runtime/issues/31895) it is possible to add new APIs that will eliminate common usages of Reflection.Emit including getters, setters and constructors. This will help with the direct usage of Reflection.Emit, but not the indirect usage.
+As described in the [System.Reflection roadmap](https://github.com/dotnet/runtime/issues/31895) it is possible to add new APIs that will eliminate common usages of Reflection.Emit including getters, setters and constructors. This will help with the direct useage of runtime code generation, but not the indirect usage.
 
 Note that AOT code-gen options likely eliminate the need for new reflection features for those POCOs that are code-gen'd. However, we can't assume or force all POCOs to be code-gen'd.
 
@@ -126,9 +126,23 @@ Misc other thoughts:
     - Another fallback would apply to a code-gen option where the generated POCO code closes the generic collections at build time. i.e. instantiate (or reference) a `JsonConverter<List<int>>` directly in the generated code instead of relying on the serializer to close `JsonConverter<T>` to `JsonConverter<List<int>>`.
 
 ## Converter code-gen
-A (prototype)[https://github.com/layomia/jsonconvertergenerator] was created for this by @layomia.
+A (prototype)[https://github.com/layomia/jsonconvertergenerator] was created for this by @layomia. It used a simple (non-Roslyn) code generator using the existing custom Value converter model.
 
-It used a simple (non-Roslyn) code generator using the existing custom Value converter model. Various serializer features (null handling, property lookup on deserialization, reference handling, async support, use of custom converters, etc) would need to be baked into the generated code. Thus the resuling code generation will be large, complex and not servicable. At the extreme (with no new helper methods exposed the serializer), each converter would need to implement all of the various features of the serializer.
+Various serializer features would need to be baked into the generated code including:
+- Setting and getting properties.
+- Calling the constructor, possibly with values from JSON.
+- Null handling (e.g. if a null property should be serialized).
+- Property lookup on deserialization (match JSON property name to Type property) potenially case-insensitive.
+- Property naming policies (such as camel-casing).
+- Escaping and unescaping property names and values (potentially using a custom escaper).
+- Object reference handling (to preserve object references).
+- Extension data (preserving umatched JSON during deserialization so it can be written during serialization).
+- Async support (supporting a mode that doesn't drain a Stream upfront).
+- Use of custom converters (where logic\code is not known so it can't be pushed to code-gen).
+- Composition of objects (`List<Dictionary<string, Poco>>` or `SalesOrder.Customer.Address.City`).
+- New features over time (default values, quoted numbers, ...)
+
+Thus the resuling code generation will be large, complex and not servicable. At the extreme (with no new helper APIs exposed), every converter would need to implement the various serializer features above. However, a given converter's generated code could be made very specific to its Type and the environment expected to execute in (known `JsonSerializerOptions` values and features used), so much of the logic could be omitted.
 
 ## Metadata provider code-gen
 A run-time only [prototype](https://github.com/steveharter/runtime/tree/ExtConverters) which does not include the actual code generator was created by @steveharter (see sample generated code below). It makes public the existing internal metadata classes including `JsonClassInfo` and `JsonPropertyInfo`.
@@ -184,9 +198,7 @@ public class WeatherForecast
                 HasSetter = true,
                 ShouldSerialize = true,
                 ShouldDeserialize = true,
-                // These delegates are nice that they work with aggressive linker
-                // but slower due to the extra hop (which may be avoided with
-                // new reflection features).
+                // These delegates are nice that they work with an aggressive linker.
                 Get = (obj) => { return ((WeatherForecast)obj).Date; },
                 Set = (obj, value) => { ((WeatherForecast)obj).Date = value; }
             });
