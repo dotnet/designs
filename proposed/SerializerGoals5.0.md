@@ -117,7 +117,7 @@ Some early issues created to start tracking the work:
 - [Add deferred loading of System.Private.Uri assembly by the serializer](https://github.com/dotnet/runtime/issues/35029). Minor startup gains; low-hanging fruit.
 
 ## Reflection features
-As described in the [System.Reflection roadmap](https://github.com/dotnet/runtime/issues/31895) it is possible to add new APIs that will eliminate common usages of Reflection.Emit including getters, setters and constructors. This will help with the direct useage of runtime code generation, but not the indirect usage.
+As described in the [System.Reflection roadmap](https://github.com/dotnet/runtime/issues/31895) it is possible to add new APIs that will eliminate common usages of Reflection.Emit including getters, setters and constructors. This will help with the direct usage of runtime code generation, but not the indirect usage.
 
 Note that AOT code-gen options likely eliminate the need for new reflection features for those POCOs that are code-gen'd. However, we can't assume or force all POCOs to be code-gen'd.
 
