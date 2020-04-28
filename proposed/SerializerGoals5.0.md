@@ -1,6 +1,6 @@
 # Overview and goals
 
-April 21th, 2020.
+April 28th, 2020.
 
 This document provides options and recommendations for 5.0 to handle overlapping serializer goals including reach, faster cold startup performance, reducing memory usage, and smaller size-on-disk.
 
@@ -117,7 +117,7 @@ Some early issues created to start tracking the work:
 - [Add deferred loading of System.Private.Uri assembly by the serializer](https://github.com/dotnet/runtime/issues/35029). Minor startup gains; low-hanging fruit.
 
 ## Reflection features
-As described in the [System.Reflection roadmap](https://github.com/dotnet/runtime/issues/31895) it is possible to add new APIs that will eliminate common usages of Reflection.Emit including getters, setters and constructors. This will help with the direct useage of runtime code generation, but not the indirect usage.
+As described in the [System.Reflection roadmap](https://github.com/dotnet/runtime/issues/31895) it is possible to add new APIs that will eliminate common usages of Reflection.Emit including getters, setters and constructors. This will help with the direct usage of runtime code generation, but not the indirect usage.
 
 Note that AOT code-gen options likely eliminate the need for new reflection features for those POCOs that are code-gen'd. However, we can't assume or force all POCOs to be code-gen'd.
 
@@ -126,7 +126,7 @@ Misc other thoughts:
     - Another fallback would apply to a code-gen option where the generated POCO code closes the generic collections at build time. i.e. instantiate (or reference) a `JsonConverter<List<int>>` directly in the generated code instead of relying on the serializer to close `JsonConverter<T>` to `JsonConverter<List<int>>`.
 
 ## Converter code-gen
-A (prototype)[https://github.com/layomia/jsonconvertergenerator] was created for this by @layomia. It used a simple (non-Roslyn) code generator using the existing custom Value converter model.
+A [prototype](https://github.com/layomia/jsonconvertergenerator) was created for this by @layomia. It used a simple (non-Roslyn) code generator using the existing custom Value converter model.
 
 Various serializer features would need to be baked into the generated code including:
 - Setting and getting properties.
