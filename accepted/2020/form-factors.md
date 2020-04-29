@@ -59,7 +59,7 @@ We expect that developers will continue to experience compatibility issues with 
 
 Binary size is a critical for many scenarios: client-side Blazor, Xamarin or lean micro-services.
 
-[IL linking](https://github.com/mono/linker) is the key technology to significantly reduce the size of applications. It analyzes the application and removes unreachable code from the final binaries. Certain code patterns cannot always be reliably analyzed by the IL linker, which can causes optimized applications to fail at runtime.
+[IL linking](https://github.com/mono/linker) is the key technology to significantly reduce the size of applications. It analyzes the application and removes unreachable code from the final binaries. Certain code patterns cannot always be reliably analyzed by the IL linker, which can cause optimized applications to fail at runtime.
 
 The following feedback outlines customer-observed problems with the *optimized for size* form factor:
 
