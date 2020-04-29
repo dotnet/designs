@@ -67,6 +67,7 @@ The following feedback outlines customer-observed problems with the *optimized f
 - [Linker removes needed runtime dependency](https://github.com/mono/linker/issues/365)
 - [Add marking of types used in .config files](https://github.com/mono/linker/issues/712)
 - [Could not load type 'System.Linq.ParallelEnumerable'](https://github.com/mono/linker/issues/804)
+- [Third-party (DevExpress) DLLs not being trimmed](https://github.com/mono/linker/issues/772)
 
 ### Specialized for Mobile Devices
 
