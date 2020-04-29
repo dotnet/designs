@@ -57,7 +57,7 @@ We expect that developers will continue to experience compatibility issues with 
 
 ### Optimized for Size
 
-Binary size is a critical for many scenarios: client-side Blazor, Xamarian or lean micro-services.
+Binary size is a critical for many scenarios: client-side Blazor, Xamarin or lean micro-services.
 
 [IL linking](https://github.com/mono/linker) is the key technology to significantly reduce the size of applications. It analyzes the application and removes unreachable code from the final binaries. Certain code patterns cannot always be reliably analyzed by the IL linker, which can causes optimized applications to fail at runtime.
 
