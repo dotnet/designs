@@ -107,7 +107,7 @@ Containers are an important deployment and execution environment for modern clou
 
 The .NET runtime libraries have been often fine-tuned for raw speed of server workloads so far, without regards of code size impact. For example, the implementation of UTF-8 encoding grew to thousands of lines through vectorization and other performance optimizations, even though the algorithm can be expressed in a few hundred lines of code.
 
-Going forward, we will consider binary size and speed to be of equal importance. The libraries implementation will be tailored for aggressive trimming. We will create tooling for developers contributing to .NET libraries that will calculate and report the binary size impacts for a given PR. The tooling will not only track basic binary size regression but also additional checks like the introduction of cyclic dependencies. Where warranted, we will introduce separate implementations of key algorithms optimized for size and speed that the specific form factors include as appropriate.
+Going forward, we will consider binary size and speed to be of equal importance. The libraries' implementation will be tailored for aggressive trimming. We will create tooling for developers contributing to .NET libraries that will calculate and report the binary size impacts for a given PR. The tooling will not only track basic binary size regression but also additional checks like the introduction of cyclic dependencies. Where warranted, we will introduce separate implementations of key algorithms optimized for size and speed that the specific form factors include as appropriate.
 
 ### Compatibility Analyzers and Mitigations
 
