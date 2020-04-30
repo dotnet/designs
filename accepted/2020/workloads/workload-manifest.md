@@ -81,7 +81,7 @@ Template packs are NuGet packages to be used by the dotnet templating engine. Wh
 
 ## Tools Packs
 
-Tools packs are .NET global tools packages. Tools packs are installed to `dotnet/tools-packs/{package-id}/{package-version}/` and the latest version of each installed tool made available in the `PATH`. When invoking a tools via `dotnet` e.g. invoking `dotnet-foo` as `dotnet foo`, the runtime will use global.json and the manifest to determine the appropriate version to use, so it is recommended to use the prefix on tools that are shipped in tools packs.
+Tools packs are .NET global tools packages. Tools packs are installed to `dotnet/tools-packs/{package-id}/{package-version}/` and can be invoked via `dotnet` e.g. invoking `dotnet foo`, the runtime will use global.json and the manifest to determine the appropriate version of `dotnet-foo` to run.
 
 Tools packs are intended to be used for tools that are exposed part of the development experience. Tools that are only expected to be invoked by build targets should be distributed in an SDK pack.
 
@@ -99,7 +99,7 @@ Each manifest may have a `WorkloadManifest.targets` MSBuild file beside it that 
 
 ## Packaging
 
-Manifests are packaged and distributed as NuGet packages. They will use a new package type called `SdkManifest` so they cannot be accidentally used as a `PackageReference`. The manifest’s `sdk-manifest.json` and `WorkloadTargets.targets`  are in the root folder of the NuGet. The ID of the NuGet is `{manifest-id}-{sdk-band}` and the version of the NuGet is the manifest version.
+Manifests are packaged and distributed as NuGet packages. They will use the existing package type called `DotnetPlatform` so they cannot be accidentally used as a `PackageReference`. The manifest’s `sdk-manifest.json` and `WorkloadTargets.targets`  are in the root folder of the NuGet. The ID of the NuGet is `{manifest-id}-{sdk-band}` and the version of the NuGet is the manifest version.
 
 As manifests are distributed as NuGets, it’s possible to use preview versions of workloads by subscribing to preview feeds.
 
@@ -109,7 +109,7 @@ Manifests are installed to `dotnet/sdk/{sdk-band}-manifests/{manifest-id}/` in a
 
 The dotnet SDK would be expected to include baseline versions of the installed manifests for all manifests that are known and supported. Although any components listed in this baseline manifest need to work with that SDK version, it does not need to be fully up-to-date: it exists primarily for listing workloads that are available to be installed, and for its ID to be known by the SDK when fetching updated versions from NuGet.
 
-Any workload management operation (install, uninstall, repair update) must be an transactional operation that also updates the installed manifests to the latest available versions for that SDK band.
+Any workload management operation (install, uninstall, repair update) must be a transactional operation that also updates the installed manifests to the latest available versions for that SDK band.
 
 ## Advertising
 
@@ -117,7 +117,9 @@ The .NET tooling will automatically and opportunistically download updated versi
 
 # Format
 
-Manifests are json files. The toplevel is a JSON object, containing the following keys:
+Manifests are json files. Comments are supported, both `//` and `/* */` styles.
+
+The toplevel is a JSON object, containing the following keys:
 
 | Key | Type | Value | Required |
 |--|--|--|--|
@@ -196,7 +198,7 @@ A workload or framework reference that referenced `"foo.framework"` would get `"
 
 ## Example Platform SDK Manifest
 
-Here is a *hypothetical* example manifest. It's not prescriptive but demonstrates concepts an patterns that can be used by platform implementations. It is annotated with comments, although **comments are not permitted in real manifests**.
+Here is a *hypothetical* example manifest. It's not prescriptive but demonstrates concepts an patterns that can be used by platform implementations.
 
 ```json5
 {
@@ -365,7 +367,7 @@ Here is an manifest snippet. It only uses a single pack, but concrete examples w
         ]
     },
     "ios": {
-        "description": "Create, build and run iOS apps ",
+        "description": "Create, build and run iOS apps",
         "packs": [
             "Xamarin.iOS.Framework",
             "Xamarin.iOS.Templates",
@@ -394,6 +396,8 @@ Here is an manifest snippet. It only uses a single pack, but concrete examples w
 
 The only purpose of these side-by-side versions is to make it so that servicing updates to an SDK series do not unexpectedly bring in API changes. They are not intended for long term use. **When a new SDK series is released, the versioned workloads and their packs should be removed from the manifest**.
 
+As demonstrated in this example, template packs should not be side-by-side versioned within an SDK band. Templates should always target the newest framework, automatically opting newly created projects into the newer of the side-by-side versions of the workload. If there is a developer scenario where specifying the framework is important then it should be exposed as a parameter on the templates rather than a separate template.
+
 ## Expected SDK Resolution Behavior
 
 The MSBuild logic in the `WorkloadManifest.targets` that imports SDKs packs based on the `TargetPlatformVersion` MSBuild property should use it as a **lower bound** on the pack OS API version, and implement the following behaviors:
@@ -418,7 +422,6 @@ We will need to develop a standard pattern or helper logic for this to make sure
 An alternate option that was considered was to make SDK feature releases when platform API updates are needed. For example, if a new version of iOS was released after 5.0.100, we could make a 5.0.200 SDK release with the updated platform API.
 
 This has the advantage that it does not introduce any new mechanisms. However, it has several major disadvantages:
-
 
 - Platform API updates require making an SDK series release, which could be expensive
 - No compatibility checks and error experience when building project that uses newer APIs on SDK series that only has older APIs
