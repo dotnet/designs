@@ -24,10 +24,10 @@ We have received feedback from many people about .NET and our design choices. Ma
   - [IL Linking](#il-linking)
   - [Single File](#single-file)
   - [Ahead-of-time (AOT) Compilation](#ahead-of-time-aot-compilation)
-  - [WebAssembly](#webassembly)
-  - [Embedded Form Factors](#embedded-form-factors)
-  - [Community Supported Form Factors](#community-supported-form-factors)
   - [Native AOT Form Factors](#native-aot-form-factors)
+  - [Embedded Form Factors](#embedded-form-factors)
+  - [WebAssembly](#webassembly)
+  - [Community Supported Form Factors](#community-supported-form-factors)
 - [Appendix](#appendix)
   - [Lessons Learned from CoreRT](#lessons-learned-from-corert)
 
@@ -126,7 +126,7 @@ We are intentionally not trying to address the subsets of incompatible APIs by i
 
 The [IL linker](https://github.com/mono/linker) can generate optimized applications that fail at runtime, due to not being able to reliably analyze various problematic code patterns (largely centered on reflection use). It is not possible or desirable to simply invest more to improve the linker, as a strategy. Instead, build-time source generators will be the recommended mitigation for arbitrary reflection use.
 
-The barrier for entry for building source generators is very high today. There is no standard solution and only a few libraries can afford to build a custom one. Razor pages, gRPC, WPF data binding, and Data-Contract serializers each have their own custom build-time source generator solutions today. First-class Roslyn support for [source generators](https://github.com/dotnet/roslyn/blob/master/docs/features/source-generators.md) will lower the barrier of entry for components that need to generate source code.
+The barrier for entry for building source generators is very high today. There is no standard solution and only a few libraries can afford to build a custom one. Razor pages, gRPC, WPF, XAML bindings and Data-Contract serializers each have their own custom build-time source generator solutions today. First-class Roslyn support for [source generators](https://github.com/dotnet/roslyn/blob/master/docs/features/source-generators.md) will lower the barrier of entry for components that need to generate source code.
 
 The existing annotations that provide hints to the IL linker about what to keep or what is safe to link are going to stay, but their use is going to be less preferred as compared to source generators. They provide a less predictable experience that is hard for users to get right.
 
@@ -144,33 +144,13 @@ Managed C++ is incompatible with the single file form factor and addressing this
 
 ### Ahead-of-time (AOT) Compilation
 
-Runtime code generation is a very powerful building block used to build many popular higher-level features (e.g. fast serializers). The runtime code generation comes with steep startup time costs and leans on the JIT or an interpreter for code execution. These characteristics are not desirable in environments that require fast startup time (e.g. device apps, lean microservices) or firm real-time guarantees (e.g. services with strict SLAs, games that must avoid dropped frames).
+AOT compilation has been used by .NET runtimes to improve performance. Most .NET runtime form factors come with at least partial AOT compilation. .NET runtime without any AOT compilation would be too slow to startup for typical applications.
+
+AOT compilation is not compatible with runtime code generation. Runtime code generation is a very powerful building block used to build many popular higher-level features (e.g. fast serializers). The runtime code generation comes with steep startup time costs and leans on the JIT or an interpreter for code execution. These characteristics are not desirable in environments that require fast startup time (e.g. device apps, lean microservices) or firm real-time guarantees (e.g. services with strict SLAs, games that must avoid dropped frames).
 
 Source generators are going to be the preferred mitigation for AOT compatibility, same as for linker compatibility above.
 
 Runtime code generation is often used as a workaround for slow reflection APIs provided by the runtime. We have [proposals for faster reflection APIs](https://github.com/dotnet/runtime/issues/23716) that would allow mitigating some of the dynamic code generation uses as well. This mitigation is less desirable since linker compatibility issues with reflection  would remain.
-
-### WebAssembly
-
-WebAssembly has enough unique characteristics and limitations that it deserves to be treated as its own form factor, and should not be thought of as just yet another Unix variant. The WebAssembly limitations such as lack of threads or low-level exception handling mechanism create a slew of compatibility issues that will need detection and mitigations.
-
-One of main differentiators of WebAssembly (when hosted in a browser) is a lazy loading model. Our historical model was to think about .NET runtime as a single entity. To better leverage the web distribution model, we need to think about application packaging in a new way and at a different layer to produce a runtime that can load faster on the web.
-
-We should engage in the Wasm community to influence the designs. Today, we have a choice between the interpreter (slow) and static compiled code (very large downloads) or a blend of those. We will want add an option to support JITing code to Wasm on the Wasm client. There are challenges in this space, because Wasm as it exists today is not exactly friendly to JITing (thunking is very expensive, as it has to go through JavaScript for any unresolved methods).
-
-### Embedded Form Factors
-
-The stock .NET runtime does not always have desired characteristics. Runtime embedding solves this problem by allowing heavy customization for how the runtime binaries are built or which runtime features are included.
-
-The Mono runtime has been friendly to embedding by having a first class build from source with a large number of build configurations (with/without JIT, different types of GCs, customized builds of the libraries). This capability has been essential to enable Xamarin to successfully target a broad range of mobile devices from watches to phones.
-
-We will recreate these capabilities in the unified dotnet/runtime repo and work towards a common set of lightweight embedding APIs between CoreCLR and Mono runtimes.
-
-Embedding of the runtime typically goes hand in hand with the need to expose .NET APIs in C. This capability is available as [preview](https://docs.microsoft.com/xamarin/tools/dotnet-embedding/release-notes/preview/0.4) or [experimental](https://github.com/dotnet/corert/tree/master/samples/NativeLibrary) for .NET, but comes as standard in other environments (e.g. Swift, Rust or Julia).
-
-### Community Supported Form Factors
-
-The .NET runtime project has been welcoming to contributions of ports to new platforms and architectures, as long as the work has strong support in the community, meets project engineering standards and avoids unnecessary code duplication and maintenance burden. We will extend an invitation to support new form factors under similar conditions, even for form factors that Microsoft does not intend to officially support in the foreseeable future or ever. It is important to us to avoid runtime forks in the .NET ecosystem. We will enable the community supported ports and form factors to be successful by adding minimal coverage in the CI system to avoid breaking them needlessly.
 
 ### Native AOT Form Factors
 
@@ -194,6 +174,28 @@ The ingredients of successful native AOT support in .NET are:
 - **Code sharing**: Maximize code sharing between form-factors for our own engineering efficiency and ensure that the improvements are implemented across all form factors where possible. The native AOT binaries should be produced as build flavor of dotnet/runtime repo. The aspirational goal is to have less than 10,000 lines specific for the native AOT.
 
 We will continue evolving the native AOT as an experimental project, with a new structure that is more transparent and better aligned with the unified dotnet/runtime repo.
+
+### Embedded Form Factors
+
+The stock .NET runtime does not always have desired characteristics. Runtime embedding solves this problem by allowing heavy customization for how the runtime binaries are built or which runtime features are included.
+
+The Mono runtime has been friendly to embedding by having a first class build from source with a large number of build configurations (with/without JIT, different types of GCs, customized builds of the libraries). This capability has been essential to enable Xamarin to successfully target a broad range of mobile devices from watches to phones.
+
+We will recreate these capabilities in the unified dotnet/runtime repo and work towards a common set of lightweight embedding APIs between CoreCLR and Mono runtimes.
+
+Embedding of the runtime typically goes hand in hand with the need to expose .NET APIs in C. This capability is available as [preview](https://docs.microsoft.com/xamarin/tools/dotnet-embedding/release-notes/preview/0.4) or [experimental](https://github.com/dotnet/corert/tree/master/samples/NativeLibrary) for .NET, but comes as standard in other environments (e.g. Swift, Rust or Julia).
+
+### WebAssembly
+
+WebAssembly has enough unique characteristics and limitations that it deserves to be treated as its own form factor, and should not be thought of as just yet another Unix variant. The WebAssembly limitations such as lack of threads or low-level exception handling mechanism create a slew of compatibility issues that will need detection and mitigations.
+
+One of main differentiators of WebAssembly (when hosted in a browser) is a lazy loading model. Our historical model was to think about .NET runtime as a single entity. To better leverage the web distribution model, we need to think about application packaging in a new way and at a different layer to produce a runtime that can load faster on the web.
+
+We should engage in the Wasm community to influence the designs. Today, we have a choice between the interpreter (slow) and static compiled code (very large downloads) or a blend of those. We will want add an option to support JITing code to Wasm on the Wasm client. There are challenges in this space, because Wasm as it exists today is not exactly friendly to JITing (thunking is very expensive, as it has to go through JavaScript for any unresolved methods).
+
+### Community Supported Form Factors
+
+The .NET runtime project has been welcoming to contributions of ports to new platforms and architectures, as long as the work has strong support in the community, meets project engineering standards and avoids unnecessary code duplication and maintenance burden. We will extend an invitation to support new form factors under similar conditions, even for form factors that Microsoft does not intend to officially support in the foreseeable future or ever. It is important to us to avoid runtime forks in the .NET ecosystem. We will enable the community supported ports and form factors to be successful by adding minimal coverage in the CI system to avoid breaking them needlessly.
 
 ## Appendix
 
