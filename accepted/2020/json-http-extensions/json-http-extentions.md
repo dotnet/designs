@@ -285,7 +285,7 @@ the appropriate extension they want to use.
 Specifically, what is the behavior of `GetFromJsonAsync()` if `Content-Type` is
 not `json+utf8`? What about `text/plain`?
 
-Mon-UTF8 encodings should be transcoded and `application/json` and `text/plain`
+Non-UTF8 encodings should be transcoded and `application/json` and `text/plain`
 should both be accepted.
 
 ### Can we remove `JsonContent.Value`?
