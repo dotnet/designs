@@ -136,7 +136,7 @@ We will introduce a linker compatibility analyzer to detect code patterns that c
 
 The single-file form factor bundles all code into a single binary that the code is directly executed from. Single-file apps are easier to deploy and distribute. Many users have asked for this form factor. We will focus on producing traditional immutable single-file executables, and provide guidelines for application developers to target to successfully target the single-file form factor.
 
-We will not attempt to re-create application virtualization solutions such as [BoxedApp](https://www.boxedapp.com/docs/index.html) or (`App-V`)[https://docs.microsoft.com/en-us/windows/application-management/app-v/appv-for-windows] that can make unaware applications deployable as single-file executables by virtualizing the operating system. Application virtualization solutions are a unique domain of sophisticated technology, outside the realm of .NET runtime.
+We will not attempt to re-create application virtualization solutions such as [BoxedApp](https://www.boxedapp.com/docs/index.html) or [`App-V`](https://docs.microsoft.com/en-us/windows/application-management/app-v/appv-for-windows) that can make unaware applications deployable as single-file executables by virtualizing the operating system. Application virtualization solutions are a unique domain of sophisticated technology, outside the realm of .NET runtime.
 
 Single-file compatibility analyzers will detect the use of APIs that are known to cause single file deployments to break, such as `Assembly.LoadFile(path)` or `Assembly.Location`. New APIs, such as [API that returns path to the launching .exe path](https://github.com/dotnet/runtime/issues/30448), will be introduced to simplify mitigation of these issues.
 
