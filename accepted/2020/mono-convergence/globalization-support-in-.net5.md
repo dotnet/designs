@@ -55,7 +55,9 @@ We are as expected not the first framework to hit this problem. Swift framework 
 ### WebAssembly
 The intention is set invariant globalization mode as the default mode for everyone for WebAssembly but at the same time allow a fallback to full globalization support when needed. This will come with additional cost but on the web platform we have little bit more flexibility how to deploy and share the data.
 
-ICU library consists from code and data. What we need to explore is if there is reasonable way to package the ICU data and store them in the cloud as a publicly available data blobs. This could give us flexibility to support full range of ICU data on demand if sliced into small data sets. We’ll still need to ship icu implementation but that could be also bound dynamically using dynamic linking.
+ICU library consists from code and data. What we need to explore is if there is reasonable way to package the ICU data and store them in the cloud as a publicly available data blobs. This could give us flexibility to support full range of ICU data on demand if sliced into small data sets. We’ll still need to ship icu implementation but that could be also bound dynamically using dynamic linking. 
+
+From our earlier ICU work, we do know that libicuuc and libicui18n are dynamically linked to libicudata. We would need to download and make libicudata available before loading ICU. 
 
 ## ICU Packaging
 Due to lack of ICU on all platform we intend to support for .NET5 we need to look into how to package it for following RIDs
