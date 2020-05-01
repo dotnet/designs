@@ -12,12 +12,12 @@ The existing implementation requires ICU version is [50](https://github.com/dotn
 
 The implementation files which reference globalization interop are:
 
-* [System.Private.CoreLib/src/System/Globalization/IdnMapping.Icu.cs](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/IdnMapping.Icu.cs)
-* [System.Private.CoreLib/src/System/Globalization/CalendarData.Icu.cs](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/CalendarData.Icu.cs)
-* [System.Private.CoreLib/src/System/Globalization/CultureData.Icu.cs](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/CultureData.Icu.cs)
-* [System.Private.CoreLib/src/System/Globalization/TextInfo.Icu.cs](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/TextInfo.Icu.cs)
-* [System.Private.CoreLib/src/System/Globalization/CompareInfo.Icu.cs](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/CompareInfo.Icu.cs)
-* [System.Private.CoreLib/src/System/Globalization/JapaneseCalendar.Icu.cs](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Private.CoreLib/src/System/Globalization/JapaneseCalendar.Icu.cs)
+* [System.Private.CoreLib/src/System/Globalization/IdnMapping.Icu.cs](https://github.com/dotnet/runtime/tree/87f391001eca716a8db896f5c3855d33fe30aca8/src/libraries/System.Private.CoreLib/src/System/Globalization/dnMapping.Icu.cs)
+* [System.Private.CoreLib/src/System/Globalization/CalendarData.Icu.cs](https://github.com/dotnet/runtime/tree/87f391001eca716a8db896f5c3855d33fe30aca8/src/libraries/System.Private.CoreLib/src/System/Globalization/CalendarData.Icu.cs)
+* [System.Private.CoreLib/src/System/Globalization/CultureData.Icu.cs](https://github.com/dotnet/runtime/tree/87f391001eca716a8db896f5c3855d33fe30aca8/src/libraries/System.Private.CoreLib/src/System/Globalization/CultureData.Icu.cs)
+* [System.Private.CoreLib/src/System/Globalization/TextInfo.Icu.cs](https://github.com/dotnet/runtime/tree/87f391001eca716a8db896f5c3855d33fe30aca8/src/libraries/System.Private.CoreLib/src/System/Globalization/TextInfo.Icu.cs)
+* [System.Private.CoreLib/src/System/Globalization/CompareInfo.Icu.cs](https://github.com/dotnet/runtime/tree/87f391001eca716a8db896f5c3855d33fe30aca8/src/libraries/System.Private.CoreLib/src/System/Globalization/CompareInfo.Icu.cs)
+* [System.Private.CoreLib/src/System/Globalization/JapaneseCalendar.Icu.cs](https://github.com/dotnet/runtime/tree/87f391001eca716a8db896f5c3855d33fe30aca8/src/libraries/System.Private.CoreLib/src/System/Globalization/JapaneseCalendar.Icu.cs)
 * [https://github.com/dotnet/runtime/blob/88cc71b26ba1eb430aaeeebddcd5675b3009f2ee/src/libraries/System.Private.CoreLib/src/System/TimeZoneInfo.Unix.cs#L127](https://github.com/dotnet/runtime/blob/88cc71b26ba1eb430aaeeebddcd5675b3009f2ee/src/libraries/System.Private.CoreLib/src/System/TimeZoneInfo.Unix.cs#L127)
 
 Existing test coverage checks the implementation which is available. It does not have any expected list of data included therefore does not check whether same set of data is available everywhere.
