@@ -23,7 +23,7 @@ The implementation files which reference globalization interop are:
 Existing test coverage checks the implementation which is available. It does not have any expected list of data included therefore does not check whether same set of data is available everywhere.
 
 ## .NET Globalization Invariant Mode
-There is already support for the globalization [invariant mode](https://github.com/dotnet/runtime/blob/master/docs/design/features/globalization-invariant-mode.md) since .NET Core 2.0. This will be the most size effective globalization mode for .NET5 which can be set by the developers. We are going to use existing logic and tweak it where necessary to allow IL Linker to remove any globalization code from the final app when running in invariant mode.
+There is already support for the globalization [invariant mode](https://github.com/dotnet/runtime/blob/master/docs/design/features/globalization-invariant-mode.md) since .NET Core 2.0. This will be the most size effective globalization mode for .NET 5 which can be set by the developers. We are going to use existing logic and tweak it where necessary to allow IL Linker to remove any globalization code from the final app when running in invariant mode.
 
 ### Enhanced Invariant Mode
 In order to cast a wider net for applications that can use invariant mode, we will incorporate the simple ICU casing tables into dotnet/runtime.  This allows us to move beyond ASCII when it comes to casing comparisons at a very small (3Kb) size cost. 
