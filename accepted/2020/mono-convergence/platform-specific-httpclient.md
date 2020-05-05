@@ -51,14 +51,11 @@ The ILLinker is used to remove the unnecessary handlers from the final binary in
 ### Handlers in Detail
 **SocketsHttpHandler Handler**
 
-The handler which is purely managed and behaves generally the same across all platforms except WatchOS (sockets are not available). The downside of using it is mostly felt in performance compared to the native handlers.
+The handler which is purely managed and behaves generally the same across all platforms except WatchOS (sockets are not available). The downside of using it is mostly felt in networking connection switching when needed, for examaple when switching back and forth between the wifi/cellular antennas.
 
 **CFNetwork Handler**
 
-The CFNetwork handler is based in the old Network Stack API provided by Apple. This handler, while it has better performance, lacks features compared with the other ones. It is mostly around for legacy reasons such as:
-
-* Support old servers that do not work with NSUrlSessionHandler
-* Support old devices that do not support the newer NSUrlSessionHandler.
+The CFNetwork handler is based in the old Network Stack API provided by Apple. This handler, while it has better performance, lacks features compared with the other ones.
 
 **NSUrlSession Handler**
 
