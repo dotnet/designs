@@ -8,7 +8,7 @@ The purpose of this document is to describe what globalization support, if any, 
 ## .NET Core ICU dependencies
 All of the existing ICU dependencies in .NET Core today are located inside System.Private.CoreLib. .NET Core does not install ICU and relies on the unmanaged implementation to be available on the system.
 
-The existing implementation requires ICU version is [50](https://github.com/dotnet/runtime/blob/4480bdbe66c55caceb64fc3477010435ba70c4ec/src/libraries/Native/Unix/System.Globalization.Native/pal_icushim.c#L60) or higher.
+The existing implementation requires that the ICU version is [50](https://github.com/dotnet/runtime/blob/4480bdbe66c55caceb64fc3477010435ba70c4ec/src/libraries/Native/Unix/System.Globalization.Native/pal_icushim.c#L60) or higher.
 
 The implementation files which reference globalization interop are:
 
