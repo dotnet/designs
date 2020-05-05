@@ -53,7 +53,7 @@ To summarize:
 ### iOS/tvOS
 There is no built-in support for ICU on Apple mobile platforms. For our purposes of having highly compatible globalization mode across all platforms we support, we need to look into bringing ICU to ios/tvOS as well.
 
-System.Globalization.Invariant mode still need to work without any ICU dependency. How we are actually going to slice the actual data will be defined later based on the experience and existing ICU tooling.
+System.Globalization.Invariant mode still needs to work without any ICU dependency. How we are going to slice the actual data will be defined later based on the experience and existing ICU tooling.
 
 We are as expected not the first framework to hit this problem. Swift framework is dealing with same problems and they seem to prefer a solution which drop ICU dependency but that still does not look like final [decision](https://forums.swift.org/t/icu-usage-in-swift/20473).
 
