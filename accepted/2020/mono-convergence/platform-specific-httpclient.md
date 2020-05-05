@@ -368,6 +368,7 @@ public class HttpClientHandler
 * dotnet/runtime will need to include reference assemblies of all optional components to be able to build ref and impl assemblies.
 * Public HttpClientHandler API shape might be different between TFM as it’s controlled by optional components
 * Updating HttpClientHandler public surface for optional component will require build a new version of dotnet/runtime
+* Testing will have to be done at the integration level
 
 **Conclusion**
 
