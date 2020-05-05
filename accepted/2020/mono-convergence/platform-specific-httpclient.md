@@ -42,7 +42,7 @@ A few examples of platform handlers control properties
 * [AllowUserInteraction](https://docs.oracle.com/javase/7/docs/api/java/net/URLConnection.html#setAllowUserInteraction(boolean))
 
 ## Xamarin.iOS/tvOS/watchOS
-There are 3 handlers available where **NSUrlSession** handler is the default. Except for watchOS where only NSUrlSessionHandler is supported.
+There are 3 handlers available (SocketsHttpHandler, CFNetworkHandler, and NSUrlSessionHandler), with **NSUrlSessionHandler** as the default (except on watchOS, where the only supported handler is NSUrlSessionHandler).
 
 The handler is only preselected as the default with [UI options available](https://docs.microsoft.com/en-us/xamarin/cross-platform/macios/http-stack#selecting-an-httpclient-stack) using VS Project Settings dialog to change them. This is required to “fix” existing HttpClient code which was written with the assumption that the default handler will be the one working best on the platform.
 
