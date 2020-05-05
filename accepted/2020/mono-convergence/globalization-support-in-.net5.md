@@ -55,7 +55,7 @@ There is no built-in support for ICU on Apple mobile platforms. For our purposes
 
 System.Globalization.Invariant mode still needs to work without any ICU dependency. How we are going to slice the actual data will be defined later based on the experience and existing ICU tooling.
 
-We are as expected not the first framework to hit this problem. Swift framework is dealing with same problems and they seem to prefer a solution which drop ICU dependency but that still does not look like final [decision](https://forums.swift.org/t/icu-usage-in-swift/20473).
+We are not the first framework to hit this problem. Swift framework is dealing with same problems, and they seem to prefer a solution which drops the ICU dependency, but that still does not look like final [decision](https://forums.swift.org/t/icu-usage-in-swift/20473).
 
 ### WebAssembly
 The intention is set invariant globalization mode as the default mode for everyone for WebAssembly but at the same time allow a fallback to full globalization support when needed. This will come with additional cost but on the web platform we have little bit more flexibility how to deploy and share the data.
