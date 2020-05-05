@@ -28,7 +28,7 @@ There is already support for the globalization [invariant mode](https://github.c
 ### Enhanced Invariant Mode
 In order to cast a wider net for applications that can use invariant mode, we will incorporate the simple ICU casing tables into dotnet/runtime.  This allows us to move beyond ASCII when it comes to casing comparisons at a very small (3Kb) size cost. 
 
-See the enhanced invariant mode [https://github.com/dotnet/runtime/issues/30960](proposal) for more detail.
+See the enhanced invariant mode [proposal](https://github.com/dotnet/runtime/issues/30960) for more detail.
 
 ## Size Sensitive Platforms
 Existing Xamarin platforms allow customers to choose which set of collation data they would like to add to their apps if any. This still makes sense for .NET5 as on some of the platform ICU dependency is not available from the system and we’ll need to bundle it to the final app. We could make this available to everyone but it’s most likely we will focus only on platforms which are size sensitive in .NET5 time frame.
