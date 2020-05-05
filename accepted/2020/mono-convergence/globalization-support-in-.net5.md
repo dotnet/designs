@@ -51,7 +51,7 @@ To summarize:
 * We should explore trying to interop with the `ICU4J` API and determine what the implications, if any are.
 
 ### iOS/tvOS
-There is no build in support for ICU on apple mobile platforms. For our purposes of having highly compatible globalization mode across all platform we support we need to look into bringing ICU to ios/tvOS as well.
+There is no built-in support for ICU on Apple mobile platforms. For our purposes of having highly compatible globalization mode across all platforms we support, we need to look into bringing ICU to ios/tvOS as well.
 
 System.Globalization.Invariant mode still need to work without any ICU dependency. How we are actually going to slice the actual data will be defined later based on the experience and existing ICU tooling.
 
