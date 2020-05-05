@@ -45,7 +45,7 @@ The good news is that p-invoking from managed code works.  Assuming `libicuuc` c
 
 To summarize:
 
-* We can p-invoke into the system `libicuuc`.  Globalization for .net5 should work normally
+* We can p-invoke into the system `libicuuc`.  Globalization for .NET 5 should work normally
 * Android 4.3 (API level 18) started bundling ICU 50 and our minimum version requirement is satisfied. 
 * OEM’s can potentially make life difficult by altering locales / globalization features
 * We should explore trying to interop with the `ICU4J` API and determine what the implications, if any are.
