@@ -79,7 +79,7 @@ A default build of ICU normally results in over 16 MB of data, and a substantial
 The packages have to be split into implementation and data parts, and ideally the data parts also will be sliced in a way that the developers can select only the relevant data for their app if they only target specific markets.
 
 ### Data Library Customizer (TBD)
-There is a [tool](http://www.icu-project.org/docs/demo/datacustom_help.html) built by ICU which allow customizing what kind of data will be included in the final data set. We need to explore if that something we could leverage either for the data islands or even as something using during build process.
+There is a [tool](http://www.icu-project.org/docs/demo/datacustom_help.html) built by ICU which allows customizing what kind of data will be included in the final data set. We need to explore if that is something we could leverage, either for the data islands or even as something used during the build process.
 
 Additional documentation about the tool is [here](https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/buildtool.md)
 
