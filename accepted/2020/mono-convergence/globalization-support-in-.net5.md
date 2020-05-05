@@ -31,7 +31,7 @@ In order to cast a wider net for applications that can use invariant mode, we wi
 See the enhanced invariant mode [proposal](https://github.com/dotnet/runtime/issues/30960) for more detail.
 
 ## Size Sensitive Platforms
-Existing Xamarin platforms allow customers to choose which set of collation data they would like to add to their apps if any. This still makes sense for .NET5 as on some of the platform ICU dependency is not available from the system and we’ll need to bundle it to the final app. We could make this available to everyone but it’s most likely we will focus only on platforms which are size sensitive in .NET5 time frame.
+Existing Xamarin platforms allow customers to choose which set of collation data they would like to add to their apps, if any. This still makes sense for .NET 5, as on some platforms the ICU dependency is not available from the system, and we’ll need to bundle it to the final app. We could make this available to everyone, but it’s most likely we will focus only on platforms which are size-sensitive in the .NET 5 time frame.
 
 ### Android
 Android has historically relied on ICU for some kind of globalization support.  From basically the beginning, `Locale` , `Character`, and some classes in `java.text` were provided in the platform globalization.  If you needed more than that, you could access `libicuuc` directly or choose to bundle another version in your APK.  That was pretty much the story up until API level 23.
