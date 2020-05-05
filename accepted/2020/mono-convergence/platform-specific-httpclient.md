@@ -432,11 +432,11 @@ Only RID specific version of System.Net.Http will be built as there won’t be a
 The code will most likely have to include special linker annotations to keep the dependency on the constructor inside external “unknown” assembly.
 
 ### WebAssembly
-Follow proposal #5 "All HttpHandlers are fully implemented inbox" and port WasmHttpMessageHandler to dotnet/runtime together with wasm interop layer.
+Follow proposal #5 "All HttpHandlers are fully implemented inbox" and port `System.Net.Http.BrowserHttpHandler` to dotnet/runtime together with wasm interop layer.
 
-The public implementation of WasmHttpMessageHandler will be packaged into special NuGet which will be created to hold only this public type. The interop layer needed to support this handler will be also included into the NuGet package. To match existing naming it will be called
+The public implementation of `BrowserHttpHandler` will be packaged into different NuGet which will be created to hold only this public type and expose WebAssembly specific properties and methods. The interop layer needed to support this handler will be also included into the NuGet package. To match existing naming it will be called
 
-* System.Net.Http.WebAssemblyHttpHandler
+* System.Net.Http.WebAssemblyMessageHandler
 
 ## Future plans
 If we manage to extract Objective-C or Java interop into special subcomponents we might be able to switch to solution which will allow us to ship and test everything inbox (inside `dotnet/runtime` repo).
