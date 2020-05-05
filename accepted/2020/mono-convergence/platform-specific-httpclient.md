@@ -377,7 +377,7 @@ The big advantage of this proposal is that the default HttpClientHandler would b
 
 Implement all platform-specific handlers fully inside dotnet/runtime using platform-specific interop libraries. We would extend low-level interop API which and use it to implement the managed API for HttpClientHandler and other types which are exposed from it.
 
-There is already a foundation for CF interop at [https://github.com/dotnet/runtime/tree/master/src/libraries/Common/src/Interop/OSX](https://github.com/dotnet/runtime/tree/master/src/libraries/Common/src/Interop/OSX). This will need to be extended to include Objective-C bridge for necessary APIs.
+There is already a small foundation for CF interop at [https://github.com/dotnet/runtime/tree/master/src/libraries/Common/src/Interop/OSX](https://github.com/dotnet/runtime/tree/master/src/libraries/Common/src/Interop/OSX). This will need to be extended to include Objective-C bridge for necessary APIs and possibly tooling to handle Objective-C binding possible.
 
 We could also expose this Interop layer to Xamarin internally to avoid code duplication as they use the same platform API.
 
