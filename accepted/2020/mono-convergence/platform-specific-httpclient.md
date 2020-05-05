@@ -164,7 +164,7 @@ The example of how this could look like for whole type is at [https://github.com
 // ios SDK part
 public class CFNetworkHandler : HttpClientHandler
 {
-  public CFNetworkHandle (): base (true)
+  public CFNetworkHandle (): base ()
   {
   }
 
