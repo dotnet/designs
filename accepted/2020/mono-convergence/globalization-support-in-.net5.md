@@ -76,7 +76,7 @@ Due to lack of ICU on all platform we intend to support for .NET 5, we need to l
 
 A default build of ICU normally results in over 16 MB of data, and a substantial amount of object code.
 
-The packages have to be split to implementation and data part and ideally the data parts will be also sliced in the way that the developers can select only relevant data for their app if they for example don’t target Chinese market.
+The packages have to be split into implementation and data parts, and ideally the data parts also will be sliced in a way that the developers can select only the relevant data for their app if they only target specific markets.
 
 ### Data Library Customizer (TBD)
 There is a [tool](http://www.icu-project.org/docs/demo/datacustom_help.html) built by ICU which allow customizing what kind of data will be included in the final data set. We need to explore if that something we could leverage either for the data islands or even as something using during build process.
