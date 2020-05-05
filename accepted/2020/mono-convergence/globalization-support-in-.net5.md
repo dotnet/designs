@@ -84,7 +84,7 @@ There is a [tool](http://www.icu-project.org/docs/demo/datacustom_help.html) bui
 Additional documentation about the tool is [here](https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/buildtool.md)
 
 ## App Local ICU for Windows
-Windows teams is working on packaging ICU for .NET needs. It will be available as NuGet package and we could explore to use a similar mechanism for iOS/tvOS packaging (although Windows will contain the whole data file). 
+The Windows teams is working on packaging ICU for .NET needs. It will be available as a NuGet package, and we could explore using a similar mechanism for iOS/tvOS packaging (although Windows will contain the whole data file). 
 
 ## .NET 5 Work
 The public tracking issue is available at [https://github.com/dotnet/runtime/issues/33652](https://github.com/dotnet/runtime/issues/33652)
