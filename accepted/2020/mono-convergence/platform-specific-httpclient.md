@@ -410,8 +410,8 @@ namespace System.Net.Http
 
 The implementation has to use the property in the way to allow the ILLinker to remove the unnecessary dependency of unused handler when the type is not used elsewhere.
 
-### Xamarin.iOS/Xamarin.tvOS
-Follow proposal #2b "Use Reflection" and hook up existing `NSUrlSessionHandler` using `Activator.CreateInstance ("Foundation.NSUrlSessionHandler, Xamarin.iOS/Xamarin.tvOS")​`. The actual implementation will remain in `xamarin/xamarin-macios`​ repo.
+### Xamarin.iOS/Xamarin.tvOS/Xamarin.watchOS
+Follow proposal #2b "Use Reflection" and hook up existing `NSUrlSessionHandler` using `Activator.CreateInstance ("Foundation.NSUrlSessionHandler, Xamarin.iOS/Xamarin.tvOS/Xamarin.watchOS")​`. The actual implementation will remain in `xamarin/xamarin-macios`​ repo.
 
 The plan ignores CFNetworkHandler and other legacy handlers. They will stay in `xamarin/xamarin-macios` and will be available only when constructed manually. The implementation logic inside HttpClientHandler will rely on DefaultHandlerType selection to set the implicit handler behaviour between NSUrlSessionHandler and SocketHttpHandler.
 
