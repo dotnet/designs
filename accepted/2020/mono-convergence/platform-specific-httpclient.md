@@ -128,7 +128,7 @@ public class HttpClient
 REJECTED.  It only supports `new HttpClient()`, not `new HttpClient(new HttpClientHandler())`.
 
 ### Proposal #2: Convert HttpClientHandler to Proxy pattern
-Make HttpClientHandler a partial class, make all its members virtual, and on iOS/Android have the implementation of the class wrap an HttpClientHandler instance field. The instantiation of the underlying instance will have the flexibility to be controlled by platform implementation.
+Make all `HttpClientHandler` members virtual and on iOS/Android have the implementation of the class wrap an HttpClientHandler instance field. The instantiation of the underlying instance will have the flexibility to be controlled by platform implementation.
 
 **Located in dotnet/runtime repo**
 ```c#
