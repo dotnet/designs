@@ -23,11 +23,11 @@ HttpClient client = new HttpClient(new HttpClientHandler());
 
 There are several reasons why using `SocketHttpHandler` is not desirable or not even possible on some platforms
 
-* Lack of platform native TLS support for better performance
-* Bloats the application size
-* Performance and power consumption impact of managed implementation
-* Integration with the platform settings
-* Unavailability of Socket APIs
+* Integrated TLS. A TLS implementation integrated with the native HTTP stack can lead to better performance in various situations.
+* Application size. Including an HTTP stack when the mobile platform already includes one can lead to an unnecessarily larger application size.
+* Unavailability of Socket APIs.  Some platforms simply don't expose the socket primitives necessary to implement SocketsHttpHandler.
+* Power consumption. Native HTTP stacks on various mobile platforms are able to more effectively manage power consumption as it relates to things like when communication devices are enabled or powered down.
+* Platform settings. Some platform-level settings aren't exposed in a way that SocketsHttpHandler could view them but are directly integrated with the native HTTP stack.
 
 ### Platform-specific Http properties need to be available for customization
 In cases where HTTP handler wraps platform-specific implementation and the implementation has a way to control HTTP connection behaviour or properties, such properties need to be exposed to C# developers on the public platform-specific type.  If HttpClientHandler itself exposes such a knob, it needs to control the associated customization on the underlying platform.
