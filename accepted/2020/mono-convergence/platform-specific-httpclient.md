@@ -54,7 +54,9 @@ The ILLinker is used to remove the unnecessary handlers from the final binary in
 ### Handlers in Detail
 **SocketsHttpHandler Handler**
 
-The handler, which is purely managed, and behaves generally the same across all platforms except WatchOS (sockets are not available). The downside of using it is mostly felt in networking connection switching when needed, for examaple when switching back and forth between the wifi/cellular antennas.
+It's a managed implementation, but for a few very specific things, mainly related to getting proxy information from the OS, it does P/Invoke. The handler behaves generally the same across all platforms where sockets are available. The downside of using it is mostly felt in networking connection switching when needed, for examaple when switching back and forth between the wifi/cellular antennas.
+
+It's a managed implementation, but for a few very specific things, mainly related to getting proxy information from the OS, we do P/Invoke.
 
 **CFNetwork Handler**
 
