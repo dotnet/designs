@@ -65,7 +65,7 @@ The ICU library consists from code and data. We need to explore if there is a re
 From our earlier ICU work, we do know that libicuuc and libicui18n are dynamically linked to libicudata. We would need to download and make libicudata available before loading ICU. 
 
 ## ICU Packaging
-Due to lack of ICU on all platform we intend to support for .NET5 we need to look into how to package it for following RIDs
+Due to lack of ICU on all platform we intend to support for .NET 5, we need to look into how to package it for following the RIDs:
 
 * ios-x64
 * ios-arm
