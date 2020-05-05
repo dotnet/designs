@@ -6,7 +6,7 @@ Globalization in the .NET Core space has been handled by taking a dependency on 
 The purpose of this document is to describe what globalization support, if any, Android, iOS/tvOS, and WebAssembly have and what options there are should ICU not suffice.
 
 ## .NET Core ICU dependencies
-All of the existing ICU dependencies in .NET Core today are located inside System.Private.CoreLib. The .NET Core does not install ICU and relies on the unmanaged implementation to be available on the system.
+All of the existing ICU dependencies in .NET Core today are located inside System.Private.CoreLib. .NET Core does not install ICU and relies on the unmanaged implementation to be available on the system.
 
 The existing implementation requires ICU version is [50](https://github.com/dotnet/runtime/blob/4480bdbe66c55caceb64fc3477010435ba70c4ec/src/libraries/Native/Unix/System.Globalization.Native/pal_icushim.c#L60) or higher.
 
