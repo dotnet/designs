@@ -58,7 +58,7 @@ System.Globalization.Invariant mode still needs to work without any ICU dependen
 We are not the first framework to hit this problem. Swift framework is dealing with same problems, and they seem to prefer a solution which drops the ICU dependency, but that still does not look like final [decision](https://forums.swift.org/t/icu-usage-in-swift/20473).
 
 ### WebAssembly
-The intention is set invariant globalization mode as the default mode for everyone for WebAssembly but at the same time allow a fallback to full globalization support when needed. This will come with additional cost but on the web platform we have little bit more flexibility how to deploy and share the data.
+The intention is to set invariant globalization mode as the default mode for everyone for WebAssembly, but at the same time allow a fallback to full globalization support when needed. This will come with additional cost, but on the web platform we have a little bit more flexibility how to deploy and share the data.
 
 ICU library consists from code and data. What we need to explore is if there is reasonable way to package the ICU data and store them in the cloud as a publicly available data blobs. This could give us flexibility to support full range of ICU data on demand if sliced into small data sets. We’ll still need to ship icu implementation but that could be also bound dynamically using dynamic linking. 
 
