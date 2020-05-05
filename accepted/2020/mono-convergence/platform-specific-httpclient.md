@@ -21,7 +21,7 @@ HttpClient client = new HttpClient();
 HttpClient client = new HttpClient(new HttpClientHandler());
 
 // However this can throw PlatformNotSupportedException as not all properties are supported everywhere
-HttpClient client = new HttpClient(new HttpClientHandler { SomeProperty = ... });
+HttpClient client = new HttpClient(new HttpClientHandler { UseProxy = true });
 ```
 
 There are several reasons why using `SocketHttpHandler` is not desirable or not even possible on some platforms
