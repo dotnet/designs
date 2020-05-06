@@ -94,7 +94,7 @@ It’s not supported at all due to lack of Sockets on the platform. Changing it 
 
 
 ## .NET 5 Adoption Proposals
-Platform-specific handlers are implemented on top of the enhanced platform interop layer. They are in most cases relatively complex even with such abstractions available. It’s possible to implement them fully using basic interop mechanics like pinvoke but that would be tedious and very error-prone due to duplication of all the interop subtle details Xamarin and WebAssembly SDK built over the years. We would also need to introduce Xamarin namespace and build TFM specific versions of relevant assemblies as well as convert all publicly exposes types to primitive types or types which derive only from BCL types to avoid second-level dependencies which might not be desirable.
+Platform-specific handlers are implemented on top of the enhanced platform interop layer. They are in most cases relatively complex even with such abstractions available. It’s possible to implement them fully using basic interop mechanics like P/Invoke but that would be tedious and very error-prone due to duplication of all the interop subtle details Xamarin and WebAssembly SDK built over the years. We would also need to introduce Xamarin namespace and build TFM specific versions of relevant assemblies as well as convert all publicly exposes types to primitive types or types which derive only from BCL types to avoid second-level dependencies which might not be desirable.
 
 In general, keeping the platform dependant handlers away from .NET Core BCL and having them available only as part of binding APIs in optional SDKs (e.g. Xamarin.iOS) seems like the most effective integration.
 
