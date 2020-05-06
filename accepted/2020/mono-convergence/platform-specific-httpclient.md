@@ -64,7 +64,7 @@ The CFNetwork handler is based in the old Network Stack API provided by Apple. T
 
 **NSUrlSession Handler**
 
-The NSUrlSession handler is the most modern of the native handlers provided. This handler has great performance since it relies on the OS and provides caching and other advanced features such as proxy support. The downside of using the handler comes in behaviour differences between the other platforms.
+The NSUrlSession handler is the most modern of the native handlers provided. This handler has great performance since it relies on the OS and provides caching and other advanced features such as proxy support. The downside of using this handler comes in behaviour differences between the other platforms.
 
 ## Xamarin.Android
 The users can choose from two handlers with AndroidClientHandler being the default and preferred over socket-based handler. The setting of which handler to use is also available via [Project Settings](https://docs.microsoft.com/en-us/xamarin/android/app-fundamentals/http-stack?context=xamarin%2Fcross-platform&tabs=windows) as for Xamarin.iOS.
