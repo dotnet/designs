@@ -17,7 +17,7 @@ SocketHttpHandler, which is the current implementation under HttpClientHandler i
 
 HttpClient client = new HttpClient();
 
-// Same behavour should be observed when using following code
+// Same behaviour should be observed when using following code
 HttpClient client = new HttpClient(new HttpClientHandler());
 
 // However this can throw PlatformNotSupportedException as not all properties are supported everywhere
