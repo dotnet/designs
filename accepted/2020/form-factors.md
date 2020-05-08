@@ -191,7 +191,7 @@ WebAssembly has enough unique characteristics and limitations that it deserves t
 
 One of main differentiators of WebAssembly (when hosted in a browser) is a lazy loading model. Our historical model was to think about .NET runtime as a single entity. To better leverage the web distribution model, we need to think about application packaging in a new way and at a different layer to produce a runtime that can load faster on the web.
 
-We should engage in the Wasm community to influence the designs. Today, we have a choice between the interpreter (slow) and static compiled code (very large downloads) or a blend of those. We will want add an option to support JITing code to Wasm on the Wasm client. There are challenges in this space, because Wasm as it exists today is not exactly friendly to JITing (thunking is very expensive, as it has to go through JavaScript for any unresolved methods).
+We should engage in the Wasm community to influence the designs. Today, we have a choice between the interpreter (slow) and static compiled code (very large downloads) or a blend of those. We will want to add an option to support JITing code to Wasm on the Wasm client. There are challenges in this space, because Wasm as it exists today is not exactly friendly to JITing (thunking is very expensive, as it has to go through JavaScript for any unresolved methods).
 
 ### Community Supported Form Factors
 
