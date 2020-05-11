@@ -51,7 +51,7 @@ ActivitySource.AddActivityListener(listener);
 listener.Dispose();  
 ```
 
-It is up to the listener to do extract information from the Activity object and respond to the callbacks however they like, probably by serializing a message to a remote service that will aggregate the telemetry.
+It is up to the listener to extract information from the Activity object and respond to the callbacks however they like, probably by serializing a message to a remote service that will aggregate the telemetry.
 
 [TODO]: We could flesh out what we expect it look like end-to-end to use this with OpenTelemetry and perhaps some UI? It would help newcomers understand but I don't think it is a blocking issue for the current set of collaborators.
 
