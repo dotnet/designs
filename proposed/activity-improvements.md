@@ -100,7 +100,7 @@ The proposal here is mainly targeting closing the gap between the .NET Libraries
   - ActivityContext which conforms to the W3C TraceContext specification. The context contains the trace Id, Span Id, Trace state and Trace flags.
   - ActivityLink which can point to ActivityContexts inside a single Trace or across different Traces. Links can be used to represent batched operations where Activity was initiated by multiple initiating Activities each representing a single incoming item being processed in the batch.
   - ActivityKind describes the relationship between the Activity, its parents, and its children in a Trace.
-  - ActivityEvent to attach specific event to teh Activity. Events have a time associated with the moment when they are added to the Activity.
+  - ActivityEvent to attach specific event to the Activity. Events have a time associated with the moment when they are added to the Activity.
   - Allow attaching any object to the Activity object through the `Set/GetCustomProperty` for the sake of the extendability without manually sub-classing Activity or maintaining a dictionary mapping activity to the other objects. Examples of that, OT implementation still depends on Activity and maintains a table mapping from Activity to Span. Another example is some teams were working around the lack of missing Links and Contexts features and manually doing extra work to include these features. Although we are adding the Links and Contexts, we can get more future scenarios to extend Activity (e.g. attaching the status codes/exceptions).
 
 - The current usage pattern of the Activity is not neat. here is an example of the current usage:
