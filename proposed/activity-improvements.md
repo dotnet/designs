@@ -199,7 +199,7 @@ namespace System.Diagnostics
 namespace System.Diagnostics
 {
     /// <summary>
-    /// ActivityContext representation conforms to the w3c TraceContext specification. It contains two identifiers
+    /// ActivityContext representation conforms to the W3C TraceContext specification. It contains two identifiers
     /// a TraceId and a SpanId - along with a set of common TraceFlags and system-specific TraceState values.
     /// </summary>
     public readonly struct ActivityContext : IEquatable<ActivityContext>
