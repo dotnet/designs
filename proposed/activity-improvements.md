@@ -74,7 +74,7 @@ What .NET calls Activity, OpenTelemetry calls Span. The OT span can express a br
 
 #### 4. API usability
 
-Some of the existing patterns of API usage are awkward and don't appeal to many developers. We'd like to simplify usage wherever possible so that the APIs feel more approachable to a broader set of .Net developers.
+Some of the existing patterns of API usage are awkward and don't appeal to many developers. We'd like to simplify usage wherever possible so that the APIs feel more approachable to a broader set of .NET developers.
 
 #### 5. Back compat
 
