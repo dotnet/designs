@@ -84,7 +84,7 @@ Any scenarios that currently work using Activity and/or DiagnosticListener must 
 
 1. Creating interfaces so that custom implementations of Activity can be created (OpenTelemetry does this with Span)
 2. Supporting isolated monitoring domains that allows one set of instrumentation producers and consumers to be segregated from others within the same process (OpenTelemetry can do this via multiple instances of the top-level Tracer object)
-3. Matching OpenTelemetry specification naming or behaviors that would directly conflict with .Net's existing precedent for Activity. We'll do our best to enable the use-cases OpenTelemetry is trying to achieve via some other means in these cases.
+3. Matching OpenTelemetry specification naming or behaviors that would directly conflict with .NET's existing precedent for Activity. We'll do our best to enable the use-cases OpenTelemetry is trying to achieve via some other means in these cases.
 
 
 Design
