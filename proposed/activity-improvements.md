@@ -70,7 +70,7 @@ We are assuming that most Activity information is desirable by default, but the 
 
 #### 3. Activity needs API representations of OpenTelemetry Span concepts
 
-What .Net calls Activity, OpenTelemetry calls Span. The OT span can express a broader set of information than Activity currently can. We want to create parity so that developers who want to emit certain OpenTelemetry data points can still use Activity APIs to accomplish that.
+What .NET calls Activity, OpenTelemetry calls Span. The OT span can express a broader set of information than Activity currently can. We want to create parity so that developers who want to emit certain OpenTelemetry data points can still use Activity APIs to accomplish that.
 
 #### 4. API usability
 
