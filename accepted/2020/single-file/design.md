@@ -41,7 +41,7 @@ Here's the overall experience for publishing a HelloWorld single-file app. The n
   * Normal publish: `dotnet publish -r win-x64`
     * Published files: `HelloWorld.exe`, `HelloWorld.pdb`, and 224 more files 
   * Single-file publish Linux: `dotnet publish -r linux-x64 /p:PublishSingleFile=true`
-    * Published files: `HelloWorld.exe`, `HelloWorld.pdb`
+    * Published files: `HelloWorld`, `HelloWorld.pdb`
   * Single-file publish Windows: `dotnet publish -r win-x64 /p:PublishSingleFile=true`
     * Published files: `HelloWorld.exe`, `HelloWorld.pdb`, `coreclr.dll`, `clrjit.dll`, `clrcompression.dll`,  `mscordaccore.dll`
   * Single-file publish Windows with Extraction: `dotnet publish -r win-x64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesInSingleFile=true` 
