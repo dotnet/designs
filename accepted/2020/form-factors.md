@@ -166,6 +166,7 @@ We have an opportunity to participate in this trend. The .NET community has demo
 
 - [http://SoundFlow.org's macOS and Linux apps also proudly built on #CoreRT](https://twitter.com/SoundFlow_org/status/1200155734585094156)
 - [Carrion's Halloween Demo used CoreRT on Windows and Linux](https://twitter.com/kroskiewicz/status/1200126309856350209)
+- [Streets of Rage 4 used CoreRT for the Steam release on Windows](https://github.com/dotnet/corert/issues/7200#issuecomment-624990602)
 
 The ingredients of successful native AOT support in .NET are:
 
