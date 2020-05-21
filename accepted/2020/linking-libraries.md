@@ -1,8 +1,8 @@
 # Linking the .NET Libraries
 
-When publishing a self-contained application, the .NET Core runtime is bundled together with the application. This bundling adds a significant amount of content to the packaged application. Depending on the complexity of the application, only a subset of the runtime is required to run the application. These unused parts of the runtime are unnecessary and can be trimmed from the packaged application.
+When publishing a self-contained application, a .NET runtime is bundled together with the application. This bundling adds a significant amount of content to the packaged application. Depending on the complexity of the application, only a subset of the runtime is required to run the application. These unused parts of the runtime are unnecessary and can be trimmed from the packaged application.
 
-This is especially important for applications that need to be downloaded over the internet, for example Xamarin and Blazor applications. End users on a slow or limited network will be less likely to install and use applications that are too large.
+This is especially important for applications that need to be downloaded over the internet, for example Xamarin and Blazor applications. End users on a slow or limited network will be less likely to install and use applications that are too large. Additionally, there may be store or device limitations on how big an acceptable application can be, e.g. how large an of application can be installed over a cellular network; or installed on watchOS.
 
 Trimming a framework-dependent application can also be advantageous since the application may depend on libraries and only use a small subset of the functionality available in those libraries.
 
@@ -13,9 +13,9 @@ We will modify the [.NET Libraries](https://github.com/dotnet/runtime/tree/maste
 In the context of trimming applications, there are two main concerns:
 
 1. Any code and data that are used by the application must be preserved in the application.
-2. Any code or data that are not used by the application can be removed from the application.
+2. Any code or data that are not used by the application should be removed from the application.
 
-Note the difference in "must" and "can" between those two concerns. An application that works is preferred over a smaller application that doesn't. Therefore it is critical that any necessary code must be preserved in the application.
+Note the difference in "must" and "should" between those two concerns. An application that works is preferred over a smaller application that doesn't. Therefore it is critical that any necessary code must be preserved in the application.
 
 ## Scenarios and User Experience
 
@@ -85,7 +85,7 @@ An especially hard situation for the linker to understand is code that uses Refl
 One reason this is hard is that every serialization and deserialization mechanism has its own rules about what it looks for:
 - What are acceptable constructors to create the object?
 - What properties (or fields) are inspected?
-- Does handle derived types?
+- Does it handle derived types?
 
 As of this writing, there is not a bullet proof solution for the linker to work in all serialization cases. See https://github.com/mono/linker/issues/1087 for a proposal on what it would take to make `JsonSerializer` linker-friendly.
 
