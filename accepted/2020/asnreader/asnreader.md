@@ -64,10 +64,12 @@ private static X509Extension CreateAKID(byte[] caSubjectKeyId)
     using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
     {
         // AuthorityKeyIdentifier
-        writer.PushSequence();
-        // keyIdentifier [0] KeyIdentifier (OCTET STRING)
-        writer.WriteOctetString(new Asn1Tag(TagClass.ContextSpecific, 0), caSubjectKeyId);
-        writer.PopSequence();
+        using (writer.PushSequence())
+        {
+	    // keyIdentifier [0] KeyIdentifier (OCTET STRING)
+            writer.WriteOctetString(caSubjectKeyId, new Asn1Tag(TagClass.ContextSpecific, 0));
+        }
+
         return new X509Extension("2.5.29.35", writer.Encode(), critical: false);
     }
 }
@@ -113,7 +115,7 @@ private static ECParameters FromECPrivateKey(byte[] ecPrivateKey)
     AsnReader sequenceReader = reader.ReadSequence();
     reader.ThrowIfNotEmpty();
 
-    if (!sequenceReader.TryReadUInt8(out byte version) || version != 1)
+    if (!sequenceReader.TryReadInt32(out int version) || version != 1)
     {
         throw new InvalidOperationException();
     }
@@ -126,15 +128,17 @@ private static ECParameters FromECPrivateKey(byte[] ecPrivateKey)
     Asn1Tag context0 = new Asn1Tag(TagClass.ContextSpecific, 0);
     Asn1Tag context1 = new Asn1Tag(TagClass.ContextSpecific, 1);
 
-    // Don't test for the ECParameters, since we didn't accept external parameters.
+    // Don't test for the ECParameters, since we didn't accept external parameters,
+    // just assert it's there and read it.
     //if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(context0))
     {
         AsnReader ecParamsReader = reader.ReadSequence(context0);
-        ecParameters.Curve = ECCurve.CreateFromValue(ecParamsReader.ReadObjectIdentifierAsString());
+        ecParameters.Curve = ECCurve.CreateFromValue(ecParamsReader.ReadObjectIdentifier());
         ecParamsReader.ThrowIfNotEmpty();
     }
 
-    // Don't test for the presence of public key, we require it.
+    // Don't test for the presence of public key, we require it,
+    // so just assert it's there and read it.
     //if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(context1))
     {
         AsnReader publicKeyReader = reader.ReadSequence(context1);
@@ -231,7 +235,7 @@ private static ECParameters FromECPrivateKey(ReadOnlySpan<byte> ecPrivateKey)
    - The reader design and implementation need to assume the inputs are untrusted data, used in trust decisions.
   - Provide a stateful writer that allows callers to use linear writing patterns for ITU-T X.690 BER data without worrying about managing prepended length values.
     - The writer will apply automatic conformance to CER and DER restrictions, as requested.
-  - Provide a `ref struct` version of the reader for performance-critical scenarios.
+  - Provide minimal-allocation reader APIs for performance-critical scenarios (`AsnDecoder`).
   - The reader and writer use C#/.NET paradigms, and translate to BER paradigms when they do not align.
   - Ensure callers have workarounds for types that the reader and writer do not have first-class support for.
 
@@ -239,7 +243,7 @@ private static ECParameters FromECPrivateKey(ReadOnlySpan<byte> ecPrivateKey)
 
  - Automatically serialize, or deserialize, between BER-family-encoded data and .NET types.
  - Compile the ASN.1 language into .NET types.
-	 - Perhaps this is a source generation feature for later?
+   - Perhaps this is a source generation feature for later?
  - Read, or write, ASN.1 types which are not needed for PKIX, CMS, or common LDAP values, such as
    - Real
    - `SET` (`SET-OF` is supported)
@@ -260,10 +264,9 @@ private static ECParameters FromECPrivateKey(ReadOnlySpan<byte> ecPrivateKey)
    - Verbs
      - Peek: Return a value without advancing the reader.
      - Read: Return a value, advancing the reader.
-     - Copy: Write a value to a provided destination, advancing the reader.
     - Variants
       - Reference type (`AsnReader`)
-      - Mutable ref-like value type (`AsnValueReader`)
+      - Stateless static methods (`AsnDecoder`)
 
 ### API Common to Readers and the Writer
 
@@ -350,6 +353,22 @@ public readonly struct Asn1Tag : IEquatable<Asn1Tag>
     public static bool TryDecode(ReadOnlySpan<byte> source, out Asn1Tag tag, out int bytesConsumed) => throw null;
     
     /// <summary>
+    ///   Reads a BER-encoded tag which starts at <paramref name="source"/>.
+    /// </summary>
+    /// <param name="source">
+    ///   The read only byte sequence whose beginning is a BER-encoded tag.
+    /// </param>
+    /// <param name="bytesConsumed">
+    ///   When this method returns, contains the number of bytes that contributed
+    ///   to the encoded tag. This parameter is treated as uninitialized.
+    /// </param>
+    /// <returns>The decoded tag.</returns>
+    /// <exception cref="AsnContentException">
+    ///   The provided data does not decode to a tag.
+    /// </exception>
+    public static Asn1Tag Decode(ReadOnlySpan<byte> source, out int bytesConsumed) => throw null;
+	
+    /// <summary>
     ///   Report the number of bytes required for the BER-encoding of this tag.
     /// </summary>
     /// <seealso cref="TryEncode(Span{byte},out int)"/>
@@ -406,7 +425,6 @@ public readonly struct Asn1Tag : IEquatable<Asn1Tag>
     public override string ToString() => throw null;
 
     // Accelerators
-    public static readonly Asn1Tag EndOfContents = ...;
     public static readonly Asn1Tag Boolean = ...;
     public static readonly Asn1Tag Integer = ...;
     public static readonly Asn1Tag PrimitiveBitString = ...;
@@ -425,7 +443,7 @@ public readonly struct Asn1Tag : IEquatable<Asn1Tag>
 /// <summary>
 ///   The tag class for a particular ASN.1 tag.
 /// </summary>
-public enum TagClass : byte
+public enum TagClass
 {
     /// <summary>
     ///   The Universal tag class
@@ -684,6 +702,14 @@ public enum AsnEncodingRules
     /// </summary>
     DER,
 }
+
+public partial class AsnContentException : Exception
+{
+    public AsnContentException() { }
+    protected AsnContentException(SerializationInfo info, StreamingContext context) { }
+    public AsnContentException(string? message) { }
+    public AsnContentException(string? message, System.Exception inner) { }
+}
 ```
 
 ### Writer API
@@ -694,7 +720,7 @@ public enum AsnEncodingRules
 /// <summary>
 ///   A writer for BER-, CER-, and DER-encoded ASN.1 data.
 /// </summary>
-public sealed partial class AsnWriter : IDisposable
+public sealed partial class AsnWriter
 {
     /// <summary>
     ///   Create a new <see cref="AsnWriter"/> with a given set of encoding rules.
@@ -711,14 +737,8 @@ public sealed partial class AsnWriter : IDisposable
     public AsnEncodingRules RuleSet { get; }
 
     /// <summary>
-    ///   Release the resources held by this writer.
-    /// </summary>
-    public void Dispose() => throw null;
-
-    /// <summary>
     ///   Reset the writer to have no data, without releasing resources.
     /// </summary>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
     public void Reset() => throw null;
     
     /// <summary>
@@ -728,7 +748,6 @@ public sealed partial class AsnWriter : IDisposable
     ///   The number of bytes that would be written by <see cref="TryEncode"/>, or -1
     ///   if a <see cref="PushSequence()"/> or <see cref="PushSetOf()"/> has not been completed.
     /// </returns>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
     public int GetEncodedLength() => throw null;
 
     /// <summary>
@@ -754,8 +773,7 @@ public sealed partial class AsnWriter : IDisposable
     ///   A <see cref="PushSequence()"/> or <see cref="PushSetOf()"/> has not been closed via
     ///   <see cref="PopSequence()"/> or <see cref="PopSetOf()"/>.
     /// </exception>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    public bool ValueEquals(ReadOnlySpan<byte> other) => throw null;
+    public bool EncodedValueEquals(ReadOnlySpan<byte> other) => throw null;
 }
 ```
 
@@ -774,19 +792,35 @@ partial class AsnWriter
     ///   semantic meaning.
     /// </remarks>
     /// </exception>
-    /// <exception cref="CryptographicException">
-    ///   <paramref name="preEncodedValue"/> could not be read under the current encoding rules --OR--
-    ///   <paramref name="preEncodedValue"/> has data beyond the end of the first value
+    /// <exception cref="ArgumentException">
+    ///   <paramref name="value"/> could not be read under the current encoding rules --OR--
+    ///   <paramref name="value"/> has data beyond the end of the first value
     /// </exception>
     /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    public void WriteEncodedValue(ReadOnlySpan<byte> preEncodedValue) => throw null;
+    public void WriteEncodedValue(ReadOnlySpan<byte> value) => throw null;
+
+    /// <summary>
+    ///   Copy the value of this writer into another.
+    /// </summary>
+    /// <param name="destination">The writer to receive the value.</param>
+    /// <exception cref="ArgumentNullException">
+    ///   <paramref name="destination"/> is <see langword="null"/>.
+    /// </exception>
+    /// <exception cref="InvalidOperationException">
+    ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
+    ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/> --OR--
+    ///   This writer is empty --OR--
+    ///   This writer represents more than one top-level value --OR--
+    ///   This writer's value is encoded in a manner that is not compatible with the
+    ///   ruleset for the destination writer.
+    /// </exception>
+    public void CopyTo(AsnWriter destination) => throw null;
 }
 ```
 
 #### Boolean
 
-The general shape of each method group is "void Write\[Type\]\(value\)" and "void Write\[Type\]\(tag, value\)",
-because from a code-review perspective it's important to not miss the tag replacement.
+The general shape of each method group is "void Write\[Type\]\(value, Asn1Tag? tag=default\)".
 
 The writer never respects the Primitive/Constructed state of an input tag, it writes the form that is correct
 for the value being written.
@@ -795,24 +829,17 @@ for the value being written.
 partial class AsnWriter
 {
     /// <summary>
-    ///   Write a Boolean value with tag UNIVERSAL 1.
-    /// </summary>
-    /// <param name="value">The value to write.</param>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    public void WriteBoolean(bool value) => throw null;
-
-    /// <summary>
     ///   Write a Boolean value with a specified tag.
     /// </summary>
-    /// <param name="tag">The tag to write.</param>
     /// <param name="value">The value to write.</param>
+    /// <param name="tag">The tag to write, or <see langword="null"/> for the default tag (Universal 1).</param>
     /// <exception cref="ArgumentException">
     ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagClass"/> is
     ///   <see cref="TagClass.Universal"/>, but
     ///   <paramref name="tag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
     ///   the method
     /// </exception>
-    public void WriteBoolean(Asn1Tag tag, bool value) => throw null;
+    public void WriteBoolean(bool value, Asn1Tag? tag = null) => throw null;
 }
 ```
 
@@ -821,8 +848,7 @@ partial class AsnWriter
 ```C#
 partial class AsnWriter
 {
-    public void WriteNull() => throw null;
-    public void WriteNull(Asn1Tag tag) => throw null;
+    public void WriteNull(Asn1Tag? tag = default) => throw null;
 
     /// <summary>
     ///   Write an Object Identifier with tag UNIVERSAL 6.
@@ -831,17 +857,12 @@ partial class AsnWriter
     /// <exception cref="ArgumentNullException">
     ///   <paramref name="oid"/> is <c>null</c>
     /// </exception>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="ArgumentException">
     ///   <paramref name="oid"/>.<see cref="Oid.Value"/> is not a valid dotted decimal
     ///   object identifier
     /// </exception>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    public void WriteObjectIdentifier(Oid oid) => throw null;
-    public void WriteObjectIdentifier(string oidValue) => throw null;
-    public void WriteObjectIdentifier(ReadOnlySpan<char> oidValue) => throw null;
-    public void WriteObjectIdentifier(Asn1Tag tag, Oid oid) => throw null;
-    public void WriteObjectIdentifier(Asn1Tag tag, string oidValue) => throw null;
-    public void WriteObjectIdentifier(Asn1Tag tag, ReadOnlySpan<char> oidValue) => throw null;
+    public void WriteObjectIdentifier(string oidValue, Asn1Tag? tag = default) => throw null;
+    public void WriteObjectIdentifier(ReadOnlySpan<char> oidValue, Asn1Tag? tag = default) => throw null;
 }
 ```
 
@@ -852,23 +873,31 @@ ASN.1/BER integers are similar to .NET's BigInteger: unbounded signed integral v
 ```C#
 partial class AsnWriter
 {
-    public void WriteInteger(int value) => throw null;
-    public void WriteInteger(uint value) => throw null;
-    public void WriteInteger(long value) => throw null;
-    public void WriteInteger(ulong value) => throw null;
-    public void WriteInteger(BigInteger value) => throw null;
+    public void WriteInteger(int value, Asn1Tag? tag = default) => throw null;
+    public void WriteInteger(uint value, Asn1Tag? tag = default) => throw null;
+    public void WriteInteger(long value, Asn1Tag? tag = default) => throw null;
+    public void WriteInteger(ulong value, Asn1Tag? tag = default) => throw null;
+    public void WriteInteger(BigInteger value, Asn1Tag? tag = default) => throw null;
 
     /// <summary>
-    ///   Write an Integer value with tag UNIVERSAL 2.
+    ///   Write an Integer value with a specified tag, interpreting the contents as a signed, big-endian number.
     /// </summary>
     /// <param name="value">The integer value to write, in signed big-endian byte order.</param>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="ArgumentException">
     ///   the 9 most sigificant bits are all set --OR--
     ///   the 9 most sigificant bits are all unset
     /// </exception>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    public void WriteInteger(ReadOnlySpan<byte> value) => throw null;
-    public void WriteInteger(Asn1Tag tag, ReadOnlySpan<byte> value) => throw null;
+    public void WriteInteger(ReadOnlySpan<byte> value, Asn1Tag? tag = default) => throw null;
+
+    /// <summary>
+    ///   Write an Integer value with a specified tag, interpreting the contents as an unsigned, big-endian number.
+    /// </summary>
+    /// <param name="value">The integer value to write, in unsigned big-endian byte order.</param>
+    /// <exception cref="ArgumentException">
+    ///   the 9 most sigificant bits are all unset
+    /// </exception>
+    public void WriteIntegerUnsigned(ReadOnlySpan<byte> value, Asn1Tag? tag = default) => throw null;
+
 }
 ```
 
@@ -884,52 +913,19 @@ partial class AsnWriter
     /// <summary>
     ///   Write a Bit String value with a tag UNIVERSAL 3.
     /// </summary>
-    /// <param name="bitString">The value to write.</param>
+    /// <param name="value">The value to write.</param>
     /// <param name="unusedBitCount">
     ///   The number of trailing bits which are not semantic.
     /// </param>
     /// <exception cref="ArgumentOutOfRangeException">
     ///   <paramref name="unusedBitCount"/> is not in the range [0,7]
     /// </exception>
-    /// <exception cref="CryptographicException">
-    ///   <paramref name="bitString"/> has length 0 and <paramref name="unusedBitCount"/> is not 0 --OR--
-    ///   <paramref name="bitString"/> is not empty and any of the bits identified by
+    /// <exception cref="ArgumentException">
+    ///   <paramref name="value"/> has length 0 and <paramref name="unusedBitCount"/> is not 0 --OR--
+    ///   <paramref name="value"/> is not empty and any of the bits identified by
     ///   <paramref name="unusedBitCount"/> is set
     /// </exception>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    public void WriteBitString(ReadOnlySpan<byte> bitString, int unusedBitCount = 0) => throw null;
-    public void WriteBitString(Asn1Tag tag, ReadOnlySpan<byte> bitString, int unusedBitCount = 0) => throw null;
-
-    /// <summary>
-    ///   Write a Bit String value via a callback, with tag UNIVERSAL 3.
-    /// </summary>
-    /// <param name="byteLength">The total number of bytes to write.</param>
-    /// <param name="state">A state object to pass to <paramref name="action"/>.</param>
-    /// <param name="action">A callback to invoke for populating the Bit String.</param>
-    /// <param name="unusedBitCount">
-    ///   The number of trailing bits which are not semantic.
-    /// </param>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="byteLength"/> is negative --OR--
-    ///   <paramref name="unusedBitCount"/> is not in the range [0,7]
-    /// </exception>
-    /// <exception cref="CryptographicException">
-    ///   <paramref name="byteLength"/> is 0 and <paramref name="unusedBitCount"/> is not 0 --OR--
-    ///   <paramref name="byteLength"/> is not 0 and any of the bits identified by
-    ///   <paramref name="unusedBitCount"/> is set
-    /// </exception>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    public void WriteBitString<TState>(
-        int byteLength,
-        TState state,
-        SpanAction<byte, TState> action,
-        int unusedBitCount = 0) => throw null;
-    public void WriteBitString<TState>(
-        Asn1Tag tag,
-        int byteLength,
-        TState state,
-        SpanAction<byte, TState> action,
-        int unusedBitCount = 0) => throw null;
+    public void WriteBitString(ReadOnlySpan<byte> value, int unusedBitCount = 0, Asn1Tag? tag = default) => throw null;
 }
 ```
 
@@ -953,37 +949,32 @@ where the order is preserved as written.
 partial class AsnWriter
 {
     /// <summary>
-    ///   Begin writing a Sequence with tag UNIVERSAL 16.
+    ///   Begin writing a Sequence with a specified tag.
     /// </summary>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    /// <seealso cref="PushSequence(Asn1Tag)"/>
-    /// <seealso cref="PopSequence()"/>
-    public void PushSequence() => throw null;
-    public void PushSequence(Asn1Tag tag) => throw null;
+    public Scope PushSequence(Asn1Tag? tag = default) => throw null;
     // Because SEQUENCE and SEQUENCE-OF are always encoded the same
     // there is not a separate method group for SequenceOf.
         
     /// <summary>
-    ///   Indicate that the open Sequence with tag UNIVERSAL 16 is closed,
+    ///   Indicate that the open Sequence with a specified tag is closed,
     ///   returning the writer to the parent context.
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    ///   the writer is not currently positioned within a Sequence with tag UNIVERSAL 16
+    ///   the writer is not currently positioned within a Sequence with the specified tag
     /// </exception>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    /// <seealso cref="PopSequence(Asn1Tag)"/>
-    /// <seealso cref="PushSequence()"/>
     public void PopSequence() => throw null;
     public void PopSequence(Asn1Tag tag) => throw null;
 
-    /// <summary>
-    ///   Begin writing a Set-Of with a tag UNIVERSAL 17.
-    /// </summary>
-    public void PushSetOf() => throw null;
-    public void PushSetOf(Asn1Tag tag) => throw null;
-    public void PopSetOf() => throw null;
-    public void PopSetOf(Asn1Tag tag) => throw null;
+    public Scope PushSetOf(Asn1Tag? tag = default) => throw null;
+    public void PopSetOf(Asn1Tag? tag = default) => throw null;
     // SET is not actually supported by the writer, only the rules for SET-OF are used.
+
+    // This struct allows the Push methods to be used in a using statement, providing an
+    // idempotent call to the appropriate Pop method while still being non-allocating.
+    public readonly struct Scope : System.IDisposable
+    {
+        public void Dispose() { }
+    }
 }
 ```
 
@@ -997,27 +988,14 @@ The writer supports pushing/popping octet strings to enable linearly writing tho
 ```C#
 partial class AsnWriter
 {
-    public void WriteOctetString(ReadOnlySpan<byte> octetString) => throw null;
-    public void WriteOctetString(Asn1Tag tag, ReadOnlySpan<byte> octetString) => throw null;
-
-    public void WriteOctetString<TState>(
-        int byteLength,
-        TState state,
-        SpanAction<byte, TState> action) => throw null;
-    public void WriteOctetString<TState>(
-        Asn1Tag tag,
-        int byteLength,
-        TState state,
-        SpanAction<byte, TState> action) => throw null;
+    public void WriteOctetString(ReadOnlySpan<byte> value, Asn1Tag? tag = default) => throw null;
 
     // Technically not a constructed/composable type, but allows encoding nested
     // values in open construction types.
     //
     // For more information on the exception model, see Sequence.
-    public void PushOctetString() => throw null;
-    public void PushOctetString(Asn1Tag tag) => throw null;
-    public void PopOctetString() => throw null;
-    public void PopOctetString(Asn1Tag tag) => throw null;
+    public Scope PushOctetString(Asn1Tag? tag = default) => throw null;
+    public void PopOctetString(Asn1Tag? tag = default) => throw null;
 }
 ```
 
@@ -1031,7 +1009,7 @@ partial class AsnWriter
 {
     /// <summary>
     ///   Write a non-[<see cref="FlagsAttribute"/>] enum value as an Enumerated with
-    ///   tag UNIVERSAL 10.
+    ///   a specified tag.
     /// </summary>
     /// <param name="enumValue">The boxed enumeration value to write</param>
     /// <exception cref="ArgumentNullException">
@@ -1041,15 +1019,11 @@ partial class AsnWriter
     ///   <paramref name="enumValue"/> is not a boxed enum value --OR--
     ///   the unboxed type of <paramref name="enumValue"/> is declared [<see cref="FlagsAttribute"/>]
     /// </exception>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
     /// <seealso cref="WriteEnumeratedValue(Asn1Tag,object)"/>
     /// <seealso cref="WriteEnumeratedValue{T}(T)"/>
-    public void WriteEnumeratedValue(object enumValue) => throw null;
+    public void WriteEnumeratedValue(Enum value, Asn1Tag? tag = default) => throw null;
 
-    public void WriteEnumeratedValue<TEnum>(TEnum enumValue) where TEnum : Enum => throw null;
-
-    public void WriteEnumeratedValue(Asn1Tag tag, object enumValue) => throw null;
-    public void WriteEnumeratedValue<TEnum>(Asn1Tag tag, TEnum enumValue) where TEnum : Enum => throw null;
+    public void WriteEnumeratedValue<TEnum>(TEnum enumValue, Asn1Tag? tag = default) where TEnum : Enum => throw null;
 }
 ```
 
@@ -1103,23 +1077,20 @@ partial class AsnWriter
 {
     /// <summary>
     ///   Write a [<see cref="FlagsAttribute"/>] enum value as a NamedBitList with
-    ///   tag UNIVERSAL 3.
+    ///   a specified tag.
     /// </summary>
-    /// <param name="enumValue">The boxed enumeration value to write</param>
+    /// <param name="value">The boxed enumeration value to write</param>
     /// <exception cref="ArgumentNullException">
-    ///   <paramref name="enumValue"/> is <c>null</c>
+    ///   <paramref name="value"/> is <c>null</c>
     /// </exception>
     /// <exception cref="ArgumentException">
-    ///   <paramref name="enumValue"/> is not a boxed enum value --OR--
-    ///   the unboxed type of <paramref name="enumValue"/> is not declared [<see cref="FlagsAttribute"/>]
+    ///   <paramref name="value"/> is not a boxed enum value --OR--
+    ///   the unboxed type of <paramref name="value"/> is not declared [<see cref="FlagsAttribute"/>]
     /// </exception>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    /// <seealso cref="WriteNamedBitList(Asn1Tag,object)"/>
-    /// <seealso cref="WriteNamedBitList{T}(T)"/>
-    public void WriteNamedBitList(object enumValue) => throw null;
-    public void WriteNamedBitList<TEnum>(TEnum enumValue) where TEnum : Enum => throw null;
-    public void WriteNamedBitList(Asn1Tag tag, object enumValue) => throw null;
-    public void WriteNamedBitList<TEnum>(Asn1Tag tag, TEnum enumValue) where TEnum : Enum => throw null;
+    /// <seealso cref="WriteNamedBitList{T}(T, Asn1Tag?)"/>
+    public void WriteNamedBitList(Enum value, Asn1Tag? tag = default) => throw null;
+    public void WriteNamedBitList<TEnum>(TEnum enumValue, Asn1Tag? tag = default) where TEnum : Enum => throw null;
+    public void WriteNamedBitList(BitArray value, Asn1Tag? tag = default) => throw null;
 }
 ```
 
@@ -1139,19 +1110,16 @@ Because some specifications, such as X.509 Public Key Certificates, indicate tha
 partial class AsnWriter
 {
     /// <summary>
-    ///   Write the provided <see cref="DateTimeOffset"/> as a UTCTime with tag
-    ///   UNIVERSAL 23, and accepting the two-digit year as valid in context.
+    ///   Write the provided <see cref="DateTimeOffset"/> as a UTCTime with a specified tag,
+    ///   and accepting the two-digit year as valid in context.
     /// </summary>
     /// <param name="value">The value to write.</param>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    /// <seealso cref="WriteUtcTime(Asn1Tag,DateTimeOffset)"/>
-    /// <seealso cref="WriteUtcTime(DateTimeOffset,int)"/>
-    public void WriteUtcTime(DateTimeOffset value) => throw null;
-    public void WriteUtcTime(Asn1Tag tag, DateTimeOffset value) => throw null;
+    /// <seealso cref="WriteUtcTime(DateTimeOffset,int,Asn1Tag?)"/>
+    public void WriteUtcTime(DateTimeOffset value, Asn1Tag? tag = default) => throw null;
 
     /// <summary>
-    ///   Write the provided <see cref="DateTimeOffset"/> as a UTCTime with tag
-    ///   UNIVERSAL 23, provided the year is in the allowed range.
+    ///   Write the provided <see cref="DateTimeOffset"/> as a UTCTime with a specified tag,
+    ///   provided the year is in the allowed range.
     /// </summary>
     /// <param name="value">The value to write.</param>
     /// <param name="twoDigitYearMax">
@@ -1163,25 +1131,19 @@ partial class AsnWriter
     ///   is not in the range
     ///   (<paramref name="twoDigitYearMax"/> - 100, <paramref name="twoDigitYearMax"/>]
     /// </exception>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    /// <seealso cref="WriteUtcTime(Asn1Tag,DateTimeOffset,int)"/>
     /// <seealso cref="System.Globalization.Calendar.TwoDigitYearMax"/>
-    public void WriteUtcTime(DateTimeOffset value, int twoDigitYearMax) => throw null;
-    public void WriteUtcTime(Asn1Tag tag, DateTimeOffset value, int twoDigitYearMax) => throw null;     
-
+    public void WriteUtcTime(DateTimeOffset value, int twoDigitYearMax, Asn1Tag? tag = default) => throw null;
+    
     /// <summary>
-    ///   Write the provided <see cref="DateTimeOffset"/> as a GeneralizedTime with tag
-    ///   UNIVERSAL 24, optionally excluding the fractional seconds.
+    ///   Write the provided <see cref="DateTimeOffset"/> as a GeneralizedTime with a specified tag,
+    ///   optionally excluding the fractional seconds.
     /// </summary>
     /// <param name="value">The value to write.</param>
     /// <param name="omitFractionalSeconds">
     ///   <c>true</c> to treat the fractional seconds in <paramref name="value"/> as 0 even if
     ///   a non-zero value is present.
     /// </param>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    /// <seealso cref="WriteGeneralizedTime(Asn1Tag,DateTimeOffset,bool)"/>
-    public void WriteGeneralizedTime(DateTimeOffset value, bool omitFractionalSeconds = false) => throw null;
-    public void WriteGeneralizedTime(Asn1Tag tag, DateTimeOffset value, bool omitFractionalSeconds = false) => throw null;
+    public void WriteGeneralizedTime(DateTimeOffset value, bool omitFractionalSeconds = false, Asn1Tag? tag = default) => throw null;
 }
 ```
     
@@ -1210,22 +1172,18 @@ partial class AsnWriter
     /// <param name="encodingType">
     ///   The <see cref="UniversalTagNumber"/> corresponding to the encoding to use.
     /// </param>
-    /// <param name="str">The string to write.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="str"/> is <c>null</c></exception>
+    /// <param name="value">The string to write.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="value"/> is <c>null</c></exception>
     /// <exception cref="ArgumentOutOfRangeException">
     ///   <paramref name="encodingType"/> is not a restricted character string encoding type --OR--
     ///   <paramref name="encodingType"/> is a restricted character string encoding type that is not
     ///   currently supported by this method
     /// </exception>
     /// <exception cref="EncoderFallbackException">
-    ///  <paramref name="str"/> is not valid in the requested encoding.
+    ///  <paramref name="value"/> is not valid in the requested encoding.
     /// </exception>
-    /// <exception cref="ObjectDisposedException">The writer has been Disposed.</exception>
-    /// <seealso cref="WriteCharacterString(Asn1Tag,UniversalTagNumber,string)"/>
-    public void WriteCharacterString(UniversalTagNumber encodingType, string str) => throw null;
-    public void WriteCharacterString(UniversalTagNumber encodingType, ReadOnlySpan<char> str) => throw null;
-    public void WriteCharacterString(Asn1Tag tag, UniversalTagNumber encodingType, string str) => throw null;
-    public void WriteCharacterString(Asn1Tag tag, UniversalTagNumber encodingType, ReadOnlySpan<char> str) => throw null;
+    public void WriteCharacterString(UniversalTagNumber encodingType, string value, Asn1Tag? tag = default) => throw null;
+    public void WriteCharacterString(UniversalTagNumber encodingType, ReadOnlySpan<char> value, Asn1Tag? tag = default) => throw null;
 }
 ```
 
@@ -1254,7 +1212,7 @@ public partial class AsnReader
     /// <exception cref="ArgumentOutOfRangeException">
     ///   <paramref name="ruleSet"/> is not defined.
     /// </exception>
-    public AsnReader(ReadOnlyMemory<byte> data, AsnEncodingRules ruleSet) => throw null;
+    public AsnReader(ReadOnlyMemory<byte> data, AsnEncodingRules ruleSet, AsnReaderOptions? = default) => throw null;
 
     /// <summary>
     ///   The <see cref="AsnEncodingRules"/> in use by this reader.
@@ -1287,6 +1245,12 @@ public partial class AsnReader
     /// </exception>
     public Asn1Tag PeekTag() => throw null;
 }
+
+public partial struct AsnReaderOptions
+{
+    public bool SkipSetSortOrderVerification { get { throw null; } set { } }
+    public int UtcTimeTwoDigitYearMax { get { throw null; } set { } }
+}
 ```
     
 #### Direct Data Interaction
@@ -1300,7 +1264,7 @@ partial class AsnReader
     ///   End of Contents marker.
     /// </summary>
     /// <returns>A <see cref="ReadOnlyMemory{byte}"/> view of the next encoded value.</returns>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   The reader is positioned at a point where the tag or length is invalid
     ///   under the current encoding rules.
     /// </exception>
@@ -1315,7 +1279,7 @@ partial class AsnReader
     /// <returns>
     ///   A <see cref="ReadOnlyMemory{byte}"/> view of the contents octets of the next encoded value.
     /// </returns>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   The reader is positioned at a point where the tag or length is invalid
     ///   under the current encoding rules.
     /// </exception>
@@ -1335,7 +1299,7 @@ partial class AsnReader
 
 #### Boolean
 
-The general shape of each method group is "\[Type\] Read\[Type\]\(\)" and "\[Type\] Read\[Type\]\(tag\)".
+The general shape of each method group is "\[Type\] Read\[Type\]\(Asn1Tag? tag=default\)".
 
 The reader never respects the Primitive/Constructed state of an input tag, it matches only on the class and value.
 
@@ -1343,22 +1307,11 @@ The reader never respects the Primitive/Constructed state of an input tag, it ma
 partial class AsnReader
 {
     /// <summary>
-    ///   Reads the next value as a Boolean with tag UNIVERSAL 1.
-    /// </summary>
-    /// <returns>The next value as a Boolean.</returns>
-    /// <exception cref="CryptographicException">
-    ///   the next value does not have the correct tag --OR--
-    ///   the length encoding is not valid under the current encoding rules --OR--
-    ///   the contents are not valid under the current encoding rules
-    /// </exception>
-    public bool ReadBoolean() => ReadBoolean(Asn1Tag.Boolean);
-
-    /// <summary>
     ///   Reads the next value as a Boolean with a specified tag.
     /// </summary>
-    /// <param name="expectedTag">The tag to check for before reading.</param>
+    /// <param name="expectedTag">The tag to check for before reading, or <see langword="null"/> for the default tag (Universal 1).</param>
     /// <returns>The next value as a Boolean.</returns>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules
@@ -1369,7 +1322,7 @@ partial class AsnReader
     ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not correct for
     ///   the method
     /// </exception>
-    public bool ReadBoolean(Asn1Tag expectedTag) => throw null;
+    public bool ReadBoolean(Asn1Tag? expectedTag=default) => throw null;
 }
 ```
 
@@ -1378,14 +1331,10 @@ partial class AsnReader
 ```C#
 partial class AsnReader
 {
-    public void ReadNull() => throw null;
-    public void ReadNull(Asn1Tag tag) => throw null;
+    public void ReadNull(Asn1Tag? tag = default) => throw null;
 
     // Maybe only the string versions are needed?
-    public Oid ReadObjectIdentifier() => throw null;
-    public Oid ReadObjectIdentifier(Asn1Tag tag) => throw null;
-    public string ReadObjectIdentifierAsString() => throw null;
-    public string ReadObjectIdentifierAsString(Asn1Tag expectedTag) => throw null;
+    public string ReadObjectIdentifier(Asn1Tag? tag = default) => throw null;
 }
 ```
 
@@ -1396,13 +1345,11 @@ ASN.1/BER integers are similar to .NET's BigInteger: unbounded signed integral v
 ```C#
 partial class AsnReader
 {
-    public ReadOnlyMemory<byte> ReadIntegerBytes() => throw null;
-    public ReadOnlyMemory<byte> ReadIntegerBytes(Asn1Tag tag) => throw null;
-    public BigInteger ReadInteger() => throw null;
-    public BigInteger ReadInteger(Asn1Tag expectedTag) => throw null;
+    public ReadOnlyMemory<byte> ReadIntegerBytes(Asn1Tag? tag = default) => throw null;
+    public BigInteger ReadInteger(Asn1Tag? tag = default) => throw null;
 
     /// <summary>
-    ///   Reads the next value as an Integer with tag UNIVERSAL 2, interpreting the contents
+    ///   Reads the next value as an Integer with a specified tag, interpreting the contents
     ///   as an <see cref="int"/>.
     /// </summary>
     /// <param name="value">
@@ -1413,7 +1360,7 @@ partial class AsnReader
     ///   <see cref="int.MinValue"/> and <see cref="int.MaxValue"/>, inclusive; otherwise
     ///   <c>true</c> is returned and the reader advances.
     /// </returns>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules
@@ -1427,17 +1374,6 @@ partial class AsnReader
     public bool TryReadInt64(Asn1Tag expectedTag, out long value) => throw null;
     public bool TryReadUInt64(out ulong value) => throw null;
     public bool TryReadUInt64(Asn1Tag expectedTag, out ulong value) => throw null;
-    
-    // Maybe 16/8 bits versions aren't needed?
-    public bool TryReadInt16(out short value) => throw null;
-    public bool TryReadInt16(Asn1Tag expectedTag, out short value) => throw null;
-    public bool TryReadUInt16(out ushort value) => throw null;
-    public bool TryReadUInt16(Asn1Tag expectedTag, out ushort value) => throw null;
-    
-    public bool TryReadInt8(out sbyte value) => throw null;
-    public bool TryReadInt8(Asn1Tag expectedTag, out sbyte value) => throw null;
-    public bool TryReadUInt8(out byte value) => throw null;
-    public bool TryReadUInt8(Asn1Tag expectedTag, out byte value) => throw null;
 }
 ```
 
@@ -1476,31 +1412,21 @@ partial class AsnReader
     ///   <c>true</c> and advances the reader if the BIT STRING value had a primitive encoding,
     ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
     /// </returns>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules
     /// </exception>
-    /// <seealso cref="TryCopyBitStringBytes(Span{byte},out int,out int)"/>
-    public bool TryReadPrimitiveBitStringValue(out int unusedBitCount, out ReadOnlyMemory<byte> value) => throw null;
-    public bool TryReadPrimitiveBitStringValue(Asn1Tag tag, out int unusedBitCount, out ReadOnlyMemory<byte> value) => throw null;
+    /// <seealso cref="TryReadBitString(Span{byte},out int,out int,Asn1Tag?)"/>
+    public bool TryReadPrimitiveBitString(Asn1Tag tag, out int unusedBitCount, out ReadOnlyMemory<byte> value, Asn1Tag? tag = default) => throw null;
     
-    // REVIEW: "Copy" or "Read"?
-    public bool TryCopyBitStringBytes(
+    public bool TryReadBitString(
         Span<byte> destination,
         out int unusedBitCount,
-        out int bytesWritten) => throw null;
+        out int bytesWritten,
+	Asn1Tag? tag = default) => throw null;
 
-    // REVIEW: Parameter ordering? Tag first for local consistency,
-    // destination first for Try-Write consistency
-    public bool TryCopyBitStringBytes(
-        Asn1Tag tag,
-        Span<byte> destination,
-        out int unusedBitCount,
-        out int bytesWritten) => throw null;
-
-    public byte[] ReadBitString(out int unusedBitCount) => throw null;
-    public byte[] ReadBitString(Asn1Tag tag, out int unusedBitCount) => throw null;
+    public byte[] ReadBitString(out int unusedBitCount, Asn1Tag? tag = default) => throw null;
 }
 ```
 
@@ -1520,20 +1446,14 @@ Validation:
 ```C#
 partial class AsnReader
 {
-    public bool TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents) => throw null;
-    public bool TryReadPrimitiveOctetStringBytes(Asn1Tag expectedTag, out ReadOnlyMemory<byte> contents) => throw null;
-
-    public bool TryCopyOctetStringBytes(
+    public bool TryReadPrimitiveOctetString(out ReadOnlyMemory<byte> contents, Asn1Tag? tag = default) => throw null;
+    
+    public bool TryReadOctetString(
         Span<byte> destination,
-        out int bytesWritten) => throw null;
+        out int bytesWritten,
+	Asn1Tag? tag = default) => throw null;
 
-    public bool TryCopyOctetStringBytes(
-        Asn1Tag expectedTag,
-        Span<byte> destination,
-        out int bytesWritten)  => throw null;
-
-    public byte[] ReadOctetString() => throw null;
-    public byte[] ReadOctetString(Asn1Tag expectedTag) => throw null;
+    public byte[] ReadOctetString(Asn1Tag? tag = default) => throw null;
 }
 ```
 
@@ -1564,14 +1484,12 @@ partial class AsnReader
     ///   the nested content is not evaluated by this method, and may contain data
     ///   which is not valid under the current encoding rules.
     /// </remarks>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules
     /// </exception>
-    /// <see cref="ReadSequence(Asn1Tag)"/>
-    public AsnReader ReadSequence() => ReadSequence(Asn1Tag.Sequence);
-    public AsnReader ReadSequence(Asn1Tag tag) => throw null;
+    public AsnReader ReadSequence(Asn1Tag? tag = default) => throw null;
     // Because SEQUENCE and SEQUENCE-OF are always encoded the same
     // there is not a separate method group for SequenceOf.
     
@@ -1589,13 +1507,30 @@ partial class AsnReader
     ///   the nested content is not evaluated by this method (aside from sort order, when
     ///   required), and may contain data which is not valid under the current encoding rules.
     /// </remarks>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules
     /// </exception>
-    public AsnReader ReadSetOf(bool skipSortOrderValidation = false) => throw null;
-    public AsnReader ReadSetOf(Asn1Tag tag, bool skipSortOrderValidation = false) => throw null;
+    public AsnReader ReadSetOf(bool skipSortOrderValidation, Asn1Tag? tag = default) => throw null;
+    
+    /// <summary>
+    ///   Reads the next value as a SET-OF with the specified tag
+    ///   and returns the result as an <see cref="AsnReader"/> positioned at the first
+    ///   value in the set-of (or with <see cref="HasData"/> == <c>false</c>).
+    /// </summary>
+    /// </param>
+    /// <remarks>
+    ///   The contents are verified to be in the required sort order when the encoding rules require
+    //    sorting, unless this was suppressed in the <see cref="AsnReaderOptions"/> passed in the constructor.
+    /// </remarks>
+    /// <exception cref="AsnContentException">
+    ///   the next value does not have the correct tag --OR--
+    ///   the length encoding is not valid under the current encoding rules --OR--
+    ///   the contents are not valid under the current encoding rules
+    /// </exception>
+    public AsnReader ReadSetOf(Asn1Tag? tag = default) => throw null;
+    
     // SET is not actually supported by the writer, only the rules for SET-OF are used.
 }
 ```
@@ -1609,23 +1544,22 @@ Possible values are named a priori, and only one value can be chosen.
 partial class AsnReader
 {
     /// <summary>
-    ///   Reads the next value as an Enumerated value with tag UNIVERSAL 10,
-    ///   returning the contents as a <see cref="ReadOnlySpan{T}"/> over the original data.
+    ///   Reads the next value as an Enumerated value with a specified tag,
+    ///   returning the contents as a <see cref="ReadOnlyMemory{T}"/> over the original data.
     /// </summary>
     /// <returns>
     ///   The bytes of the Enumerated value, in signed big-endian form.
     /// </returns>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules
     /// </exception>
     /// <seealso cref="ReadEnumeratedValue{TEnum}()"/>
-    public ReadOnlyMemory<byte> ReadEnumeratedBytes() => throw null;
-    public ReadOnlyMemory<byte> ReadEnumeratedBytes(Asn1Tag tag) => throw null;
+    public ReadOnlyMemory<byte> ReadEnumeratedBytes(Asn1Tag? tag=default) => throw null;
 
     /// <summary>
-    ///   Reads the next value as an Enumerated value with tag UNIVERSAL 10, converting it to
+    ///   Reads the next value as an Enumerated value with a specified tag, converting it to
     ///   the non-[<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TEnum"/>.
     /// </summary>
     /// <typeparam name="TEnum">Destination enum type</typeparam>
@@ -1636,7 +1570,7 @@ partial class AsnReader
     ///   This method does not validate that the return value is defined within
     ///   <typeparamref name="TEnum"/>.
     /// </remarks>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules --OR--
@@ -1646,13 +1580,9 @@ partial class AsnReader
     ///   <typeparamref name="TEnum"/> is not an enum type --OR--
     ///   <typeparamref name="TEnum"/> was declared with <see cref="FlagsAttribute"/>
     /// </exception>
-    /// <seealso cref="ReadEnumeratedValue{TEnum}(Asn1Tag)"/>
-    public TEnum ReadEnumeratedValue<TEnum>() where TEnum : Enum => throw null;
-    public TEnum ReadEnumeratedValue<TEnum>(Asn1Tag expectedTag) where TEnum : Enum => throw null;
+    public TEnum ReadEnumeratedValue<TEnum>(Asn1Tag? tag=default) where TEnum : Enum => throw null;
     
-    public Enum ReadEnumeratedValue(Type tEnum) => throw null;
-    // REVIEW: Parameter ordering
-    public Enum ReadEnumeratedValue(Asn1Tag tag, Type tEnum) => throw null;
+    public Enum ReadEnumeratedValue(Type tEnum, Asn1Tag? tag=default) => throw null;
 }
 ```
 
@@ -1705,14 +1635,14 @@ public enum X509KeyUsageCSharpStyle
 partial class AsnReader
 {
     /// <summary>
-    ///   Reads the next value as a NamedBitList with tag UNIVERSAL 3, converting it to the
+    ///   Reads the next value as a NamedBitList with a specified tag, converting it to the
     ///   [<see cref="FlagsAttribute"/>] enum specified by <typeparamref name="TFlagsEnum"/>.
     /// </summary>
     /// <typeparam name="TFlagsEnum">Destination enum type</typeparam>
     /// <returns>
     ///   the NamedBitList value converted to a <typeparamref name="TFlagsEnum"/>.
     /// </returns>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules --OR--
@@ -1722,12 +1652,11 @@ partial class AsnReader
     ///   <typeparamref name="TFlagsEnum"/> is not an enum type --OR--
     ///   <typeparamref name="TFlagsEnum"/> was not declared with <see cref="FlagsAttribute"/>
     /// </exception>
-    /// <seealso cref="ReadNamedBitListValue{TFlagsEnum}(Asn1Tag)"/>
-    public TFlagsEnum ReadNamedBitListValue<TFlagsEnum>() where TFlagsEnum : Enum => throw null;
-    public TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(Asn1Tag tag) where TFlagsEnum : Enum => throw null;
+    public TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(Asn1Tag? tag=default) where TFlagsEnum : Enum => throw null;
 
-    public Enum ReadNamedBitListValue(Type tFlagsEnum) => throw null;
-    public Enum ReadNamedBitListValue(Asn1Tag expectedTag, Type tFlagsEnum) => throw null;
+    public Enum ReadNamedBitListValue(Type tFlagsEnum, Asn1Tag? tag=default) => throw null;
+
+    public BitArray ReadNamedBitList(Asn1Tag? tag=default) => throw null;
 }
 ```
   
@@ -1748,7 +1677,7 @@ The reader validates that CER/DER data is in the correct format.
 partial class AsnReader
 {
     /// <summary>
-    ///   Reads the next value as a UTCTime with tag UNIVERSAL 23.
+    ///   Reads the next value as a UTCTime with a specified tag.
     /// </summary>
     /// <param name="twoDigitYearMax">
     ///   The largest year to represent with this value.
@@ -1757,34 +1686,42 @@ partial class AsnReader
     /// <returns>
     ///   a DateTimeOffset representing the value encoded in the UTCTime.
     /// </returns>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules
     /// </exception>
     /// <seealso cref="System.Globalization.Calendar.TwoDigitYearMax"/>
-    /// <seealso cref="ReadUtcTime(System.Security.Cryptography.Asn1.Asn1Tag,int)"/>
-    public DateTimeOffset ReadUtcTime(int twoDigitYearMax = 2049) => throw null;
-    public DateTimeOffset ReadUtcTime(Asn1Tag expectedTag, int twoDigitYearMax = 2049) => throw null;
+    /// <seealso cref="ReadUtcTime(Asn1Tag?)"/>
+    public DateTimeOffset ReadUtcTime(int twoDigitYearMax, Asn1Tag? expectedTag = default) => throw null;
 
     /// <summary>
-    ///   Reads the next value as a GeneralizedTime with tag UNIVERSAL 24.
+    ///   Reads the next value as a UTCTime with a specified tag, using a two digit year max from the reader options.
     /// </summary>
-    /// <param name="disallowFractions">
-    ///   <c>true</c> to cause a <see cref="CryptographicException"/> to be thrown if a
-    ///   fractional second is encountered, such as the restriction on the PKCS#7 Signing
-    ///   Time attribute.
-    /// </param>
     /// <returns>
-    ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.
+    ///   a DateTimeOffset representing the value encoded in the UTCTime.
     /// </returns>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules
     /// </exception>
-    public DateTimeOffset ReadGeneralizedTime(bool disallowFractions = false) => throw null;
-    public DateTimeOffset ReadGeneralizedTime(Asn1Tag expectedTag, bool disallowFractions = false) => throw null;
+    /// <seealso cref="System.Globalization.Calendar.TwoDigitYearMax"/>
+    /// <seealso cref="ReadUtcTime(int,Asn1Tag?)"/>
+    public DateTimeOffset ReadUtcTime(Asn1Tag? expectedTag = default) => throw null;
+
+    /// <summary>
+    ///   Reads the next value as a GeneralizedTime with a specified tag.
+    /// </summary>
+    /// <returns>
+    ///   a DateTimeOffset representing the value encoded in the GeneralizedTime.
+    /// </returns>
+    /// <exception cref="AsnContentException">
+    ///   the next value does not have the correct tag --OR--
+    ///   the length encoding is not valid under the current encoding rules --OR--
+    ///   the contents are not valid under the current encoding rules
+    /// </exception>
+    public DateTimeOffset ReadGeneralizedTime(Asn1Tag? expectedTag = default) => throw null;
 }
 ```
     
@@ -1807,129 +1744,350 @@ The other textual strings (e.g. GraphicalString) are not supported for reading a
 partial class AsnReader
 {
     /// <summary>
-    ///   Reads the next value as character string with a UNIVERSAL tag appropriate to the specified
+    ///   Reads the next value as character string with the specified tag and
     ///   encoding type, returning the decoded value as a <see cref="string"/>.
     /// </summary>
     /// <param name="encodingType">
     ///   A <see cref="UniversalTagNumber"/> corresponding to the value type to process.
     /// </param>
+    /// <param name="expectedTag">
+    ///   The tag to check for before reading, or <see langword="null"/> for the universal tag that is
+    ///   appropriate to the requested encoding type.
+    /// </param>
+    /// <returns>
+    ///   the decoded value as a <see cref="string"/>.
+    /// </returns>
     /// <exception cref="ArgumentOutOfRangeException">
     ///   <paramref name="encodingType"/> is not a known character string type.
     /// </exception>
-    /// <exception cref="CryptographicException">
+    /// <exception cref="AsnContentException">
     ///   the next value does not have the correct tag --OR--
     ///   the length encoding is not valid under the current encoding rules --OR--
     ///   the contents are not valid under the current encoding rules --OR--
     ///   the string did not successfully decode
     /// </exception>
-    /// <seealso cref="TryReadPrimitiveCharacterStringBytes(UniversalTagNumber,out ReadOnlyMemory{byte})"/>
-    /// <seealso cref="TryCopyCharacterStringBytes(UniversalTagNumber,Span{byte},out int)"/>
-    /// <seealso cref="TryCopyCharacterString(UniversalTagNumber,Span{char},out int)"/>
-    /// <seealso cref="ReadCharacterString(Asn1Tag,UniversalTagNumber)"/>
-    public string ReadCharacterString(UniversalTagNumber encodingType) => throw null;
-    public string ReadCharacterString(Asn1Tag expectedTag, UniversalTagNumber encodingType) => throw null;
+    /// <exception cref="ArgumentException">
+    ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+    ///   <see cref="TagClass.Universal"/>, but
+    ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not the same as
+    ///   <paramref name="encodingType"/>.
+    /// </exception>
+    /// <seealso cref="TryReadPrimitiveCharacterStringBytes"/>
+    /// <seealso cref="TryReadCharacterStringBytes"/>
+    /// <seealso cref="TryReadCharacterString"/>
+    public string ReadCharacterString(UniversalTagNumber encodingType, Asn1Tag? expectedTag = null) => throw null;
                
-    public bool TryCopyCharacterString(
-        UniversalTagNumber encodingType,
+    public bool TryReadCharacterString(
         Span<char> destination,
-        out int charsWritten) => throw null;
-    public bool TryCopyCharacterString(
-        Asn1Tag expectedTag,
         UniversalTagNumber encodingType,
-        Span<char> destination,
-        out int charsWritten) => throw null;
+        out int charsWritten,
+        Asn1Tag? expectedTag = null) => throw null;
     
     /// <summary>
-    ///   Reads the next value as character string with a UNIVERSAL tag appropriate to the specified
-    ///   encoding type, returning the contents as an unprocessed <see cref="ReadOnlyMemory{byte}"/>
-    ///   over the original data.
+    ///   Reads the next value as a character with a specified tag, returning the contents
+    ///   as an unprocessed <see cref="ReadOnlyMemory{T}"/> over the original data.
     /// </summary>
-    /// <param name="encodingType">
-    ///   A <see cref="UniversalTagNumber"/> corresponding to the value type to process.
-    /// </param>
+    /// <param name="expectedTag">The tag to check for before reading.</param>
     /// <param name="contents">
-    ///   On success, receives a <see cref="ReadOnlyMemory{byte}"/> over the original data
-    ///   corresponding to the contents of the character string.
+    ///   On success, receives a <see cref="ReadOnlyMemory{T}"/> over the original data
+    ///   corresponding to the value of the OCTET STRING.
     /// </param>
     /// <returns>
-    ///   <c>true</c> and advances the reader if the value had a primitive encoding,
-    ///   <c>false</c> and does not advance the reader if it had a constructed encoding.
+    ///   <see langword="true"/> and advances the reader if the OCTET STRING value had a primitive encoding,
+    ///   <see langword="false"/> and does not advance the reader if it had a constructed encoding.
     /// </returns>
     /// <remarks>
     ///   This method does not determine if the string used only characters defined by the encoding.
     /// </remarks>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="encodingType"/> is not a known character string type.
+    /// <exception cref="AsnContentException">
+    ///   the next value does not have the correct tag.
+    ///
+    ///   -or-
+    ///
+    ///   the length encoding is not valid under the current encoding rules.
+    ///
+    ///   -or-
+    ///
+    ///   the contents are not valid under the current encoding rules.
     /// </exception>
-    /// <exception cref="CryptographicException">
-    ///   the next value does not have the correct tag --OR--
-    ///   the length encoding is not valid under the current encoding rules --OR--
-    ///   the contents are not valid under the current encoding rules
+    /// <exception cref="ArgumentException">
+    ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagClass"/> is
+    ///   <see cref="TagClass.Universal"/>, but
+    ///   <paramref name="expectedTag"/>.<see cref="Asn1Tag.TagValue"/> is not a character
+    ///   string tag type.
     /// </exception>
-    /// <seealso cref="TryCopyCharacterStringBytes(UniversalTagNumber,Span{byte},out int)"/>
-    public bool TryReadPrimitiveCharacterStringBytes(
-        UniversalTagNumber encodingType,
-        out ReadOnlyMemory<byte> contents) => throw null;
+    /// <seealso cref="TryReadCharacterStringBytes"/>
     public bool TryReadPrimitiveCharacterStringBytes(
         Asn1Tag expectedTag,
-        UniversalTagNumber encodingType,
         out ReadOnlyMemory<byte> contents) => throw null;
 
-    public bool TryCopyCharacterStringBytes(
-        UniversalTagNumber encodingType,
+     public bool TryReadCharacterStringBytes(
         Span<byte> destination,
-        out int bytesWritten) => throw null;
-    public bool TryCopyCharacterStringBytes(
         Asn1Tag expectedTag,
-        UniversalTagNumber encodingType,
-        Span<byte> destination,
         out int bytesWritten) => throw null;
 }
 ```
 
-### AsnValueReader API
+### AsnDecoder API
 
-The mutable AsnValueReader ref struct has the same general API as the reference-type reader.
-The only significant differences are that the constructor takes `ReadOnlySpan<byte>` instead of `ReadOnlyMemory<byte>`,
-methods that return (or out) `ReadOnlyMemory<byte>` return `ReadOnlySpan<byte>`,
-and methods that return `AsnReader` return `AsnValueReader`.
+The stateless AsnDecoder static class has the same general API as the reference-type reader,
+but every method takes in a `ReadOnlySpan<byte>` and an `AsnEncodingRules` and emits the number of bytes consumed.
+As an implementation detail, the AsnReader class is just a state manager on top of the AsnDecoder public API.
 
 ```C#
 /// <summary>
-///   A stateful, forward-only reader for BER-, CER-, or DER-encoded ASN.1 data.
+///   Provides stateless methods for decoding BER-, CER-, or DER-encoded ASN.1 data.
 /// </summary>
-public ref partial struct AsnValueReader
+public static partial class AsnDecoder
 {
-    public AsnValueReader(ReadOnlySpan<byte> data, AsnEncodingRules ruleSet) { }
+    /// <summary>
+    ///   Attempts locate the contents range for the encoded value at the beginning of the
+    ///   <paramref name="source"/> buffer using the specified encoding rules.
+    /// </summary>
+    /// <param name="source">The buffer containing encoded data.</param>
+    /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
+    /// <param name="tag">
+    ///   When this method returns, the tag identifying the content.
+    ///   This parameter is treated as uninitialized.
+    /// </param>
+    /// <param name="contentOffset">
+    ///   When this method returns, the offset of the content payload relative to the start of
+    ///   <paramref name="source"/>.
+    ///   This parameter is treated as uninitialized.
+    /// </param>
+    /// <param name="contentLength">
+    ///   When this method returns, the number of bytes in the content payload (which may be 0).
+    ///   This parameter is treated as uninitialized.
+    /// </param>
+    /// <param name="bytesConsumed">
+    ///   When this method returns, the total number of bytes for the encoded value.
+    ///   This parameter is treated as uninitialized.
+    /// </param>
+    /// <returns>
+    ///   <see langword="true" /> if <paramref name="source"/> represents a valid structural
+    ///   encoding for the specified encoding rules; otherwise, <see langword="false"/>.
+    /// </returns>
+    /// <remarks>
+    ///   <para>
+    ///     This method performs very little validation on the contents.
+    ///     If the encoded value uses a definite length, the contents are not inspected at all.
+    ///     If the encoded value uses an indefinite length, the contents are only inspected
+    ///     as necessary to determine the location of the relevant end-of-contents marker.
+    ///   </para>
+    ///   <para>
+    ///     When the encoded value uses an indefinite length, the <paramref name="bytesConsumed"/>
+    ///     value will be larger than the sum of <paramref name="contentOffset"/> and
+    ///     <paramref name="contentLength"/> to account for the end-of-contents marker.
+    ///   </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">
+    ///   <paramref name="ruleSet"/> is not defined.
+    /// </exception>
+    public static bool TryReadEncodedValue(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out Asn1Tag tag,
+        out int contentOffset,
+        out int contentLength,
+        out int bytesConsumed) => throw null;
 
-    public ReadOnlySpan<byte> PeekEncodedValue() => throw null;
-    
-    public ReadOnlySpan<byte> PeekContentBytes() => throw null;
-    
-    public ReadOnlySpan<byte> ReadEncodedValue() => throw null;
+    public static Asn1Tag ReadEncodedValue(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int contentOffset,
+        out int contentLength,
+        out int bytesConsumed) => throw null;
 
-    public bool TryReadPrimitiveBitStringValue(out int unusedBitCount, out ReadOnlySpan<byte> value) => throw null;
-    public bool TryReadPrimitiveBitStringValue(
-        Asn1Tag expectedTag,
+    public static bool ReadBoolean(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+
+    public static BigInteger ReadInteger(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static ReadOnlySpan<byte> ReadIntegerBytes(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static bool TryReadInt32(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int value,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static bool TryReadInt64(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out long value,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    [CLSCompliantAttribute(false)]
+    public static bool TryReadUInt32(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out uint value,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    [CLSCompliantAttribute(false)]
+    public static bool TryReadUInt64(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out ulong value,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+
+    public static byte[] ReadBitString(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
         out int unusedBitCount,
-        out ReadOnlySpan<byte> value) => throw null;
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static bool TryReadBitString(
+        ReadOnlySpan<byte> source,
+        Span<byte> destination,
+        AsnEncodingRules ruleSet,
+        out int unusedBitCount,
+        out int bytesConsumed,
+        out int bytesWritten,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static bool TryReadPrimitiveBitString(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int unusedBitCount,
+        out ReadOnlySpan<byte> value,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
 
-    public bool TryReadPrimitiveOctetStringBytes(out ReadOnlySpan<byte> contents) => throw null;
-    public bool TryReadPrimitiveOctetStringBytes(Asn1Tag expectedTag, out ReadOnlySpan<byte> contents) => throw null;
+    public static BitArray ReadNamedBitList(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static Enum ReadNamedBitListValue(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        Type tFlagsEnum,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static TFlagsEnum ReadNamedBitListValue<TFlagsEnum>(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) where TFlagsEnum : Enum { throw null; }
 
-    public AsnValueReader ReadSequence() => throw null;
-    public AsnValueReader ReadSequence(Asn1Tag expectedTag) => throw null;
+    public static byte[] ReadOctetString(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static bool TryReadOctetString(
+        ReadOnlySpan<byte> source,
+        Span<byte> destination,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        out int bytesWritten,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static bool TryReadPrimitiveOctetString(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out ReadOnlySpan<byte> value,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+        
+    public static void ReadNull(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+        
+    public static string ReadObjectIdentifier(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
 
-    public AsnValueReader ReadSetOf(bool skipSortOrderValidation = false) => throw null;
-    public AsnValueReader ReadSetOf(Asn1Tag expectedTag, bool skipSortOrderValidation = false) => throw null;
+    public static ReadOnlySpan<byte> ReadEnumeratedBytes(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static Enum ReadEnumeratedValue(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        Type tEnum,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static TEnum ReadEnumeratedValue<TEnum>(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) where TEnum : Enum { throw null; }
 
-    public bool TryReadPrimitiveCharacterStringBytes(
+    public static void ReadSequence(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int contentOffset,
+        out int contentLength,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+
+    public static void ReadSetOf(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int contentOffset,
+        out int contentLength,
+        out int bytesConsumed,
+        bool skipSortOrderValidation = false,
+        Asn1Tag? expectedTag = default) { throw null; }
+
+    public static DateTimeOffset ReadUtcTime(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        int twoDigitYearMax = 2049,
+        Asn1Tag? expectedTag = default) { throw null; }
+
+    public static DateTimeOffset ReadGeneralizedTime(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+        
+    public static string ReadCharacterString(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
         UniversalTagNumber encodingType,
-        out ReadOnlySpan<byte> contents) => throw null;
-    public bool TryReadPrimitiveCharacterStringBytes(
+        out int bytesConsumed,
+        Asn1Tag? expectedTag = default) { throw null; }
+    public static bool TryReadCharacterString(
+        ReadOnlySpan<byte> source,
+        Span<char> destination,
+        AsnEncodingRules ruleSet,
+        UniversalTagNumber encodingType,
+        out int bytesConsumed,
+        out int charsWritten,
+        Asn1Tag? expectedTag = default) { throw null; }
+
+    // Unlike the other methods, on these methods the expectedTag is required,
+    // because no default tag can be inferred.
+    public static bool TryReadCharacterStringBytes(
+        ReadOnlySpan<byte> source,
+        Span<byte> destination,
+        AsnEncodingRules ruleSet,
         Asn1Tag expectedTag,
-        UniversalTagNumber encodingType,
-        out ReadOnlySpan<byte> contents) => throw null;
+        out int bytesWritten,
+        out int bytesConsumed) { throw null; }
+    public static bool TryReadPrimitiveCharacterStringBytes(
+        ReadOnlySpan<byte> source,
+        AsnEncodingRules ruleSet,
+        Asn1Tag expectedTag,
+        out ReadOnlySpan<byte> value,
+        out int bytesConsumed) { throw null; }
 }
 ```
 
@@ -1937,19 +2095,7 @@ public ref partial struct AsnValueReader
 
 ### Open Questions
 
-- Is "Asn" an appropriate prefix, given that this is for the ASN.1 BER-family, not ASN.1 the textual language?
-  - BER is both a specific set of rules, and the acronym for the encoding family, so BerWriter(DER) feels weird.
-- Should we introduce new exception types here? If yes, should they extend CryptographicException?
-  - AsnException? AsnEncodingException? AsnDecodingException?
-  - The current model uses CryptographicException because that's what the crypto internals threw when asking Win32 to do similar operations. Crypto can wrap these exceptions if need be.
 - Should the writer have a PushBitString()? (presumably it would always require unusedBits=0). 
-- Should the writer produce IDisposable (using-compatible) state for Push and avoid the need for calling Pop?
-- Would an `AsnWriter.WriteEncodedValue(AsnWriter otherWriter)` be reasonable?
-- Should the writer just avoid pooled arrays and not be `IDisposable`?
-- Should `AsnEncodingRules` either expand, or alias-expand, the acronyms?
-- Namespace: The preferred namespace is `System.BinaryEncodings.Asn1`, or a similar general approach to binary encodings (which will align with the CBOR feature also for .NET 5). The fallback is `System.Security.Cryptography.Asn1`, but the reader will be used by more than just cryptography (though that is its main consumer).
-- Distribution: Dual-building as an OOB netstandard2.0 package and an inbox netcoreapp-current package with no public contract.
-- Instead of using default parameters for the skipSortValidation, twoDigitYearMax, and disallowFractionalSeconds on the reader, should we add an AsnReaderOptions class (with properties for the mode, twoDigitYearMax, skipSortValidation, etc) and do proper overloads like `ReadSetOf() => ReadSetOf(_options.SkipSetSortValidation);`? This allows per-call configuration with reader-specific defaults instead of compile-time defaults.  The mode-only constructor would remain, with the default options being the current compile-defaults.
 
 ### Answered Questions
 
@@ -1962,4 +2108,21 @@ public ref partial struct AsnValueReader
     The tagless overload could work, but introduces an asymmetry and is easily implemented by a caller.
 - Does the reader support reading PEM-encoded data, to decode on the fly?
   - No. If it did, we'd stop exposing buffer data, and Peek operations become a copy.
-
+- Is "Asn" an appropriate prefix, given that this is for the ASN.1 BER-family, not ASN.1 the textual language?
+  - BER is both a specific set of rules, and the acronym for the encoding family, so BerWriter(DER) feels weird.
+- Should we introduce new exception types here? If yes, should they extend CryptographicException?
+  - AsnContentException, directly extends Exception
+- Should the writer produce IDisposable (using-compatible) state for Push and avoid the need for calling Pop?
+  - Yes, called State.
+- Would an `AsnWriter.WriteEncodedValue(AsnWriter otherWriter)` be reasonable?
+  - Added, `otherWriter.CopyTo(thisWriter)`.
+- Should the writer just avoid pooled arrays and not be `IDisposable`?
+  - Correct, removed IDisposable.
+- Should `AsnEncodingRules` either expand, or alias-expand, the acronyms?
+  - Decided no.
+- Namespace: The preferred namespace is `System.BinaryEncodings.Asn1`, or a similar general approach to binary encodings (which will align with the CBOR feature also for .NET 5). The fallback is `System.Security.Cryptography.Asn1`, but the reader will be used by more than just cryptography (though that is its main consumer).
+  - Decided: System.Formats.Asn1
+- What is the distribution model?
+  - Dual-building as an OOB netstandard2.0 package and an inbox netcoreapp-current package with no public contract.
+- Instead of using default parameters for the skipSortValidation, twoDigitYearMax, and disallowFractionalSeconds on the reader, should we add an AsnReaderOptions class (with properties for the mode, twoDigitYearMax, skipSortValidation, etc) and do proper overloads like `ReadSetOf() => ReadSetOf(_options.SkipSetSortValidation);`? This allows per-call configuration with reader-specific defaults instead of compile-time defaults.  The mode-only constructor would remain, with the default options being the current compile-defaults.
+  - Yep, added AsnReaderOptions.
