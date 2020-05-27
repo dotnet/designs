@@ -99,7 +99,7 @@ private static byte[] CreateEc2CoseKeyEncoding(int signatureAlgorithmId, int cur
 }
 ```
 
-### Reading an indefinite-length map
+### Reading a map
 
 The following example illustrates how a CBOR map can be read.
 We assume here that all keys and values must be text strings.
@@ -602,8 +602,9 @@ public partial class CborWriter
 
 #### Maps (Major type 5)
 
-Map data items can be thought of as JSON objects, however unlike JSON keys can be of any major type.
-CBOR maps can either be definite or indefinite-length.
+Map data items can be thought of as JSON objects, with the main difference that keys can be of any major type.
+Key/value data items are written sequentially, and it is the responsibility of the caller to track if the next
+write is either a key or a value. CBOR maps can either be definite or indefinite-length.
 
 ```C#
 public partial class CborWriter
@@ -616,18 +617,9 @@ public partial class CborWriter
     ///   The <paramref name="definiteLength"/> parameter cannot be negative.
     /// </exception>
     /// <exception cref="InvalidOperationException">
-    ///   Writing a new value exceeds the definite length of the parent data item -or-
-    ///   The major type of the encoded value is not permitted in the parent data item
+    ///   Writing a new value exceeds the definite length of the parent data item. -or-
+    ///   The major type of the encoded value is not permitted in the parent data item.
     /// </exception>
-    /// <remarks>
-    ///   Map contents are written as if arrays twice the length of the map's declared size.
-    ///   For instance, a map of size <c>1</c> containing a key of type int with a value of type string
-    ///   must be written by successive calls to <see cref="WriteInt32(int)"/> and <see cref="WriteTextString(ReadOnlySpan{char})"/>.
-    ///   It is up to the caller to keep track of whether the next call is a key or a value.
-    ///
-    ///   Fundamentally, this is a technical restriction stemming from the fact that CBOR allows keys of any type,
-    ///   for instance a map can contain keys that are maps themselves.
-    /// </remarks>
     public void WriteStartMap(int definiteLength) { throw null; }
 
     /// <summary>
@@ -671,13 +663,13 @@ public partial class CborWriter
 
     /// <summary>
     ///   Writes a unix time in seconds as a tagged date/time value,
-    ///   as described in RFC7049 section 2.4.1
+    ///   as described in RFC7049 section 2.4.1.
     /// </summary>
     public void WriteUnixTimeSeconds(long seconds) { throw null; }
 
     /// <summary>
     ///   Writes a unix time in seconds as a tagged date/time value,
-    ///   as described in RFC7049 section 2.4.1
+    ///   as described in RFC7049 section 2.4.1.
     /// </summary>
     /// <exception cref="ArgumentException">
     ///   The <paramref name="seconds"/> parameter cannot be infinite or NaN.
@@ -686,13 +678,13 @@ public partial class CborWriter
 
     /// <summary>
     ///   Writes a <see cref="BigInteger"/> value as a tagged bignum encoding,
-    ///   as described in RFC7049 section 2.4.2
+    ///   as described in RFC7049 section 2.4.2.
     /// </summary>
     public void WriteBigInteger(BigInteger value) { throw null; }
 
     /// <summary>
     ///   Writes a <see cref="decimal"/> value as a tagged decimal fraction encoding,
-    ///   as described in RFC7049 section 2.4.3
+    ///   as described in RFC7049 section 2.4.3.
     /// </summary>
     public void WriteDecimal(decimal value) { throw null; }
 }
@@ -701,23 +693,13 @@ public partial class CborWriter
 #### Simple & floating-point values (Major type 7)
 
 Major type 7 data items can be either of the following:
-* Simple values identified by a single 8-bit tag and no other content (eg `false`, `null`)
+* Simple values identified by a single 8-bit tag and no other content (eg `false`, `null`) or
 * Half, single and double-precision IEEE 754 floating-point encodings.
 
 
 ```C#
 public partial class CborWriter
 {
-    /// <summary>
-    ///   Writes a single-precision floating point number (major type 7).
-    /// </summary>
-    public void WriteSingle(float value) { throw null; }
-
-    /// <summary>
-    ///   Writes a double-precision floating point number (major type 7).
-    /// </summary>
-    public void WriteDouble(double value) { throw null; }
-
     /// <summary>
     ///   Writes a simple value encoding (major type 7).
     /// </summary>
@@ -732,6 +714,16 @@ public partial class CborWriter
     ///   Writes a null value (major type 7).
     /// </summary>
     public void WriteNull() { throw null; }
+    
+    /// <summary>
+    ///   Writes a single-precision floating point number (major type 7).
+    /// </summary>
+    public void WriteSingle(float value) { throw null; }
+
+    /// <summary>
+    ///   Writes a double-precision floating point number (major type 7).
+    /// </summary>
+    public void WriteDouble(double value) { throw null; }
 }
 ```
 
