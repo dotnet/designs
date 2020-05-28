@@ -21,7 +21,7 @@ The developer needs to wrap their region of code in a using statement that creat
 ```C#
     static ActivitySource source =  new ActivitySource("MyLibrary.Subcomponent", "1.0.0.0");
     ...
-    using (Activity? activity = source.StartActivity("FooOperation")
+    using (Activity? activity = source.StartActivity("FooOperation"))
     {
         // optionally the activity can be enriched with extra data
         activity?.AddTag("userId", userId);
