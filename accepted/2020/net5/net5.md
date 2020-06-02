@@ -495,7 +495,8 @@ Specifically:
 
 _**Open Issue**. Please note that `net5.0`+ will map the TFI to `.NETCoreApp`.
 We need to announce this change so that package authors with custom .props and
-.targets are prepared. Link to DavKean's doc on how to do it._
+.targets are prepared. Link to [DavKean's doc][parsing-guidance] on how to do
+it._
 
 _**Open Issue**. We should try to keep the TFI out of the .nuspec file. It seems
 NuGet uses the long form `.NETFramework,Version=4.5` in the dependency groups.
@@ -1005,3 +1006,4 @@ treat it correctly (i.e. as a future version of .NET Core) and also avoid
 misclassification as .NET Framework.
 
 [os-versioning]: https://microsoft.sharepoint.com/:w:/t/DotNetTeam/EavsPfFy7lFLh7eQrdMN8QwBl05cGLPwrSzJeT8vEu32mw?e=knNQ6W
+[parsing-guidance]: https://github.com/dotnet/project-system/blob/master/docs/repo/coding-conventions.md#data
