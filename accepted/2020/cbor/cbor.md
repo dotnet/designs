@@ -22,7 +22,9 @@ Each data item can be one of 8 distinct _major types_:
 * Major type 5: a map of pairs of data items, which may or may not be length prefixed. 
   Keys and values can be data items of _any_ major type.
 * Major type 6: a semantic tag wrapping a nested data item.
-* Major type 7: half, single and double-precision floating-point numbers _OR_ simple values needing no content, such as `false`, `true` and `null`.
+* Major type 7: containing two kinds of values:
+    * Half, single or double-precision IEEE 754 floating-point numbers _OR_ 
+    * Simple values needing no content, such as `false`, `true` and `null`.
 
 Each data item encoding starts with an _initial byte_, which contains the major type (the high-order 3 bits) 
 and additional information (the low-order 5 bits). The additional information determines any additional bytes
