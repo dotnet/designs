@@ -5,8 +5,6 @@ The objectives here are:
 1. Summarize the new approach of FrameworkReferences, targeting packs and runtime packs
 2. Establish details such as package naming, layout and versioning
 
-Implementation progress is tracked by https://github.com/dotnet/cli/issues/10048, with [ZenHub](https://www.zenhub.com) required to see the child issue links.
-
 
 # Historical approaches
 
@@ -15,7 +13,7 @@ To date, there have effectively been two different approaches to framework refer
 **1. Traditional targeting packs**
 * Used by "classic" frameworks (.NET Framework, Silverlight, Windows Phone, Windows 8)
 * Contain only reference assemblies, xml documentation, and framework list
-* Installed to C:\Program Files (x86)\Reference Assemblies\[Target Framework]\[Version]
+* Installed to C:\\Program Files (x86)\\Reference Assemblies\\Microsoft\\\[Target Framework\]\\\[Version\]
 * Delivered via windows installers, chained in to Visual Studio
 
 **2. Framework NuGet packages**
@@ -105,7 +103,7 @@ Furthermore, just like `sdk/*` and `shared/*`, `packs/*` content is either inclu
 
 # Packs Delivered via NuGet
 
-The global scheme above allows for offline builds in common cases. For example, by bundling .NET Core 3.0 targeting packs with .NET Core 3.0.* SDKs, you can install the 3.0.* SDK and build framework-dependent 3.0 projects without pulling anything from the network. However, if you have projects that require a targeting pack that is not globally installed, then the SDK will instruct NuGet to download during restore and use it from the package cache instead of the global location. For this, a new NuGet package type is introduced that:
+The global scheme above allows for offline builds in common cases. For example, by bundling .NET Core 3.0 targeting packs with .NET Core 3.0.* SDKs, you can install the 3.0.* SDK and build framework-dependent 3.0 projects without pulling anything from the network. However, if you have projects that require a targeting pack that is not globally installed, then the SDK will instruct NuGet to download during restore and use it from the package cache instead of the global location. For this, a new NuGet package type -- `DotnetPlatform` is introduced that:
 
 * cannot be installed into a project via a standard package reference
 * cannot depend on other packages
@@ -119,7 +117,7 @@ This will be implemented using a new "download only package" feature from NuGet:
 
 ## Package names
 
-These packages will not appear in the NuGet gallery, NuGet manager, project.assets.json, runtimeconfig.json, or basically anywhere user-facing. As such, the names are essentially implementation details. The naming requirements are:
+The naming requirements are:
 
 1. Must not overlap with traditional framework NuGet package names
 2. Given a shared framework name, one can derive the targeting pack package name
@@ -166,8 +164,7 @@ For example,
 
 ## Package Layout
 
-Since the packages will have a special type and not be installable into projects in the usual way, we do not need to use folders in the nupkg like `ref/\<TFM>` etc. Instead we will simply place the pack contents in the root of the .nupkg. The package names and versions already uniquely identify the content per TFM/RID and a big part of the package size savings comes from avoiding assets that span multiple TFMs in a single package.
-
+Since the packages will have a special type and not be installable into projects in the usual way, we do not need to use folders in the nupkg like `ref/<TFM>` etc. However, it was decided to use the same conventions where there is overlap to convey the intent. So, reference assemblies will still be in `ref/<TFM>`. Implmentation assemblies in runtime packs will still be in `runtimes/rid/lib/<TFM>`, etc. Additional data files that have no analog in the traditional nuget packages will use a new `data/` folder.
 
 # FrameworkReference
 
@@ -179,15 +176,15 @@ For .NET Core, there are two use cases:
 ``` xml
  <FrameworkReference Include="Microsoft.NETCore.App" />
  <FrameworkReference Include="Microsoft.AspNetCore.App" />
+ <FrameworkReference Include="Microsoft.WindowsDesktop.App" />
+
  ```
 
 * Reference to named subset or "profile" of a shared framework
 ``` xml
-<FrameworkReference Include="Microsoft.WindowsDesktop.App|WindowsForms" />
-<FrameworkReference Include="Microsoft.WindowsDesktop.App|WPF" />
+<FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+<FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" />
 ```
-
-The `<shared framework>|<profile name>` is not final, and we may decide to simply assign a unique full name to each profile.
 
 A FrameworkReference can be added to a project in the following ways.
 
@@ -284,4 +281,6 @@ This allows the SDK to be fully in control of how FrameworkReferences are resolv
 
 # Global resolution
 
-There is one weakness of historical framework NuGet packages that was listed in the introduction, but not adressed in the plan above: "Requires project context for resolution." The issue there is that reference assemblies may only be pulled down by a NuGet restore operation, which is still tied to a project. In general, you cannot just ask for the reference assemblies for a given TFM / shared framework unless that targeting pack is globally installed. Furthermore, Visual Studio has a Global Design Time Assembly Resolution (GDTAR) service that relies on being able to do just that. Platforms based on packages such as UWP and .NET Core cannot provide this service naturally, which blocks certain VS features from working correctly and there is concern that some of the features that will need to be brought up for .NET Core 3. WPF/WinForms may run into this. For UWP, design-time scenarios, this was an issue and a workaround that is not considered maintainable was instituted. For .NET Core 3, we will need to find a better solution. Investigation on that is tracked by https://github.com/dotnet/cli/issues/10094
+There is one weakness of historical framework NuGet packages that was listed in the introduction, but not adressed in the plan above: "Requires project context for resolution." The issue there is that reference assemblies may only be pulled down by a NuGet restore operation, which is still tied to a project. In general, you cannot just ask for the reference assemblies for a given TFM / shared framework unless that targeting pack is globally installed. Furthermore, Visual Studio has a Global Design Time Assembly Resolution (GDTAR) service that relies on being able to do just that. Platforms based on packages such as UWP and .NET Core cannot provide this service naturally, which blocks certain VS features from working correctly and there is concern that some of the features that will need to be brought up for .NET Core 3. WPF/WinForms may run into this. For UWP, design-time scenarios, this was an issue and a workaround that is not considered maintainable was instituted.
+
+At the beginning of .NET Core 3 development, when this document was originally written, it was thought that this would need to be addressed somehow, but it did not actually materialize as a blocker for the WPF/Winforms design-time scenarios, and so this was not addressed. It is possible that this will need to be revisited in a future release.
