@@ -97,7 +97,7 @@ Using this URL scheme, it is possible to generate Source Link for VSTS git repos
 
     <!-- Write out the source file for this project to point at VSTS REST API -->
     <WriteLinesToFile File="$(SourceLink)" Overwrite="true"
-                      Lines='{"documents": { "$(SourceLinkRoot)\\*" : "https://$(VstsAccount).visualstudio.com/$(VstsProject)/_api/git/repositories/$(VstsRepo)/items?scopePath=/*&amp;versionDescriptor.version=$(LatestCommit)&amp;versionDescriptor.versionType=commit&amp;api-version=4.1-preview" }}' />
+                      Lines='{"documents": { "$(SourceLinkRoot)\\*" : "https://$(VstsAccount).visualstudio.com/$(VstsProject)/_apis/git/repositories/$(VstsRepo)/items?scopePath=/*&amp;versionDescriptor.version=$(LatestCommit)&amp;versionDescriptor.versionType=commit&amp;api-version=4.1-preview" }}' />
   </Target>
 ...
 ```
