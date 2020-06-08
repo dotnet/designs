@@ -22,8 +22,8 @@ Each data item can be one of 8 distinct _major types_:
 * Major type 5: a map of pairs of data items, which may or may not be length prefixed. 
   Keys and values can be data items of _any_ major type.
 * Major type 6: a semantic tag wrapping a nested data item.
-* Major type 7: containing two kinds of values:
-    * Half, single or double-precision IEEE 754 floating-point numbers _OR_ 
+* Major type 7: encodes two kinds of values:
+    * IEEE 754 half, single or double precision floating-point numbers _OR_ 
     * Simple values needing no content, such as `false`, `true` and `null`.
 
 Each data item encoding starts with an _initial byte_, which contains the major type (the high-order 3 bits) 
@@ -38,18 +38,20 @@ CBOR data items can be rendered in text form using a JSON-like [diagnostic notat
     "key2" : h'd9d9f7',            // hex encoded byte string
     "key3" : [null, false, 42, ""] // 
     "key4" : 1(1590589657)         // integer value with semantic tag 1
-    -1 : [],                       // map keys can be of any type
+    [-1]   : [],                   // keys can be of any type
 }
 ```
 
+CBOR is the messaging format used by the FIDO [Client To Authenticator Protocol v2.0 (CTAP2)](https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html).
+Adding CTAP2 support in the upcoming ASP.NET Core release is the primary motivation 
+for adding a .NET CBOR implementation.
+
 [RFC 7049](https://tools.ietf.org/html/rfc7049) defines three levels of encoding conformance: basic well-formedness,
 [strict mode](https://tools.ietf.org/html/rfc7049#section-3.10) and 
-[Canonical CBOR](https://tools.ietf.org/html/rfc7049#section-3.9). 
-Additionally, the CTAP2 spec defines its own set of [canonical CBOR encoding rules](https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html#ctap2-canonical-cbor-encoding-form), 
-which is required when implementing that spec.
-
-The requirement for bringing CBOR encoding/decoding support to .NET comes 
-from implementing FIDO2 in the upcoming ASP.NET Core release.
+[Canonical CBOR](https://tools.ietf.org/html/rfc7049#section-3.9).
+Additionally, CTAP2 defines its own set of [canonical CBOR encoding rules](https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html#ctap2-canonical-cbor-encoding-form)
+which are required for any implementation of the protocol. 
+The proposed implementation adds reader and writer support for all four conformance levels.
 
 ##  Scenarios and User Experience
 
@@ -58,7 +60,7 @@ from implementing FIDO2 in the upcoming ASP.NET Core release.
 This sample writes a COSE_Key-encoded Elliptic Curve public key in EC2 format
 as specified in [RFC 8152](https://tools.ietf.org/html/rfc8152#section-8.1).
 
-Below is an example of a COSE_key object, expressed in JSON-like syntax.
+Below is an example of a COSE_key object, expressed in diagnostic notation.
 Note that COSE key types are always integers.
 
 ```js
@@ -78,7 +80,7 @@ private static byte[] CreateEc2CoseKeyEncoding(int signatureAlgorithmId, int cur
 {
     var writer = new CborWriter(conformanceLevel: CborConformanceLevel.Ctap2Canonical);
 
-    writer.WriteStartMap(definiteLength: 5); // create a definite-length map context
+    writer.WriteStartMap(definiteLength: 5); // push a definite-length map context
 
     writer.WriteInt32(1); // write the 'kty' key
     writer.WriteInt32(2); // write the value, in this case the RFC8152 EC2 kty identifier
@@ -119,7 +121,9 @@ private static Dictionary<string, string> ReadCborTextMap(byte[] encoding)
         // is a length-prefixed map encoding
         for (int i = 0; i < length; i++)
         {
-            ReadNextKeyValuePair();
+            string key = reader.ReadString();
+            string value = reader.ReadString();
+            reader[key] = value;
         }
     }
     else
@@ -127,19 +131,14 @@ private static Dictionary<string, string> ReadCborTextMap(byte[] encoding)
         // indefinite-length map encoding
         while (reader.PeekState() != CborReaderState.EndMap)
         {
-            ReadNextKeyValuePair();
+            string key = reader.ReadString();
+            string value = reader.ReadString();
+            reader[key] = value;
         }
     }
 
     reader.ReadEndMap();
     return results;
-
-    void ReadNextKeyValuePair()
-    {
-        string key = reader.ReadString();
-        string value = reader.ReadString();
-        reader[key] = value;
-    }
 }
 ```
     
@@ -152,11 +151,11 @@ private static Dictionary<string, string> ReadCborTextMap(byte[] encoding)
 - Both reader and writer must support the following conformance rulesets:
     - Basic well-formedness, a.k.a. lax conformance.
     - RFC7049 Strict mode.
-    - RFC7049 Canonical CBOR.
-    - CTAP2 Canonical CBOR, required by the FIDO2 application.
-- Reader should enable schema-agnostic scenaria.
+    - RFC7049 Canonical mode.
+    - CTAP2 Canonical mode.
+- Reader should allow schema-agnostic scenaria.
 - Support reading and writing indefinite-length data items.
-    - Optionally, the writer should convert indefinite-length encodings into definite-length equivalents.
+    - Optionally, the writer should allow on-the-fly conversion of indefinite-length encodings into definite-length equivalents.
 - Support tagged value formats, as defined in RFC7049:
     - `System.DateTimeOffset` values,
     - `System.Numerics.BigInteger` values and
@@ -170,8 +169,8 @@ private static Dictionary<string, string> ReadCborTextMap(byte[] encoding)
 - Automatically serialize, or deserialize, between CBOR data and .NET types.
 - A `CborDocument` type representing the CBOR data model.
 - Converting Data between CBOR and JSON.
-- Support CBOR diagnostic notation.
-- Supporting `System.IO.Stream`.
+- Supporting CBOR diagnostic notation.
+- Support writing to or reading from `System.IO.Stream`.
 
 ## Design
 
@@ -181,10 +180,10 @@ private static Dictionary<string, string> ReadCborTextMap(byte[] encoding)
     - `WriteStart[Type]()` and `WriteEnd[Type]()` methods for composite constructs.
 - A stateful reference-type reader (`CborReader`).
     - Decodes a user-provided buffer.
-    - Uses the `PeekState()` method to determine the next data item in the buffer, 
-      without advancing the reader state.
     - Exposes a suite of `Read[Type]()` methods for common types.
     - `ReadStart[Type]()` and `ReadEnd[Map]()` for compositive constructs.
+    - Uses the `PeekState()` method to determine the next data item in the buffer, 
+      without advancing the reader state.
 
 ### API Common to the Reader and the Writer
 
@@ -201,36 +200,16 @@ public enum CborConformanceLevel
 
     /// <summary>
     ///   Ensures that the CBOR data adheres to strict mode, as specified in RFC7049 section 3.10.
-    ///   Extends lax conformance with the following requirements:
-    ///   <list type="bullet">
-    ///   <item>Maps (major type 5) must not contain duplicate keys.</item>
-    ///   <item>Simple values (major type 7) must be encoded as small a possible and exclude the reserved values 24-31.</item>
-    ///   <item>UTF-8 string encodings must be valid.</item>
-    ///   </list>
     /// </summary>
     Strict,
 
     /// <summary>
     ///   Ensures that the CBOR data is canonical, as specified in RFC7049 section 3.9.
-    ///   Extends strict conformance with the following requirements:
-    ///   <list type="bullet">
-    ///   <item>Integers must be encoded as small as possible.</item>
-    ///   <item>Maps (major type 5) must contain keys sorted by encoding.</item>
-    ///   <item>Indefinite-length items must be made into definite-length items.</item>
-    ///   </list>
     /// </summary>
     Canonical,
 
     /// <summary>
     ///   Ensures that the CBOR data is canonical, as specified by the CTAP v2.0 standard, section 6.
-    ///   Extends strict conformance with the following requirements:
-    ///   <list type="bullet">
-    ///   <item>Maps (major type 5) must contain keys sorted by encoding.</item>
-    ///   <item>Indefinite-length items must be made into definite-length items.</item>
-    ///   <item>Integers must be encoded as small as possible.</item>
-    ///   <item>The representations of any floating-point values are not changed.</item>
-    ///   <item>CBOR tags (major type 6) are not permitted.</item>
-    ///   </list>
     /// </summary>
     Ctap2Canonical,
 }
@@ -432,17 +411,6 @@ public partial class CborWriter
     /// <summary>
     ///   Write the encoded representation of the data to <paramref name="destination"/>.
     /// </summary>
-    /// <param name="destination">The buffer in which to write.</param>
-    /// <param name="bytesWritten">
-    ///   On success, receives the number of bytes written to <paramref name="destination"/>.
-    /// </param>
-    /// <returns>
-    ///   <see langword="true" /> if the encode succeeded,
-    ///   <see langword="false" /> if <paramref name="destination"/> is too small.
-    /// </returns>
-    /// <exception cref="InvalidOperationException">
-    ///   The writer does not contain a complete CBOR value or sequence of root-level values.
-    /// </exception>
     public bool TryEncode(Span<byte> destination, out int bytesWritten) { throw null; }
 
     /// <summary>
@@ -491,7 +459,7 @@ public partial class CborWriter
 #### Byte Strings (Major type 2)
 
 The CBOR spec permits two types of byte strings: definite and indefinite-length.
-Indefinite-length strings are defined as a sequence of definite-length chunks.
+Indefinite-length strings are defined as a sequence of definite-length string chunks.
 
 ```C#
 public partial class CborWriter
@@ -527,7 +495,7 @@ public partial class CborWriter
 #### UTF-8 Strings (Major type 3)
 
 The CBOR spec permits two types of text strings: definite and indefinite-length.
-Indefinite-length strings are defined as a sequence of definite-length chunks.
+Indefinite-length strings are defined as a sequence of definite-length string chunks.
 
 ```C#
 public partial class CborWriter
@@ -696,7 +664,7 @@ public partial class CborWriter
 
 Major type 7 data items can be either of the following:
 * Simple values identified by a single 8-bit tag and no other content (eg `false`, `null`) or
-* Half, single and double-precision IEEE 754 floating-point encodings.
+* IEEE 754 half, single or double precision floating-point encodings.
 
 
 ```C#
@@ -832,7 +800,7 @@ public enum CborReaderState
     NegativeInteger,
 
     /// <summary>
-    ///   Indicates that the next CBOR data item is a byte string (major type 2).
+    ///   Indicates that the next CBOR data item is a definite-length byte string (major type 2).
     /// </summary>
     ByteString,
 
@@ -847,7 +815,7 @@ public enum CborReaderState
     EndByteString,
 
     /// <summary>
-    ///   Indicates that the next CBOR data item is a UTF-8 string (major type 3).
+    ///   Indicates that the next CBOR data item is a definite-length UTF-8 string (major type 3).
     /// </summary>
     TextString,
 
@@ -1011,17 +979,6 @@ public partial class CborReader
     /// <summary>
     ///   Reads the next data item as a byte string (major type 2).
     /// </summary>
-    /// <param name="destination">The buffer in which to write.</param>
-    /// <param name="bytesWritten">
-    ///   On success, receives the number of bytes written to <paramref name="destination"/>.
-    /// </param>
-    /// <returns>
-    ///   <see langword="true" /> and advances the reader if <paramref name="destination"/> had sufficient
-    ///   length to receive the value, otherwise <see langword="false" /> and the reader does not advance.
-    /// </returns>
-    /// <remarks>
-    ///   The method accepts indefinite length strings, which it will concatenate to a single string.
-    /// </remarks>
     public bool TryReadByteString(Span<byte> destination, out int bytesWritten) { throw null; }
 
     /// <summary>
@@ -1044,8 +1001,11 @@ public partial class CborReader
     ///   The method accepts indefinite length strings, which it will concatenate to a single string.
     /// </remarks>
     public string ReadTextString() { throw null; }
-
     public bool TryReadTextString(Span<char> destination, out int charsWritten) { throw null; }
+
+    /// <summary>
+    ///   Reads the next data item as the start of an indefinite-length text string (major type 3).
+    /// </summary>
     public void ReadStartTextString() { throw null; }
     public void ReadEndTextString() { throw null; }
 }
@@ -1103,13 +1063,8 @@ public partial class CborReader
     public CborTag ReadTag() { throw null; }
 
     /// <summary>
-    ///   Reads the next data item as a semantic tag (major type 6),
-    ///   without advancing the reader.
+    ///   Reads the next data item as a semantic tag (major type 6), without advancing the reader.
     /// </summary>
-    /// <returns>The decoded <see cref="CborTag"/> value.</returns>
-    /// <exception cref="InvalidOperationException">
-    ///   the next data item does not have the correct major type.
-    /// </exception>
     /// <remarks>
     ///   Useful in scenaria where the semantic value decoder needs to be determined at runtime.
     /// </remarks>
@@ -1148,7 +1103,7 @@ public partial class CborReader
 
 Major type 7 data items can be either of the following:
 * Simple values identified by a single 8-bit tag and no other content (eg `false`, `null`) or
-* Half, single and double-precision IEEE 754 floating-point encodings.
+* IEEE 754 half, single or double precision floating-point encodings.
 
 ```C#
 public partial class CborReader
@@ -1211,11 +1166,6 @@ public partial class CborReader
     /// <exception cref="InvalidOperationException">
     ///   the reader is not at the start of new value.
     /// </exception>
-    /// <exception cref="FormatException">
-    ///   the next value has an invalid CBOR encoding. -or-
-    ///   there was an unexpected end of CBOR encoding data. -or-
-    ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
-    /// </exception>
     public void SkipValue(bool disableConformanceLevelChecks = false) { throw null; }
 
     /// <summary>
@@ -1235,7 +1185,6 @@ public partial class CborReader
 
 ### Open Questions
 
-- Should we add `Utf8String` read/write methods?
 - Should we release a netstandard2.0 port?
 - Should we support encoding half-precision floats? 
     - Currently only decoding is supported.
