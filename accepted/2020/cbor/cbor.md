@@ -20,11 +20,11 @@ Each data item can be one of 8 distinct _major types_:
 * Major type 4: an array of data items, which may or may not be length prefixed.
   Elements can be data items of _any_ major type.
 * Major type 5: a map of pairs of data items, which may or may not be length prefixed. 
-  Keys and values can be data items of _any_ major type.
+  Both keys and values can be data items of _any_ major type.
 * Major type 6: a semantic tag wrapping a nested data item.
 * Major type 7: encodes two kinds of values:
     * IEEE 754 half, single or double precision floating-point numbers _OR_ 
-    * Simple values needing no content, such as `false`, `true` and `null`.
+    * Simple values needing no additional content, such as `false`, `true` and `null`.
 
 Each data item encoding starts with an _initial byte_, which contains the major type (the high-order 3 bits) 
 and additional information (the low-order 5 bits). The additional information determines any additional bytes
@@ -34,11 +34,11 @@ initial byte only.
 CBOR data items can be rendered in text form using a JSON-like [diagnostic notation](https://tools.ietf.org/html/rfc7049#section-6):
 ```js
 {
-    "key1" : 42,                   //
-    "key2" : h'd9d9f7',            // hex encoded byte string
-    "key3" : [null, false, 42, ""] // 
-    "key4" : 1(1590589657)         // integer value with semantic tag 1
-    [-1]   : [],                   // keys can be of any type
+    "key1" : 42,                    //
+    "key2" : h'd9d9f7',             // hex encoded byte string
+    "key3" : [null, false, 42, ""], // 
+    "key4" : 1(1590589657),         // integer value with semantic tag 1
+    [-1]   : []                     // keys can be of any type
 }
 ```
 
@@ -49,7 +49,7 @@ for adding a .NET CBOR implementation.
 [RFC 7049](https://tools.ietf.org/html/rfc7049) defines three levels of encoding conformance: basic well-formedness,
 [strict mode](https://tools.ietf.org/html/rfc7049#section-3.10) and 
 [Canonical CBOR](https://tools.ietf.org/html/rfc7049#section-3.9).
-Additionally, CTAP2 defines its own set of [canonical CBOR encoding rules](https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html#ctap2-canonical-cbor-encoding-form)
+Additionally, the CTAP2 spec defines its own set of [canonical CBOR encoding rules](https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html#ctap2-canonical-cbor-encoding-form)
 which are required for any implementation of the protocol. 
 The proposed implementation adds reader and writer support for all four conformance levels.
 
@@ -68,10 +68,11 @@ Note that COSE key types are always integers.
   1:   2,  // kty: EC2 key type
   3:  -7,  // alg: ES256 signature algorithm
  -1:   1,  // crv: P-256 curve
- -2:   x,  // x-coordinate as byte string 32 bytes in length
-           // e.g., in hex: 65eda5a12577c2bae829437fe338701a10aaa375e1bb5b5de108de439c08551d
- -3:   y   // y-coordinate as byte string 32 bytes in length
-           // e.g., in hex: 1e52ed75701163f7f9e40ddf9f341b3dc9ba860af7e0ca7ca7e9eecd0084d19c
+
+ // public key x-coordinate
+ -2:   h'65eda5a12577c2bae829437fe338701a10aaa375e1bb5b5de108de439c08551d',
+ // public key y-coordinate
+ -3:   h'1e52ed75701163f7f9e40ddf9f341b3dc9ba860af7e0ca7ca7e9eecd0084d19c' 
 }
 ```
 
@@ -160,7 +161,7 @@ private static Dictionary<string, string> ReadCborTextMap(byte[] encoding)
     - `System.DateTimeOffset` values,
     - `System.Numerics.BigInteger` values and
     - `System.Decimal` values.
-- Reader should support skipping a data item, including any nested data items.
+- Reader should support skipping a data item, including its nested data items.
     - Provide a workaround for advancing through nonconforming sections of the encoding.
 - Exception safety: methods that throw should not have any side-effects.
 
@@ -419,7 +420,7 @@ public partial class CborWriter
     public void Reset() { }
 ```
 
-#### Data Injection
+### Data Injection
 
 #### Integer Values (Major types 0,1)
 
@@ -431,9 +432,9 @@ public partial class CborWriter
     /// </summary>
     /// <param name="value">The value to write</param>
     /// <exception cref="InvalidOperationException">
-    ///   Writing a new value exceeds the definite length of the parent data item -or-
-    ///   The major type of the encoded value is not permitted in the parent data item -or-
-    ///   The written data is not accepted under the current conformance level
+    ///   Writing a new value exceeds the definite length of the parent data item. -or-
+    ///   The major type of the encoded value is not permitted in the parent data item. -or-
+    ///   The written data is not accepted under the current conformance level.
     /// </exception>
     public void WriteInt32(int value) { throw null; }
     public void WriteInt64(long value) { throw null; }
@@ -459,7 +460,8 @@ public partial class CborWriter
 #### Byte Strings (Major type 2)
 
 The CBOR spec permits two types of byte strings: definite and indefinite-length.
-Indefinite-length strings are defined as a sequence of definite-length string chunks.
+Indefinite-length strings are defined as a sequence of definite-length strings,
+essentially arrays containing definite-length chunks.
 
 ```C#
 public partial class CborWriter
@@ -467,12 +469,6 @@ public partial class CborWriter
     /// <summary>
     ///   Writes a buffer as a byte string encoding (major type 2).
     /// </summary>
-    /// <param name="value">The value to write.</param>
-    /// <exception cref="InvalidOperationException">
-    ///   Writing a new value exceeds the definite length of the parent data item. -or-
-    ///   The major type of the encoded value is not permitted in the parent data item. -or-
-    ///   The written data is not accepted under the current conformance level.
-    /// </exception>
     public void WriteByteString(ReadOnlySpan<byte> value) { throw null; }
 
     /// <summary>
@@ -494,8 +490,7 @@ public partial class CborWriter
 
 #### UTF-8 Strings (Major type 3)
 
-The CBOR spec permits two types of text strings: definite and indefinite-length.
-Indefinite-length strings are defined as a sequence of definite-length string chunks.
+The UTF-8 string API is essentially the same as byte strings:
 
 ```C#
 public partial class CborWriter
@@ -503,36 +498,21 @@ public partial class CborWriter
     /// <summary>
     ///   Writes a buffer as a UTF-8 string encoding (major type 3).
     /// </summary>
-    /// <param name="value">The value to write.</param>
-    /// <exception cref="InvalidOperationException">
-    ///   Writing a new value exceeds the definite length of the parent data item. -or-
-    ///   The major type of the encoded value is not permitted in the parent data item. -or-
-    ///   The written data is not accepted under the current conformance level.
+    /// <exception cref="ArgumentException">
+    ///   The supplied input is not a valid UTF-8 string.
     /// </exception>
     public void WriteTextString(ReadOnlySpan<char> value) { throw null; }
 
-    /// <summary>
-    ///   Writes the start of an indefinite-length UTF-8 string (major type 3).
-    /// </summary>
-    /// <remarks>
-    ///   Pushes a context where definite-length chunks of the same major type can be written.
-    ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
-    ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
-    /// </remarks>
     public void WriteStartTextString() { throw null; }
-
-    /// <summary>
-    ///   Writes the end of an indefinite-length UTF-8 string (major type 3).
-    /// </summary>
     public void WriteEndTextString() { throw null; }
 }
 ```
 
 #### Arrays (Major type 4)
 
-Array data items can be thought of as json arrays. 
-A CBOR array can contain data items of any major type.
-CBOR arrays can either be definite or indefinite-length.
+Array data items can be thought of as json arrays, 
+a CBOR array can contain data items of any major type
+and either be of definite or indefinite-length.
 
 ```C#
 public partial class CborWriter
@@ -543,10 +523,6 @@ public partial class CborWriter
     /// <param name="definiteLength">The definite length of the array.</param>
     /// <exception cref="ArgumentOutOfRangeException">
     ///   The <paramref name="definiteLength"/> parameter cannot be negative.
-    /// </exception>
-    /// <exception cref="InvalidOperationException">
-    ///   Writing a new value exceeds the definite length of the parent data item. -or-
-    ///   The major type of the encoded value is not permitted in the parent data item.
     /// </exception>
     public void WriteStartArray(int definiteLength) { throw null; }
 
@@ -563,7 +539,6 @@ public partial class CborWriter
     ///   Writes the end of an array (major type 4).
     /// </summary>
     /// <exception cref="InvalidOperationException">
-    ///   The written data is not accepted under the current conformance level. -or-
     ///   The definite-length array anticipates more data items.
     /// </exception>
     public void WriteEndArray() { throw null; }
@@ -582,23 +557,11 @@ public partial class CborWriter
     /// <summary>
     ///   Writes the start of a definite-length map (major type 5).
     /// </summary>
-    /// <param name="definiteLength">The definite length of the map.</param>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   The <paramref name="definiteLength"/> parameter cannot be negative.
-    /// </exception>
-    /// <exception cref="InvalidOperationException">
-    ///   Writing a new value exceeds the definite length of the parent data item. -or-
-    ///   The major type of the encoded value is not permitted in the parent data item.
-    /// </exception>
     public void WriteStartMap(int definiteLength) { throw null; }
 
     /// <summary>
     ///   Writes the start of an indefinite-length map (major type 5).
     /// </summary>
-    /// <remarks>
-    ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
-    ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
-    /// </remarks>
     public void WriteStartMap() { throw null; }
 
     /// <summary>
@@ -727,19 +690,6 @@ public partial class CborReader
     /// <summary>
     ///   Construct a <see cref="CborReader"/> instance over <paramref name="data"/> with given configuration.
     /// </summary>
-    /// <param name="data">The CBOR encoded data to read.</param>
-    /// <param name="conformanceLevel">
-    ///   Specifies a <see cref="CborConformanceLevel"/> guiding the conformance checks performed on the encoded data.
-    ///   Defaults to <see cref="CborConformanceLevel.Lax" /> conformance level.
-    /// </param>
-    /// <param name="allowMultipleRootLevelValues">
-    ///   Specify if multiple root-level values are to be supported by the reader.
-    ///   When set to <see langword="false" />, the reader will throw an <see cref="InvalidOperationException"/>
-    ///   if trying to read beyond the scope of one root-level CBOR data item.
-    /// </param>
-    /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="conformanceLevel"/> is not defined.
-    /// </exception>
     public CborReader(
         ReadOnlyMemory<byte> data, 
         CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, 
@@ -885,10 +835,10 @@ public enum CborReaderState
     Boolean,
 
     /// <summary>
-    ///   Indicates that the reader has completed reading a full CBOR document.
+    ///   Indicates that the reader has completed reading a full, well-formed CBOR document.
     /// </summary>
     /// <remarks>
-    ///   If <see cref="CborReader.AllowMultipleRootLevelValues"/> is set to <see langword="true" />,
+    ///   If <see cref="CborReader.AllowMultipleRootLevelValues"/> is set to <see langword="false" />,
     ///   the reader will report this value even if the buffer contains trailing bytes.
     /// </remarks>
     Finished,
@@ -943,7 +893,7 @@ public partial class CborReader
     public long ReadInt64() { throw null; }
 
     /// <summary>
-    ///   Reads the next data item as an usigned integer (major type 0).
+    ///   Reads the next data item as an unsigned integer (major type 0).
     /// </summary>
     public uint ReadUInt32() { throw null; }
     public ulong ReadUInt64() { throw null; }
