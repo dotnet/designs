@@ -99,7 +99,7 @@ Example of a feature flag without support for linker optimizations:
     ...
 </ItemGroup>
 ```
-Note that even features with `Trim == true` will still only be optimized by the linker if there is a corresponding substitution definition. Generally, `Trim` should only beb set to `true` for items which do have a corresponding subtitution definition.
+Note that even features with `Trim == true` will still only be optimized by the linker if there is a corresponding substitution definition. Generally, `Trim` should only be set to `true` for items which do have a corresponding substitution definition.
 
 The name of the property should be picked so that it's clear what `true`/`false` mean. In this case, the idea is that `false` means the feature will be disabled. Other cases (for example `InvariantGlobalization`) might have the opposite polarity.
 
