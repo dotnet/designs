@@ -203,8 +203,8 @@ Within the `<platformInfo>` element, there are child elements corresponding to t
 ```xml
 <metadata>
   <platformInfo>
-    <net5.0-ios15.0 minimumVersion="13.0" />
-    <net5.0-mac10.15 minimumVersion="10.11" />
+    <referenceAssembly target="net5.0-ios15" osMinimumVersion="13.0" />
+    <referenceAssembly target="net5.0-mac10.15" osMinimumVersion="10.11" />
   </platformInfo>
 </metadata>
 ```
@@ -214,9 +214,9 @@ A reference assembly for a platform-neutral TFM (e.g. `net5.0` or `net6.0`) may 
 ```xml
 <metadata>
   <platformInfo>
-    <net6.0>
-      <ios minimumVersion="13.0">
-      <mac minimumVersion="11.0">
+    <referenceAssembly target="net6.0">
+      <platform id="ios" osMinimumVersion="13.0">
+      <platform id="mac" osMinimumVersion="11.0">
     </net6.0>
   </platformInfo>
 </metadata>
