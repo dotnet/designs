@@ -113,6 +113,15 @@ As mentioned earlier, Activity has Tags property which returns the list of the a
     }
 ```
 
+***<u>OpenQuestion</u>***
+
+We need to decide about the behavior of the old property `Activity.Tags` when adding tags of non-string types values. The options are
+
+- Ignore all non-string typed values and return only the string type value tags.
+- Convert the non-string type values to string before returning it.
+
+I am inclining to the first option to avoid handling ToString with more complex types (e.g. arrays or ActivityTagsCollection). 
+
 ## Proposal Changing already exposed APIs in previous preview releases
 
 As we are introducing the ActivityTagsCollection, we can take advantage of that now and modify some of the exposed APIs to use this collection instead. Also, we are renaming Attributes to Tags for consistency inside BCL APIs.
