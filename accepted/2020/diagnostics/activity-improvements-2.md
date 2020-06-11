@@ -44,7 +44,7 @@ Activity.Kind is already exposed property but we have exposed it as a read-only 
 
 ## ActivityTagsCollection
 
-OT has the concept of [Attributes](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-attributes) which is a list of key-value pairs mapping a string to some value. the value can be numeric, bool, string types. Also, the value can be an array of one of these basic types. 
+OT has the concept of [Attributes](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-attributes) which is a list of key-value pairs mapping a string to some value. The value can be numeric, bool, string types. Also, the value can be an array of one of these basic types. 
 
 > ```json
 >         'x-forwarded-for': 'foo.bar'
