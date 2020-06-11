@@ -14,7 +14,7 @@ We already exposed the ActivityContext type as described by the OT specs. There 
     public readonly partial struct ActivityContext : IEquatable<ActivityContext>
     {
         // This constructor already exist but we are adding extra defaulted parameter for isRemote.
-        public ActivityContext(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags traceFlags, string? traceState = null, isRomte = false) {...}
+        public ActivityContext(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags traceFlags, string? traceState = null, isRemote = false) {...}
     
         // This is the new property 
         public bool IsRemote { get; }
