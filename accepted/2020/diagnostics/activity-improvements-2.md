@@ -115,7 +115,7 @@ As mentioned earlier, Activity has Tags property which returns the list of the a
 
 ## Proposal Changing already exposed APIs in previous preview releases
 
-As we are introducing the ActivityTagsCollection, we can take advantage of that now and modify some of the exposed APIs to use this collection instead. 
+As we are introducing the ActivityTagsCollection, we can take advantage of that now and modify some of the exposed APIs to use this collection instead. Also, we are renaming Attributes to Tags for consistency inside BCL APIs.
 
 ### ActivityEvent
 
@@ -131,9 +131,9 @@ As we are introducing the ActivityTagsCollection, we can take advantage of that 
     // change it to the following:
     public readonly struct ActivityEvent
     {
-        public ActivityEvent(string name, ActivityTagsCollection? attributes)
-        public ActivityEvent(string name, DateTimeOffset timestamp, ActivityTagsCollection? attributes)
-        public ActivityTagsCollection? Attributes { get; }
+        public ActivityEvent(string name, ActivityTagsCollection? tags)
+        public ActivityEvent(string name, DateTimeOffset timestamp, ActivityTagsCollection? tags)
+        public ActivityTagsCollection? Tags { get; }
     }
 ```
 
@@ -150,7 +150,7 @@ As we are introducing the ActivityTagsCollection, we can take advantage of that 
     // change it to the following:
     public readonly partial struct ActivityLink  : IEquatable<ActivityLink>
     {
-        public ActivityLink(ActivityContext context, ActivityTagsCollection? attributes)
-        public ActivityTagsCollection? Attributes { get; }
+        public ActivityLink(ActivityContext context, ActivityTagsCollection? tags)
+        public ActivityTagsCollection? Tags { get; }
     }
 ```
