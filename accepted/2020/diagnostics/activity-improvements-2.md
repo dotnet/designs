@@ -15,13 +15,13 @@ We already exposed the ActivityContext type as described by the OT specs. There 
     {
         // This constructor already exist but we are adding extra defaulted parameter for isRemote.
         public ActivityContext(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags traceFlags, string? traceState = null, isRemote = false) {...}
-    
-        // This is the new property 
+
+        // This is the new property
         public bool IsRemote { get; }
     }
 ```
 
-Activity class will need to expose such property too to be able to set it as part of the included context. This is needed by the OT asp.net and Http client OT adapters.
+Activity class will need to expose such property too to be able to set it as part of the included context. This is needed by the OT asp.net and Http client OT adapters. The adapters listen to the Activities created old way using `new Activity(...)` as it happen in asp.net and Http client. That means such activities will never set IsRemote correctly as it doesn't know anything about it. The adapters will need detect if such activity created from remote parent and set this value accordingly.
 
 ```c#
     public partial class Activity : IDisposable
@@ -44,14 +44,14 @@ Activity.Kind is already exposed property but we have exposed it as a read-only 
 
 ## ActivityTagsCollection
 
-OT has the concept of [Attributes](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-attributes) which is a list of key-value pairs mapping a string to some value. The value can be numeric, bool, string types. Also, the value can be an array of one of these basic types. 
+OT has the concept of [Attributes](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-attributes) which is a list of key-value pairs mapping a string to some value. The value can be numeric, bool, string types. Also, the value can be an array of one of these basic types.
 
 > ```json
 >         'x-forwarded-for': 'foo.bar'
 >         'timeout': 5
 > ```
 
-The attributes can be nested too. There is opened [OT spec PR](https://github.com/open-telemetry/opentelemetry-specification/pull/596) for supporting this scenario.
+There is OT proposal tracked by the [PR](https://github.com/open-telemetry/opentelemetry-specification/pull/596) to support the nested attributes. If this get accepted in OT, it will be easy to support it using ActivityTagsCollection.
 
 > ```json
 > 'http': {
@@ -66,8 +66,8 @@ The attributes are used in multiple places in the OT (e.g. in Span, Event, and L
 
 ActivityTagsCollection is needed for the following reasons:
 
-- We need to avoid having the consumers of our APIs to use any other types (e.g. Dictionary<>, List<>...etc.) which can cause issues like not keeping the items in order or not conforming to the OT specs which suggest specific behaviors (e.g. when adding null value, should remove the entry from the list) 
-- Need to support the nested attributes. ActivityTagsCollection will make it easy to do so.
+- We need to avoid having the consumers of our APIs to use any other types (e.g. Dictionary<>, List<>...etc.) which can cause issues like not keeping the items in order or not conforming to the OT specs which suggest specific behaviors (e.g. when adding null value, should remove the entry from the list)
+- It is currently proposed to support nested attributes. ActivityTagsCollection will make it easy to do so at anytime is needed.
 
 ```c#
     public class ActivityTagsCollection : IReadOnlyCollection<KeyValuePair<string, object>>
@@ -83,6 +83,8 @@ ActivityTagsCollection is needed for the following reasons:
         public void Add(string key, double [] value) { }
         public void Add(string key, bool [] value) { }
         public void Add(string key, string [] value) { }
+
+        // The following API is pending the approval in OT spec first before we add it in .NET.
         public void Add(string key, ActivityTagsCollection value) { }
 
         // interfaces implementation
@@ -94,7 +96,7 @@ ActivityTagsCollection is needed for the following reasons:
 
 ## Activity.Tags
 
-As mentioned earlier, Activity has Tags property which returns the list of the activity tags. Tags are a list of `KeyValuePair<string, string>`. Tags are proven to be not enough for OT scenarios as we need to support more value types (numeric, bool, numeric array, and nested tags). Activity today has the method `public Activity AddTag(string key, string? value)`. The proposal here is to add more `AddTag` overload accepting more types and add a new getter property return the list of all typed tags. 
+As mentioned earlier, Activity has Tags property which returns the list of the activity tags. Tags are a list of `KeyValuePair<string, string>`. Tags are proven to be not enough for OT scenarios as we need to support more value types (numeric, bool, numeric array, and nested tags). Activity today has the method `public Activity AddTag(string key, string? value)`. The proposal here is to add more `AddTag` overload accepting more types and add a new getter property return the list of all typed tags.
 
 ```C#
     public partial class Activity : IDisposable
@@ -106,6 +108,8 @@ As mentioned earlier, Activity has Tags property which returns the list of the a
         public void AddTag(string key, double [] value) { }
         public void AddTag(string key, bool [] value) { } // how interesting this one?
         public void AddTag(string key, string [] value) { }
+
+        // The following API is pending the approval in OT spec first before we add it in .NET.
         public void AddTag(string key, ActivityTagsCollection value) { }
 
         // We cannot change Tags property so we are introducing a new property with a new name
@@ -120,7 +124,7 @@ We need to decide about the behavior of the old property `Activity.Tags` when ad
 - Ignore all non-string typed values and return only the string type value tags.
 - Convert the non-string type values to string before returning it.
 
-I am inclining to the first option to avoid handling ToString with more complex types (e.g. arrays or ActivityTagsCollection). 
+I am inclining to the first option to avoid handling ToString with more complex types (e.g. arrays or ActivityTagsCollection).
 
 ## Proposal Changing already exposed APIs in previous preview releases
 
@@ -163,3 +167,19 @@ As we are introducing the ActivityTagsCollection, we can take advantage of that 
         public ActivityTagsCollection? Tags { get; }
     }
 ```
+
+## Automatic Trace Id  generation in case of null parent
+
+Sampler like probabilistic sampler can depend on the trace id for the sampling decision. Usually before creating any Activity using ActivitySource, the `ActivityListener.GetRequestedDataUsingContext` callback will get called which usually get implemented by the samplers. The parent context is sent as a parameter to this callback and the sampler gets the trace id from this parent context to perform the sampling action. When there is no parent, we send the default context which is nulling the trace id. The samplers depending on trace id are not going to be able to do the sampling at that time. The samplers even cannot generate and use a trace id because it cannot inform the Activity creation process to use the generated trace Id when creating the Activity object.
+There are a couple of proposals how to address this issue in the .NET runtime. The idea is the runtime need to generate the trace Id and send it to the samplers. If the sampler using the passed trace id and decide to sample in this case, the Activity which will get created because of that sampler decision will be using the generated trace Id in its context.
+
+Solution options:
+
+- Before calling `ActivityListener.GetRequestedDataUsingContext`, there will be a check if we don't have a parent, then we generate a random trace Id and use it in the context sent to the callback. If decided to sample in, we all use this trace Id during the Activity object creation. This option doesn't need any API changes and will be fully handled inside the implementation.
+- Add a new property to the `ActivityCreationOptions` struct (e.g. `NullParentTraceId`) which will carry the trace id that can be used by the sampler when detecting no parent context. obviously this will need API change.
+
+I am inclining to the first solution for the following reasons:
+
+- Exposing extra property can confuse the API consumers to know exactly when this property is needed or even they should care about it.
+- Adding such property to `ActivityCreationOptions` will increase the size of this struct which we are trying to make it compact for perf reasons.
+- I am not seeing a strong reason why the first solution wouldn't be good enough.
