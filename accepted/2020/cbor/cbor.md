@@ -46,12 +46,12 @@ CBOR is the messaging format used by the FIDO [Client To Authenticator Protocol 
 Adding CTAP2 support in the upcoming ASP.NET Core release is the primary motivation 
 for adding a .NET CBOR implementation.
 
-[RFC 7049](https://tools.ietf.org/html/rfc7049) defines three levels of encoding conformance: basic well-formedness,
+[RFC 7049](https://tools.ietf.org/html/rfc7049) defines three modes of encoding conformance: basic well-formedness,
 [strict mode](https://tools.ietf.org/html/rfc7049#section-3.10) and 
 [Canonical CBOR](https://tools.ietf.org/html/rfc7049#section-3.9).
 Additionally, the CTAP2 spec defines its own set of [canonical CBOR encoding rules](https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html#ctap2-canonical-cbor-encoding-form)
 which are required for any implementation of the protocol. 
-The proposed implementation adds reader and writer support for all four conformance levels.
+The proposed implementation adds reader and writer support for all four conformance modes.
 
 ##  Scenarios and User Experience
 
@@ -79,7 +79,7 @@ Note that COSE key types are always integers.
 ```csharp
 private static byte[] CreateEc2CoseKeyEncoding(int signatureAlgorithmId, int curveId, byte[] xCoord, byte[] yCoord)
 {
-    var writer = new CborWriter(conformanceLevel: CborConformanceLevel.Ctap2Canonical);
+    var writer = new CborWriter(conformanceMode: CborConformanceMode.Ctap2Canonical);
 
     writer.WriteStartMap(definiteLength: 5); // push a definite-length map context
 
@@ -113,7 +113,7 @@ We assume here that all keys and values must be text strings.
 private static Dictionary<string, string> ReadCborTextMap(byte[] encoding)
 {
     var results = new Dictionary<string, string>();
-    var reader = new CborReader(encoding, CborConformanceLevel.Strict);
+    var reader = new CborReader(encoding, CborConformanceMode.Strict);
 
     int? length = reader.ReadStartMap();
 
@@ -190,9 +190,9 @@ private static Dictionary<string, string> ReadCborTextMap(byte[] encoding)
 
 ```csharp
 /// <summary>
-///   Defines supported conformance levels for encoding and decoding CBOR data.
+///   Defines supported conformance modes for encoding and decoding CBOR data.
 /// </summary>
-public enum CborConformanceLevel
+public enum CborConformanceMode
 {
     /// <summary>
     ///   Ensures that the CBOR data is well-formed, as specified in RFC7049.
@@ -342,13 +342,13 @@ public partial class CborWriter
     /// <summary>
     ///   Create a new <see cref="CborWriter"/> instance with given configuration.
     /// </summary>
-    /// <param name="conformanceLevel">
-    ///   Specifies a <see cref="CborConformanceLevel"/> guiding the conformance checks performed on the encoded data.
-    ///   Defaults to <see cref="CborConformanceLevel.Lax" /> conformance level.
+    /// <param name="conformanceMode">
+    ///   Specifies a <see cref="CborConformanceMode"/> guiding the conformance checks performed on the encoded data.
+    ///   Defaults to <see cref="CborConformanceMode.Lax" /> conformance mode.
     /// </param>
     /// <param name="convertIndefiniteLengthEncodings">
     ///   Enables automatically converting indefinite-length encodings into definite-length equivalents.
-    ///   Allows use of indefinite-length write APIs in conformance levels that otherwise do not permit it.
+    ///   Allows use of indefinite-length write APIs in conformance modes that otherwise do not permit it.
     ///   Defaults to <see langword="false" />.
     /// </param>
     /// <param name="allowMultipleRootLevelValues">
@@ -356,10 +356,10 @@ public partial class CborWriter
     ///   The default is <see langword="false"/>.
     /// </param>
     /// <exception cref="ArgumentOutOfRangeException">
-    ///   <paramref name="conformanceLevel"/> is not a defined <see cref="CborConformanceLevel"/>.
+    ///   <paramref name="conformanceMode"/> is not a defined <see cref="CborConformanceMode"/>.
     /// </exception>
     public CborWriter(
-        CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, 
+        CborConformanceMode conformanceMode = CborConformanceMode.Strict, 
         bool convertIndefiniteLengthEncodings = false, 
         bool allowMultipleRootLevelValues = false) => throw null;
 
@@ -372,9 +372,9 @@ public partial class CborWriter
     public bool AllowMultipleRootLevelValues { get { throw null; } }
 
     /// <summary>
-    ///   The <see cref="CborConformanceLevel"/> used by this writer.
+    ///   The <see cref="CborConformanceMode"/> used by this writer.
     /// </summary>
-    public CborConformanceLevel ConformanceLevel { get { throw null; } }
+    public CborConformanceMode ConformanceMode { get { throw null; } }
 
     /// <summary>
     ///   Gets a value that indicates whether the writer automatically converts indefinite-length encodings into definite-length equivalents.
@@ -415,6 +415,15 @@ public partial class CborWriter
     public bool TryEncode(Span<byte> destination, out int bytesWritten) { throw null; }
 
     /// <summary>
+    ///   Write the encoded representation of the data to <paramref name="destination"/>.
+    /// </summary>
+    /// <returns>The number of bytes written to <paramref name="destination"/>.</returns>
+    /// <exception cref="ArgumentException">
+    ///   The destination buffer is not large enough to hold the encoded value.
+    /// </exception>
+    public int Encode(Span<byte> destination) { throw null; }
+
+    /// <summary>
     ///   Reset the writer to have no data, without releasing resources.
     /// </summary>
     public void Reset() { }
@@ -434,7 +443,7 @@ public partial class CborWriter
     /// <exception cref="InvalidOperationException">
     ///   Writing a new value exceeds the definite length of the parent data item. -or-
     ///   The major type of the encoded value is not permitted in the parent data item. -or-
-    ///   The written data is not accepted under the current conformance level.
+    ///   The written data is not accepted under the current conformance mode.
     /// </exception>
     public void WriteInt32(int value) { throw null; }
     public void WriteInt64(long value) { throw null; }
@@ -470,6 +479,7 @@ public partial class CborWriter
     ///   Writes a buffer as a byte string encoding (major type 2).
     /// </summary>
     public void WriteByteString(ReadOnlySpan<byte> value) { throw null; }
+    public void WriteByteString(byte[]? value) { throw null; }
 
     /// <summary>
     ///   Writes the start of an indefinite-length byte string (major type 2).
@@ -502,6 +512,7 @@ public partial class CborWriter
     ///   The supplied input is not a valid UTF-8 string.
     /// </exception>
     public void WriteTextString(ReadOnlySpan<char> value) { throw null; }
+    public void WriteTextString(string? value) { throw null; }
 
     public void WriteStartTextString() { throw null; }
     public void WriteEndTextString() { throw null; }
@@ -518,22 +529,16 @@ and either be of definite or indefinite-length.
 public partial class CborWriter
 {
     /// <summary>
-    ///   Writes the start of a definite-length array (major type 4).
+    ///   Writes the start of an array (major type 4).
     /// </summary>
-    /// <param name="definiteLength">The definite length of the array.</param>
+    /// <param name="definiteLength">
+    ///   Writes a definite-length array if inhabited,
+    ///   or an indefinite-length array if <see langword="null" />.
+    /// </param>
     /// <exception cref="ArgumentOutOfRangeException">
     ///   The <paramref name="definiteLength"/> parameter cannot be negative.
     /// </exception>
-    public void WriteStartArray(int definiteLength) { throw null; }
-
-    /// <summary>
-    ///   Writes the start of an indefinite-length array (major type 4).
-    /// </summary>
-    /// <remarks>
-    ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
-    ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
-    /// </remarks>
-    public void WriteStartArray() { throw null; }
+    public void WriteStartArray(int? definiteLength) { throw null; }
 
     /// <summary>
     ///   Writes the end of an array (major type 4).
@@ -555,14 +560,9 @@ write is either a key or a value. CBOR maps can either be definite or indefinite
 public partial class CborWriter
 {
     /// <summary>
-    ///   Writes the start of a definite-length map (major type 5).
+    ///   Writes the start of a map (major type 5).
     /// </summary>
-    public void WriteStartMap(int definiteLength) { throw null; }
-
-    /// <summary>
-    ///   Writes the start of an indefinite-length map (major type 5).
-    /// </summary>
-    public void WriteStartMap() { throw null; }
+    public void WriteStartMap(int? definiteLength) { throw null; }
 
     /// <summary>
     ///   Writes the end of a map (major type 5).
@@ -671,9 +671,9 @@ public partial class CborWriter
     /// <param name="encodedValue">The encoded value to write.</param>
     /// <exception cref="ArgumentException">
     ///   <paramref name="encodedValue"/> is not a well-formed CBOR encoding. -or-
-    ///   <paramref name="encodedValue"/> is not valid under the current conformance level.
+    ///   <paramref name="encodedValue"/> is not valid under the current conformance mode.
     /// </exception>
-    public void WriteEncodedValue(ReadOnlyMemory<byte> encodedValue) { throw null; }
+    public void WriteEncodedValue(ReadOnlySpan<byte> encodedValue) { throw null; }
 }
 ```
 
@@ -692,13 +692,13 @@ public partial class CborReader
     /// </summary>
     public CborReader(
         ReadOnlyMemory<byte> data, 
-        CborConformanceLevel conformanceLevel = CborConformanceLevel.Lax, 
+        CborConformanceMode conformanceMode = CborConformanceMode.Strict, 
         bool allowMultipleRootLevelValues = false) => throw null;
 
     /// <summary>
-    ///   The <see cref="CborConformanceLevel"/> used by this reader.
+    ///   The <see cref="CborConformanceMode"/> used by this reader.
     /// </summary>
-    public CborConformanceLevel ConformanceLevel { get { throw null; } }
+    public CborConformanceMode ConformanceMode { get { throw null; } }
 
     /// <summary>
     ///   Declares whether this reader allows multiple root-level CBOR data items.
@@ -887,7 +887,7 @@ public partial class CborReader
     /// <exception cref="FormatException">
     ///   the next value has an invalid CBOR encoding. -or-
     ///   there was an unexpected end of CBOR encoding data. -or-
-    ///   the next value uses a CBOR encoding that is not valid under the current conformance level.
+    ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
     /// </exception>
     public int ReadInt32() { throw null; }
     public long ReadInt64() { throw null; }
@@ -1109,14 +1109,14 @@ public partial class CborReader
     /// <summary>
     ///   Reads the contents of the next value, discarding the result and advancing the reader.
     /// </summary>
-    /// <param name="disableConformanceLevelChecks">
-    ///   Disable conformance level validation for the skipped value,
-    ///   equivalent to using <see cref="CborConformanceLevel.Lax"/>.
+    /// <param name="disableConformanceModeChecks">
+    ///   Disable conformance mode validation for the skipped value,
+    ///   equivalent to using <see cref="CborConformanceMode.Strict"/>.
     /// </param>
     /// <exception cref="InvalidOperationException">
     ///   the reader is not at the start of new value.
     /// </exception>
-    public void SkipValue(bool disableConformanceLevelChecks = false) { throw null; }
+    public void SkipValue(bool disableConformanceModeChecks = false) { throw null; }
 
     /// <summary>
     ///   Reads the remaining contents of the current value context,
@@ -1127,7 +1127,7 @@ public partial class CborReader
     /// <exception cref="InvalidOperationException">
     ///   the reader is at the root context.
     /// </exception>
-    public void SkipToParent(bool disableConformanceLevelChecks = false) { throw null; }
+    public void SkipToParent(bool disableConformanceModeChecks = false) { throw null; }
 }
 ```
 
