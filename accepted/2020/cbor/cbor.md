@@ -524,7 +524,7 @@ public partial class CborWriter
     ///   The supplied input is not a valid UTF-8 string.
     /// </exception>
     public void WriteTextString(ReadOnlySpan<char> value) { throw null; }
-    public void WriteTextString(string? value) { throw null; }
+    public void WriteTextString(string value) { throw null; }
 
     public void WriteStartIndefiniteLengthTextString() { throw null; }
     public void WriteEndIndefiniteLengthTextString() { throw null; }
@@ -926,6 +926,11 @@ public partial class CborReader
     /// </remarks>
     public byte[] ReadByteString() { throw null; }
 
+    /// <summary>
+    ///   Reads the next data item as a byte string (major type 2).	    
+    /// </summary>
+    public bool TryReadByteString(Span<byte> destination, out int bytesWritten) { throw null; }
+    
     /// <summary>
     ///   Reads the next data item as a definite-length byte string (major type 2).
     /// </summary>
