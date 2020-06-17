@@ -327,6 +327,16 @@ public enum CborSimpleValue : byte
     /// </summary>
     Undefined = 23,
 }
+
+/// <summary>
+///   Exception thrown on invalid CBOR data encountered by CborReader.
+/// </summary>
+public class CborContentException : Exception
+{
+    public CborContentException(string? message) { throw null; }
+    public CborContentException(string? message, Exception? inner) { throw null; }
+    protected CborContentException(SerializationInfo info, StreamingContext context) { throw null; }
+}
 ```
 
 ### Writer API
@@ -344,7 +354,7 @@ public partial class CborWriter
     /// </summary>
     /// <param name="conformanceMode">
     ///   Specifies a <see cref="CborConformanceMode"/> guiding the conformance checks performed on the encoded data.
-    ///   Defaults to <see cref="CborConformanceMode.Lax" /> conformance mode.
+    ///   Defaults to <see cref="CborConformanceMode.Strict" /> conformance mode.
     /// </param>
     /// <param name="convertIndefiniteLengthEncodings">
     ///   Enables automatically converting indefinite-length encodings into definite-length equivalents.
@@ -409,10 +419,12 @@ public partial class CborWriter
     /// </exception>
     public byte[] Encode() { throw null; }
 
+
     /// <summary>
     ///   Write the encoded representation of the data to <paramref name="destination"/>.
     /// </summary>
     public bool TryEncode(Span<byte> destination, out int bytesWritten) { throw null; }
+    public int Encode(Span<byte> destination) { throw null; }
 
     /// <summary>
     ///   Write the encoded representation of the data to <paramref name="destination"/>.
@@ -462,7 +474,7 @@ public partial class CborWriter
     ///   This method supports encoding integers between -18446744073709551616 and -1.
     ///   Useful for handling values that do not fit in the <see cref="long"/> type.
     /// </remarks>
-    public void WriteCborNegativeIntegerEncoding(ulong value) { throw null; }
+    public void WriteCborNegativeIntegerRepresentation(ulong value) { throw null; }
 }
 ```
 
@@ -479,7 +491,7 @@ public partial class CborWriter
     ///   Writes a buffer as a byte string encoding (major type 2).
     /// </summary>
     public void WriteByteString(ReadOnlySpan<byte> value) { throw null; }
-    public void WriteByteString(byte[]? value) { throw null; }
+    public void WriteByteString(byte[] value) { throw null; }
 
     /// <summary>
     ///   Writes the start of an indefinite-length byte string (major type 2).
@@ -489,12 +501,12 @@ public partial class CborWriter
     ///   In canonical conformance levels, the writer will reject indefinite-length writes unless
     ///   the <see cref="ConvertIndefiniteLengthEncodings"/> flag is enabled.
     /// </remarks>
-    public void WriteStartByteString() { throw null; }
+    public void WriteStartIndefiniteLengthByteString() { throw null; }
 
     /// <summary>
     ///   Writes the end of an indefinite-length byte string (major type 2).
     /// </summary>
-    public void WriteEndByteString() { throw null; }
+    public void WriteEndIndefiniteLengthByteString() { throw null; }
 }
 ```
 
@@ -512,10 +524,10 @@ public partial class CborWriter
     ///   The supplied input is not a valid UTF-8 string.
     /// </exception>
     public void WriteTextString(ReadOnlySpan<char> value) { throw null; }
-    public void WriteTextString(string? value) { throw null; }
+    public void WriteTextString(string value) { throw null; }
 
-    public void WriteStartTextString() { throw null; }
-    public void WriteEndTextString() { throw null; }
+    public void WriteStartIndefiniteLengthTextString() { throw null; }
+    public void WriteEndIndefiniteLengthTextString() { throw null; }
 }
 ```
 
@@ -711,14 +723,9 @@ public partial class CborReader
     public int CurrentDepth { get { throw null; } }
 
     /// <summary>
-    ///   Gets the total number of bytes that have been consumed by the reader.
+    ///   Gets the number of bytes remaining in the buffer.
     /// </summary>
-    public int BytesRead { get { throw null; } }
-
-    /// <summary>
-    ///   Indicates whether or not the reader has remaining data available to process.
-    /// </summary>
-    public bool HasData { get { throw null; } }
+    public int BytesRemaining { get { throw null; } }
 }
 ```
 
@@ -737,7 +744,7 @@ public enum CborReaderState
     /// <summary>
     ///   Indicates the undefined state.
     /// </summary>
-    None = 0,
+    Undefined = 0,
 
     /// <summary>
     ///   Indicates that the next CBOR data item is an unsigned integer (major type 0).
@@ -757,12 +764,12 @@ public enum CborReaderState
     /// <summary>
     ///   Indicates that the next CBOR data item denotes the start of an indefinite-length byte string (major type 2).
     /// </summary>
-    StartByteString,
+    StartIndefiniteLengthByteString,
 
     /// <summary>
     ///   Indicates that the reader is at the end of an indefinite-length byte string (major type 2).
     /// </summary>
-    EndByteString,
+    EndIndefiniteLengthByteString,
 
     /// <summary>
     ///   Indicates that the next CBOR data item is a definite-length UTF-8 string (major type 3).
@@ -772,12 +779,12 @@ public enum CborReaderState
     /// <summary>
     ///   Indicates that the next CBOR data item denotes the start of an indefinite-length UTF-8 text string (major type 3).
     /// </summary>
-    StartTextString,
+    StartIndefiniteLengthTextString,
 
     /// <summary>
     ///   Indicates that the reader is at the end of an indefinite-length UTF-8 text string (major type 3).
     /// </summary>
-    EndTextString,
+    EndIndefiniteLengthTextString,
 
     /// <summary>
     ///   Indicates that the next CBOR data item denotes the start of an array (major type 4).
@@ -842,16 +849,6 @@ public enum CborReaderState
     ///   the reader will report this value even if the buffer contains trailing bytes.
     /// </remarks>
     Finished,
-
-    /// <summary>
-    ///   Indicates that the reader has encountered an incomplete CBOR document.
-    /// </summary>
-    EndOfData,
-
-    /// <summary>
-    ///   Indicates that the reader has encountered an error in the CBOR format encoding.
-    /// </summary>
-    FormatError,
 }
 
 public partial class CborReader
@@ -859,6 +856,9 @@ public partial class CborReader
     /// <summary>
     ///   Read the next CBOR token, without advancing the reader.
     /// </summary>
+    /// <exception cref="CborContentException">
+    ///   The underlying data is not a well-formed CBOR encoding.
+    /// </exception>
     public CborReaderState PeekState() { throw null; }
 }
 ```
@@ -884,7 +884,7 @@ public partial class CborReader
     /// <exception cref="OverflowException">
     ///   the encoded integer is out of range for <see cref="int"/>.
     /// </exception>
-    /// <exception cref="FormatException">
+    /// <exception cref="CborContentException">
     ///   the next value has an invalid CBOR encoding. -or-
     ///   there was an unexpected end of CBOR encoding data. -or-
     ///   the next value uses a CBOR encoding that is not valid under the current conformance mode.
@@ -908,7 +908,7 @@ public partial class CborReader
     ///   This method supports decoding integers between -18446744073709551616 and -1.
     ///   Useful for handling values that do not fit in the <see cref="long"/> type.
     /// </remarks>
-    public ulong ReadCborNegativeIntegerEncoding() { throw null; }
+    public ulong ReadCborNegativeIntegerRepresentation() { throw null; }
 }
 ```
 
@@ -927,15 +927,23 @@ public partial class CborReader
     public byte[] ReadByteString() { throw null; }
 
     /// <summary>
-    ///   Reads the next data item as a byte string (major type 2).
+    ///   Reads the next data item as a byte string (major type 2).	    
     /// </summary>
     public bool TryReadByteString(Span<byte> destination, out int bytesWritten) { throw null; }
+    
+    /// <summary>
+    ///   Reads the next data item as a definite-length byte string (major type 2).
+    /// </summary>
+    /// <returns>
+    ///   A <see cref="ReadOnlyMemory{T}"/> view of the byte string payload.
+    /// </returns>
+    public ReadOnlyMemory<byte> ReadDefiniteLengthByteString() { throw null; }
 
     /// <summary>
     ///   Reads the next data item as the start of an indefinite-length byte string (major type 2).
     /// </summary>
-    public void ReadStartByteString() { throw null; }
-    public void ReadEndByteString() { throw null; }
+    public void ReadStartIndefiniteLengthByteString() { throw null; }
+    public void ReadEndIndefiniteLengthByteString() { throw null; }
 }
 ```
 
@@ -954,10 +962,18 @@ public partial class CborReader
     public bool TryReadTextString(Span<char> destination, out int charsWritten) { throw null; }
 
     /// <summary>
+    ///   Reads the next data item as a definite-length UTF-8 text string (major type 3).
+    /// </summary>
+    /// <returns>
+    ///   A <see cref="ReadOnlyMemory{T}"/> view of the raw UTF-8 payload.
+    /// </returns>
+    public ReadOnlyMemory<byte> ReadDefiniteLengthTextStringBytes() { throw null; }
+
+    /// <summary>
     ///   Reads the next data item as the start of an indefinite-length text string (major type 3).
     /// </summary>
-    public void ReadStartTextString() { throw null; }
-    public void ReadEndTextString() { throw null; }
+    public void ReadStartIndefiniteLengthTextString() { throw null; }
+    public void ReadEndIndefiniteLengthTextString() { throw null; }
 }
 ```
 
@@ -1097,7 +1113,11 @@ public partial class CborReader
     ///   Reads the next CBOR data item, returning a <see cref="ReadOnlySpan{T}"/> view
     ///   of the encoded value.
     /// </summary>
-    public ReadOnlySpan<byte> ReadEncodedValue() { throw null; }
+    /// <param name="disableConformanceModeChecks">
+    ///   Disable conformance mode validation for the skipped value,
+    ///   equivalent to using <see cref="CborConformanceMode.Lax"/>.
+    /// </param>
+    public ReadOnlySpan<byte> ReadEncodedValue(bool disableConformanceModeChecks = false) { throw null; }
 }
 ```
 
@@ -1111,7 +1131,7 @@ public partial class CborReader
     /// </summary>
     /// <param name="disableConformanceModeChecks">
     ///   Disable conformance mode validation for the skipped value,
-    ///   equivalent to using <see cref="CborConformanceMode.Strict"/>.
+    ///   equivalent to using <see cref="CborConformanceMode.Lax"/>.
     /// </param>
     /// <exception cref="InvalidOperationException">
     ///   the reader is not at the start of new value.
