@@ -2,8 +2,6 @@
 
 We have exposed some [Activity APIs to improve the API usability and to integrate with OpenTelemetry](https://github.com/dotnet/designs/pull/98) (OT) so Activity can be a suitable replacement for the OT Span type described by the [OT Specs](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#span). We have received feedback regarding some OT blocked scenarios which need to be addressed in the Activity APIs and unblock the OT SDK implementation.
 
-This document is listing the proposed changes and the rationale for the proposal. **As we still receiving more feedback and there are some issues under discussion, it is expected this documents will get updated before we do the full design review for the proposed changes.**
-
 ## ActivityContext.IsRemote
 
 We already exposed the ActivityContext type as described by the OT specs. There is a property inside this type called `IsRemote` which we didn't include in the first place because it was under discussion with the OT spec committee. It has been confirmed this property is needed and will stay as part of the OT specs.
@@ -21,15 +19,6 @@ We already exposed the ActivityContext type as described by the OT specs. There 
     }
 ```
 
-Activity class will need to expose such property too to be able to set it as part of the included context. This is needed by the OT asp.net and Http client OT adapters. The adapters listen to the Activities created old way using `new Activity(...)` as it happen in asp.net and Http client. That means such activities will never set IsRemote correctly as it doesn't know anything about it. The adapters will need detect if such activity created from remote parent and set this value accordingly.
-
-```c#
-    public partial class Activity : IDisposable
-    {
-        public bool IsRemote { get; set; }
-    }
-```
-
 ## Activity.Kind Setter
 
 Activity.Kind is already exposed property but we have exposed it as a read-only property. We got OT adapters scenario that listen to the old created activities (by asp.net and Http clients). As the old Activities didn't support Kind property, the adapter needs to set this property before sending the activity to the sampling in the OT SDK. The proposal here is to expose the setter of this property.
@@ -42,50 +31,28 @@ Activity.Kind is already exposed property but we have exposed it as a read-only 
     }
 ```
 
-## ActivityTagsCollection
+## ActivityAttributesCollection
 
-OT has the concept of [Attributes](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-attributes) which is a list of key-value pairs mapping a string to some value. The value can be numeric, bool, string types. Also, the value can be an array of one of these basic types.
-
-> ```json
->         'x-forwarded-for': 'foo.bar'
->         'timeout': 5
-> ```
-
-There is OT proposal tracked by the [PR](https://github.com/open-telemetry/opentelemetry-specification/pull/596) to support the nested attributes. If this get accepted in OT, it will be easy to support it using ActivityTagsCollection.
+OT has the concept of [Attributes](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#set-attributes) which is a list of key-value pairs mapping a string to some value. The value can be of different types (e.g. numeric, bool, string, arrays...etc.). 
 
 > ```json
-> 'http': {
->     'headers': [
->         'x-forwarded-for': 'foo.bar'
->         'keep-alive': 'timeout=5'
->     ]
-> }
+>      'x-forwarded-for': 'foo.bar'
+>      'timeout': 5
 > ```
 
-The attributes are used in multiple places in the OT (e.g. in Span, Event, and Link). Activity support Tags which similar concept but Tags is limited to string value types and not supporting any other types `IEnumerable<KeyValuePair<string, string?>> Tags`.  We'll need to extend the Tags concept in our APIs to support the OT scenarios. We'll do that by introducing the ActivityTagsCollection and extending Activity class to support adding different types of tags value.
+The attributes are used in multiple places in the OT (e.g. in Span, Event, and Link). Activity support Tags which similar concept but Tags is limited to string value types and not supporting any other types `IEnumerable<KeyValuePair<string, string?>> Tags`.  We'll need to extend the Tags concept in our APIs to support the OT scenarios. We'll do that by introducing the ActivityAttributesCollection and extending Activity class to support adding different types of attribute values.
 
-ActivityTagsCollection is needed for the following reasons:
-
-- We need to avoid having the consumers of our APIs to use any other types (e.g. Dictionary<>, List<>...etc.) which can cause issues like not keeping the items in order or not conforming to the OT specs which suggest specific behaviors (e.g. when adding null value, should remove the entry from the list)
-- It is currently proposed to support nested attributes. ActivityTagsCollection will make it easy to do so at anytime is needed.
+ActivityAttributesCollection is needed to ensure the OT specs behavior is implemented and avoid API users to use different type of collections (e.g. Dictionary<>, List<>...etc.) which not conforming with the OT specs. The OT specs require the attributes always stored in order and define behavior when adding values for keys which already existed in the list, it will override the old value. In addition it define the behavior what should happen when using null values.
 
 ```c#
-    public class ActivityTagsCollection : IReadOnlyCollection<KeyValuePair<string, object>>
+    public class ActivityAttributesCollection : IReadOnlyCollection<KeyValuePair<string, object>>
     {
-        public ActivityTagsCollection() { }
-        public ActivityTagsCollection(IEnumerable<KeyValuePair<string, object>>) { }
+        public ActivityAttributesCollection() { }
+        public ActivityAttributesCollection(IEnumerable<KeyValuePair<string, object>>) { }
 
-        public void Add(string key, int value) { }
-        public void Add(string key, double value) { }
-        public void Add(string key, bool value) { }
-        public void Add(string key, string value) { }
-        public void Add(string key, int [] value) { }
-        public void Add(string key, double [] value) { }
-        public void Add(string key, bool [] value) { }
-        public void Add(string key, string [] value) { }
-
-        // The following API is pending the approval in OT spec first before we add it in .NET.
-        public void Add(string key, ActivityTagsCollection value) { }
+        // If the key was not set before, it will get added to the collections with the input value.
+        // If the key was set before, the mapped value of this key will be updated with the new input value.
+        public void Set(string key, int value) { }
 
         // interfaces implementation
         public int Count { get; }
@@ -94,41 +61,26 @@ ActivityTagsCollection is needed for the following reasons:
     }
 ```
 
-## Activity.Tags
+## Activity Attributes
 
-As mentioned earlier, Activity has Tags property which returns the list of the activity tags. Tags are a list of `KeyValuePair<string, string>`. Tags are proven to be not enough for OT scenarios as we need to support more value types (numeric, bool, numeric array, and nested tags). Activity today has the method `public Activity AddTag(string key, string? value)`. The proposal here is to add more `AddTag` overload accepting more types and add a new getter property return the list of all typed tags.
+As mentioned earlier, Activity has Tags property which returns the list of the activity tags. Tags are a list of `KeyValuePair<string, string>`. Tags are proven to be not enough for OT scenarios as we need to support more value types (numeric, bool, arrays...etc.). Activity today has the method `public Activity AddTag(string key, string? value)`. The proposal here is to add `SetAttribute()` which can set attributes value for a string key. 
+
+In general, Attributes will be considered a superset of Tags. 
 
 ```C#
     public partial class Activity : IDisposable
     {
-        public void AddTag(string key, int value) { }
-        public void AddTag(string key, double value) { }
-        public void AddTag(string key, bool value) { }
-        public void AddTag(string key, int [] value) { }
-        public void AddTag(string key, double [] value) { }
-        public void AddTag(string key, bool [] value) { } // how interesting this one?
-        public void AddTag(string key, string [] value) { }
-
-        // The following API is pending the approval in OT spec first before we add it in .NET.
-        public void AddTag(string key, ActivityTagsCollection value) { }
-
-        // We cannot change Tags property so we are introducing a new property with a new name
-        public ActivityTagsCollection TypedTags { get; }
+        public void SetAttribute(string key, object value) { }
+        
+        public ActivityAttributesCollection Attributes { get; }
     }
 ```
 
-***<u>OpenQuestion</u>***
-
-We need to decide about the behavior of the old property `Activity.Tags` when adding tags of non-string types values. The options are
-
-- Ignore all non-string typed values and return only the string type value tags.
-- Convert the non-string type values to string before returning it.
-
-I am inclining to the first option to avoid handling ToString with more complex types (e.g. arrays or ActivityTagsCollection).
+`Activity.Tags` behavior is not going to change and will always return the list of tags/attributes which has string typed values only. while the new API `Activity.Attributes' is going to return all attributes with all different type values.
 
 ## Proposal Changing already exposed APIs in previous preview releases
 
-As we are introducing the ActivityTagsCollection, we can take advantage of that now and modify some of the exposed APIs to use this collection instead. Also, we are renaming Attributes to Tags for consistency inside BCL APIs.
+As we are introducing the ActivityAttributesCollection, we can take advantage of that now and modify some of the exposed APIs to use this collection instead. Also, we are renaming Attributes to Tags for consistency inside BCL APIs.
 
 ### ActivityEvent
 
@@ -144,9 +96,9 @@ As we are introducing the ActivityTagsCollection, we can take advantage of that 
     // change it to the following:
     public readonly struct ActivityEvent
     {
-        public ActivityEvent(string name, ActivityTagsCollection? tags)
-        public ActivityEvent(string name, DateTimeOffset timestamp, ActivityTagsCollection? tags)
-        public ActivityTagsCollection? Tags { get; }
+        public ActivityEvent(string name, ActivityAttributesCollection? tags)
+        public ActivityEvent(string name, DateTimeOffset timestamp, ActivityAttributesCollection? tags)
+        public ActivityAttributesCollection? Attributes { get; }
     }
 ```
 
@@ -163,10 +115,18 @@ As we are introducing the ActivityTagsCollection, we can take advantage of that 
     // change it to the following:
     public readonly partial struct ActivityLink  : IEquatable<ActivityLink>
     {
-        public ActivityLink(ActivityContext context, ActivityTagsCollection? tags)
-        public ActivityTagsCollection? Tags { get; }
+        public ActivityLink(ActivityContext context, ActivityAttributesCollection? tags)
+        public ActivityAttributesCollection? Attributes { get; }
     }
 ```
+
+## Handle ActivitySource.StartActivity(..., string parentId,....) case
+
+When API users call `ActivitySource.StartActivity(..., string parentId,....) `, we eventually call all listeners callback `ActivityListener.GetRequestedDataUsingParentId` and we pass the parent Id string to that callback. parent Id string can be a regular string or it can be constructed from the parent context (trace Id, span Id, and the trace flags). The feedback we got from OT is this design will require the implementers to try to extract the context from the parent Id. if the context cannot be extracted, the passed information will be kind not useful for the OT scenarios (the parent Id can be useful in other scenarios though). That is mean the burden will be on the listener implementer and will require them to implement `ActivityListener.GetRequestedDataUsingParentId` while not be used in some cases when cannot extract the context. 
+
+The proposed change here is we'll have `ActivitySource.StartActivity(..., string parentId,....)` try to extract the context from the input parent Id. If it succeed to do that, it will call the listener callback `ActivityListener.GetRequestedDataUsingContex` instead and `ActivityListener.GetRequestedDataUsingParentId` will not get called. If it fail to construct the context, it will continue calling `ActivityListener.GetRequestedDataUsingParentId` if the listener implemented it. Listener implementers now have the choice to implement `ActivityListener.GetRequestedDataUsingParentId` only if they cares about parent Ids that don't include context information. 
+
+There is no APIs change here as all design change is more on the internal implementation details. 
 
 ## Automatic Trace Id  generation in case of null parent
 
