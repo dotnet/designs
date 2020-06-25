@@ -80,7 +80,7 @@ In general, Attributes will be considered a superset of Tags.
 
 ## Proposal Changing already exposed APIs in previous preview releases
 
-As we are introducing the ActivityAttributesCollection, we can take advantage of that now and modify some of the exposed APIs to use this collection instead. Also, we are renaming Attributes to Tags for consistency inside BCL APIs.
+As we are introducing the ActivityAttributesCollection, we can take advantage of that now and modify some of the exposed APIs to use this collection instead.
 
 ### ActivityEvent
 
@@ -96,8 +96,8 @@ As we are introducing the ActivityAttributesCollection, we can take advantage of
     // change it to the following:
     public readonly struct ActivityEvent
     {
-        public ActivityEvent(string name, ActivityAttributesCollection? tags)
-        public ActivityEvent(string name, DateTimeOffset timestamp, ActivityAttributesCollection? tags)
+        public ActivityEvent(string name, ActivityAttributesCollection? attributes)
+        public ActivityEvent(string name, DateTimeOffset timestamp, ActivityAttributesCollection? attributes)
         public ActivityAttributesCollection? Attributes { get; }
     }
 ```
@@ -115,18 +115,10 @@ As we are introducing the ActivityAttributesCollection, we can take advantage of
     // change it to the following:
     public readonly partial struct ActivityLink  : IEquatable<ActivityLink>
     {
-        public ActivityLink(ActivityContext context, ActivityAttributesCollection? tags)
+        public ActivityLink(ActivityContext context, ActivityAttributesCollection? attributes)
         public ActivityAttributesCollection? Attributes { get; }
     }
 ```
-
-## Handle ActivitySource.StartActivity(..., string parentId,....) case
-
-When API users call `ActivitySource.StartActivity(..., string parentId,....) `, we eventually call all listeners callback `ActivityListener.GetRequestedDataUsingParentId` and we pass the parent Id string to that callback. parent Id string can be a regular string or it can be constructed from the parent context (trace Id, span Id, and the trace flags). The feedback we got from OT is this design will require the implementers to try to extract the context from the parent Id. if the context cannot be extracted, the passed information will be kind not useful for the OT scenarios (the parent Id can be useful in other scenarios though). That is mean the burden will be on the listener implementer and will require them to implement `ActivityListener.GetRequestedDataUsingParentId` while not be used in some cases when cannot extract the context. 
-
-The proposed change here is we'll have `ActivitySource.StartActivity(..., string parentId,....)` try to extract the context from the input parent Id. If it succeed to do that, it will call the listener callback `ActivityListener.GetRequestedDataUsingContex` instead and `ActivityListener.GetRequestedDataUsingParentId` will not get called. If it fail to construct the context, it will continue calling `ActivityListener.GetRequestedDataUsingParentId` if the listener implemented it. Listener implementers now have the choice to implement `ActivityListener.GetRequestedDataUsingParentId` only if they cares about parent Ids that don't include context information. 
-
-There is no APIs change here as all design change is more on the internal implementation details. 
 
 ## Automatic Trace Id  generation in case of null parent
 
@@ -143,3 +135,10 @@ I am inclining to the first solution for the following reasons:
 - Exposing extra property can confuse the API consumers to know exactly when this property is needed or even they should care about it.
 - Adding such property to `ActivityCreationOptions` will increase the size of this struct which we are trying to make it compact for perf reasons.
 - I am not seeing a strong reason why the first solution wouldn't be good enough.
+
+## Handle ActivitySource.StartActivity(..., string parentId,....) case
+
+When API users call `ActivitySource.StartActivity(..., string parentId,....) `, we eventually call all listeners callback `ActivityListener.GetRequestedDataUsingParentId` and we pass the parent Id string to that callback. parent Id string can be a regular string or it can be constructed from the parent context (trace Id, span Id, and the trace flags). The feedback we got from OT is this design will require the implementers to try to extract the context from the parent Id. If the context cannot be extracted, the passed information will be kind not useful for the OT scenarios (the parent Id can be useful in other scenarios though). That is mean the burden will be on the listener implementer and will require them to implement `ActivityListener.GetRequestedDataUsingParentId` while not be used in some cases when cannot extract the context. 
+
+The proposed change here is when calling `ActivitySource.StartActivity(..., string parentId,....)` and the listener implementing the callback `ActivityListener.GetRequestedDataUsingParentId`, we'll call this callback as we do today as the listener showing the intend to receive and handle the Parent Id. If the listener didn't implement  `ActivityListener.GetRequestedDataUsingParentId` and implementing `ActivityListener.GetRequestedDataUsingContex` then we'll try convert the parent Id to context. If the conversion succeed well call `ActivityListener.GetRequestedDataUsingContex` otherwise we'll not call any listeners callbacks.
+There is no APIs change here as all design change is more on the internal implementation details. 
