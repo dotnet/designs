@@ -52,7 +52,7 @@ ActivityAttributesCollection is needed to ensure the OT specs behavior is implem
 
         // If the key was not set before, it will get added to the collections with the input value.
         // If the key was set before, the mapped value of this key will be updated with the new input value.
-        public void Set(string key, int value) { }
+        public void Set(string key, object value) { }
 
         // interfaces implementation
         public int Count { get; }
