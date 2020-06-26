@@ -134,7 +134,7 @@ The proposal here is to expose the `ActivityListener` property
 ```c#
     public sealed class ActivityListener : IDisposable // already existing type
     {
-        public bool PregenerateNewRootId { get; set;} // other name suggestion: GenerateTraceIdForRootContext
+        public bool PregenerateNewRootId { get; set;} // other names suggestion: GenerateTraceIdForRootContext, GenerateTraceIdForNullParent 
     }
 ```
 
