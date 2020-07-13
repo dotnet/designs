@@ -155,6 +155,55 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `System.Web.AspNetHostingPermissionAttribute`
         * Interfaces:
             * `System.Security.PermissionsIUnrestrictedPermission`
+            * `System.Security.IPermission`
+        * Classes that implement `IPermission`
+            * `System.IdentityModel.Services.ClaimsPrincipalPermission`
+            * `System.Security.CodeAccessPermission`
+        * Classes that derive from `CodeAccessPermission` (also includes implementations of `PermissionsIUnrestrictedPermission`)
+            * `System.Configuration.ConfigurationPermission`
+            * `System.Data.Common.DBDataPermission`
+                * `System.Data.Odbc.OdbcPermission`
+                * `System.Data.OleDb.OleDbPermission`
+                * `System.Data.SqlClient.SqlClientPermission`
+            * `System.Data.OracleClient.OraclePermission`
+            * `System.Drawing.Printing.PrintingPermission`
+            * `System.Messaging.MessageQueuePermission`
+            * `System.Net.DnsPermission`
+            * `System.Net.SocketPermission`
+            * `System.Net.WebPermission`
+            * `System.Net.Mail.SmtpPermission`
+            * `System.Net.NetworkInformation.NetworkInformationPermission`
+            * `System.Net.PeerToPeer.PnrpPermission`
+            * `System.Net.PeerToPeer.Collaboration.PeerCollaborationPermission`
+            * `System.Security.Permissions.DataProtectionPermission`
+            * `System.Security.Permissions.EnvironmentPermission`
+            * `System.Security.Permissions.FileDialogPermission`
+            * `System.Security.Permissions.FileIOPermission`
+            * `System.Security.Permissions.GacIdentityPermission`
+            * `System.Security.Permissions.IsolatedStoragePermission`
+                * `System.Security.Permissions.IsolatedStorageFilePermission`
+            * `System.Security.Permissions.KeyContainerPermission`
+            * `System.Security.Permissions.MediaPermission`
+            * `System.Security.Permissions.PublisherIdentityPermission`
+            * `System.Security.Permissions.ReflectionPermission`
+            * `System.Security.Permissions.RegistryPermission`
+            * `System.Security.Permissions.ResourcePermissionBase`
+                * `System.Diagnostics.EventLogPermission`
+                * `System.Diagnostics.PerformanceCounterPermission`
+                * `System.DirectoryServices.DirectoryServicesPermission`
+                * `System.ServiceProcess.ServiceControllerPermission`
+            * `System.Security.Permissions.SecurityPermission`
+            * `System.Security.Permissions.SiteIdentityPermission`
+            * `System.Security.Permissions.StorePermission`
+            * `System.Security.Permissions.StrongNameIdentityPermission`
+            * `System.Security.Permissions.TypeDescriptorPermission`
+            * `System.Security.Permissions.UIPermission`
+            * `System.Security.Permissions.UrlIdentityPermission`
+            * `System.Security.Permissions.WebBrowserPermission`
+            * `System.Security.Permissions.ZoneIdentityPermission`
+            * `System.Transactions.DistributedTransactionPermission`
+            * `System.Web.AspNetHostingPermission`
+            * `System.Xaml.Permissions.XamlLoadPermission`
         * Enums: (everything from the `System.Security.Permissions` namespace *except* `PermissionState`, which is used by `PrincipalPermission`; see below)
             * `DataProtectionPermissionFlags`
             * `EnvironmentPermissionAccess`
