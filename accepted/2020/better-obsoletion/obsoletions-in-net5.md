@@ -229,6 +229,8 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `UIPermissionClipboard`
             * `UIPermissionWindow`
             * `WebBrowserPermissionLevel`
+        * Other Enum Members:
+            * `System.Security.Permissions.SecurityAction.PermitOnly`
 1. PrincipalPermission is no longer supported
     * DiagnosticId: `MSLIB0012`
     * APIs:
