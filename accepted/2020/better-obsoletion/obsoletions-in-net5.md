@@ -57,8 +57,8 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
         * `System.MarshalByRefObject.InitializeLifetimeService`
 1. Code Access Security (CAS) APIs are no longer supported
     * DiagnosticId: `MSLIB0002` (reusing the existing DiagnosticId from `PrincipalPermissionAttribute`)
-    * APIs: (all from the `System.Security.Permissions` namespace)
-        * Classes: (everything *except* `PrincipalPermissionAttribute` (already obsolete))
+    * APIs:
+        * Classes: (everything from the `System.Security.Permissions` namespace *except* `PrincipalPermissionAttribute` (already obsolete))
             * `CodeAccessSecurityAttribute`
             * `DataProtectionPermission`
             * `DataProtectionPermissionAttribute`
@@ -110,9 +110,52 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `WebBrowserPermissionAttribute`
             * `ZoneIdentityPermission`
             * `ZoneIdentityPermissionAttribute`
+        * Classes that derive from `CodeAccessSecurityAttribute`
+            * `System.Configuration.ConfigurationPermissionAttribute`
+            * `System.Data.Common.DBDataPermissionAttribute`
+            * `System.Data.OracleClient.OraclePermissionAttribute`
+            * `System.Diagnostics.EventLogPermissionAttribute`
+            * `System.Diagnostics.PerformanceCounterPermissionAttribute`
+            * `System.DirectoryServices.DirectoryServicesPermissionAttribute`
+            * `System.Drawing.Printing.PrintingPermissionAttribute`
+            * `System.IdentityModel.Services.ClaimsPrincipalPermissionAttribute`
+            * `System.Messaging.MessageQueuePermissionAttribute`
+            * `System.Net.DnsPermissionAttribute`
+            * `System.Net.SocketPermissionAttribute`
+            * `System.Net.WebPermissionAttribute`
+            * `System.Net.Mail.SmtpPermissionAttribute`
+            * `System.Net.NetworkInformation.NetworkInformationPermissionAttribute`
+            * `System.Net.PeerToPeer.PnrpPermissionAttribute`
+            * `System.Net.PeerToPeer.Collaboration.PeerCollaborationPermissionAttribute`
+            * `System.Security.Permissions.DataProtectionPermissionAttribute`
+            * `System.Security.Permissions.EnvironmentPermissionAttribute`
+            * `System.Security.Permissions.FileDialogPermissionAttribute`
+            * `System.Security.Permissions.FileIOPermissionAttribute`
+            * `System.Security.Permissions.GacIdentityPermissionAttribute`
+            * `System.Security.Permissions.HostProtectionAttribute`
+            * `System.Security.Permissions.IsolatedStoragePermissionAttribute`
+            * `System.Security.Permissions.KeyContainerPermissionAttribute`
+            * `System.Security.Permissions.MediaPermissionAttribute`
+            * `System.Security.Permissions.PermissionSetAttribute`
+            * `System.Security.Permissions.PrincipalPermissionAttribute`
+            * `System.Security.Permissions.PublisherIdentityPermissionAttribute`
+            * `System.Security.Permissions.ReflectionPermissionAttribute`
+            * `System.Security.Permissions.RegistryPermissionAttribute`
+            * `System.Security.Permissions.SecurityPermissionAttribute`
+            * `System.Security.Permissions.SiteIdentityPermissionAttribute`
+            * `System.Security.Permissions.StorePermissionAttribute`
+            * `System.Security.Permissions.StrongNameIdentityPermissionAttribute`
+            * `System.Security.Permissions.TypeDescriptorPermissionAttribute`
+            * `System.Security.Permissions.UIPermissionAttribute`
+            * `System.Security.Permissions.UrlIdentityPermissionAttribute`
+            * `System.Security.Permissions.WebBrowserPermissionAttribute`
+            * `System.Security.Permissions.ZoneIdentityPermissionAttribute`
+            * `System.ServiceProcess.ServiceControllerPermissionAttribute`
+            * `System.Transactions.DistributedTransactionPermissionAttribute`
+            * `System.Web.AspNetHostingPermissionAttribute`
         * Interfaces:
-            * `IUnrestrictedPermission`
-        * Enums: (everything *except* `PermissionState`, which is used by `PrincipalPermission`; see below)
+            * `System.Security.PermissionsIUnrestrictedPermission`
+        * Enums: (everything from the `System.Security.Permissions` namespace *except* `PermissionState`, which is used by `PrincipalPermission`; see below)
             * `DataProtectionPermissionFlags`
             * `EnvironmentPermissionAccess`
             * `FileDialogPermissionAccess`
