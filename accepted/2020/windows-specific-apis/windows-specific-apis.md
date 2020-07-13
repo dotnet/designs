@@ -103,6 +103,9 @@ Windows-specific:
 ### System.IO.MemoryMappedFiles
 
 * **MemoryMappedFile**
+    - `CreateOrOpen(String, Int64)`
+    - `CreateOrOpen(String, Int64, MemoryMappedFileAccess)`
+    - `CreateOrOpen(String, Int64, MemoryMappedFileAccess, MemoryMappedFileOptions, HandleInheritability)`
     - `OpenExisting(String)`
     - `OpenExisting(String, MemoryMappedFileRights)`
     - `OpenExisting(String, MemoryMappedFileRights, HandleInheritability)`
