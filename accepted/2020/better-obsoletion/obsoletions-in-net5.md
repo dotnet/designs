@@ -156,6 +156,11 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
         * Interfaces:
             * `System.Security.PermissionsIUnrestrictedPermission`
             * `System.Security.IPermission`
+            * `System.Security.IStackWalk`
+        * Classes that implement `IStackWalk`
+            * `System.Security.PermissionSet`
+                * `System.Security.NamedPermissionSet`
+                * `System.Security.ReadOnlyPermissionSet`
         * Classes that implement `IPermission`
             * `System.IdentityModel.Services.ClaimsPrincipalPermission`
             * `System.Security.CodeAccessPermission`
