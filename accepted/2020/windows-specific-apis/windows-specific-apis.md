@@ -30,7 +30,6 @@ There is a set of assemblies that we can mark wholesale as being
 Windows-specific:
 
 > **OPEN**: Should `System.Threading.Overlapped.dll` be removed?
-> **OPEN**: I was told that part of `DirectoryServices` is now cross-platform. Is that true?
 
 * **Microsoft.Win32.Registry.dll**
 * **Microsoft.Win32.Registry.AccessControl.dll**
@@ -39,19 +38,16 @@ Windows-specific:
 * **System.Diagnostics.PerformanceCounter.dll**
 * **System.DirectoryServices.dll**
 * **System.DirectoryServices.AccountManagement.dll**
-* **System.DirectoryServices.Protocols.dll**
 * **System.IO.FileSystem.AccessControl.dll**
-* **System.IO.FileSystem.DriveInfo.dll**
 * **System.IO.Pipes.AccessControl.dll**
 * **System.Management.dll**
-* **System.Net.Http.WinHttpHandler.dll**
-* **System.Runtime.InteropServices.WindowsRuntime.dll**
+* **System.Net.Http.WinHttpHandler.dll** (using an internal attribute within the assembly)
 * **System.Security.AccessControl.dll**
 * **System.Security.Cryptography.Cng.dll**
-* **System.Security.Cryptography.ProtectedData.dll**
+* **System.Security.Cryptography.ProtectedData.dll** (using an internal attribute within the assembly)
 * **System.Security.Principal.Windows.dll**
 * **System.ServiceProcess.ServiceController.dll**
-* **System.Threading.AccessControl.dll**
+* **System.Threading.AccessControl.dll** (using an internal attribute within the assembly)
 * **System.Threading.Overlapped.dll**
 
 ## Specific APIs
@@ -82,18 +78,11 @@ Windows-specific:
 
 ### System.Configuration
 
-> **OPEN** Should we mark the entire type?
-
 * **DpapiProtectedConfigurationProvider**
-    - `Decrypt(XmlNode)`
-    - `Encrypt(XmlNode)`
 
 ### System.Diagnostics
 
 * **Process**
-    - `GetProcessById(Int32, String)`
-    - `GetProcesses(String)`
-    - `GetProcessesByName(String, String)`
     - `set_MaxWorkingSet(IntPtr)`
     - `set_MinWorkingSet(IntPtr)`
     - `Start(String, String, SecureString, String)`
@@ -111,31 +100,9 @@ Windows-specific:
     - `set_PriorityLevel(ThreadPriorityLevel)`
     - `set_ProcessorAffinity(IntPtr)`
 
-### System.Drawing
-
-> **OPEN** Should we mark the entire type?
-
-* **Graphics**
-    - `CopyFromScreen(Int32, Int32, Int32, Int32, Size)`
-    - `CopyFromScreen(Int32, Int32, Int32, Int32, Size, CopyPixelOperation)`
-    - `CopyFromScreen(Point, Point, Size)`
-    - `CopyFromScreen(Point, Point, Size, CopyPixelOperation)`
-
 ### System.IO.MemoryMappedFiles
 
 * **MemoryMappedFile**
-    - `CreateFromFile(FileStream, String, Int64, MemoryMappedFileAccess, HandleInheritability, Boolean)`
-    - `CreateFromFile(String)`
-    - `CreateFromFile(String, FileMode)`
-    - `CreateFromFile(String, FileMode, String)`
-    - `CreateFromFile(String, FileMode, String, Int64)`
-    - `CreateFromFile(String, FileMode, String, Int64, MemoryMappedFileAccess)`
-    - `CreateNew(String, Int64)`
-    - `CreateNew(String, Int64, MemoryMappedFileAccess)`
-    - `CreateNew(String, Int64, MemoryMappedFileAccess, MemoryMappedFileOptions, HandleInheritability)`
-    - `CreateOrOpen(String, Int64)`
-    - `CreateOrOpen(String, Int64, MemoryMappedFileAccess)`
-    - `CreateOrOpen(String, Int64, MemoryMappedFileAccess, MemoryMappedFileOptions, HandleInheritability)`
     - `OpenExisting(String)`
     - `OpenExisting(String, MemoryMappedFileRights)`
     - `OpenExisting(String, MemoryMappedFileRights, HandleInheritability)`
@@ -144,91 +111,10 @@ Windows-specific:
 
 * **NamedPipeClientStream**
     - `get_NumberOfServerInstances()`
-* **NamedPipeServerStream**
-    - `RunAsClient(PipeStreamImpersonationWorker)`
 * **PipeStream**
-    - `set_ReadMode(PipeTransmissionMode)`
     - `WaitForPipeDrain()`
 * **PipeTransmissionMode**
     - `Message`
-
-### System.IO.Ports
-
-> **OPEN** Should we mark the entire type/assembly?
-
-* **SerialDataReceivedEventArgs**
-    - `get_EventType()`
-* **SerialErrorReceivedEventArgs**
-    - `get_EventType()`
-* **SerialPinChangedEventArgs**
-    - `get_EventType()`
-* **SerialPort**
-    - `.ctor()`
-    - `.ctor(IContainer)`
-    - `.ctor(String)`
-    - `.ctor(String, Int32)`
-    - `.ctor(String, Int32, Parity)`
-    - `.ctor(String, Int32, Parity, Int32)`
-    - `.ctor(String, Int32, Parity, Int32, StopBits)`
-    - `Close()`
-    - `DiscardInBuffer()`
-    - `DiscardOutBuffer()`
-    - `get_BaseStream()`
-    - `get_BaudRate()`
-    - `get_BreakState()`
-    - `get_BytesToRead()`
-    - `get_BytesToWrite()`
-    - `get_CDHolding()`
-    - `get_CtsHolding()`
-    - `get_DataBits()`
-    - `get_DiscardNull()`
-    - `get_DsrHolding()`
-    - `get_DtrEnable()`
-    - `get_Encoding()`
-    - `get_Handshake()`
-    - `get_IsOpen()`
-    - `get_NewLine()`
-    - `get_Parity()`
-    - `get_ParityReplace()`
-    - `get_PortName()`
-    - `get_ReadBufferSize()`
-    - `get_ReadTimeout()`
-    - `get_ReceivedBytesThreshold()`
-    - `get_RtsEnable()`
-    - `get_StopBits()`
-    - `get_WriteBufferSize()`
-    - `get_WriteTimeout()`
-    - `GetPortNames()`
-    - `Open()`
-    - `Read(Byte[], Int32, Int32)`
-    - `Read(Char[], Int32, Int32)`
-    - `ReadByte()`
-    - `ReadChar()`
-    - `ReadExisting()`
-    - `ReadLine()`
-    - `ReadTo(String)`
-    - `set_BaudRate(Int32)`
-    - `set_BreakState(Boolean)`
-    - `set_DataBits(Int32)`
-    - `set_DiscardNull(Boolean)`
-    - `set_DtrEnable(Boolean)`
-    - `set_Encoding(Encoding)`
-    - `set_Handshake(Handshake)`
-    - `set_NewLine(String)`
-    - `set_Parity(Parity)`
-    - `set_ParityReplace(Byte)`
-    - `set_PortName(String)`
-    - `set_ReadBufferSize(Int32)`
-    - `set_ReadTimeout(Int32)`
-    - `set_ReceivedBytesThreshold(Int32)`
-    - `set_RtsEnable(Boolean)`
-    - `set_StopBits(StopBits)`
-    - `set_WriteBufferSize(Int32)`
-    - `set_WriteTimeout(Int32)`
-    - `Write(Byte[], Int32, Int32)`
-    - `Write(Char[], Int32, Int32)`
-    - `Write(String)`
-    - `WriteLine(String)`
 
 ### System.Net
 
@@ -237,42 +123,46 @@ Windows-specific:
     - `set_HeaderWait(TimeSpan)`
     - `set_MinSendBytesPerSecond(Int64)`
     - `set_RequestQueue(TimeSpan)`
-* **IPEndPoint**
-    - `Create(SocketAddress)`
-* **SocketAddress**
-    - `.ctor(AddressFamily)`
-    - `.ctor(AddressFamily, Int32)`
-    - `get_Family()`
-    - `ToString()`
 
 ### System.Net.Sockets
 
+* **IOControlCode** (Enum -- _all members except `NonBlockingIO`, `DataToRead`, and `OobDataRead`_)
+    - `AsyncIO`
+    - `AssociateHandle`
+    - `EnableCircularQueuing`
+    - `Flush`
+    - `GetBroadcastAddress`
+    - `GetExtensionFunctionPointer`
+    - `GetQos`
+    - `GetGroupQos`
+    - `MultipointLoopback`
+    - `MulticastScope`
+    - `SetQos`
+    - `SetGroupQos`
+    - `TranslateHandle`
+    - `RoutingInterfaceQuery`
+    - `RoutingInterfaceChange`
+    - `AddressListQuery`
+    - `AddressListChange`
+    - `QueryTargetPnpHandle`
+    - `NamespaceChange`
+    - `AddressListSort`
+    - `ReceiveAll`
+    - `ReceiveAllMulticast`
+    - `ReceiveAllIgmpMulticast`
+    - `KeepAliveValues`
+    - `AbsorbRouterAlert`
+    - `UnicastInterface`
+    - `LimitBroadcasts`
+    - `BindToInterface`
+    - `MulticastInterface`
+    - `AddMulticastGroupOnInterface`
+    - `DeleteMulticastGroupFromInterface`
 * **Socket**
-    - `AcceptAsync(SocketAsyncEventArgs)`
-    - `BeginAccept(Int32, AsyncCallback, Object)`
-    - `BeginAccept(Socket, Int32, AsyncCallback, Object)`
-    - `BeginReceiveFrom(Byte[], Int32, Int32, SocketFlags, EndPoint, AsyncCallback, Object)`
-    - `BeginReceiveMessageFrom(Byte[], Int32, Int32, SocketFlags, EndPoint, AsyncCallback, Object)`
-    - `IOControl(Int32, Byte[], Byte[])`
-    - `IOControl(IOControlCode, Byte[], Byte[])`
-    - `ReceiveFrom(Byte[], EndPoint)`
-    - `ReceiveFrom(Byte[], Int32, Int32, SocketFlags, EndPoint)`
-    - `ReceiveFrom(Byte[], Int32, SocketFlags, EndPoint)`
-    - `ReceiveFrom(Byte[], SocketFlags, EndPoint)`
-    - `ReceiveFromAsync(SocketAsyncEventArgs)`
-    - `ReceiveMessageFrom(Byte[], Int32, Int32, SocketFlags, EndPoint, IPPacketInformation)`
-    - `ReceiveMessageFromAsync(SocketAsyncEventArgs)`
     - `SetIPProtectionLevel(IPProtectionLevel)`
-* **SocketTaskExtensions**
-    - `AcceptAsync(Socket)`
-    - `AcceptAsync(Socket, Socket)`
-    - `ReceiveFromAsync(Socket, ArraySegment<Byte>, SocketFlags, EndPoint)`
-    - `ReceiveMessageFromAsync(Socket, ArraySegment<Byte>, SocketFlags, EndPoint)`
 * **TcpListener**
     - `AllowNatTraversal(Boolean)`
 * **TransmitFileOptions**
-    - `Disconnect`
-    - `ReuseSocket`
     - `UseKernelApc`
     - `UseSystemThread`
     - `WriteBehind`
@@ -458,18 +348,10 @@ Windows-specific:
 ### System.Threading
 
 * **EventWaitHandle**
-    - `.ctor(Boolean, EventResetMode, String)`
-    - `.ctor(Boolean, EventResetMode, String, Boolean)`
     - `OpenExisting(String)`
     - `TryOpenExisting(String, EventWaitHandle)`
 * **Semaphore**
-    - `.ctor(Int32, Int32, String)`
-    - `.ctor(Int32, Int32, String, Boolean)`
     - `OpenExisting(String)`
     - `TryOpenExisting(String, Semaphore)`
 * **Thread**
     - `SetApartmentState(ApartmentState)`
-* **WaitHandle**
-    - `SignalAndWait(WaitHandle, WaitHandle)`
-    - `SignalAndWait(WaitHandle, WaitHandle, Int32, Boolean)`
-    - `SignalAndWait(WaitHandle, WaitHandle, TimeSpan, Boolean)`
