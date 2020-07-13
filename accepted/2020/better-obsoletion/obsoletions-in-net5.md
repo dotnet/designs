@@ -24,46 +24,42 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
         * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions`
         * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegionsNoOP`
         * `System.Runtime.CompilerServices.RuntimeHelpers.ProbeForSufficientStack`
-2. This App Domain method is no longer implemented
+1. This AppDomain method is no longer implemented
     * DiagnosticId: `MSLIB0005`
     * APIs:
         * `PrepareContractedDelegate`
-2. The Global Assembly Cache is no longer implemented
+1. The Global Assembly Cache is no longer implemented
     * DiagnosticId: `MSLIB0006`
     * APIs:
         * `System.Reflection.Assembly.GlobalAssemblyCache`
-3. `System.Net.WebSockets.WebSocket.IsApplicationTargeting45` is no longer applicable
+1. `Thread.Abort` is no longer supported and throws PlatformNotSupportedException
     * DiagnosticId: `MSLIB0007`
-    * APIs:
-        * `System.Net.WebSockets.WebSocket.IsApplicationTargeting45`
-4. `Thread.Abort` is no longer supported and throws PlatformNotSupportedException
-    * DiagnosticId: `MSLIB0008`
     * APIs:
         * `System.Threading.Thread.Abort()`
         * `System.Threading.Thread.Abort(Object)`
-5. The default implementations of these cryptography algorithms are no longer supported and throw PlatformNotSupportedException
-    * DiagnosticId: `MSLIB0009`
+1. The default implementations of these cryptography algorithms are no longer supported and throw PlatformNotSupportedException
+    * DiagnosticId: `MSLIB0008`
     * APIs:
         * `System.Security.Cryptography.SymmetricAlgorithm.Create()`
         * `System.Security.Cryptography.AssymetricAlgorithm.Create()`
         * `System.Security.Cryptography.HMAC.Create()`
         * `System.Security.Cryptography.KeyedHashAlgorithm.Create()`
-6. The CreatePbdGenerator API is no longer supported and throws PlatformNotSupportedException
-    * DiagnosticId: `MSLIB0010`
+1. The CreatePdbGenerator API is no longer supported and throws PlatformNotSupportedException
+    * DiagnosticId: `MSLIB0009`
     * APIs:
-        * `System.Runtime.CompilerServices.DebugInfoGenerator.CreatePbdGenerator`
-7. The AuthenticationManager Authenticate and PreAuthenticate APIs are no longer supported and throw PlatformNotSupportedException
-    * DiagnosticId: `MSLIB0011`
+        * `System.Runtime.CompilerServices.DebugInfoGenerator.CreatePdbGenerator`
+1. The AuthenticationManager Authenticate and PreAuthenticate APIs are no longer supported and throw PlatformNotSupportedException
+    * DiagnosticId: `MSLIB0010`
     * APIs:
         * `System.Net.AuthenticationManager.Authenticate`
         * `System.Net.AuthenticationManager.PreAuthenticate`
-8. These Remoting APIs are no longer supported and throw PlatformNotSupportedException
-    * DiagnosticId: `MSLIB0012`
+1. These Remoting APIs are no longer supported and throw PlatformNotSupportedException
+    * DiagnosticId: `MSLIB0011`
     * APIs:
         * `System.MarshalByRefObject.GetLifetimeService`
         * `System.MarshalByRefObject.InitializeLifetimeService`
-9. Code Access Security (CAS) APIs are no longer supported
-    * DiagnosticId: `MSLIB0013`
+1. Code Access Security (CAS) APIs are no longer supported
+    * DiagnosticId: `MSLIB0012`
     * APIs: (all from the `System.Security.Permissions` namespace)
         * Classes: (everything *except* `PrincipalPermission` (still implemented) and `PrincipalPermissionAttribute` (already obsolete))
             * `CodeAccessSecurityAttribute`
