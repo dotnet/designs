@@ -155,7 +155,10 @@ Windows-specific:
 ### System.IO.Pipes
 
 * **NamedPipeClientStream**
+    - `Connect(Int32)`
     - `get_NumberOfServerInstances()`
+* **NamedPipeServerStream**
+    - `WaitForConnection()`
 * **PipeStream**
     - `WaitForPipeDrain()`
 * **PipeTransmissionMode**
