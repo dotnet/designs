@@ -24,6 +24,31 @@ means the custom attribute will look as follows:
 [MinimumOSPlatform("windows7.0")]
 ```
 
+## .NET Standard 2.0 assemblies
+
+Marking APIs as Windows specific requires the `MinimumOSPlatformAttribute`.
+Thankfully, this doesn't require unification (nor a public type) so the analyzer
+can simply check for the attribute by name. Thus, in order to mark .NET Standard
+2.0 assemblies, we'll include an internal version of
+`MinimumOSPlatformAttribute` in those assemblies.
+
+## Open Issues
+
+* We should run the tool again .NET 5
+* We currently don't have a way to mark an API as unsupported on a given
+  platform. That is, the design is agnostic (no attribute) or inclusion list
+  (attributes with support platforms). We need to add this feature to support
+  Blazor.
+    - `System.Security.Cryptography.OpenSSL` should be marked as not supported
+      on Windows
+* We should consider special casing enum values in the analyzer and only
+  complain about assignments/passing to parameters). We can probably get away
+  with marking the constructors of the types that override with platform
+  specific implementations.
+* We should consider how marking virtual methods work in the analyzer.
+* We need to find a good code base for running this analyzer on as
+  dotnet/runtime, dotnet/roslyn are mostly not consuming platform-specific APIs.
+
 ## Entire assemblies
 
 There is a set of assemblies that we can mark wholesale as being
@@ -41,13 +66,13 @@ Windows-specific:
 * **System.IO.FileSystem.AccessControl.dll**
 * **System.IO.Pipes.AccessControl.dll**
 * **System.Management.dll**
-* **System.Net.Http.WinHttpHandler.dll** (using an internal attribute within the assembly)
+* **System.Net.Http.WinHttpHandler.dll**
 * **System.Security.AccessControl.dll**
 * **System.Security.Cryptography.Cng.dll**
-* **System.Security.Cryptography.ProtectedData.dll** (using an internal attribute within the assembly)
+* **System.Security.Cryptography.ProtectedData.dll**
 * **System.Security.Principal.Windows.dll**
 * **System.ServiceProcess.ServiceController.dll**
-* **System.Threading.AccessControl.dll** (using an internal attribute within the assembly)
+* **System.Threading.AccessControl.dll**
 * **System.Threading.Overlapped.dll**
 
 ## Specific APIs
@@ -99,6 +124,11 @@ Windows-specific:
 * **ProcessThread**
     - `set_PriorityLevel(ThreadPriorityLevel)`
     - `set_ProcessorAffinity(IntPtr)`
+
+### System.IO
+
+* **DriveInfo**
+    - `set_VolumeLabel(String)`
 
 ### System.IO.MemoryMappedFiles
 
@@ -163,6 +193,7 @@ Windows-specific:
     - `DeleteMulticastGroupFromInterface`
 * **Socket**
     - `SetIPProtectionLevel(IPProtectionLevel)`
+    - `DuplicateAndClose`
 * **TcpListener**
     - `AllowNatTraversal(Boolean)`
 * **TransmitFileOptions**
@@ -206,21 +237,8 @@ Windows-specific:
 ### System.Security.Cryptography
 
 * **CspKeyContainerInfo**
-    - `get_Accessible()`
-    - `get_Exportable()`
-    - `get_HardwareDevice()`
-    - `get_KeyContainerName()`
-    - `get_KeyNumber()`
-    - `get_MachineKeyStore()`
-    - `get_Protected()`
-    - `get_ProviderName()`
-    - `get_ProviderType()`
-    - `get_RandomlyGenerated()`
-    - `get_Removable()`
-    - `get_UniqueKeyContainerName()`
 * **DSACryptoServiceProvider**
     - `get_CspKeyContainerInfo()`
-    - `ImportCspBlob(Byte[])`
 * **PasswordDeriveBytes**
     - `CryptDeriveKey(String, String, Int32, Byte[])`
 * **RC2CryptoServiceProvider**
@@ -229,7 +247,7 @@ Windows-specific:
     - `.ctor(CspParameters)`
     - `.ctor(Int32, CspParameters)`
     - `get_CspKeyContainerInfo()`
-    - `ImportCspBlob(Byte[])`
+* **`CspParameters`**
 
 ### System.Security.Cryptography.X509Certificates
 
