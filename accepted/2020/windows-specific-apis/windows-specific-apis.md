@@ -32,6 +32,16 @@ can simply check for the attribute by name. Thus, in order to mark .NET Standard
 2.0 assemblies, we'll include an internal version of
 `MinimumOSPlatformAttribute` in those assemblies.
 
+## Partially supported APIs
+
+We decided that APIs that are only platform-specific for a certain combinations
+of arguments will not be marked as platform-specific. In other words, we'll
+optimize for fewer false positives.
+
+In some cases, we get away with marking enum members as platform-specific. If
+the API is popular enough, we may want to provide a custom analyzer that checks
+for certain arguments.
+
 ## Open Issues
 
 * We should run the tool again .NET 5
