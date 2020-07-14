@@ -118,6 +118,8 @@ Windows-specific:
 ### System.Diagnostics
 
 * **Process**
+    - `EnterDebugMode()`
+    - `LeaveDebugMode()`
     - `set_MaxWorkingSet(IntPtr)`
     - `set_MinWorkingSet(IntPtr)`
     - `Start(String, String, SecureString, String)`
@@ -223,10 +225,14 @@ Windows-specific:
     - `ChangeWrapperHandleStrength(Object, Boolean)`
     - `CreateAggregatedObject(IntPtr, Object)`
     - `CreateAggregatedObject<T>(IntPtr, T)`
+    - `CreateWrapperOfType(object, Type)`
+    - `CreateWrapperOfType<T, TWrapper>(T)`
     - `FinalReleaseComObject(Object)`
     - `GetComInterfaceForObject(Object, Type)`
     - `GetComInterfaceForObject(Object, Type, CustomQueryInterfaceMode)`
     - `GetComInterfaceForObject<T, TInterface>(T)`
+    - `GetComObjectData(object,object)`
+    - `GetIDispatchForObject(object)`
     - `GetIUnknownForObject(Object)`
     - `GetNativeVariantForObject(Object, IntPtr)`
     - `GetNativeVariantForObject<T>(T, IntPtr)`
@@ -236,6 +242,7 @@ Windows-specific:
     - `GetObjectsForNativeVariants(IntPtr, Int32)`
     - `GetObjectsForNativeVariants<T>(IntPtr, Int32)`
     - `GetStartComSlot(Type)`
+    - `GetEndComSlot(Type)`
     - `GetTypedObjectForIUnknown(IntPtr, Type)`
     - `GetTypeFromCLSID(Guid)`
     - `GetTypeInfoName(ITypeInfo)`
@@ -243,11 +250,15 @@ Windows-specific:
     - `QueryInterface(IntPtr, Guid, IntPtr)`
     - `Release(IntPtr)`
     - `ReleaseComObject(Object)`
+    - `ReleaseComObject(Object)`
+    - `SetComObjectData(object,object,object)`
 
 ### System.Security.Cryptography
 
 * **CspKeyContainerInfo**
 * **DSACryptoServiceProvider**
+    - `.ctor(CspParameters)`
+    - `.ctor(int, CspParameters)`
     - `get_CspKeyContainerInfo()`
 * **PasswordDeriveBytes**
     - `CryptDeriveKey(String, String, Int32, Byte[])`
