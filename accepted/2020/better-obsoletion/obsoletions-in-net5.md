@@ -58,7 +58,7 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
 1. Code Access Security (CAS) APIs are no longer supported
     * DiagnosticId: `MSLIB0002` (reusing the existing DiagnosticId from `PrincipalPermissionAttribute`)
     * APIs:
-        * Classes: (everything from the `System.Security.Permissions` namespace *except* `PrincipalPermissionAttribute` (already obsolete))
+        * Classes: (everything from the `System.Security.Permissions` namespace)
             * `CodeAccessSecurityAttribute`
             * `DataProtectionPermission`
             * `DataProtectionPermissionAttribute`
@@ -82,6 +82,8 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `MediaPermission`
             * `MediaPermissionAttribute`
             * `PermissionSetAttribute`
+            * `PrincipalPermission`
+            * `PrincipalPermissionAttribute` (already has the attribute)
             * `PublisherIdentityPermission`
             * `PublisherIdentityPermissionAttribute`
             * `ReflectionPermission`
@@ -180,36 +182,15 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `System.Net.NetworkInformation.NetworkInformationPermission`
             * `System.Net.PeerToPeer.PnrpPermission`
             * `System.Net.PeerToPeer.Collaboration.PeerCollaborationPermission`
-            * `System.Security.Permissions.DataProtectionPermission`
-            * `System.Security.Permissions.EnvironmentPermission`
-            * `System.Security.Permissions.FileDialogPermission`
-            * `System.Security.Permissions.FileIOPermission`
-            * `System.Security.Permissions.GacIdentityPermission`
-            * `System.Security.Permissions.IsolatedStoragePermission`
-                * `System.Security.Permissions.IsolatedStorageFilePermission`
-            * `System.Security.Permissions.KeyContainerPermission`
-            * `System.Security.Permissions.MediaPermission`
-            * `System.Security.Permissions.PublisherIdentityPermission`
-            * `System.Security.Permissions.ReflectionPermission`
-            * `System.Security.Permissions.RegistryPermission`
-            * `System.Security.Permissions.ResourcePermissionBase`
-                * `System.Diagnostics.EventLogPermission`
-                * `System.Diagnostics.PerformanceCounterPermission`
-                * `System.DirectoryServices.DirectoryServicesPermission`
-                * `System.ServiceProcess.ServiceControllerPermission`
-            * `System.Security.Permissions.SecurityPermission`
-            * `System.Security.Permissions.SiteIdentityPermission`
-            * `System.Security.Permissions.StorePermission`
-            * `System.Security.Permissions.StrongNameIdentityPermission`
-            * `System.Security.Permissions.TypeDescriptorPermission`
-            * `System.Security.Permissions.UIPermission`
-            * `System.Security.Permissions.UrlIdentityPermission`
-            * `System.Security.Permissions.WebBrowserPermission`
-            * `System.Security.Permissions.ZoneIdentityPermission`
             * `System.Transactions.DistributedTransactionPermission`
             * `System.Web.AspNetHostingPermission`
             * `System.Xaml.Permissions.XamlLoadPermission`
-        * Enums: (everything from the `System.Security.Permissions` namespace *except* `PermissionState`, which is used by `PrincipalPermission`; see below)
+        * Classes that derive from `ResourcePermissionBase`
+            * `System.Diagnostics.EventLogPermission`
+            * `System.Diagnostics.PerformanceCounterPermission`
+            * `System.DirectoryServices.DirectoryServicesPermission`
+            * `System.ServiceProcess.ServiceControllerPermission`
+        * Enums: (everything from the `System.Security.Permissions` namespace)
             * `DataProtectionPermissionFlags`
             * `EnvironmentPermissionAccess`
             * `FileDialogPermissionAccess`
@@ -220,19 +201,13 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `MediaPermissionAudio`
             * `MediaPermissionImage`
             * `MediaPermissionVideo`
+            * `PermissionState`
             * `ReflectionPermissionFlag`
             * `RegistryPermissionAccess`
-            * `SecurityAction`
+            * `SecurityAction` (with removal of the existing attributes on members)
             * `SecurityPermissionFlag`
             * `StorePermissionFlags`
             * `TypeDescriptorPermissionFlags`
             * `UIPermissionClipboard`
             * `UIPermissionWindow`
             * `WebBrowserPermissionLevel`
-        * Other Enum Members:
-            * `System.Security.Permissions.SecurityAction.PermitOnly`
-1. PrincipalPermission is no longer supported
-    * DiagnosticId: `MSLIB0012`
-    * APIs:
-        * `System.Security.Permissions.PrincipalPermission`
-        * `System.Security.Permissions.PermissionState`
