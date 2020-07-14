@@ -29,7 +29,7 @@ Encouraging migration away from `BinaryFormatter` has the additional benefit of 
 - .NET produces guidance document on migrating away from `BinaryFormatter`
 - All outstanding `BinaryFormatter`-related issues resolved _won't fix_
 - Introduce a `BinaryFormatter` tracing event source
-- `BinaryFormatter.Deserialize` marked obsolete _as warning_
+- `Serialize` and `Deserialize` marked obsolete _as warning_
 
 ### .NET 6 (Nov 2021)
 
@@ -166,9 +166,9 @@ It is anticipated that this mechanism will use the _System.Diagnostics.Diagnosti
 
 App developers can test-run their application with this trace listener enabled, and if they see no unexpected calls to `BinaryFormatter` they can confidently set the AppContext setting to disable `BinaryFormatter` in production. This allows them to limit their exposure to `BinaryFormatter`-related vulnerabilities within their own services.
 
-### BinaryFormatter.Deserialize marked obsolete as warning (.NET 5)
+### Serialize and Deserialize marked obsolete as warning (.NET 5)
 
-The `Deserialize` method on `BinaryFormatter`, `Formatter`, and `IFormatter` will be marked obsolete _as warning_, as shown below.
+The `Serialize` and `Deserialize` methods on `BinaryFormatter`, `Formatter`, and `IFormatter` will be marked obsolete _as warning_, as shown below.
 
 ```cs
 namespace System.Runtime.Serialization.Formatters.Binary
@@ -177,6 +177,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
     {
         [Obsolete("...", error: false, DiagnosticId = "...")]
         public object Deserialize(Stream serializationStream);
+        [Obsolete("...", error: false, DiagnosticId = "...")]
+        public void Serialize(Stream serializationStream, object graph);
     }
 }
 
@@ -186,12 +188,16 @@ namespace System.Runtime.Serialization
     {
         [Obsolete("...", error: false, DiagnosticId = "...")]
         object Deserialize(Stream serializationStream);
+        [Obsolete("...", error: false, DiagnosticId = "...")]
+        void Serialize(Stream serializationStream, object graph);
     }
 
     public abstract class Formatter : IFormatter
     {
         [Obsolete("...", error: false, DiagnosticId = "...")]
         public abstract object Deserialize(Stream serializationStream);
+        [Obsolete("...", error: false, DiagnosticId = "...")]
+        public abstract void Serialize(Stream serializationStream, object graph);
     }
 }
 ```
