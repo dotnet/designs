@@ -14,7 +14,7 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
 `https://aka.ms/dotnet-warnings/{0}`.
 
 1. The Constrained Execution Region (CER) feature is no longer implemented
-    * DiagnosticId: `MSLIB0004`
+    * DiagnosticId: `SYSLIB0004`
     * APIs:
         * `System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute`
         * `System.Runtime.ConstrainedExecution.ReliabilityContractAttribute`
@@ -26,37 +26,37 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
         * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareContractedDelegate`
         * `System.Runtime.CompilerServices.RuntimeHelpers.ProbeForSufficientStack`
 1. The Global Assembly Cache is no longer implemented
-    * DiagnosticId: `MSLIB0005`
+    * DiagnosticId: `SYSLIB0005`
     * APIs:
         * `System.Reflection.Assembly.GlobalAssemblyCache`
 1. `Thread.Abort` is no longer supported and throws PlatformNotSupportedException
-    * DiagnosticId: `MSLIB0006`
+    * DiagnosticId: `SYSLIB0006`
     * APIs:
         * `System.Threading.Thread.Abort()`
         * `System.Threading.Thread.Abort(Object)`
 1. The default implementations of these cryptography algorithms are no longer supported and throw PlatformNotSupportedException
-    * DiagnosticId: `MSLIB0007`
+    * DiagnosticId: `SYSLIB0007`
     * APIs:
         * `System.Security.Cryptography.SymmetricAlgorithm.Create()`
         * `System.Security.Cryptography.AssymetricAlgorithm.Create()`
         * `System.Security.Cryptography.HMAC.Create()`
         * `System.Security.Cryptography.KeyedHashAlgorithm.Create()`
 1. The CreatePdbGenerator API is no longer supported and throws PlatformNotSupportedException
-    * DiagnosticId: `MSLIB0008`
+    * DiagnosticId: `SYSLIB0008`
     * APIs:
         * `System.Runtime.CompilerServices.DebugInfoGenerator.CreatePdbGenerator`
 1. The AuthenticationManager Authenticate and PreAuthenticate APIs are no longer supported and throw PlatformNotSupportedException
-    * DiagnosticId: `MSLIB0009`
+    * DiagnosticId: `SYSLIB0009`
     * APIs:
         * `System.Net.AuthenticationManager.Authenticate`
         * `System.Net.AuthenticationManager.PreAuthenticate`
 1. These Remoting APIs are no longer supported and throw PlatformNotSupportedException
-    * DiagnosticId: `MSLIB0010`
+    * DiagnosticId: `SYSLIB0010`
     * APIs:
         * `System.MarshalByRefObject.GetLifetimeService`
         * `System.MarshalByRefObject.InitializeLifetimeService`
 1. Code Access Security (CAS) APIs are no longer supported
-    * DiagnosticId: `MSLIB0002` (reusing the existing DiagnosticId from `PrincipalPermissionAttribute`)
+    * DiagnosticId: `SYSLIB0002` (reusing the existing DiagnosticId from `PrincipalPermissionAttribute`)
     * APIs:
         * Classes: (everything from the `System.Security.Permissions` namespace)
             * `CodeAccessSecurityAttribute`
