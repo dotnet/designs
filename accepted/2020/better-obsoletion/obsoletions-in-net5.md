@@ -13,7 +13,7 @@ marked as obsolete for the same reason. This capability is reflected in the list
 of obsoletions below. All of these obsoletions will use the `UrlFormat` of
 `https://aka.ms/dotnet-warnings/{0}`.
 
-1. The Constrained Execution Region (CER) feature is no longer implemented
+1. The Constrained Execution Region (CER) feature is no longer supported.
     * DiagnosticId: `SYSLIB0004`
     * APIs:
         * `System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute`
@@ -25,37 +25,37 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
         * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegionsNoOP`
         * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareContractedDelegate`
         * `System.Runtime.CompilerServices.RuntimeHelpers.ProbeForSufficientStack`
-1. The Global Assembly Cache is no longer implemented
+1. The Global Assembly Cache is no longer supported.
     * DiagnosticId: `SYSLIB0005`
     * APIs:
         * `System.Reflection.Assembly.GlobalAssemblyCache`
-1. `Thread.Abort` is no longer supported and throws PlatformNotSupportedException
+1. Thread.Abort is no longer supported and throws PlatformNotSupportedException.
     * DiagnosticId: `SYSLIB0006`
     * APIs:
         * `System.Threading.Thread.Abort()`
         * `System.Threading.Thread.Abort(Object)`
-1. The default implementations of these cryptography algorithms are no longer supported and throw PlatformNotSupportedException
+1. The default implementation of this cryptography algorithm is no longer supported.
     * DiagnosticId: `SYSLIB0007`
     * APIs:
         * `System.Security.Cryptography.SymmetricAlgorithm.Create()`
         * `System.Security.Cryptography.AssymetricAlgorithm.Create()`
         * `System.Security.Cryptography.HMAC.Create()`
         * `System.Security.Cryptography.KeyedHashAlgorithm.Create()`
-1. The CreatePdbGenerator API is no longer supported and throws PlatformNotSupportedException
+1. The CreatePdbGenerator API is no longer supported and throws PlatformNotSupportedException.
     * DiagnosticId: `SYSLIB0008`
     * APIs:
         * `System.Runtime.CompilerServices.DebugInfoGenerator.CreatePdbGenerator`
-1. The AuthenticationManager Authenticate and PreAuthenticate APIs are no longer supported and throw PlatformNotSupportedException
+1. The AuthenticationManager Authenticate and PreAuthenticate methods are no longer supported and throw PlatformNotSupportedException.
     * DiagnosticId: `SYSLIB0009`
     * APIs:
         * `System.Net.AuthenticationManager.Authenticate`
         * `System.Net.AuthenticationManager.PreAuthenticate`
-1. These Remoting APIs are no longer supported and throw PlatformNotSupportedException
+1. This Remoting API is no longer supported and throws PlatformNotSupportedException.
     * DiagnosticId: `SYSLIB0010`
     * APIs:
         * `System.MarshalByRefObject.GetLifetimeService`
         * `System.MarshalByRefObject.InitializeLifetimeService`
-1. Code Access Security (CAS) APIs are no longer supported
+1. Code Access Security is no longer supported or honored by the runtime.
     * DiagnosticId: `SYSLIB0002` (reusing the existing DiagnosticId from `PrincipalPermissionAttribute`)
     * APIs:
         * Classes: (everything from the `System.Security.Permissions` namespace)
@@ -129,34 +129,11 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `System.Net.NetworkInformation.NetworkInformationPermissionAttribute`
             * `System.Net.PeerToPeer.PnrpPermissionAttribute`
             * `System.Net.PeerToPeer.Collaboration.PeerCollaborationPermissionAttribute`
-            * `System.Security.Permissions.DataProtectionPermissionAttribute`
-            * `System.Security.Permissions.EnvironmentPermissionAttribute`
-            * `System.Security.Permissions.FileDialogPermissionAttribute`
-            * `System.Security.Permissions.FileIOPermissionAttribute`
-            * `System.Security.Permissions.GacIdentityPermissionAttribute`
-            * `System.Security.Permissions.HostProtectionAttribute`
-            * `System.Security.Permissions.IsolatedStoragePermissionAttribute`
-            * `System.Security.Permissions.KeyContainerPermissionAttribute`
-            * `System.Security.Permissions.MediaPermissionAttribute`
-            * `System.Security.Permissions.PermissionSetAttribute`
-            * `System.Security.Permissions.PrincipalPermissionAttribute`
-            * `System.Security.Permissions.PublisherIdentityPermissionAttribute`
-            * `System.Security.Permissions.ReflectionPermissionAttribute`
-            * `System.Security.Permissions.RegistryPermissionAttribute`
-            * `System.Security.Permissions.SecurityPermissionAttribute`
-            * `System.Security.Permissions.SiteIdentityPermissionAttribute`
-            * `System.Security.Permissions.StorePermissionAttribute`
-            * `System.Security.Permissions.StrongNameIdentityPermissionAttribute`
-            * `System.Security.Permissions.TypeDescriptorPermissionAttribute`
-            * `System.Security.Permissions.UIPermissionAttribute`
-            * `System.Security.Permissions.UrlIdentityPermissionAttribute`
-            * `System.Security.Permissions.WebBrowserPermissionAttribute`
-            * `System.Security.Permissions.ZoneIdentityPermissionAttribute`
             * `System.ServiceProcess.ServiceControllerPermissionAttribute`
             * `System.Transactions.DistributedTransactionPermissionAttribute`
             * `System.Web.AspNetHostingPermissionAttribute`
         * Interfaces:
-            * `System.Security.PermissionsIUnrestrictedPermission`
+            * `System.Security.Permissions.IUnrestrictedPermission`
             * `System.Security.IPermission`
             * `System.Security.IStackWalk`
         * Classes that implement `IStackWalk`
