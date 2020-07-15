@@ -17,6 +17,7 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
     * DiagnosticId: `SYSLIB0001`
     * APIs:
         * `System.Text.UTF7Encoding` (constructors)
+        * `System.Text.Encoding.UTF7`
 1. PrincipalPermissionAttribute is not honored by the runtime and must not be used.
     * DiagnosticId: `SYSLIB0002`
     * APIs:
