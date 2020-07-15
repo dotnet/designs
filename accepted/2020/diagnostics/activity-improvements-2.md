@@ -252,7 +252,7 @@ We are making this as opt-in option in the listener to avoid any performance iss
 
 ## ***Design Review Decision***
 
-This API is accepted but it is renamed to `AutoGenerateRootContextTraceId `
+This API is accepted but the property renamed to `AutoGenerateRootContextTraceId `
 
 ```C#
     public sealed class ActivityListener
