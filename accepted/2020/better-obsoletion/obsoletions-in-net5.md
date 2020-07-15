@@ -13,52 +13,19 @@ marked as obsolete for the same reason. This capability is reflected in the list
 of obsoletions below. All of these obsoletions will use the `UrlFormat` of
 `https://aka.ms/dotnet-warnings/{0}`.
 
-1. The Constrained Execution Region (CER) feature is no longer supported.
-    * DiagnosticId: `SYSLIB0004`
+1. The UTF-7 encoding is insecure and should not be used. Consider using UTF-8 instead.
+    * DiagnosticId: `SYSLIB0001`
     * APIs:
-        * `System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute`
-        * `System.Runtime.ConstrainedExecution.ReliabilityContractAttribute`
-        * `System.Runtime.ConstrainedExecution.Cer`
-        * `System.Runtime.ConstrainedExecution.Consistency`
-        * `System.Runtime.CompilerServices.RuntimeHelpers.ExecuteCodeWithGuaranteedCleanup`
-        * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions`
-        * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegionsNoOP`
-        * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareContractedDelegate`
-        * `System.Runtime.CompilerServices.RuntimeHelpers.ProbeForSufficientStack`
-1. The Global Assembly Cache is no longer supported.
-    * DiagnosticId: `SYSLIB0005`
+        * `System.Text.UTF7Encoding` (constructors)
+1. PrincipalPermissionAttribute is not honored by the runtime and must not be used.
+    * DiagnosticId: `SYSLIB0002`
     * APIs:
-        * `System.Reflection.Assembly.GlobalAssemblyCache`
-1. Thread.Abort is no longer supported and throws PlatformNotSupportedException.
-    * DiagnosticId: `SYSLIB0006`
+        * `System.Security.Permissions.PrincipalPermissionAttribute` (constructor)
+        * Level: **Error**
+1. Code Access Security is not supported or honored by the runtime.
+    * DiagnosticId: `SYSLIB0003`
     * APIs:
-        * `System.Threading.Thread.Abort()`
-        * `System.Threading.Thread.Abort(Object)`
-1. The default implementation of this cryptography algorithm is no longer supported.
-    * DiagnosticId: `SYSLIB0007`
-    * APIs:
-        * `System.Security.Cryptography.SymmetricAlgorithm.Create()`
-        * `System.Security.Cryptography.AssymetricAlgorithm.Create()`
-        * `System.Security.Cryptography.HMAC.Create()`
-        * `System.Security.Cryptography.KeyedHashAlgorithm.Create()`
-1. The CreatePdbGenerator API is no longer supported and throws PlatformNotSupportedException.
-    * DiagnosticId: `SYSLIB0008`
-    * APIs:
-        * `System.Runtime.CompilerServices.DebugInfoGenerator.CreatePdbGenerator`
-1. The AuthenticationManager Authenticate and PreAuthenticate methods are no longer supported and throw PlatformNotSupportedException.
-    * DiagnosticId: `SYSLIB0009`
-    * APIs:
-        * `System.Net.AuthenticationManager.Authenticate`
-        * `System.Net.AuthenticationManager.PreAuthenticate`
-1. This Remoting API is no longer supported and throws PlatformNotSupportedException.
-    * DiagnosticId: `SYSLIB0010`
-    * APIs:
-        * `System.MarshalByRefObject.GetLifetimeService`
-        * `System.MarshalByRefObject.InitializeLifetimeService`
-1. Code Access Security is no longer supported or honored by the runtime.
-    * DiagnosticId: `SYSLIB0002` (reusing the existing DiagnosticId from `PrincipalPermissionAttribute`)
-    * APIs:
-        * Classes: (everything from the `System.Security.Permissions` namespace)
+        * Classes: (everything public from the `System.Security.Permissions` namespace)
             * `CodeAccessSecurityAttribute`
             * `DataProtectionPermission`
             * `DataProtectionPermissionAttribute`
@@ -84,7 +51,7 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `MediaPermissionAttribute`
             * `PermissionSetAttribute`
             * `PrincipalPermission`
-            * `PrincipalPermissionAttribute` (already has the attribute)
+            * `PrincipalPermissionAttribute` (the type itself will become obsolete as a warning while the constructor will be obsolete as an error)
             * `PublisherIdentityPermission`
             * `PublisherIdentityPermissionAttribute`
             * `ReflectionPermission`
@@ -210,6 +177,48 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `System.Security.Policy.Site` (implements `IIdentityPermissionFactory`)
             * `System.Security.Policy.Url` (implements `IIdentityPermissionFactory`)
             * `System.Security.Policy.Zone` (implements `IIdentityPermissionFactory`)
+1. The Constrained Execution Region (CER) feature is not supported.
+    * DiagnosticId: `SYSLIB0004`
+    * APIs:
+        * `System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute`
+        * `System.Runtime.ConstrainedExecution.ReliabilityContractAttribute`
+        * `System.Runtime.ConstrainedExecution.Cer`
+        * `System.Runtime.ConstrainedExecution.Consistency`
+        * `System.Runtime.CompilerServices.RuntimeHelpers.ExecuteCodeWithGuaranteedCleanup`
+        * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions`
+        * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegionsNoOP`
+        * `System.Runtime.CompilerServices.RuntimeHelpers.PrepareContractedDelegate`
+        * `System.Runtime.CompilerServices.RuntimeHelpers.ProbeForSufficientStack`
+1. The Global Assembly Cache is not supported.
+    * DiagnosticId: `SYSLIB0005`
+    * APIs:
+        * `System.Reflection.Assembly.GlobalAssemblyCache`
+1. Thread.Abort is not supported and throws PlatformNotSupportedException.
+    * DiagnosticId: `SYSLIB0006`
+    * APIs:
+        * `System.Threading.Thread.Abort()`
+        * `System.Threading.Thread.Abort(Object)`
+1. The default implementation of this cryptography algorithm is not supported.
+    * DiagnosticId: `SYSLIB0007`
+    * APIs:
+        * `System.Security.Cryptography.SymmetricAlgorithm.Create()`
+        * `System.Security.Cryptography.AssymetricAlgorithm.Create()`
+        * `System.Security.Cryptography.HMAC.Create()`
+        * `System.Security.Cryptography.KeyedHashAlgorithm.Create()`
+1. The CreatePdbGenerator API is not supported and throws PlatformNotSupportedException.
+    * DiagnosticId: `SYSLIB0008`
+    * APIs:
+        * `System.Runtime.CompilerServices.DebugInfoGenerator.CreatePdbGenerator`
+1. The AuthenticationManager Authenticate and PreAuthenticate methods are not supported and throw PlatformNotSupportedException.
+    * DiagnosticId: `SYSLIB0009`
+    * APIs:
+        * `System.Net.AuthenticationManager.Authenticate`
+        * `System.Net.AuthenticationManager.PreAuthenticate`
+1. This Remoting API is not supported and throws PlatformNotSupportedException.
+    * DiagnosticId: `SYSLIB0010`
+    * APIs:
+        * `System.MarshalByRefObject.GetLifetimeService`
+        * `System.MarshalByRefObject.InitializeLifetimeService`
 
 ## Other Considerations
 
@@ -231,3 +240,17 @@ obsolete more APIs in .NET 6.
 We would also like to thank @Joe4evr for helping kickstart the conversation with
 [#33360](https://github.com/dotnet/runtime/issues/33360). That issue will remain open
 and we will continue consider the APIs noted there in future releases.
+
+## Warnings vs. Errors
+
+The `Obsolete` attributes will be applied to classes, interfaces, and enums, in addition to
+being applied to specific members where appropriate. When applying `Obsolete` attributes to
+types, we do not support using the **error** level. This is due to how type forwarding is
+set up for our downlevel .NET Framework and .NET Standard compatibility, where type forwarding
+files would be referencing those types and build errors would be unavoidable.
+
+When an **error** level is needed, a separate diagnostic ID must be used, and the attribute
+must be applied to type members. The `PrincipalPermissionAttribute` constructor is obsoleted
+as an **error** using `SYSLIB0002`, while the class itself is obsoleted as a **warning** using
+`SYSLIB0003`. This combination allows the interfaces the class implements to also be marked
+as `Obsolete` while also avoiding the type forwarding build errors.
