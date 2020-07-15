@@ -211,3 +211,24 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `UIPermissionClipboard`
             * `UIPermissionWindow`
             * `WebBrowserPermissionLevel`
+
+## Other Considerations
+
+Several other APIs were considered for obsoletion in .NET 5, but we chose to focus
+on groupings of APIs that categorically do not work in .NET 5. This strategy optimizes
+for projects migrating from .NET Framework while keeping the risk of negative disruption
+relatively low.
+
+Some specific APIs had already been suggested for obsoletion. We reviewed those suggestions
+during this consideration as well. For example, [`SecureString`](https://github.com/dotnet/runtime/issues/30612)
+was considered but we chose to omit it for now. We are aware of some notable usage of
+`SecureString` where marking it as obsolete would cause disruption, and we do not yet
+have a clear alternative approach to recommend.
+
+Obsoleting the set of APIs above will still provide enough usage of the new obsoletion
+behavior that we can collect feedback from users and determine how aggressively we can
+obsolete more APIs in .NET 6.
+
+We would also like to thank @Joe4evr for helping kickstart the conversation with
+[#33360](https://github.com/dotnet/runtime/issues/33360). That issue will remain open
+and we will continue consider the APIs noted there in future releases.
