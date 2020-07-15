@@ -79,6 +79,7 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `KeyContainerPermissionAttribute`
             * `KeyContainerPermissionAccessEntry`
             * `KeyContainerPermissionAccessEntryCollection`
+            * `KeyContainerPermissionAccessEntryEnumerator`
             * `MediaPermission`
             * `MediaPermissionAttribute`
             * `PermissionSetAttribute`
@@ -136,6 +137,7 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `System.Security.Permissions.IUnrestrictedPermission`
             * `System.Security.IPermission`
             * `System.Security.IStackWalk`
+            * `System.Security.Policy.IIdentityPermissionFactory` (has a single member that returns `IPermission`)
         * Classes that implement `IStackWalk`
             * `System.Security.PermissionSet`
                 * `System.Security.NamedPermissionSet`
@@ -188,6 +190,26 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `UIPermissionClipboard`
             * `UIPermissionWindow`
             * `WebBrowserPermissionLevel`
+        * Classes/Members that depend on CAS types:
+            * `System.AppDomain.PermissionSet` (property of type `PermissionSet`)
+            * `System.Security.HostProtectionException` (heavily uses `HostProtectionResource`)
+            * `System.Security.Policy.FileCodeGroup` (constructor requires `FileIOPermissionAccess`)
+            * `System.Security.Policy.StrongName` (constructor requires `StrongNamePublicKeyBlob` and implements `IIdentityPermissionFactory`)
+            * `System.Security.Policy.StrongNameMembershipCondition` (constructor requires `StrongNamePublicKeyBlob`)
+            * `System.Security.Policy.ApplicationTrust(PermissionSet, IEnumerable<StrongName>)`
+            * `System.Security.Policy.ApplicationTrust.FullTrustAssemblies` (property of type `IList<StrongName>`)
+            * `System.Security.Policy.GacInstalled` (implements `IIdentityPermissionFactory`)
+            * `System.Security.SecurityManager.GetStandardSandbox(Evidence)` (returns type `PermissionSet`)
+            * `System.Security.Policy.PolicyStatement` (obsoleting the constructors -- they both require `PermissionSet`)
+            * `System.Security.Policy.PolicyLevel.AddNamedPermissionSet(NamedPermissionSet)`
+            * `System.Security.Policy.PolicyLevel.ChangeNamedPermissionSet(string, PermissionSet)`
+            * `System.Security.Policy.PolicyLevel.GetNamedPermissionSet(string)` (returns type `NamedPermissionSet`)
+            * `System.Security.Policy.PolicyLevel.RemoveNamedPermissionSet(NamedPermissionSet)` (returns type `NamedPermissionSet`)
+            * `System.Security.Policy.PolicyLevel.RemoveNamedPermissionSet(string)` (returns type `NamedPermissionSet`)
+            * `System.Security.Policy.Publisher` (implements `IIdentityPermissionFactory`)
+            * `System.Security.Policy.Site` (implements `IIdentityPermissionFactory`)
+            * `System.Security.Policy.Url` (implements `IIdentityPermissionFactory`)
+            * `System.Security.Policy.Zone` (implements `IIdentityPermissionFactory`)
 
 ## Other Considerations
 
