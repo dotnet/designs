@@ -61,7 +61,7 @@ This document proposes:
 2. A Roslyn analyzer that informs developers when they use platform-specific
    APIs from call sites where the API might not be available.
 
-This work draws heavily form the experience of the [API Analyzer] and improves
+This work draws heavily from the experience of the [API Analyzer] and improves
 on it by making it a first-class platform feature.
 
 ## Scenarios and User Experience
@@ -70,7 +70,7 @@ on it by making it a first-class platform feature.
 
 Miguel is building Baby Shark, a popular iOS application. He started with .NET
 that supported iOS 13 but Apple just released iOS 14, which adds the great
-`NSFizBuzz` API that gives his app the extra pop.
+`NSFizzBuzz` API that gives his app the extra pop.
 
 After upgrading the app and writing the code, Miguel decides that while the
 feature is cool, it doesn't warrant cutting of all his customers who are
@@ -92,12 +92,12 @@ currently still on iOS 13. So he edits the project file and sets
 
 After doing this, he gets a diagnostic in this code:
 
-> 'NSFizzBuff' requires iOS 14 or later.
+> 'NSFizzBuzz' requires iOS 14 or later.
 
 ```C#
 private static void ProvideExtraPop()
 {
-    NSFizzBuff();
+    NSFizzBuzz();
 }
 ```
 
@@ -108,7 +108,7 @@ in the following code:
 private static void ProvideExtraPop()
 {
     if (RuntimeInformation.IsOSPlatformOrLater(OSPlatform.iOS, 14))
-        NSFizzBuff();
+        NSFizzBuzz();
 }
 ```
 
@@ -118,13 +118,13 @@ After upgrading to iOS 14 Miguel also got the following diagnostic:
 
 > 'UIApplicationExitsOnSuspend' has been deprecated since iOS 13.1
 
-Miguel decides that he'll tackle that problem later as he needs to ship now,so
+Miguel decides that he'll tackle that problem later as he needs to ship now, so
 he invokes the generic "Suppress in code" code fixer which surrounds his code
 with `#pragma warning disable`.
 
 ### Detecting removal of OS APIs
 
-A few year after his massively successful fizz-buzzed Baby Shark, Apple releases
+A few years after his massively successful fizz-buzzed Baby Shark, Apple releases
 iOS 15. After upgrading Miguel gets the following diagnostic:
 
 > 'UIApplicationExitsOnSuspend' has been removed since iOS 15.0
