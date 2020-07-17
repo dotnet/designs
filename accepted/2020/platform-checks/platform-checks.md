@@ -245,10 +245,108 @@ After that, the diagnostic disappears automatically.
 
 ## Design
 
-### Attribute
+### Attributes
 
 OS bindings and platforms-specific BCL APIs will be annotated using a set of
 custom attributes:
+
+```C#
+namespace System.Runtime.Versioning
+{
+    // Base type for all platform-specific attributes. Primarily used to allow grouping
+    // in documentation.
+    public abstract class OSPlatformAttribute : Attribute
+    {
+        private protected OSPlatformAttribute(string platformName);
+        public string PlatformName { get; }
+    }
+
+    // Records the platform that the project targeted.
+    [AttributeUsage(AttributeTargets.Assembly,
+                    AllowMultiple=false, Inherited=false)]
+    public sealed class TargetPlatformAttribute : OSPlatformAttribute
+    {
+        public TargetPlatformAttribute(string platformName);
+        public string PlatformName { get; }
+    }
+
+    // Records the minimum platform that is required in order to the marked thing.
+    //
+    // * When applied to an assembly, it means the entire assembly cannot be called
+    //   into on earlier versions. It records the TargetPlatformMinVersion property.
+    //
+    // * When applied to an API, it means the API cannot be called from an earlier
+    //   version.
+    //
+    // In either case, the caller can either mark itself with MinimumPlatformAttribute
+    // or guard the call with a platform check.
+    //
+    // The attribute can be applied multiple times for different operating systems.
+    // That means the API is supported on multiple operating systems.
+    //
+    // A given platform should only be specified once.
+
+    [AttributeUsage(AttributeTargets.Assembly |
+                    AttributeTargets.Class |
+                    AttributeTargets.Constructor |
+                    AttributeTargets.Event |
+                    AttributeTargets.Method |
+                    AttributeTargets.Module |
+                    AttributeTargets.Property |
+                    AttributeTargets.Struct,
+                    AllowMultiple=true, Inherited=false)]
+    public sealed class MinimumOSPlatformAttribute : OSPlatformAttribute
+    {
+        public MinimumOSPlatformAttribute(string platformName);
+    }
+
+    // Marks APIs that were removed in a given operating system version.
+    //
+    // Primarily used by OS bindings to indicate APIs that are only available in
+    // earlier versions.
+    [AttributeUsage(AttributeTargets.Assembly |
+                    AttributeTargets.Class |
+                    AttributeTargets.Constructor |
+                    AttributeTargets.Event |
+                    AttributeTargets.Method |
+                    AttributeTargets.Module |
+                    AttributeTargets.Property |
+                    AttributeTargets.Struct,
+                    AllowMultiple=true, Inherited=false)]
+    public sealed class RemovedInOSPlatformAttribute : OSPlatformAttribute
+    {
+        public RemovedInPlatformAttribute(string platformName);
+    }
+
+    // Marks APIs that were obsoleted in a given operating system version.
+    //
+    // Primarily used by OS bindings to indicate APIs that should only be used in
+    // earlier versions.
+    [AttributeUsage(AttributeTargets.Assembly |
+                    AttributeTargets.Class |
+                    AttributeTargets.Constructor |
+                    AttributeTargets.Event |
+                    AttributeTargets.Method |
+                    AttributeTargets.Module |
+                    AttributeTargets.Property |
+                    AttributeTargets.Struct,
+                    AllowMultiple=true, Inherited=false)]
+    public sealed class ObsoletedInOSPlatformAttribute : OSPlatformAttribute
+    {
+        public ObsoletedInPlatformAttribute(string platformName);
+        public ObsoletedInPlatformAttribute(string platformName, string message);
+        public string Message { get; }
+        public string Url { get; set; }
+    }
+}
+```
+
+### Platforms
+
+The existing type `OSPlatform` is used to refer to OS platforms. In order to
+support the upcoming platforms in .NET, we're going to add values for Android,
+the Apple platform family, and Blazor Web Assembly which we decided to identify
+as "browser".
 
 ```C#
 namespace System.Runtime.InteropServices
@@ -258,15 +356,53 @@ namespace System.Runtime.InteropServices
         // Existing properties
         // public static OSPlatform FreeBSD { get; }
         // public static OSPlatform Linux { get; }
-        // public static OSPlatform OSX { get; }
         // public static OSPlatform Windows { get; }
+
+        // Updated property
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static OSPlatform OSX { get; }
+
+        // New properties
         public static OSPlatform Android { get; }
+        public static OSPlatform Browser { get; }
         public static OSPlatform iOS { get; }
         public static OSPlatform macOS { get; }
         public static OSPlatform tvOS { get; }
         public static OSPlatform watchOS { get; }
     }
+}
+```
 
+**Note:** We decided to also add `macOS` as that's how Apple refers to the
+operating system now. The existing OSX entry will continue to exist. When
+running on macOS, the query APIs will return true for both `macOS` as well as
+`OSX`. Since the analyzer can't invoke the APIs, it has to have special
+knowledge that treats `macOS` and `OSX`.
+
+### Platform guards
+
+We have an existing API `RuntimeInformation.IsOSPlatform(OSPlatform)` that
+allows to check whether you're currently running on this platform.
+
+It's worth pointing out that this designs allows for having both, very specific
+OS platforms, such as *Ubuntu* or classes of platforms, such as *Linux*. It's
+allows by the fact that the consumer doesn't compare current platform to
+particular value but instead asks "am I currently on this platform". This allows
+the API to return true for both `OSPlatform.Linux` and `OSPlatform.Ubuntu`.
+
+To check for specific version, we're introducing analogous APIs where the caller
+supplies the platform and version information and the API will perform the
+check. We'll allow both string-based checks as well as checks by passing in
+`OSPlatform` and version information separately.
+
+**Note:** The analyzer assumes that the provided values are constant. Extracting
+these values into local variables/fields will work so long they are marked as
+constant. Since `OSPlatform` is a struct, it can't be marked as constant, so the
+expectation here is that developers pass them directly in.
+
+```C#
+namespace System.Runtime.InteropServices
+{
     public partial static class RuntimeInformation
     {
         // Existing API
@@ -274,89 +410,21 @@ namespace System.Runtime.InteropServices
 
         // Check for the OS with a >= version comparison
         // Used to guard APIs that were added in the given OS release.
+        public static bool IsOSPlatformOrLater(string platformName);
         public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major);
         public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major, int minor);
         public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major, int minor, int build);
         public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major, int minor, int build, int revision);
 
         // Allows checking for the OS with a < version comparison
-        // Used to guard APIs that were obsoleted or removed in the given OS release.
+        // Used to guard APIs that were obsoleted or removed in the given OS release. The comparison
+        // is less than (rather than less than or equal) so that people can pass in the version where
+        // API became obsoleted/removed.
+        public static bool IsOSPlatformEarlierThan(string platformName);
         public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major);
         public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor);
         public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor, int build);
         public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor, int build, int revision);
-    }
-}
-
-namespace System.Runtime.Versioning
-{
-    public abstract class OSPlatformVersionAttribute  : Attribute
-    {
-        protected OSPlatformVersionAttribute(string osPlatform,
-                                             int major,
-                                             int minor,
-                                             int build,
-                                             int revision);
-        public string PlatformIdentifier { get; }
-        public int Major { get; }
-        public int Minor { get; }
-        public int Build { get; }
-        public int Revision { get; }
-    }
-
-    [AttributeUsage(AttributeTargets.Assembly |
-                    AttributeTargets.Class |
-                    AttributeTargets.Constructor |
-                    AttributeTargets.Event |
-                    AttributeTargets.Method |
-                    AttributeTargets.Module |
-                    AttributeTargets.Property |
-                    AttributeTargets.Struct,
-                    AllowMultiple=false, Inherited=true)]
-    public sealed class AddedInOSPlatformVersionAttribute  : OSPlatformVersionAttribute
-    {
-        public AddedInOSPlatformVersionAttribute(string osPlatform,
-                                                 int major,
-                                                 int minor,
-                                                 int build,
-                                                 int revision);
-    }
-
-    [AttributeUsage(AttributeTargets.Assembly |
-                    AttributeTargets.Class |
-                    AttributeTargets.Constructor |
-                    AttributeTargets.Event |
-                    AttributeTargets.Method |
-                    AttributeTargets.Module |
-                    AttributeTargets.Property |
-                    AttributeTargets.Struct,
-                    AllowMultiple=false, Inherited=true)]
-    public sealed class RemovedInOSPlatformVersionAttribute  : OSPlatformVersionAttribute
-    {
-        public RemovedInOSPlatformVersionAttribute(string osPlatform,
-                                                   int major,
-                                                   int minor,
-                                                   int build,
-                                                   int revision);
-    }
-
-    [AttributeUsage(AttributeTargets.Assembly |
-                    AttributeTargets.Class |
-                    AttributeTargets.Constructor |
-                    AttributeTargets.Event |
-                    AttributeTargets.Method |
-                    AttributeTargets.Module |
-                    AttributeTargets.Property |
-                    AttributeTargets.Struct,
-                    AllowMultiple=false, Inherited=true)]
-    public sealed class ObsoletedInOSPlatformVersionAttribute  : OSPlatformVersionAttribute
-    {
-        public ObsoletedInOSPlatformVersionAttribute(string osPlatform,
-                                              int major,
-                                              int minor,
-                                              int build,
-                                              int revision);
-        public string Url { get; set; }
     }
 }
 ```
@@ -364,25 +432,16 @@ namespace System.Runtime.Versioning
 ### Platform context
 
 To determine the platform context of the call site the analyzer must consider
-the following two configurations:
+application of `MinimumOSPlatformAttribute` to the containing member, type,
+module, or assembly. The first one will determine the platform context, in other
+words the assumption is that more scoped applications of the attribute will
+restrict the set of platforms.
 
-1. **Call-site**. Application of `AddedInOSPlatformVersionAttribute` to the containing
-   member, type, module, or assembly.
-
-2. **Project** The project TFMs and `TargetPlatformMinVersion`. If the project
-   has an platform-specific TFM (such as `net5.0-ios13.0`) we consider it to be
-   on the specified platform. If `TargetPlatformMinVersion` is set, we assume
-   that version, otherwise we assume the version as specified by the TFM.
-
-If (2) is platform neutral (e.g. `net5.0`), the platform context is entirely
-determined by (1).
-
-If (2) is platform-specific it is combined with (1):
-
-* If the platforms between (1) and (2) are disjoint (such as iOS and Windows),
-  the information from (1) is discarded.
-* Otherwise the platform context's minimum version is the maximum of the
-  versions determined by (1) and (2).
+**Note:** The analyzer doesn't need to consider MSBuild properties such as
+`<TargetFramework>` or `<TargetPlatform>` because the value of the
+`<TargetPlatform>` property is injected into the generated `AssemblyInfo.cs`
+file, which will have an assembly-level application of
+`MinimumOSPlatformAttribute`.
 
 ### Diagnostics
 
@@ -489,7 +548,8 @@ I used to think in those terms but I don't think that's useful because it gets
 complicated fast. I think we're better off modelling these as two distinct
 concepts:
 
-1. **Platform specific APIs**. These are specific to a particular OS. Examples: Registry, WinForms, NS*.
+1. **Platform specific APIs**. These are specific to a particular OS. Examples:
+   Registry, WinForms, NS*.
 2. **Partially portable APIs**. These are features that aren't OS specific but
    can only be implemented on some operating systems/execution environments.
    Examples: RefEmit, file system access, thread creation.
