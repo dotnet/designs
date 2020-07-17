@@ -89,9 +89,6 @@ Windows-specific:
 
 ### System
 
-> **OPEN** Should we treat those as Windows-only or should we consider them as
-> partially portable?
-
 * **Console**
     - `Beep(Int32, Int32)`
     - `get_CapsLock()`
