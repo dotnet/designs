@@ -163,7 +163,7 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `System.Security.Policy.ApplicationTrust.FullTrustAssemblies` (property of type `IList<StrongName>`)
             * `System.Security.Policy.GacInstalled` (implements `IIdentityPermissionFactory`)
             * `System.Security.SecurityManager` (GetStandardSandbox(Evidence) returns type `PermissionSet`; all other members were obsolete or return `default(T)`)
-            * `System.Security.Policy.PolicyStatement` (both constructors require `PermissionSet`)
+            * `System.Security.Policy.PolicyStatement` (obsoleting the constructors -- they both require `PermissionSet`)
             * `System.Security.Policy.PolicyLevel.AddNamedPermissionSet(NamedPermissionSet)`
             * `System.Security.Policy.PolicyLevel.ChangeNamedPermissionSet(string, PermissionSet)`
             * `System.Security.Policy.PolicyLevel.GetNamedPermissionSet(string)` (returns type `NamedPermissionSet`)
