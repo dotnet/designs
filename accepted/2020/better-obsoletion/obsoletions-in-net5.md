@@ -89,8 +89,6 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `System.Diagnostics.PerformanceCounterPermissionAttribute`
             * `System.DirectoryServices.DirectoryServicesPermissionAttribute`
             * `System.Drawing.Printing.PrintingPermissionAttribute`
-            * `System.IdentityModel.Services.ClaimsPrincipalPermissionAttribute`
-            * `System.Messaging.MessageQueuePermissionAttribute`
             * `System.Net.DnsPermissionAttribute`
             * `System.Net.SocketPermissionAttribute`
             * `System.Net.WebPermissionAttribute`
@@ -109,9 +107,7 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
         * Classes that implement `IStackWalk`
             * `System.Security.PermissionSet`
                 * `System.Security.NamedPermissionSet`
-                * `System.Security.ReadOnlyPermissionSet`
         * Classes that implement `IPermission`
-            * `System.IdentityModel.Services.ClaimsPrincipalPermission`
             * `System.Security.CodeAccessPermission`
         * Classes that derive from `CodeAccessPermission` (also includes implementations of `PermissionsIUnrestrictedPermission`)
             * `System.Configuration.ConfigurationPermission`
@@ -121,7 +117,6 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
                 * `System.Data.SqlClient.SqlClientPermission`
             * `System.Data.OracleClient.OraclePermission`
             * `System.Drawing.Printing.PrintingPermission`
-            * `System.Messaging.MessageQueuePermission`
             * `System.Net.DnsPermission`
             * `System.Net.SocketPermission`
             * `System.Net.WebPermission`
@@ -167,7 +162,7 @@ of obsoletions below. All of these obsoletions will use the `UrlFormat` of
             * `System.Security.Policy.ApplicationTrust(PermissionSet, IEnumerable<StrongName>)`
             * `System.Security.Policy.ApplicationTrust.FullTrustAssemblies` (property of type `IList<StrongName>`)
             * `System.Security.Policy.GacInstalled` (implements `IIdentityPermissionFactory`)
-            * `System.Security.SecurityManager.GetStandardSandbox(Evidence)` (returns type `PermissionSet`)
+            * `System.Security.SecurityManager` (GetStandardSandbox(Evidence) returns type `PermissionSet`; all other members were obsolete or return `default(T)`)
             * `System.Security.Policy.PolicyStatement` (obsoleting the constructors -- they both require `PermissionSet`)
             * `System.Security.Policy.PolicyLevel.AddNamedPermissionSet(NamedPermissionSet)`
             * `System.Security.Policy.PolicyLevel.ChangeNamedPermissionSet(string, PermissionSet)`
