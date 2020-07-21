@@ -169,13 +169,15 @@ namespace System.Net
 }
 ```
 
-Finally, there should be a conversion mechanism between `SecureString` and `ShroudedBuffer<char>`. This should help transition developers who currently have SecureString instances to APIs which accept shrouded buffers.
+Finally, there should be a conversion mechanism between `SecureString` and `ShroudedBuffer<char>`. This should help transition developers who currently have SecureString instances to APIs which accept shrouded buffers, and vice versa (for interoping with legacy code).
 
 ```cs
 namespace System.Security
 {
     public sealed class SecureString
     {
+        // new ctor would be marked [Obsolete]
+        public SecureString(ShroudedBuffer<char> value);
         public ShroudedBuffer<char> ToShroudedBuffer();
     }
 }
