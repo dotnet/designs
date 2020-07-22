@@ -34,7 +34,7 @@ all other OS platforms that do support them, but this has several downsides:
 1. The so marked APIs are now considered platform-specific, which means that
    just calling the API from portable code will now always be flagged by the
    analyzer.
-2. Every time .NET adds another operating system all call sides guarding calls
+2. Every time .NET adds another operating system all call sites guarding calls
    to these APIs now also have to check for this new OS.
 
 In this spec, we're proposing a mechanism by which we can mark APIs as
