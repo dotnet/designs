@@ -25,7 +25,7 @@ here is getting the version number right, but the analyzer enforces that.
 
 However, this approach doesn't work well for APIs that represent concepts that
 aren't OS specific, such as threading or I/O. This is a problem for OS platforms
-that are more constrained, such as Blazor Web Assembly, which runs in a browser
+that are more constrained, such as Blazor WebAssembly, which runs in a browser
 sandbox and thus can't freely create threads or open random files on disk.
 
 One could, in principle, apply the `[MinimumOSPlatform("...")]` attribute for
@@ -42,12 +42,12 @@ unsupported.
 
 ## Scenarios and User Experience
 
-* Building a Blazor Web Assembly app
+* Building a Blazor WebAssembly app
     - Using an API that is unsupported will be flagged by the analyzer.
 * Building a class library
     - Building a regular class library (targeting `netstandard` or `net5.0`)
       will not complain about APIs that are unsupported in Blazor.
-* Building a class library for use in Blazor Web Assembly
+* Building a class library for use in Blazor WebAssembly
     - Developer can modify the project file to explicitly indicate that they
       want to see issues with APIs that are unsupported in Blazor.
 
@@ -58,11 +58,11 @@ unsupported.
 * Be able to mark APIs that are unsupported on a particular OS
 * Allows platforms to be considered supported by default with the ability to add
   or remove platforms from the project file and SDK.
-* Blazor Web Assembly is only considered supported when building a Blazor Web
-  Assembly app. For regular class libraries (`netstandard` or `net5.0`) the
+* Blazor WebAssembly is only considered supported when building a Blazor
+  WebAssembly app. For regular class libraries (`netstandard` or `net5.0`) the
   default assumes that it's not supported and thus won't generate any warnings.
-  However, the developer must still be able to manually include Blazor Web
-  Assembly manually.
+  However, the developer must still be able to manually include Blazor
+  WebAssembly manually.
 * The annotations for unsupported APIs can express that an API was only
   unsupported for a specific version.
 
@@ -180,7 +180,7 @@ adding some metadata to MSBuild:
 </ItemGroup>
 ```
 
-The targets of the Blazor Web Assembly SDK would initialize this as follows:
+The targets of the Blazor WebAssembly SDK would initialize this as follows:
 
 ```XML
 <ItemGroup>
@@ -196,8 +196,8 @@ converts these items into a semicolon separated list of platforms.
 Using items instead of a property makes it easier for the developer to add or
 remove from the set:
 
-When building a class library that is also supposed to also work in Blazor Web Assembly,
-a developer can add the following to their project file:
+When building a class library that is also supposed to also work in Blazor
+WebAssembly, a developer can add the following to their project file:
 
 ```XML
 <ItemGroup>
