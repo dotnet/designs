@@ -167,7 +167,7 @@ public void Api_Usage()
 
 ### Build configuration for platforms
 
-In order to indicate which platforms the analyzer should by warn about, we're
+In order to indicate which platforms the analyzer should warn about, we're
 adding some metadata to MSBuild:
 
 ```XML
@@ -189,15 +189,15 @@ The targets of the Blazor WebAssembly SDK would initialize this as follows:
 </ItemGroup>
 ```
 
-These items needs to be passed to invocation of CSC the analyzer configuration.
-AFAIK they only supported properties today, but we can have a target that
+These items needs to be passed to the invocation CSC as analyzer configuration.
+AFAIK the only supported properties today, but we can have a target that
 converts these items into a semicolon separated list of platforms.
 
 Using items instead of a property makes it easier for the developer to add or
 remove from the set:
 
-When building a class library that is also supposed to also work in Blazor
-WebAssembly, a developer can add the following to their project file:
+When building a class library that is supposed to also work in the browser, a
+developer can add the following to their project file:
 
 ```XML
 <ItemGroup>
