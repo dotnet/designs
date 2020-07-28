@@ -210,7 +210,8 @@ public void DoesNotWorkOnWindows();
 ```
 
 This describes an API that is supported by all platforms, except for Windows.
-And on Windows, it's supported for Windows 10 1903 and 1909.
+And on Windows, it's supported for Windows 10 1903 and 1909, but it was
+obsoleted in 1909 and then became unsupported again in 2004.
 
 Platform-specific APIs like the iOS and Android bindings are still expressible
 the same way:
