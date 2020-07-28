@@ -262,7 +262,7 @@ public extern void Api();
 
 public void Api_Usage()
 {
-    if (!RuntimeInformation.IsOSPlatform("browser"))
+    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Browser))
     {
         Api();
     }
@@ -278,7 +278,7 @@ public extern void Api();
 
 public void Api_Usage()
 {
-    if (!RuntimeInformation.IsOSPlatform("windows") ||
+    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
          RuntimeInformation.IsOSPlatformOrLater("windows10.0.19041"))
     {
         Api();
