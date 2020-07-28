@@ -306,14 +306,14 @@ public void Api_Usage()
 ```C#
 // The API is only supported on iOS. There, it started to be supported in
 // version 12.0 and stopped being supported in version 14.
-[SupportedOSPlatform("iOS12.0")]
+[SupportedOSPlatform("ios12.0")]
 [UnsupportedOSPlatform("ios14.0")]
 public extern void Api();
 
 public void Api_Usage()
 {
-    if (RuntimeInformation.IsOSPlatformOrLater("iOS12.0") &&
-        RuntimeInformation.IsOSPlatformOrEarlier("ios14.0"))
+    if (RuntimeInformation.IsOSPlatformOrLater("ios12.0") &&
+        !RuntimeInformation.IsOSPlatformOrLater("ios14.0"))
     {
         Api();
     }
