@@ -16,13 +16,25 @@ The lowest version of Windows that we support with .NET Core is Windows 7. Also,
 we generally don't expose functionality that requires a higher version of
 Windows.
 
-Thus, I propose that we use `7.0` as the minimum version number instead of
-hunting down which Windows version actually introduced a given feature, which
-means the custom attribute will look as follows:
+We originally said we'll mark these APIs as `windows7.0` but this would mean
+that callers have to call guard these APIs with `7.0` version check too, which
+isn't really necessary. But what's worse is that many developers already have
+written code that checks for the OS but not version, and due to the version
+support that is perfectly correct code.
+
+We decided that it's better for our analyzer to special case version-less checks
+and let it be equivalent of a check for `0.0`. We also decided that applying the
+attribute without a version is the same as stating the API was introduced in
+`0.0`. The net effect is that consumers of the existing Windows-specific APIs
+will get away with just checking for the OS.
 
 ```C#
-[MinimumOSPlatform("windows7.0")]
+[SupportedOSPlatform("windows")]
 ```
+
+Moving forward, we'll only tag Windows-specific APIs without version if they are
+supported by Windows 7 or earlier. APIs requiring newer OS versions will be
+marked with the corresponding OS version.
 
 ## .NET Standard 2.0 assemblies
 
