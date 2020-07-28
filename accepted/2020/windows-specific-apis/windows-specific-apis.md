@@ -698,11 +698,6 @@ Windows-specific:
 * **X509Chain**
     - `.ctor(IntPtr)`
 * **X509Certificate2UI**
-    - `.ctor()`
-    - `DisplayCertificate(X509Certificate2)`
-    - `DisplayCertificate(X509Certificate2, IntPtr)`
-    - `SelectFromCollection(X509Certificate2Collection, String, String, X509SelectionFlag)`
-    - `SelectFromCollection(X509Certificate2Collection, String, String, X509SelectionFlag, IntPtr)`
 
 ### System.ServiceModel
 
