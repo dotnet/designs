@@ -205,7 +205,7 @@ and remove APIs:
 [UnsupportedOSPlatform("windows")]
 [SupportedOSPlatform("windows10.0.1903")]
 [ObsoletedInOSPlatform("windows10.0.1909")]
-[SupportedOSPlatform("windows10.0.2004")]
+[UnsupportedOSPlatform("windows10.0.2004")]
 public void DoesNotWorkOnWindows();
 ```
 
