@@ -611,7 +611,6 @@ Windows-specific:
     - `.ctor(SocketInformation)`
     - `.ctor(SafeSocketHandle)`
     - `SetIPProtectionLevel(IPProtectionLevel)`
-    - `DuplicateAndClose`
     - `DuplicateAndClose(Int32)`
 * **TcpListener**
     - `AllowNatTraversal(Boolean)`
