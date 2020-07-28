@@ -42,14 +42,44 @@ unsupported.
 
 ## Scenarios and User Experience
 
-* Building a Blazor WebAssembly app
-    - Using an API that is unsupported will be flagged by the analyzer.
-* Building a class library
-    - Building a regular class library (targeting `netstandard` or `net5.0`)
-      will not complain about APIs that are unsupported in Blazor.
-* Building a class library for use in Blazor WebAssembly
-    - Developer can modify the project file to explicitly indicate that they
-      want to see issues with APIs that are unsupported in Blazor.
+### Building a Blazor WebAssembly app
+
+Abelina is building a Blazor WebAssembly app. She's copy & pasting some code
+from here ASP.NET Core web app that calls into an LDAP service using
+`System.DirectoryServices.Protocols`.
+
+When doing so, she receives the following warning:
+
+> "LdapConnection" isn't supported for platform "browser"
+
+After doing some further reading Abelina decided to put the LDAP functionality
+behind a web API that she calls from her Blazor WebAssembly app.
+
+### Building a class library
+
+Darrell works with Abelina and is tasked with moving some of the LDAP
+functionality into a .NET Standard class library so that they can share the code
+between their .NET Framework desktop app and their ASP.NET Core web API.
+
+When he compiles the class library he gets no warnings about unsupported Blazor
+APIs.
+
+### Building a class library for use in Blazor WebAssembly
+
+Abelina and Darrel decide to centralize some of the functionality they use for
+Razor views, specifically around URI and string processing.
+
+When consuming this library from Blazor WebAssembly they observe a
+`PlatformNotSupported` exception. Upon further analysis, it seems they had a
+dependency on `System.Drawing` that they weren't aware off. To avoid this, they
+decide to enable the analyzer to check for APIs that are unsupported when
+running inside a browser:
+
+```xml
+<ItemGroup>
+    <SupportedPlatform Include="browser" />
+</ItemGroup>
+```
 
 ## Requirements
 
@@ -58,61 +88,169 @@ unsupported.
 * Be able to mark APIs that are unsupported on a particular OS
 * Allows platforms to be considered supported by default with the ability to add
   or remove platforms from the project file and SDK.
-* Blazor WebAssembly is only considered supported when building a Blazor
-  WebAssembly app. For regular class libraries (`netstandard` or `net5.0`) the
-  default assumes that it's not supported and thus won't generate any warnings.
-  However, the developer must still be able to manually include Blazor
+* By default, Blazor WebAssembly is only considered supported when building a
+  Blazor WebAssembly app. For regular class libraries (`netstandard` or
+  `net5.0`) the default assumes that it's not supported and thus won't generate
+  any warnings. However, the developer must still be able to include Blazor
   WebAssembly manually.
 * The annotations for unsupported APIs can express that an API was only
   unsupported for a specific version.
 
 ### Non-Goals
 
+* Allowing to express that APIs are unsupported in specific versions of the .NET
+  platform.
+
 ## Design
 
 ### Attribute
 
+The spec for [platform-checks] propose a set of attributes, specifically:
+
+* `MinimumOSPlatform`
+* `ObsoletedInOSPlatform`
+* `RemovedInOSPlatform`
+
+We suggest to rename `MinimumOSPlatform` to `SupportedOSPlatform` and
+`RemovedInOSPlatform` to `UnsupportedOSPlatform`.
+
 ```C#
 namespace System.Runtime.Versioning
 {
-    // Rename RemovedInOSPlatformAttribute to
-    // UnsupportedOSPlatformAttribute
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
+                    AttributeTargets.Enum |
                     AttributeTargets.Event |
+                    AttributeTargets.Field |
                     AttributeTargets.Method |
                     AttributeTargets.Module |
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
-                    AllowMultiple=true, Inherited=false)]
+                    AllowMultiple = true, Inherited = false)]
+    public sealed class SupportedOSPlatformAttribute : OSPlatformAttribute
+    {
+        public SupportedOSPlatformAttribute(string platformName);
+    }
+  
+    [AttributeUsage(AttributeTargets.Assembly |
+                    AttributeTargets.Class |
+                    AttributeTargets.Constructor |
+                    AttributeTargets.Enum |
+                    AttributeTargets.Event |
+                    AttributeTargets.Field |
+                    AttributeTargets.Method |
+                    AttributeTargets.Module |
+                    AttributeTargets.Property |
+                    AttributeTargets.Struct,
+                    AllowMultiple = true, Inherited = false)]
     public sealed class UnsupportedOSPlatformAttribute : OSPlatformAttribute
     {
         public UnsupportedOSPlatformAttribute(string platformName);
     }
+}
 ```
 
-The semantics of this attribute are as follows:
+The semantics of these new attributes are as follows:
 
-* Marks an assembly, module, or API as unsupported on a given OS platform.
-* The `platformName` can contain no version number, a single version number, or
-  a range:
-    - `browser`. Marks the API as unsupported on all version of `browser`. This
-      will be used for APIs that can't be supported on a particular OS platform.
-    - `ios14.0`. Marks the API as unsupported starting with iOS 14.0. This will
-      be used for OS platform APIs that were removed/disabled.
-    - `windows0.0-10.0.19041`. Marks the API as unsupported for 10.0.19041 and
-      earlier. This will be used for APIs that were unsupported before but can
-      be supported starting with a later version of the OS. This is different
-      from applying `[MinimumOSPlatform("windows10.0.19041")]` in that the
-      presence of this attribute doesn't cause the API to be considered
-      unsupported on other platforms.
+* An API that doesn't have any of these attributes is considered supported by
+  all platforms.
+* If either `[SupportedOSPlatform]` or `[UnsupportedOSPlatform]` attributes are
+  present, we group all attributes by OS platform identifier:
+    - **Allow list**. If the lowest version for each OS platform is a
+      `[SupportedOSPlatform]` attribute, the API is considered to *only* be
+      supported by the listed platforms and unsupported by all other platforms.
+    - **Deny list**. If the lowest version for each OS platform is a
+      `[UnsupportedOSPlatform]` attribute, then the API is considered to *only*
+      be unsupported by the listed platforms and supported by all other
+      platforms.
+    - **Inconsistent list**. If for some platforms the lowest version attribute
+      is `[SupportedOSPlatform]` while for others it is
+      `[UnsupportedOSPlatform]`, the analyzer will produce a warning on the API
+      definition because the API is attributed inconsistently.
+* Both attributes can be instantiated without version numbers. This means the
+  version number is assumed to be `0.0`. This simplifies guard clauses, see
+  examples below for more details.
+* `[ObsoletedInOSPlatform]` continuous to require a version number.
+* `[ObsoletedInOSPlatform]` by itself doesn't imply support. However, it doesn't
+  make sense to apply `[ObsoletedInOSPlatform]` unless that platform is
+  supported.
+
+These semantics result in intuitive attribute applications with flexible rules.
+
+Let's consider the example where in .NET 5 we mark an API as being unsupported
+in `Windows`. This will look as follows:
+
+```C#
+[UnsupportedOSPlatform("windows")]
+public void DoesNotWorkOnWindows();
+```
+
+Now let's say that in .NET 6 we made the API work in Windows, but only on
+Windows `10.0.1903`. We'd update the API as follows:
+
+```C#
+[UnsupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows10.0.1903")]
+public void DoesNotWorkOnWindows();
+```
+
+The presence of `SupportedOSPlatform` still makes no claim for other platforms
+because the lowest version for Windows says the API is unsupported for Windows.
+
+Similar to [platform-checks] this model still allows for OS vendors to obsolete
+and remove APIs:
+
+```C#
+[UnsupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows10.0.1903")]
+[ObsoletedInOSPlatform("windows10.0.1909")]
+[SupportedOSPlatform("windows10.0.2004")]
+public void DoesNotWorkOnWindows();
+```
+
+This describes an API that is supported by all platforms, except for Windows.
+And on Windows, it's supported for Windows 10 1903 and 1909.
+
+Platform-specific APIs like the iOS and Android bindings are still expressible
+the same way:
+
+```C#
+[SupportedOSPlatform("ios12.0")]
+[ObsoletedInOSPlatform("ios13.0")]
+[UnsupportedOSPlatform("ios14.0")]
+[SupportedOSPlatform("ipados13.0")]
+public void OnlyWorksOniOS();
+```
+
+This API is considered to only work on iOS and iPadOS because the lowest version
+starts with `[SupportedOSPlatform]`.
 
 ### Analyzer behavior
 
-The existing analyzer that handles `[MinimumOSPlatform]` will be modified to
-handle `[UnsupportedOSPlatform]` (previously named `[RemovedInOSPlatform]`)
-with the semantics listed above.
+The existing analyzer that handles `[MinimumOSPlatform]` and
+`[RemovedInOSPlatform]` will be modified to handle the new
+`[SupportedOSPlatform]` and `[UnsupportedOSPlatform]` attributes instead,
+following the semantics as outlined above.
+
+We'll change the analyzer to consider these two guard clauses as equivalent:
+
+```C#
+if (RuntimeInformation.IsPlatform(OSPlatform.Windows))
+{
+    WindowsSpecificApi();
+}
+
+if (RuntimeInformation.IsPlatformOrLater("windows0.0"))
+{
+    WindowsSpecificApi();
+}
+```
+
+The primary benefit for doing this is to support all the code that was written
+since .NET Standard introduced the OS check APIs, which peopled used primarily
+to guard Windows-specific APIs which are part of the otherwise OS-neutral
+`netstandard` and `net5.0` TFMs.
 
 Let's look at a few examples of annotations what the corresponding guard clauses
 are that would prevent the analyzer from flagging usage of the API.
@@ -132,14 +270,32 @@ public void Api_Usage()
 ```
 
 ```C#
-// On Windows, the API was unsupported up to and including version 10.0.19041.
+// On Windows, the API was unsupported until version 10.0.19041.
 // The API is considered supported everywhere else without constraints.
-[UnsupportedOSPlatform("windows0.0-10.0.19041")]
+[UnsupportedOSPlatform("windows")]
+[SupportedOSPlatform("windows10.0.19041")]
 public extern void Api();
 
 public void Api_Usage()
 {
-    if (!RuntimeInformation.IsOSPlatformOrEarlier("windows10.0.19041"))
+    if (!RuntimeInformation.IsOSPlatform("windows") ||
+         RuntimeInformation.IsOSPlatformOrLater("windows10.0.19041"))
+    {
+        Api();
+    }
+}
+```
+
+```C#
+// The API is only supported on Windows. It doesn't say which version, which
+// means it effectively says since dawn of time. We'll use this to annotate
+// Windows-specific APIs that will work on any version that can run .NET.
+[SupportedOSPlatform("windows")]
+public extern void Api();
+
+public void Api_Usage()
+{
+    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
     {
         Api();
     }
@@ -149,7 +305,7 @@ public void Api_Usage()
 ```C#
 // The API is only supported on iOS. There, it started to be supported in
 // version 12.0 and stopped being supported in version 14.
-[MinimumOSPlatform("iOS12.0")]
+[SupportedOSPlatform("iOS12.0")]
 [UnsupportedOSPlatform("ios14.0")]
 public extern void Api();
 
@@ -162,8 +318,6 @@ public void Api_Usage()
     }
 }
 ```
-
-### Hardcoded APIs in the analyzer
 
 ### Build configuration for platforms
 
