@@ -89,17 +89,6 @@ Windows-specific:
 
 ### System
 
-* **ArgIterator**
-    - `.ctor(RuntimeArgumentHandle)`
-    - `.ctor(RuntimeArgumentHandle, Void*)`
-    - `End()`
-    - `Equals(Object)`
-    - `GetHashCode()`
-    - `GetNextArg()`
-    - `GetNextArg(RuntimeTypeHandle)`
-    - `GetNextArgType()`
-    - `GetRemainingCount()`
-
 * **Console**
     - `Beep(Int32, Int32)`
     - `get_CapsLock()`
