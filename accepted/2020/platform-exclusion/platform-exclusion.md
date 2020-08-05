@@ -11,8 +11,8 @@ support the called API yet.
 This feature made the following assumption:
 
 * An unmarked API is considered to work on all OS platforms.
-* An API marked with `[MinimumOSPlatform("...")]` is considered only portable to
-  the specified OS platforms (please note that the attribute can be applied
+* An API marked with `[SupportedOSPlatform("...")]` is considered only portable
+  to the specified OS platforms (please note that the attribute can be applied
   multiple times).
 
 This approach works well for cases where the API is really calling an
@@ -28,7 +28,7 @@ aren't OS specific, such as threading or I/O. This is a problem for OS platforms
 that are more constrained, such as Blazor WebAssembly, which runs in a browser
 sandbox and thus can't freely create threads or open random files on disk.
 
-One could, in principle, apply the `[MinimumOSPlatform("...")]` attribute for
+One could, in principle, apply the `[SupportedOSPlatform("...")]` attribute for
 all other OS platforms that do support them, but this has several downsides:
 
 1. The so marked APIs are now considered platform-specific, which means that
@@ -107,51 +107,11 @@ running inside a browser:
 
 The spec for [platform-checks] propose a set of attributes, specifically:
 
-* `MinimumOSPlatform`
+* `SupportedOSPlatform`
 * `ObsoletedInOSPlatform`
-* `RemovedInOSPlatform`
+* `UnsupportedIOSPlatform`
 
-We suggest to rename `MinimumOSPlatform` to `SupportedOSPlatform` and
-`RemovedInOSPlatform` to `UnsupportedOSPlatform`.
-
-```C#
-namespace System.Runtime.Versioning
-{
-    [AttributeUsage(AttributeTargets.Assembly |
-                    AttributeTargets.Class |
-                    AttributeTargets.Constructor |
-                    AttributeTargets.Enum |
-                    AttributeTargets.Event |
-                    AttributeTargets.Field |
-                    AttributeTargets.Method |
-                    AttributeTargets.Module |
-                    AttributeTargets.Property |
-                    AttributeTargets.Struct,
-                    AllowMultiple = true, Inherited = false)]
-    public sealed class SupportedOSPlatformAttribute : OSPlatformAttribute
-    {
-        public SupportedOSPlatformAttribute(string platformName);
-    }
-  
-    [AttributeUsage(AttributeTargets.Assembly |
-                    AttributeTargets.Class |
-                    AttributeTargets.Constructor |
-                    AttributeTargets.Enum |
-                    AttributeTargets.Event |
-                    AttributeTargets.Field |
-                    AttributeTargets.Method |
-                    AttributeTargets.Module |
-                    AttributeTargets.Property |
-                    AttributeTargets.Struct,
-                    AllowMultiple = true, Inherited = false)]
-    public sealed class UnsupportedOSPlatformAttribute : OSPlatformAttribute
-    {
-        public UnsupportedOSPlatformAttribute(string platformName);
-    }
-}
-```
-
-The semantics of these new attributes are as follows:
+The semantics of these attributes are updated to become as follows:
 
 * An API that doesn't have any of these attributes is considered supported by
   all platforms.
@@ -229,12 +189,11 @@ starts with `[SupportedOSPlatform]`.
 
 ### Analyzer behavior
 
-The existing analyzer that handles `[MinimumOSPlatform]` and
-`[RemovedInOSPlatform]` will be modified to handle the new
-`[SupportedOSPlatform]` and `[UnsupportedOSPlatform]` attributes instead,
-following the semantics as outlined above.
+The existing analyzer that handles `[SupportedOSPlatform]` and
+`[UnsupportedOSPlatform]` will be modified to handle following the semantics as
+outlined above.
 
-We'll change the analyzer to consider these two guard clauses as equivalent:
+We'll change the analyzer to consider these guard clauses as equivalent:
 
 ```C#
 if (RuntimeInformation.IsPlatform(OSPlatform.Windows))
@@ -242,19 +201,29 @@ if (RuntimeInformation.IsPlatform(OSPlatform.Windows))
     WindowsSpecificApi();
 }
 
-if (RuntimeInformation.IsPlatformOrLater("windows0.0"))
+if (OperatingSystem.IsOSPlatform("windows"))
+{
+    WindowsSpecificApi();
+}
+
+if (OperatingSystem.IsWindows())
+{
+    WindowsSpecificApi();
+}
+
+if (OperatingSystem.IsWindowsVersionAtLeast(0))
 {
     WindowsSpecificApi();
 }
 ```
 
 The primary benefit for doing this is to support all the code that was written
-since .NET Standard introduced the OS check APIs, which peopled used primarily
-to guard Windows-specific APIs which are part of the otherwise OS-neutral
+since .NET Standard introduced the OS check APIs, which people used primarily to
+guard Windows-specific APIs which are part of the otherwise OS-neutral
 `netstandard` and `net5.0` TFMs.
 
-Let's look at a few examples of annotations what the corresponding guard clauses
-are that would prevent the analyzer from flagging usage of the API.
+Let's look at a few examples of annotations and what the corresponding guard
+clauses are that would prevent the analyzer from flagging usage of the API.
 
 ```C#
 // The API is supported everywhere except when running in a browser
@@ -263,7 +232,7 @@ public extern void Api();
 
 public void Api_Usage()
 {
-    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Browser))
+    if (!OperatingSystem.IsBrowser())
     {
         Api();
     }
@@ -279,8 +248,8 @@ public extern void Api();
 
 public void Api_Usage()
 {
-    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-         RuntimeInformation.IsOSPlatformOrLater("windows10.0.19041"))
+    if (!OperatingSystem.IsWindows() ||
+         OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041))
     {
         Api();
     }
@@ -296,7 +265,7 @@ public extern void Api();
 
 public void Api_Usage()
 {
-    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    if (OperatingSystem.IsWindows())
     {
         Api();
     }
@@ -305,15 +274,15 @@ public void Api_Usage()
 
 ```C#
 // The API is only supported on iOS. There, it started to be supported in
-// version 12.0 and stopped being supported in version 14.
+// version 12 and stopped being supported in version 14.
 [SupportedOSPlatform("ios12.0")]
 [UnsupportedOSPlatform("ios14.0")]
 public extern void Api();
 
 public void Api_Usage()
 {
-    if (RuntimeInformation.IsOSPlatformOrLater("ios12.0") &&
-        !RuntimeInformation.IsOSPlatformOrLater("ios14.0"))
+    if (OperatingSystem.IsIOSVersionAtLeast("ios12.0") &&
+       !OperatingSystem.IsIOSVersionAtLeast("ios14.0"))
     {
         Api();
     }

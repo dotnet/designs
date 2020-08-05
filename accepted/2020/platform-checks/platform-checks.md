@@ -107,7 +107,7 @@ in the following code:
 ```C#
 private static void ProvideExtraPop()
 {
-    if (RuntimeInformation.IsOSPlatformOrLater(OSPlatform.iOS, 14))
+    if (OperatingSystem.IsIOSVersionAtLeast(14))
         NSFizzBuzz();
 }
 ```
@@ -183,7 +183,7 @@ private static string GetLoggingPath()
     var appDataDirectory = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     var loggingDirectory = Path.Combine(appDataDirectory, "Fabrikam", "AssetManagement", "Logging");
 
-    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+    if (!OperatingSystem.IsWindows())
     {
         // Just create the directory
         Directory.CreateDirectory(loggingDirectory);
@@ -239,7 +239,7 @@ After that, the diagnostic disappears automatically.
 
 * Modelling partially portable APIs (that is APIs are applicable to more than
   one platform but not all platforms). Those should be modeled as capability
-  APIs, as as `RuntimeInformation.IsDynamicCodeSupported` for ref emit. This
+  APIs, as as `RuntimeFeature.IsDynamicCodeSupported` for ref emit. This
   would be a separate analyzer.
 * Shipping the platform-specific analyzer and/or annotations out-of-band.
 
@@ -267,10 +267,9 @@ namespace System.Runtime.Versioning
     public sealed class TargetPlatformAttribute : OSPlatformAttribute
     {
         public TargetPlatformAttribute(string platformName);
-        public string PlatformName { get; }
     }
 
-    // Records the minimum platform that is required in order to the marked thing.
+    // Records the minimum platform that is required in order to use the marked thing.
     //
     // * When applied to an assembly, it means the entire assembly cannot be called
     //   into on earlier versions. It records the TargetPlatformMinVersion property.
@@ -278,7 +277,7 @@ namespace System.Runtime.Versioning
     // * When applied to an API, it means the API cannot be called from an earlier
     //   version.
     //
-    // In either case, the caller can either mark itself with MinimumPlatformAttribute
+    // In either case, the caller can either mark itself with SupportedOSPlatformAttribute
     // or guard the call with a platform check.
     //
     // The attribute can be applied multiple times for different operating systems.
@@ -289,33 +288,37 @@ namespace System.Runtime.Versioning
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
+                    AttributeTargets.Enum |
                     AttributeTargets.Event |
+                    AttributeTargets.Field |
                     AttributeTargets.Method |
                     AttributeTargets.Module |
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
-                    AllowMultiple=true, Inherited=false)]
-    public sealed class MinimumOSPlatformAttribute : OSPlatformAttribute
+                    AllowMultiple = true, Inherited = false)]
+    public sealed class SupportedOSPlatformAttribute : OSPlatformAttribute
     {
-        public MinimumOSPlatformAttribute(string platformName);
+        public SupportedOSPlatformAttribute(string platformName);
     }
-
-    // Marks APIs that were removed in a given operating system version.
+  
+    // Marks APIs that were removed or are unsupported in a given OS version.
     //
-    // Primarily used by OS bindings to indicate APIs that are only available in
+    // Used by OS bindings to indicate APIs that are only available in
     // earlier versions.
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Class |
                     AttributeTargets.Constructor |
+                    AttributeTargets.Enum |
                     AttributeTargets.Event |
+                    AttributeTargets.Field |
                     AttributeTargets.Method |
                     AttributeTargets.Module |
                     AttributeTargets.Property |
                     AttributeTargets.Struct,
-                    AllowMultiple=true, Inherited=false)]
-    public sealed class RemovedInOSPlatformAttribute : OSPlatformAttribute
+                    AllowMultiple = true, Inherited = false)]
+    public sealed class UnsupportedOSPlatformAttribute : OSPlatformAttribute
     {
-        public RemovedInPlatformAttribute(string platformName);
+        public UnsupportedOSPlatformAttribute(string platformName);
     }
 
     // Marks APIs that were obsoleted in a given operating system version.
@@ -341,90 +344,72 @@ namespace System.Runtime.Versioning
 }
 ```
 
-### Platforms
-
-The existing type `OSPlatform` is used to refer to OS platforms. In order to
-support the upcoming platforms in .NET, we're going to add values for Android,
-the Apple platform family, and Blazor Web Assembly which we decided to identify
-as "browser".
-
-```C#
-namespace System.Runtime.InteropServices
-{
-    public partial struct OSPlatform
-    {
-        // Existing properties
-        // public static OSPlatform FreeBSD { get; }
-        // public static OSPlatform Linux { get; }
-        // public static OSPlatform Windows { get; }
-
-        // Updated property
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public static OSPlatform OSX { get; }
-
-        // New properties
-        public static OSPlatform Android { get; }
-        public static OSPlatform Browser { get; }
-        public static OSPlatform iOS { get; }
-        public static OSPlatform macOS { get; }
-        public static OSPlatform tvOS { get; }
-        public static OSPlatform watchOS { get; }
-    }
-}
-```
-
-**Note:** We decided to also add `macOS` as that's how Apple refers to the
-operating system now. The existing OSX entry will continue to exist. When
-running on macOS, the query APIs will return true for both `macOS` as well as
-`OSX`. Since the analyzer can't invoke the APIs, it has to have special
-knowledge that treats `macOS` and `OSX`.
-
 ### Platform guards
 
-We have an existing API `RuntimeInformation.IsOSPlatform(OSPlatform)` that
-allows to check whether you're currently running on this platform.
+In .NET Core 1.x and 2.x days, we added very limited ability for customers to
+check which OS they were on. We originally didn't even expose
+`Environment.OSVersion` and we built a new API
+`RuntimeInformation.IsOSPlatform()`. The assumption was that doing OS checks is
+exclusively done for P/invoke or interoperating with native code, which is why
+`RuntimeInformation` was put in `System.Runtime.InteropServices`.
 
-It's worth pointing out that this designs allows for having both, very specific
-OS platforms, such as *Ubuntu* or classes of platforms, such as *Linux*. It's
-allows by the fact that the consumer doesn't compare current platform to
-particular value but instead asks "am I currently on this platform". This allows
-the API to return true for both `OSPlatform.Linux` and `OSPlatform.Ubuntu`.
+However, guarding calls to OS bindings or avoiding unsupported APIs in Blazor
+isn't really a P/invoke scenario. It's seems counterproductive to force these
+customers to import the `System.Runtime.InteropServices` namespace.
+
+However, we do like the pattern of the `RuntimeInformation.IsOSPlatform()` API
+int that it answers the question rather than indicating what it is. This design
+allows for having both, very specific OS platforms, such as *Ubuntu* or classes
+of platforms, such as *Linux* because the API can return `true` for both
+`OSPlatform.Linux` and `OSPlatform.Ubuntu`.
 
 To check for specific version, we're introducing analogous APIs where the caller
 supplies the platform and version information and the API will perform the
-check. We'll allow both string-based checks as well as checks by passing in
-`OSPlatform` and version information separately.
+check. We'll allow both string-based checks as well as checks for well-known
+operating systems to aid in code completion.
 
-**Note:** The analyzer assumes that the provided values are constant. Extracting
-these values into local variables/fields will work so long they are marked as
-constant. Since `OSPlatform` is a struct, it can't be marked as constant, so the
-expectation here is that developers pass them directly in.
+**Note:** While the analyzer will support the generalized string-based versions
+it assumes that the provided values are either constant or are variable that are
+initialized in the same method.
 
 ```C#
-namespace System.Runtime.InteropServices
+namespace System
 {
-    public partial static class RuntimeInformation
+    // This type already exists, but it doesn't have any static methods.
+    public partial class OperatingSystem
     {
-        // Existing API
-        // public static bool IsOSPlatform(OSPlatform osPlatform);
+        // Generalized methods
 
-        // Check for the OS with a >= version comparison
-        // Used to guard APIs that were added in the given OS release.
-        public static bool IsOSPlatformOrLater(string platformName);
-        public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major);
-        public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major, int minor);
-        public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major, int minor, int build);
-        public static bool IsOSPlatformOrLater(OSPlatform osPlatform, int major, int minor, int build, int revision);
+        public static bool IsOSPlatform(string platform);
+        public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0);
 
-        // Allows checking for the OS with a < version comparison
-        // Used to guard APIs that were obsoleted or removed in the given OS release. The comparison
-        // is less than (rather than less than or equal) so that people can pass in the version where
-        // API became obsoleted/removed.
-        public static bool IsOSPlatformEarlierThan(string platformName);
-        public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major);
-        public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor);
-        public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor, int build);
-        public static bool IsOSPlatformEarlierThan(OSPlatform osPlatform, int major, int minor, int build, int revision);
+        // Accelerators for platforms where versions don't make sense
+
+        public static bool IsBrowser();
+        public static bool IsLinux();
+
+        // Accelerators with version checks
+
+        public static bool IsFreeBSD();
+        public static bool IsFreeBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsAndroid();
+        public static bool IsAndroidVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsIOS();
+        public static bool IsIOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsMacOS();
+        public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsTvOS();
+        public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsWatchOS();
+        public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
+
+        public static bool IsWindows();
+        public static bool IsWindowsVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
     }
 }
 ```
@@ -432,7 +417,7 @@ namespace System.Runtime.InteropServices
 ### Platform context
 
 To determine the platform context of the call site the analyzer must consider
-application of `MinimumOSPlatformAttribute` to the containing member, type,
+application of `SupportedOSPlatformAttribute` to the containing member, type,
 module, or assembly. The first one will determine the platform context, in other
 words the assumption is that more scoped applications of the attribute will
 restrict the set of platforms.
@@ -441,7 +426,7 @@ restrict the set of platforms.
 `<TargetFramework>` or `<TargetPlatform>` because the value of the
 `<TargetPlatform>` property is injected into the generated `AssemblyInfo.cs`
 file, which will have an assembly-level application of
-`MinimumOSPlatformAttribute`.
+`SupportedOSPlatformAttribute`.
 
 ### Diagnostics
 
@@ -454,20 +439,20 @@ The analyzer can produce three diagnostics:
 ### Automatic suppression via platform guards
 
 Diagnostic (1) can be suppressed via a call to
-`RuntimeInformation.IsOSPlatformOrLater()`. This should work for for simple cases
+`OperatingSystem.IsXxxVersionAtLeast()`. This should work for for simple cases
 where the call is contained inside an `if` check but also when the check causes
 control flow to never reach the call:
 
 ```C#
 public void Case1()
 {
-    if (RuntimeInformation.IsOSPlatformOrLater(OSPlatform.iOS, 13))
+    if (OperatingSystem.IsIOSVersionAtLeast(13))
         AppleApi();
 }
 
 public void Case2()
 {
-    if (!RuntimeInformation.IsOSPlatformOrLater(OSPlatform.iOS, 13))
+    if (!OperatingSystem.IsIOSVersionAtLeast(13))
         return;
 
     AppleApi();
@@ -475,7 +460,15 @@ public void Case2()
 ```
 
 Diagnostics (2) and (3) are analogous except the guard is provided by
-`RuntimeInformation.IsOSPlatformEarlierThan()`.
+a check in the form of:
+
+```C#
+public void Case3()
+{
+    if (OperatingSystem.IsIOS() && !OperatingSystem.IsIOSVersionAtLeast(13))
+      AppleApiThatWasRemovedOrObsoletedInVersion13();
+}
+```
 
 ### Code Fixers
 
@@ -529,43 +522,24 @@ native operating system SDK.
 
 ### What about `Environment.OSVersion`?
 
-Should the analyzer consider checks again `Environment.OSVersion`?
+Should the analyzer consider checks again `Environment.OSVersion`? Maybe,
+but it's not obvious what the operating system is.
 
-No. In fact, we should obsolete `Environment.OSVersion`. Two reasons:
+We have fixed `Environment.OSVersion` to return the correct version numbers.
+However, `Environment.OSVersion.Platform` returns an enum with largely outdated
+platform. We consider the `Platform` bogus and should obsolete it.
 
-1. `Environment.OSVersion` doesn't return the correct version number today (it's
-   shimmed). We could change but that would just further the lifetime of a
-   broken API. Instead, we should push folks to
-   `RuntimeInformation.IsOSPlatformOrLater()`.
-2. It makes the analyzer more complex and more prone to false positives
+In general, we discourage folks from using `Environment.OSVersion` unless they
+need to identity a very specific OS version in order to workaround a bug.
+Developers should use `OperatingSystem.IsXxxVersionAtLeast()` instead.
 
 ### What about APIs that don't work on specific operating systems?
 
-For example, there are some APIs that work on Windows and Linux, but not on
-macOS.
-
-I used to think in those terms but I don't think that's useful because it gets
-complicated fast. I think we're better off modelling these as two distinct
-concepts:
-
-1. **Platform specific APIs**. These are specific to a particular OS. Examples:
-   Registry, WinForms, NS*.
-2. **Partially portable APIs**. These are features that aren't OS specific but
-   can only be implemented on some operating systems/execution environments.
-   Examples: RefEmit, file system access, thread creation.
-
-I think we can safely model (1) with OS checks because the set of supported OS
-is fixed and known a priori, so burning metadata in the reference assemblies is
-fine.
-
-For (2) I think we're better of modelling them as capability APIs so that when
-the support matrix changes, less code is broken. We can try to formalize
-capability APIs as well and [provide an analyzer for that][capability-checks]
-but I consider that out of scope for this feature.
+We have a [extended this feature][platform-exclusion] to cover that.
 
 [dotnet/platform-compat]: https://github.com/dotnet/platform-compat
 [API Analyzer]: https://devblogs.microsoft.com/dotnet/introducing-api-analyzer/
 [Microsoft.DotNet.Analyzers.Compatibility]: https://www.nuget.org/packages/Microsoft.DotNet.Analyzers.Compatibility
 [net5-tfms]: https://github.com/dotnet/designs/blob/master/accepted/2020/net5/net5.md
 [os-minimum-version]: https://github.com/dotnet/designs/pull/97
-[capability-checks]: https://github.com/dotnet/designs/pull/111
+[platform-exclusion]: https://github.com/dotnet/designs/blob/master/accepted/2020/platform-exclusion/platform-exclusion.md
