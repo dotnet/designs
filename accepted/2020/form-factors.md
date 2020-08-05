@@ -97,7 +97,7 @@ The following principles will allow us to reach different form factors as needed
 
 ### Continuous Improvements
 
-Our primary focus continues to be on improving the existing successful form factors. We have large ongoing investments into improving the performance of AOT technologies and other performance characteristics that apply to the dominant form factors. We will be mindful during design and implementation of these improvements about the constraints of less common form factors and avoid regressing them needlessly.
+Our primary focus continues to be on improving the existing successful form factors. We have large ongoing investments into improving AOT technologies and other performance features that apply to the dominant form factors. We will be mindful during design and implementation of these improvements about the constraints of less common form factors and avoid regressing them needlessly.
 
 #### Better for Containers
 
