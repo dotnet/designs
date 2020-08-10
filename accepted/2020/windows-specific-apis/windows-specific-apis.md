@@ -133,8 +133,6 @@ Windows-specific:
 ### System.Diagnostics
 
 * **Process**
-    - `EnterDebugMode()`
-    - `LeaveDebugMode()`
     - `set_MaxWorkingSet(IntPtr)`
     - `set_MinWorkingSet(IntPtr)`
     - `Start(String, String, SecureString, String)`
@@ -177,8 +175,6 @@ Windows-specific:
 
 * **NamedPipeClientStream**
     - `get_NumberOfServerInstances()`
-* **NamedPipeServerStream**
-    - `WaitForConnection()`
 * **PipeStream**
     - `WaitForPipeDrain()`
 * **PipeTransmissionMode**
@@ -245,11 +241,7 @@ Windows-specific:
     - `AddEventHandler(Object, Delegate)`
     - `RemoveEventHandler(Object, Delegate)`
 * **ComEventsHelper**
-    - `Combine(Object, Guid, Int32, Delegate)`
-    - `Remove(Object, Guid, Int32, Delegate)`
 * **DispatchWrapper**
-    - `.ctor(Object)`
-    - `get_WrappedObject()`
 * **Marshal**
     - `AddRef(IntPtr)`
     - `BindToMoniker(String)`
@@ -314,7 +306,6 @@ Windows-specific:
 
 * **X509Chain**
     - `.ctor(IntPtr)`
-* **X509Certificate2UI**
 
 ### System.ServiceModel
 
@@ -438,16 +429,6 @@ Windows-specific:
     - `TryOpenExisting(String, Semaphore)`
 * **Thread**
     - `SetApartmentState(ApartmentState)`
-
-### System.Xaml.Permissions
-
-* **XamlAccessLevel**
-    - `AssemblyAccessTo(Assembly)`
-    - `AssemblyAccessTo(AssemblyName)`
-    - `get_AssemblyAccessToAssemblyName()`
-    - `get_PrivateAccessToTypeName()`
-    - `PrivateAccessTo(String)`
-    - `PrivateAccessTo(Type)`
 
 ### Microsoft.VisualBasic
 
