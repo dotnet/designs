@@ -175,8 +175,6 @@ Windows-specific:
 
 * **NamedPipeClientStream**
     - `get_NumberOfServerInstances()`
-* **NamedPipeServerStream**
-    - `WaitForConnection()`
 * **PipeStream**
     - `WaitForPipeDrain()`
 * **PipeTransmissionMode**
