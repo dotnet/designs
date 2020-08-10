@@ -133,8 +133,6 @@ Windows-specific:
 ### System.Diagnostics
 
 * **Process**
-    - `EnterDebugMode()`
-    - `LeaveDebugMode()`
     - `set_MaxWorkingSet(IntPtr)`
     - `set_MinWorkingSet(IntPtr)`
     - `Start(String, String, SecureString, String)`
