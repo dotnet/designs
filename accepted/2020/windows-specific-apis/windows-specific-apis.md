@@ -306,7 +306,6 @@ Windows-specific:
 
 * **X509Chain**
     - `.ctor(IntPtr)`
-* **X509Certificate2UI**
 
 ### System.ServiceModel
 
