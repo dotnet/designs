@@ -430,16 +430,6 @@ Windows-specific:
 * **Thread**
     - `SetApartmentState(ApartmentState)`
 
-### System.Xaml.Permissions
-
-* **XamlAccessLevel**
-    - `AssemblyAccessTo(Assembly)`
-    - `AssemblyAccessTo(AssemblyName)`
-    - `get_AssemblyAccessToAssemblyName()`
-    - `get_PrivateAccessToTypeName()`
-    - `PrivateAccessTo(String)`
-    - `PrivateAccessTo(Type)`
-
 ### Microsoft.VisualBasic
 
 * **DateAndTime**
