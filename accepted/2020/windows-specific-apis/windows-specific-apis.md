@@ -241,11 +241,7 @@ Windows-specific:
     - `AddEventHandler(Object, Delegate)`
     - `RemoveEventHandler(Object, Delegate)`
 * **ComEventsHelper**
-    - `Combine(Object, Guid, Int32, Delegate)`
-    - `Remove(Object, Guid, Int32, Delegate)`
 * **DispatchWrapper**
-    - `.ctor(Object)`
-    - `get_WrappedObject()`
 * **Marshal**
     - `AddRef(IntPtr)`
     - `BindToMoniker(String)`
