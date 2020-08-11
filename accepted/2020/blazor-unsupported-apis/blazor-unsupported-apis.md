@@ -1,4 +1,4 @@
-# Marking APIs that are unsupported by Blazor Web Assembly
+# Marking APIs that are unsupported by Blazor WebAssembly
 
 As discussed in [dotnet/designs#143] we're adding an analyzer to detect usage of
 unsupported APIs. This analyzer requires a custom attribute applied to method,
