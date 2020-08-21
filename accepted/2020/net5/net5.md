@@ -662,14 +662,40 @@ conditionally call the library code. The behavior should be similar to
 the project is built a warning is produced, which must be suppressible by using
 the `<NoWarn>` property in the project file or on the `<PackageReference>` item.
 
-### TFMs are a closed set
+### Valid platforms
 
-One question is whether third parties can extend the TFM space (that is, the
-part after the dash) without having to rely on changes in NuGet/MSBuild. Due to
-the expansion of friendly name into TFI & TFM this would be non-trivial.
+One question is whether third parties can extend the TFM space with a new
+platform (that is, the part after the dash) without having to rely on changes
+in NuGet/MSBuild. We believe that supporting a new platform would require
+MSBuild logic that is not part of the core .NET SDK. So we will do the
+following:
 
-We may open this up in the future, but for now the consensus was that we'd
-prefer to have the specific list of names that are expanded by NuGet.
+- NuGet will not have a list of allowed platform names.  It will understand
+the compatibility mappings (ie net5.0-android and higher is compatible with
+xamarin.android), but will not otherwise have specific knowledge of each
+possible platform.
+
+- The .NET SDK will have logic to generate a build error if the
+`TargetPlatformIdentifier` is something that is not supported.  This will
+protect against typos in the platform part of the `TargetFramework` and
+against seeming to build correctly when trying to target a platform that
+is not supported.
+
+- MSBuild logic outside of the .NET SDK will be able to communicate that
+the `TargetPlatformIdentifier` is supported.  So the iOS and Android
+workloads will set a property indicating that the corresponding platform
+is supported, which will suppress the error in the core .NET SDK.  Likewise,
+a third party MSBuild SDK could set the same property to enable another
+platform.
+
+- Comparison of platform identifiers should be case insensitive, but
+normalized by the MSBuild logic that supports that platform.  So with a
+`TargetFramework` of `net5.0-android`, NuGet should parse out the platform
+as `Android`.  The core .NET SDK will then set the `TargetPlatformIdentifier`
+to `android`.  The Android workload should then normalize the casing of the
+`TargetPlatformIdentifier` property to `Android`.  Similarly, the iOS Workload
+and Windows targets should normalize the `TargetPlatformIdentifier` to `iOS`
+and `Windows`.
 
 ### What about .NET 10?
 
