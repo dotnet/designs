@@ -38,11 +38,11 @@ marked with the corresponding OS version.
 
 ## .NET Standard 2.0 assemblies
 
-Marking APIs as Windows specific requires the `MinimumOSPlatformAttribute`.
+Marking APIs as Windows specific requires the `SupportedOSPlatformAttribute` type.
 Thankfully, this doesn't require unification (nor a public type) so the analyzer
 can simply check for the attribute by name. Thus, in order to mark .NET Standard
 2.0 assemblies, we'll include an internal version of
-`MinimumOSPlatformAttribute` in those assemblies.
+`SupportedOSPlatformAttribute` in those assemblies.
 
 ## Partially supported APIs
 
@@ -56,13 +56,6 @@ for certain arguments.
 
 ## Open Issues
 
-* We should run the tool again .NET 5
-* We currently don't have a way to mark an API as unsupported on a given
-  platform. That is, the design is agnostic (no attribute) or inclusion list
-  (attributes with support platforms). We need to add this feature to support
-  Blazor.
-    - `System.Security.Cryptography.OpenSSL` should be marked as not supported
-      on Windows
 * We should consider special casing enum values in the analyzer and only
   complain about assignments/passing to parameters). We can probably get away
   with marking the constructors of the types that override with platform
