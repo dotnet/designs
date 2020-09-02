@@ -109,7 +109,7 @@ The spec for [platform-checks] propose a set of attributes, specifically:
 
 * `SupportedOSPlatform`
 * `ObsoletedInOSPlatform`
-* `UnsupportedIOSPlatform`
+* `UnsupportedOSPlatform`
 
 The semantics of these attributes are updated to become as follows:
 
