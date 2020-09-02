@@ -427,5 +427,5 @@ use `#pragma` suppressions if they want to.
 For 1st parties, the Roslyn team already tracks [diagnostic ranges in
 GitHub](https://github.com/dotnet/roslyn-analyzers/blob/master/src/Utilities/Compiler/DiagnosticCategoryAndIdRanges.txt).
 We should give clear guidance to developers to pick a prefix that they own. The
-Roslyn [might also want to reserve
+Roslyn team [might also want to reserve
 prefixes](https://github.com/dotnet/roslyn/issues/40351).
