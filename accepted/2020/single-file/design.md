@@ -222,6 +222,16 @@ We therefore map ReadyToRun assemblies as-is, and subsequently perform an in-mem
 * Compile all assemblies in a version bubble into one PE assembly, with a few aligned sections.
 * Embed the big composite assembly into the host with proper alignment, so that the single-exe bundle can be loaded without copies at run time.
 
+#### Linux ARM64 Limitations
+The Linux mapping routine has the following limitation:
+* `mmap` takes an offset argument which must be a multiple of the page size. The mapping is also created at a page boundary.
+
+On Linux, we load bundled assemblies via `mmap`. R2R code sections are individually mapped at an address adjusted for the offset within the bundle and assembly, and fixed up at load time. However, the ARM64 R2R code uses `adrp` instructions which compute page-relative addresses, but do not have fixups, so we must ensure that the page alignment of R2R code does not change.
+
+We therefore bundle ARM64 Linux assemblies at 4K alignment within the bundle, so that the page alignment of R2R code does not change. This is only necessary for R2R assemblies, but we do it for all assemblies for simplicity. In the long term, the solution to this would involve considerations such as:
+* Avoid using `adrp` instructions when `adr` could be used instead for addresses which are close to the program counter.
+* Support fixups for `adrp`; `add` instruction sequences. This may add size or startup overhead.
+
 ### API Semantics
 
 #### `Assembly.Location`
