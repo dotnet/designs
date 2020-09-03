@@ -44,7 +44,7 @@ Here's the overall experience for publishing a HelloWorld single-file app. The n
     * Published files: `HelloWorld`, `HelloWorld.pdb`
   * Single-file publish Windows: `dotnet publish -r win-x64 /p:PublishSingleFile=true`
     * Published files: `HelloWorld.exe`, `HelloWorld.pdb`, `coreclr.dll`, `clrjit.dll`, `clrcompression.dll`,  `mscordaccore.dll`
-  * Single-file publish Windows with Extraction: `dotnet publish -r win-x64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesInSingleFile=true` 
+  * Single-file publish Windows with Extraction: `dotnet publish -r win-x64 /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true` 
     * Published files: `HelloWorld.exe`, `HelloWorld.pdb`
 
 ## Build System Interface
@@ -74,18 +74,18 @@ All other files, including platform-specific native binaries and symbol files, a
 
 The following settings can be used to package additional files into the single-file app. However, when using these options, the files that cannot be processed directly from the bundle will be extracted out to disk during startup. 
 
-| Property                             | Behavior when set to `true`                                  |
-| ------------------------------------ | ------------------------------------------------------------ |
-| `IncludeNativeLibrariesInSingleFile` | Bundle published native binaries into the single-file app.   |
-| `IncludeSymbolsInSingleFile`         | Bundle the `.pdb` file(s) into the single file app. This option is provided for compatibility with .NET 3 single-file mode. The recommended alternative is to generate assemblies with embedded PDBs (`<DebugType>embedded</DebugType>`). |
-| `IncludeAllContentInSingleFile`      | Bundle all published files (except symbol files) into single-file app. This option provides backward compatibility with the  .NET Core 3.x version of single-file apps. |
+| Property                               | Behavior when set to `true`                                  |
+| -------------------------------------- | ------------------------------------------------------------ |
+| `IncludeNativeLibrariesForSelfExtract` | Bundle published native binaries into the single-file app.   |
+| `IncludeSymbolsInSingleFile`           | Bundle the `.pdb` file(s) into the single file app. This option is only supported on .NET 3.x. The recommended alternative is to generate assemblies with embedded PDBs (`<DebugType>embedded</DebugType>`). |
+| `IncludeAllContentForSelfExtract`      | Bundle all published files (except symbol files) into single-file app. This option provides backward compatibility with the .NET Core 3.x version of single-file apps. |
 
 Certain files can be explicitly excluded from being embedded in the single-file by setting following `ExcludeFromSingleFile` meta-data element. For example, to place some files in the publish directory but not bundle them in the single-file:
 
 ```xml
 <PropertyGroup>
   <PublishSingleFile>true</PublishSingleFile>
-  <IncludeContentInSingleFile>true</IncludeContentInSingleFile>
+  <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
 </PropertyGroup> 
 <ItemGroup>
   <Content Update="*-exclude.dll">
@@ -254,7 +254,7 @@ Most of the app development can be agnostic to whether the app is published as s
 
 `AppContext.BaseDirectory` will be the directory where the AppHost (the single-file bundle itself) resides. In contrast to [.NET Core 3.x single-file apps](design_3_0.md), .NET 5 single-file apps do not always self-extract on startup. Therefore, the details about extraction directory are not exposed through the `AppContext.BaseDirectory` API.  
 
-However, when single file apps are published with `IncludeAllContentInSingleFile` property set (which provides backward compatibility with .NET Core 3.x bundling behavior), `AppContext.BaseDirectory` returns the extraction directory, following  [.NET Core 3.x semantics](design_3_0.md#API-Impact).
+However, when single file apps are published with `IncludeAllContentForSelfExtract` property set (which provides backward compatibility with .NET Core 3.x bundling behavior), `AppContext.BaseDirectory` returns the extraction directory, following  [.NET Core 3.x semantics](design_3_0.md#API-Impact).
 
 ## Testing
 
