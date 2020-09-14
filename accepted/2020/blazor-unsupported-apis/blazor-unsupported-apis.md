@@ -20,6 +20,11 @@ were unsupported.
 [UnsupportedOSPlatform("browser")]
 ```
 
+## Focused on Microsoft.NetCore.App
+
+We focus on APIs that are part of the default reference set for Blazor
+applications, that is APIs that are part of `Microsoft.NetCore.App`.
+
 ## Entire assemblies
 
 * System.Diagnostics.FileVersionInfo
