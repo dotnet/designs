@@ -20,6 +20,27 @@ were unsupported.
 [UnsupportedOSPlatform("browser")]
 ```
 
+## Entire assemblies
+
+* System.Diagnostics.FileVersionInfo
+* System.Diagnostics.Process
+* System.IO.Compression.Brotli
+* System.IO.FileSystem.Watcher
+* System.IO.IsolatedStorage
+* System.IO.Pipes
+* System.Net.Mail
+* System.Net.NameResolution
+* System.Net.NetworkInformation
+* System.Net.Ping
+* System.Net.Requests
+* System.Net.Security
+* System.Net.Sockets
+* System.Net.WebClient
+* System.Security.Cryptography.Csp
+* System.Security.Cryptography.Encoding
+* System.Security.Cryptography.Primitives
+* System.Security.Cryptography.X509Certificates
+
 ## APIs
 
 I've only listed namespace and type level for now; I suspect we'll end up marking
@@ -31,259 +52,184 @@ already marked as Windows-specific -- they are already flagged.
 
 Once the Windows attribution is done, I'll update this PR again.
 
-### Microsoft.SqlServer.Server
+### System
 
-* **SqlDataRecord**
-* **SqlFacetAttribute**
-* **SqlFunctionAttribute**
-* **SqlMetaData**
-* **SqlMethodAttribute**
-* **SqlUserDefinedAggregateAttribute**
-* **SqlUserDefinedTypeAttribute**
+* **Console**
+    - BackgroundColor
+    - Beep()
+    - BufferHeight.get
+    - BufferWidth.get
+    - CancelKeyPress
+    - CursorLeft
+    - CursorSize.get
+    - CursorTop
+    - CursorVisible.set
+    - ForegroundColor
+    - GetCursorPosition()
+    - In
+    - InputEncoding
+    - LargestWindowHeight
+    - LargestWindowWidth
+    - OpenStandardInput()
+    - OpenStandardInput(int)
+    - Read()
+    - ReadKey()
+    - ReadKey(bool)
+    - ReadLine()
+    - ResetColor()
+    - SetCursorPosition(int, int)
+    - SetIn(TextReader)
+    - Title.set
+    - TreatControlCAsInput
+    - WindowHeight.get
+    - WindowWidth.get
+* **System.Diagnostics.Process**
+* **System.IO.Compression.Brotli**
+* **System.IO.FileSystem.Watcher**
+* **System.IO.IsolatedStorage**
+* **System.IO.Pipes**
+* **System.Net.Http**
 
-### Microsoft.Win32
+### System.ComponentModel
 
-* **RegistryKey**
+* **LicenseManager**
+    - CreateWithContext(Type, LicenseContext)
+    - CreateWithContext(Type, LicenseContext, object[])
+* **MaskedTextProvider**
+    - Clone()
+* **TypeDescriptionProvider**
+    - CreateInstance(IServiceProvider, Type, Type[], object[])
+* **TypeDescriptor**
+    - CreateInstance(IServiceProvider, Type, Type[], object[])
 
-### Microsoft.Win32.SafeHandles
+### System.Net
 
-* **SafeRegistryHandle**
+* **HttpListener**
+    - ExtendedProtectionPolicy.set
+* **HttpListenerRequest**
+    - IsLocal
+    - LocalEndPoint
+    - RemoteEndPoint
+    - UserHostAddress
+* **HttpListenerResponse**
+    - Abort()
+    - Close()
+    - Close(byte[], bool)
+* **System.Net.NameResolution**
+* **System.Net.NetworkInformation**
+* **System.Net.Ping**
+* **System.Net.Requests**
+* **System.Net.Security**
+* **System.Net.Sockets**
+* **System.Net.WebClient**
+* **System.Net.WebSockets.Client**
 
-### System.Data.Odbc
+### System.Net.Http
 
-* **OdbcCommand**
-* **OdbcCommandBuilder**
-* **OdbcConnection**
-* **OdbcConnectionStringBuilder**
-* **OdbcDataAdapter**
-* **OdbcDataReader**
-* **OdbcError**
-* **OdbcErrorCollection**
-* **OdbcException**
-* **OdbcFactory**
-* **OdbcInfoMessageEventArgs**
-* **OdbcParameter**
-* **OdbcParameterCollection**
-* **OdbcRowUpdatedEventArgs**
-* **OdbcRowUpdatingEventArgs**
-* **OdbcTransaction**
+* **HttpClientHandler**
+    - AutomaticDecompression
+    - CheckCertificateRevocationList
+    - ClientCertificates
+    - CookieContainer
+    - Credentials
+    - DefaultProxyCredentials
+    - MaxAutomaticRedirections
+    - MaxConnectionsPerServer
+    - MaxResponseHeadersLength
+    - PreAuthenticate
+    - Proxy
+    - ServerCertificateCustomValidationCallback
+    - SslProtocols
+    - UseCookies
+    - UseDefaultCredentials
+    - UseProxy
+* **SocketsHttpHandler**
 
-### System.Data.Sql
+### System.Net.WebSockets
 
-* **SqlNotificationRequest**
+* **ClientWebSocketOptions**
+    - ClientCertificates
+    - Cookies
+    - Credentials
+    - KeepAliveInterval
+    - Proxy
+    - RemoteCertificateValidationCallback
+    - SetBuffer(int, int)
+    - SetBuffer(int, int, ArraySegment<byte>)
+    - SetRequestHeader(string, string)
+    - UseDefaultCredentials
 
-### System.Data.SqlClient
+### System.Security.Authentication.ExtendedProtection
 
-* **SqlBulkCopy**
-* **SqlBulkCopyColumnMapping**
-* **SqlBulkCopyColumnMappingCollection**
-* **SqlClientFactory**
-* **SqlCommand**
-* **SqlCommandBuilder**
-* **SqlConnection**
-* **SqlConnectionStringBuilder**
-* **SqlCredential**
-* **SqlDataAdapter**
-* **SqlDataReader**
-* **SqlDependency**
-* **SqlError**
-* **SqlErrorCollection**
-* **SqlException**
-* **SqlInfoMessageEventArgs**
-* **SqlNotificationEventArgs**
-* **SqlParameter**
-* **SqlParameterCollection**
-* **SqlRowsCopiedEventArgs**
-* **SqlRowUpdatedEventArgs**
-* **SqlRowUpdatingEventArgs**
-* **SqlTransaction**
+* **ExtendedProtectionPolicyTypeConverter**
+    - ConvertTo(ITypeDescriptorContext, CultureInfo, object, Type)
 
-### System.DirectoryServices.Protocols
-
-* **AddRequest**
-* **AsqRequestControl**
-* **AsqResponseControl**
-* **BerConversionException**
-* **BerConverter**
-* **CompareRequest**
-* **CrossDomainMoveControl**
-* **DeleteRequest**
-* **DirectoryAttribute**
-* **DirectoryAttributeCollection**
-* **DirectoryAttributeModification**
-* **DirectoryAttributeModificationCollection**
-* **DirectoryConnection**
-* **DirectoryControl**
-* **DirectoryControlCollection**
-* **DirectoryException**
-* **DirectoryIdentifier**
-* **DirectoryNotificationControl**
-* **DirectoryOperation**
-* **DirectoryOperationException**
-* **DirectoryRequest**
-* **DirectoryResponse**
-* **DirSyncRequestControl**
-* **DirSyncResponseControl**
-* **DomainScopeControl**
-* **DsmlAuthRequest**
-* **ExtendedDNControl**
-* **ExtendedRequest**
-* **ExtendedResponse**
-* **LazyCommitControl**
-* **LdapConnection**
-* **LdapDirectoryIdentifier**
-* **LdapException**
-* **LdapSessionOptions**
-* **ModifyDNRequest**
-* **ModifyRequest**
-* **PageResultRequestControl**
-* **PageResultResponseControl**
-* **PartialResultsCollection**
-* **PermissiveModifyControl**
-* **QuotaControl**
-* **ReferralCallback**
-* **SearchOptionsControl**
-* **SearchRequest**
-* **SearchResponse**
-* **SearchResultAttributeCollection**
-* **SearchResultEntry**
-* **SearchResultEntryCollection**
-* **SearchResultReference**
-* **SearchResultReferenceCollection**
-* **SecurityDescriptorFlagControl**
-* **SecurityPackageContextConnectionInformation**
-* **ShowDeletedControl**
-* **SortKey**
-* **SortRequestControl**
-* **SortResponseControl**
-* **TlsOperationException**
-* **TreeDeleteControl**
-* **VerifyNameControl**
-* **VlvRequestControl**
-* **VlvResponseControl**
-
-### System.Drawing
-
-* **Bitmap**
-* **BitmapSuffixInSameAssemblyAttribute**
-* **BitmapSuffixInSatelliteAssemblyAttribute**
-* **Brush**
-* **Brushes**
-* **BufferedGraphics**
-* **BufferedGraphicsContext**
-* **BufferedGraphicsManager**
-* **CharacterRange**
-* **ColorTranslator**
-* **Font**
-* **FontFamily**
-* **Graphics**
-* **Icon**
-* **Image**
-* **ImageAnimator**
-* **Pen**
-* **Pens**
-* **Region**
-* **SolidBrush**
-* **StringFormat**
-* **SystemBrushes**
-* **SystemColors**
-* **SystemFonts**
-* **SystemIcons**
-* **SystemPens**
-* **TextureBrush**
-* **ToolboxBitmapAttribute**
-
-### System.Drawing.Design
-
-* **CategoryNameCollection**
-
-### System.Drawing.Drawing2D
-
-* **AdjustableArrowCap**
-* **Blend**
-* **ColorBlend**
-* **CustomLineCap**
-* **GraphicsPath**
-* **GraphicsPathIterator**
-* **HatchBrush**
-* **LinearGradientBrush**
-* **Matrix**
-* **PathData**
-* **PathGradientBrush**
-* **RegionData**
-
-### System.Drawing.Imaging
-
-* **BitmapData**
-* **ColorMap**
-* **ColorMatrix**
-* **ColorPalette**
-* **Encoder**
-* **EncoderParameter**
-* **EncoderParameters**
-* **FrameDimension**
-* **ImageAttributes**
-* **ImageCodecInfo**
-* **ImageFormat**
-* **Metafile**
-* **MetafileHeader**
-* **MetaHeader**
-* **PropertyItem**
-* **WmfPlaceableFileHeader**
-
-### System.Drawing.Printing
-
-* **InvalidPrinterException**
-* **Margins**
-* **PageSettings**
-* **PaperSize**
-* **PaperSource**
-* **PreviewPageInfo**
-* **PreviewPrintController**
-* **PrintController**
-* **PrintDocument**
-* **PrinterResolution**
-* **PrinterSettings**
-* **PrinterSettings+PaperSizeCollection**
-* **PrinterSettings+PaperSourceCollection**
-* **PrinterSettings+PrinterResolutionCollection**
-* **PrinterSettings+StringCollection**
-* **PrinterUnitConvert**
-* **PrintEventArgs**
-* **PrintPageEventArgs**
-* **QueryPageSettingsEventArgs**
-* **StandardPrintController**
-
-### System.Drawing.Text
-
-* **FontCollection**
-* **InstalledFontCollection**
-* **PrivateFontCollection**
-
-### System.IO.Ports
-
-* **SerialDataReceivedEventArgs**
-* **SerialErrorReceivedEventArgs**
-* **SerialPinChangedEventArgs**
-* **SerialPort**
-
-### System.Security.AccessControl
-
-* **AceEnumerator**
-* **RegistrySecurity**
+* **System.Net.HttpListener**
 
 ### System.Security.Cryptography
 
-* **AesCng**
-* **CngAlgorithm**
-* **CngAlgorithmGroup**
-* **CngKeyBlobFormat**
-* **CngKeyCreationParameters**
-* **CngProperty**
-* **CngPropertyCollection**
-* **CngProvider**
-* **CngUIPolicy**
-* **DSACng**
-* **ECDsaCng**
-* **RSACng**
-* **TripleDESCng**
+* **Aes**
+    - AesCcm
+    - AesGcm
+    - AesManaged
+    - AsymmetricKeyExchangeDeformatter
+    - AsymmetricKeyExchangeFormatter
+    - AsymmetricSignatureDeformatter
+    - AsymmetricSignatureFormatter
+    - CryptoConfig
+    - DeriveBytes
+    - DES
+    - DSA
+    - DSASignatureDeformatter
+    - DSASignatureFormatter
+    - ECCurve
+    - ECDiffieHellman
+    - ECDsa
+    - ECParameters
+    - HKDF
+    - HMACMD5
+    - HMACSHA1
+    - HMACSHA256
+    - HMACSHA384
+    - HMACSHA512
+    - IncrementalHash
+    - CreateHMAC(HashAlgorithmName, byte[])
+    - CreateHMAC(HashAlgorithmName, ReadOnlySpan<byte>)
+* **MaskGenerationMethod**
+    - MD5
+    - PKCS1MaskGenerationMethod
+    - RandomNumberGenerator
+    - Create(string)
+* **RC2**
+    - Rfc2898DeriveBytes
+    - Rijndael
+    - RijndaelManaged
+    - RSA
+    - RSAEncryptionPadding
+    - RSAOAEPKeyExchangeDeformatter
+    - RSAOAEPKeyExchangeFormatter
+    - RSAPKCS1KeyExchangeDeformatter
+    - RSAPKCS1KeyExchangeFormatter
+    - RSAPKCS1SignatureDeformatter
+    - RSAPKCS1SignatureFormatter
+    - RSASignaturePadding
+    - SignatureDescription
+    - TripleDES
+* **System.Security.Cryptography.Csp**
+* **System.Security.Cryptography.Encoding**
+* **System.Security.Cryptography.Primitives**
+* **System.Security.Cryptography.X509Certificates**
+* **System.Threading.ThreadPool**
+
+### System.Threading
+
+* **RegisteredWaitHandle**
+    - ThreadPool
+    - RegisterWaitForSingleObject(WaitHandle, WaitOrTimerCallback, object, int, bool)
+    - RegisterWaitForSingleObject(WaitHandle, WaitOrTimerCallback, object, long, bool)
+    - RegisterWaitForSingleObject(WaitHandle, WaitOrTimerCallback, object, TimeSpan, bool)
+    - RegisterWaitForSingleObject(WaitHandle, WaitOrTimerCallback, object, uint, bool)
+    - UnsafeRegisterWaitForSingleObject(WaitHandle, WaitOrTimerCallback, object, int, bool)
+    - UnsafeRegisterWaitForSingleObject(WaitHandle, WaitOrTimerCallback, object, long, bool)
+    - UnsafeRegisterWaitForSingleObject(WaitHandle, WaitOrTimerCallback, object, TimeSpan, bool)
+    - UnsafeRegisterWaitForSingleObject(WaitHandle, WaitOrTimerCallback, object, uint, bool)
