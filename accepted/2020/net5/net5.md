@@ -171,14 +171,14 @@ He modifies the `<TargetFramework>` to be `net5.0-ios14.0`.
 
 Miguel doesn't want to cut off his users who are currently on iOS 13, so he
 wants to continue to have his application work on iOS 13 as well. To achieve
-that, Miguel modifies the project file by adding `<TargetPlatformMinVersion>`:
+that, Miguel modifies the project file by adding `<SupportedOSPlatformVersion>`:
 
 ```XML
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0-ios14.0</TargetFramework>
-    <TargetPlatformMinVersion>13.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>13.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   ...
@@ -200,7 +200,7 @@ public void OnClick(object sender, EventArgs e)
 }
 ```
 
-### Consuming a library with a higher `TargetPlatformMinVersion`
+### Consuming a library with a higher `SupportedOSPlatformVersion`
 
 After using `NSFizzBuzz` directly for a while, Miguel notices that these OS APIs
 are a bit hard to use, so he looks for a .NET library. He finds
@@ -208,7 +208,7 @@ are a bit hard to use, so he looks for a .NET library. He finds
 building his application he gets the following warning:
 
 > warning NU1702: Package 'Monkey.FizzBuzz' was restored using 'net5.0-ios14'
-> and has 'TargetPlatformMinVersion' of '14.0' while the project has a value of
+> and has 'SupportedOSPlatformVersion' of '14.0' while the project has a value of
 > '13.0'. You should either upgrade your project to '14.0' or only make calls
 > into the library after checking that the OS version is '14.0' or higher.
 
@@ -443,10 +443,10 @@ happens to be `net5.0-ios13.1.4`.
 
 We don't expect this to be too confusing because we generally encourage people
 to compile against the latest available OS API set and use
-`TargetPlatformMinVersion` in order to run on older versions. The reference
+`SupportedOSPlatformVersion` in order to run on older versions. The reference
 assembly for the OS bindings will also include an attribute per API indicating
 which OS version is required. These attributes, as well as
-`TargetPlatformMinVersion`, will always be set to actual OS versions.
+`SupportedOSPlatformVersion`, will always be set to actual OS versions.
 
 So in practice we don't expect people having to match TFMs to specific OS
 version but it's good to have numbers that are "close" enough to give project
@@ -464,11 +464,11 @@ Property                              | Meaning                         | Exampl
 `TargetFrameworkProfile` (TFP)        | The profile                     | `Client` or `Profile124`
 `TargetPlatformIdentifier` (TPI)      | The OS platform                 | `iOS`, `Android`, `Windows`
 `TargetPlatformVersion` (TPV)         | The OS platform version         | `12.0` or `13.0`
-`TargetPlatformMinVersion` (TPMV)     | The minimum OS platform version | `12.0` or `13.0`
+`SupportedOSPlatformVersion` (SOPV)   | The minimum OS platform version | `12.0` or `13.0`
 
 We're going to map the TFMs as follows:
 
-TF                 | TFI           | TFV     | TFP | TPI     | TPV | TPMV
+TF                 | TFI           | TFV     | TFP | TPI     | TPV | SOPV
 -------------------|---------------|---------|-----|---------|-----|----------------
 net4.X             | .NETFramework | 4.X     |     |         |     |
 net5.0             | .NETCoreApp   | 5.0     |     |         |     |
@@ -489,7 +489,7 @@ Specifically:
   `AssetTargetFallback` in NuGet restore which also means consumers from
   `net5.0` will continue to get a proper warning.
 
-* **TargetPlatformMinVersion is defaulted to TargetPlatformVersion**. However,
+* **SupportedOSPlatformVersion is defaulted to TargetPlatformVersion**. However,
   the customer can override this in the project file to a lower version (using a
   higher version than `TargetPlatformVersion` should generate an error).
 
@@ -587,7 +587,7 @@ For that, I propose to add a `platforms` element under `metadata`.
 
 For each `netX.Y-{os}{version}`, it should contain a `platform` that ties the
 TFM as specified to their corresponding `TargetPlatformVersion` and
-`TargetPlatformMinVersion` entries:
+`SupportedOSPlatformVersion` entries:
 
 ```xml
 <package xmlns="...">
@@ -653,8 +653,8 @@ higher version, it had access to more APIs, which the consuming project doesn't
 have. This can cause compilation errors due to unresolved types as well as
 runtime errors due to unresolved members.
 
-The world is a bit different for `TargetPlatformMinVersion`. NuGet should allow
-installation of packages whose `TargetPlatformMinVersion` is higher than the
+The world is a bit different for `SupportedOSPlatformVersion`. NuGet should allow
+installation of packages whose `SupportedOSPlatformVersion` is higher than the
 consuming project. The rationale here is that the consuming project might only
 want to use the library on higher versions of the operating system and can
 conditionally call the library code. The behavior should be similar to
