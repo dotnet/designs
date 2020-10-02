@@ -176,8 +176,8 @@ However, if the requested SDK name is `Microsoft.NET.SDK.WorkloadAutoImportProps
 The .NET SDK (Microsoft.NET.Sdk) should:
 
 - Set the `WorkloadManifestRoot` property to a path where workload manifest packages for the current version band will be laid out.
-  - This should be `<DOTNET ROOT>/workloadmanifests/<FEATURE VERSION BAND>/`
-  - For example, `c:\Program Files\dotnet\workloadmanifests\5.0.100\`
+  - This should be `<DOTNET ROOT>/sdk-manifests/<FEATURE VERSION BAND>/`
+  - For example, `c:\Program Files\dotnet\sdk-manifests\5.0.100\`
   - Workload manifest packages should be laid out in folders under the root corresponding to the name of the workload manifest, but should not include a version in the path.  They should be updated in-place.  This allows the SDK to import all of the active `WorkloadManifest.targets` files with a simple wildcard import
 - Include the following .targets import:
 
