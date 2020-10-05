@@ -484,7 +484,7 @@ provides here is educational and avoids having to lookup the correct version
 numbers.
 
 For diagnostic (1) we should also offer a fixer that allows it to be marked as
-platform specific by applying `AddedInOSPlatformVersionAttribute`. If the
+platform specific by applying `SupportedOSPlatformAttribute`. If the
 attribute is already applied, it should offer to change the platform and
 version.
 
