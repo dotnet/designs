@@ -1,4 +1,4 @@
-# Proposal for .NET Core GC Support for Docker Limits
+# .NET Core GC Support for Docker Limits
 
 .NET Core has support for [control groups](https://en.wikipedia.org/wiki/Cgroups) (cgroups), which is the basis of [Docker limits](https://docs.docker.com/config/containers/resource_constraints/). We found that the algorithm we use to honor cgroups works well for larger memory size limits (for example, >500MB), but that it is not possible to configure a .NET Core application to run indefinitely at lower memory levels. This document proposes an approach to support low memory size limits, <100MB.
 
