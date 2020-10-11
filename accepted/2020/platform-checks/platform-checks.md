@@ -75,14 +75,14 @@ that supported iOS 13 but Apple just released iOS 14, which adds the great
 After upgrading the app and writing the code, Miguel decides that while the
 feature is cool, it doesn't warrant cutting of all his customers who are
 currently still on iOS 13. So he edits the project file and sets
-`TargetPlatformMinVersion` to 13.
+`SupportedOSPlatformVersion` to 13.
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0-ios14.0</TargetFramework>
-    <TargetPlatformMinVersion>13.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>13.0</SupportedOSPlatformVersion>
   </PropertyGroup>
 
   ...
@@ -272,7 +272,7 @@ namespace System.Runtime.Versioning
     // Records the minimum platform that is required in order to use the marked thing.
     //
     // * When applied to an assembly, it means the entire assembly cannot be called
-    //   into on earlier versions. It records the TargetPlatformMinVersion property.
+    //   into on earlier versions. It records the SupportedOSPlatformVersion property.
     //
     // * When applied to an API, it means the API cannot be called from an earlier
     //   version.
