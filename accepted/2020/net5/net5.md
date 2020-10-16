@@ -193,7 +193,7 @@ before calling it:
 ```C#
 public void OnClick(object sender, EventArgs e)
 {
-    if (Environment.OSVersion.Version >= new Version(14, 0))
+    if (OperatingSystem.IsIOSVersionAtLeast(14))
     {
         NSFizBuzz();  
     }
