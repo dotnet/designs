@@ -1,17 +1,27 @@
-# .NET Designs
+# .NET Design Proposals
 
-The dotnet/designs repo contains designs and design proposals for .NET. 
+This repo contains [design proposals](meta/proposals.md) for the .NET platform.
+It focuses on designs for the runtime, framework, and the SDK. For others, see:
 
-Design proposals will start as issues and will be moved to official design documents in the repository, if approved as an official product design.
+* [ASP.NET Designs](https://github.com/aspnet/specs)
+* [C# Language Designs (dotnet/csharplang)](https://github.com/dotnet/csharplang)
+* [VB Language Designs (dotnet/vblang)](https://github.com/dotnet/vblang)
+* [F# Language Designs (fsharp/fslang-design)](https://github.com/fsharp/fslang-design)
+* [F# Language Suggestions (fsharp/fslang-suggestions)](https://github.com/fsharp/fslang-suggestions)
 
-## Contributing
+## Creating a proposal
 
-Anyone can contribute. The following contributions are expected to be the most common:
+Unless you're driving the design of a feature, you're not expected to contribute
+to this repo. Specifically, if you merely want to request new features, you
+should file an issue for the [corresponding repo](https://github.com/dotnet/core/blob/master/Documentation/core-repos.md).
 
-- Create a pull request for a doc in .\proposed for a design for a feature.
-- Create a pull request for a doc in .\proposed an alternate design for a
-feature.
-- Once broad agreement is reached, PR proposal doc merged into accepted folder.
+To create a proposal:
+
+1. Create a new branch off of `main`
+2. Create a document in the `accepted` folder and use [meta/template.md](meta/template.md) as your
+   starting point.
+3. Create a pull request against `main`
+4. Once broad agreement is reached, merge the PR
 
 ## License
 
@@ -19,15 +29,4 @@ This project is licensed with the [Creative Commons BY 4.0 License](LICENSE).
 
 ## .NET Foundation
 
-.NET Core is a [.NET Foundation project](https://dotnetfoundation.org/projects).
-
-## Related Projects
-
-You may want to look at these related projects:
-
-- [C# Language Designs (dotnet/csharplang)](https://github.com/dotnet/csharplang)
-- [VB Language Designs (dotnet/vblang)](https://github.com/dotnet/vblang)
-- [.NET Core](https://github.com/dotnet/core)
-- [ASP.NET](https://github.com/aspnet)
-- [F# Language Designs (fsharp/fslang-design)](https://github.com/fsharp/fslang-design)
-- [F# Language Suggestions (fsharp/fslang-suggestions)](https://github.com/fsharp/fslang-suggestions)
+This is a [.NET Foundation project](https://dotnetfoundation.org/projects).
