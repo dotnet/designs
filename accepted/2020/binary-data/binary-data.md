@@ -4,12 +4,13 @@
 [GitHub Issue](https://github.com/dotnet/runtime/issues/41686)
 
 In the BCL we have many representations for binary data such as `byte[]`,
-`Span<byte>`, and `Memory<byte>`. This isn't helped are also multiple ways how
-one can produce a binary payload for a string or object.
+`Span<byte>`, and `Memory<byte>`. This isn't helped by they fact that there are
+also multiple ways how one can produce a binary payload for a `string` or
+`object`.
 
-The Azure SDK has made the experience in user studies that customer are often
-struggling the right, or even any, to produce the data from the data they
-already have.
+The Azure SDK has made the experience in user studies that customers are often
+struggling to find the right method, or even any, to produce the data from the
+data they already have.
 
 ## Scenarios and User Experience
 
@@ -18,11 +19,10 @@ already have.
 Naomi is building a cloud-based solution for batch resizing of images. She uses
 Azure Storage Queues to manage requests for image resizing. In order to queue a
 message, she uses the `SendMessageAsync` API. The method takes a type called
-`BinaryData`. Curious what this is, she decides to new one up. Since the
-constructor doesn't require any arguments, she immediately explores the instance
-members. Naomi realizes that there are several `SetXxx` methods. "Hmm, I need to
-serialize my object somehow", she concludes that `SetObjectFromJson` is the
-right API for her.
+`BinaryData`. Curious what this is, she decides to new one up. Since there is no
+constructor, she explores the static members. Naomi realizes that there are
+several `FromXxx` methods. "Hmm, I need to serialize my object somehow", she
+concludes that `FromObjectAsJson` is the right API for her.
 
 ```C#
 Task QueueImageResize(string imageUrl)
@@ -35,18 +35,17 @@ Task QueueImageResize(string imageUrl)
         Resolutions = new[] {"200x200", "400x400", "1200x1200" }
     };
 
-    var messageData = new BinaryData();
-    messageData.SetObjectFromJson(message);
+    var messageData = BinaryData.FromObjectAsJson(message);
     await queueClient.SendMessageAsync(messageData);
 }
 ```
 
 ### Retrieving a binary payload
 
-Shirin works Naomi's team but is responsible for the resizing backend. She wrote
-an Azure Function that is triggered every time a an item is added to the queue.
-She template already created a handler `RunAsync` that passes the queue item as
-an instance of `BinaryData`.
+Shirin works on Naomi's team but is responsible for the resizing backend. She
+wrote an Azure Function that is triggered every time an item is added to the
+queue. The template already created a handler `RunAsync` that passes the queue
+item as an instance of `BinaryData`.
 
 In order to deserialize, she simply invokes the `ToObjectFromJson` method:
 
@@ -69,6 +68,7 @@ Task RunAsync(BinaryData messageData)
 
 ### Goals
 
+* Stable API
 * Make it easy for people to construct bytes from common data types (byte
   arrays, spans, memories, string, JSON serialized objects)
 * Make it easy for people to convert bytes to common the same representations
@@ -100,65 +100,48 @@ exchange types; the point of this type is unify them by providing conversions;
 the point isn't to provide yet another type. Thus, we don't see the need to, for
 example, provide new virtual methods on Stream.
 
-We could decide to model the constructor that performs JSON serialization as a
-factory method. Combined with a hypothetical feature *extension statics* we
-could make the type more low level than serialization. An alternative design is
-to replace constructors and factories with instance members (e.g. `SetBytes`
-`SetObjectFromJson`) which would throw when the underlying array is non-null.
-That prevents mutation and uses a simple pattern
+We have two options to design the type:
 
-```C#
-var data = new BinaryData();
-data.SetBytes(...);
-```
+1. We could decide to model the construction via JSON serialization as a factory
+   method. This ensures we can easily support additional serialization formats
+   as necessary and remain linker friendly.
 
-This would also allow us to use regular extension methods to split out JSON
-serialization.
+2. But we need to balance implementation flexibility concerns with usability.
+   The primary goal of this type is to provide usability via conveniences. If we
+   don't make the type super usable, the feature will fail. If we feel that the
+   factories aren't discoverable enough, we should combine it with constructors,
+   even if that reduces our flexibility.
 
-We need to balance layering concerns with usability. The primary goal of this
-type is to provide usability via conveniences. If we don't make the type super
-usable, the feature has failed. While the design with extension methods feels
-quite appealing we need to verify that it realizes these goal. If we can't, we
-should go back to the design of using constructors and factory methods, even if
-that reduces our flexibility.
+### Shipping vehicle
 
-### API design with extension methods
+**Assembly**: System.Binary.Data.dll
+**NuGet Package**: System.Binary.Data (stable)
+
+### API
 
 ```C#
 namespace System
 {
-    public readonly struct BinaryData
+    public sealed class BinaryData
     {
-        public void SetBytes(ReadOnlyMemory<byte> data);
-        public void SetBytes(ReadOnlySpan<byte> data);
-        public void SetBytes(byte[] data);
-        public void SetStream(Stream stream);
-        public static Task SetStreamAsync(Stream stream, CancellationToken cancellationToken = default);
-        public void SetString(string data);
-        public static implicit operator ReadOnlySpan<byte>(BinaryData data);
+        public static BinaryData FromBytes(ReadOnlyMemory<byte> data);
+        public static BinaryData FromBytes(ReadOnlySpan<byte> data);
+        public static BinaryData FromBytes(byte[] data);
+        public static BinaryData FromObjectAsJson<T>(T jsonSerializable, CancellationToken cancellationToken = default);
+        public static Task<BinaryData> FromObjectAsJsonAsync<T>(T jsonSerializable, CancellationToken cancellationToken = default);
+        public static BinaryData FromStream(Stream stream);
+        public static Task<BinaryData> FromStreamAsync(Stream stream, CancellationToken cancellationToken = default);
+        public static BinaryData FromString(string data);
         public static implicit operator ReadOnlyMemory<byte>(BinaryData data);
         public ReadOnlyMemory<byte> ToBytes();
+        public T ToObjectFromJson<T>(CancellationToken cancellationToken = default);
+        public ValueTask<T> ToObjectFromJsonAsync<T>(CancellationToken cancellationToken = default);
         public Stream ToStream();
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object? obj);
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        public override int GetHashCode();
-        public override string ToString();
-    }
-}
-namespace System.Text.Json
-{
-    public static class BinaryDataJsonExtensions
-    {
-        public static Task SetObjectAsJsonAsync<T>(this BinaryData data, T jsonSerializable, CancellationToken cancellationToken = default);
-        public static void SetObjectAsJson<T>(this BinaryData data, T jsonSerializable, CancellationToken cancellationToken = default);
-        public static T ToObjectFromJson<T>(this BinaryData data, CancellationToken cancellationToken = default);
-        public static ValueTask<T> ToObjectFromJsonAsync<T>(this BinaryData data, CancellationToken cancellationToken = default);
     }
 }
 ```
 
-### API with constructors and factory methods
+### API (Hybrid)
 
 ```C#
 namespace System
@@ -191,5 +174,3 @@ namespace System
     }
 }
 ```
-
-### Shipping vehicle
