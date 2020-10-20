@@ -115,8 +115,8 @@ We have two options to design the type:
 
 ### Shipping vehicle
 
-**Assembly**: System.Binary.Data.dll
-**NuGet Package**: System.Binary.Data (stable)
+**Assembly**: System.BinaryData.dll
+**NuGet Package**: System.BinaryData (stable)
 
 ### API
 
