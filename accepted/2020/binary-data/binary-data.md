@@ -71,7 +71,8 @@ Task RunAsync(BinaryData messageData)
 * Stable API
 * Make it easy for people to construct bytes from common data types (byte
   arrays, spans, memories, string, JSON serialized objects)
-* Make it easy for people to convert bytes to common the same representations
+* Make it easy for people to convert bytes to common data types of the same
+  representations
 * Provide opinionated defaults in order to reduce complexity
     - String encoding is assumed to be UTF8
     - Object serialization is done with `System.Text.Json`, with specific options
