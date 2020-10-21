@@ -77,6 +77,7 @@ Task RunAsync(BinaryData messageData)
 
 ### Non-Goals
 
+* Providing this API in-box as part of `Microsoft.NetCore.App`
 * Allocation free zero-copying semantics. The primary goal is convenience and
   usability, not perf. Performance critical scenarios should be enabled by
   providing overloads with the existing low-level concepts, such as span.
