@@ -108,7 +108,7 @@ We don't see the need to, for example, provide new virtual methods on Stream or
 
 Please note: Neither the constructors nor the factories copy data -- they wrap
 the input data, so long it's already binary. Anything that requires
-transcoding/serializtion (e.g. string, object) isn't wrapped. While the goal
+transcoding/serialization (e.g. string, object) isn't wrapped. While the goal
 isn't to be high performant, the goal is still to not be wasteful. Idiomatic use
 of the type shouldn't inflict copies.
 
