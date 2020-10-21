@@ -66,7 +66,7 @@ Task RunAsync(BinaryData messageData)
 
 ### Goals
 
-* Stable API
+* A NuGet package for `netstandard2.0` that is marked as stable
 * Make it easy for people to construct bytes from common data types (byte
   arrays, spans, memories, string, JSON serialized objects)
 * Make it easy for people to convert bytes to common data types of the same
@@ -116,7 +116,7 @@ of the type shouldn't inflict copies.
 
 **Assembly**: System.BinaryData.dll
 
-**NuGet Package**: System.BinaryData (stable)
+**NuGet Package**: System.BinaryData (stable, targeting `netstandard2.0`)
 
 ### API
 
