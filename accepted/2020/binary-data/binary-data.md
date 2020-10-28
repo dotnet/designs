@@ -138,7 +138,8 @@ namespace System
         public static BinaryData FromString(string data);
         public static implicit operator ReadOnlyMemory<byte>(BinaryData data);
         public static implicit operator ReadOnlySpan<byte>(BinaryData data);
-        public ReadOnlyMemory<byte> AsBytes();
+        public ReadOnlyMemory<byte> ToMemory();
+        public byte[] ToArray();
         public T ToObjectFromJson<T>(JsonSerializerOptions options = default, CancellationToken cancellationToken = default);
         public Stream ToStream();
         [EditorBrowsable(EditorBrowsableState.Never)]
