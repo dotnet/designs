@@ -560,7 +560,7 @@ Concretely, this means the following:
 * Package Manager UI in VS
     * [Use short form](#tfms-in-the-ui)
 
-### Window-specific behavior
+### Windows-specific behavior
 
 _**Open Issue**. Review with WinForms/WPF & Windows folks._
 
