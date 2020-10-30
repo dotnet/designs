@@ -115,9 +115,9 @@ of the type shouldn't inflict copies.
 
 ### Shipping vehicle
 
-**Assembly**: System.BinaryData.dll
+**Assembly**: System.Memory.Data.dll
 
-**NuGet Package**: System.BinaryData (stable, targeting `netstandard2.0`)
+**NuGet Package**: System.Memory.Data (stable, targeting `netstandard2.0`)
 
 ### API
 
