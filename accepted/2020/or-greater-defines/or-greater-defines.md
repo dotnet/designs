@@ -173,7 +173,7 @@ The SDK will define `XXX_OR_GREATER` variants for the following TFMs:
 * Xamarin
     - This covers the existing Xamarin offerings, the new .NET 6-based Xamarin
       is handled by the previous sections.
-    - The existing Xamarin platforms don't have versioned preprocessor symbols    
+    - The existing Xamarin platforms don't have versioned preprocessor symbols
     - Thus, we won't be adding those
 
 ## Q & A
