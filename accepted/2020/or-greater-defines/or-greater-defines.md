@@ -52,23 +52,25 @@ intuitive:
 ```C#
 void M()
 {
-    #if NET461_OR_GREATER
-        LegacyNetFxBehavior();
+    #if NET5_0_OR_GREATER
+        Net5OrHigherBehavior();
     #elif NETCOREAPP3_1_OR_GREATER
         LegacyNetCoreBehavior();
-    #elif NET5_0_OR_GREATER
-        Net5OrHigherBehavior();
+    #elif NET461_OR_GREATER
+        LegacyNetFxBehavior();
     #else
         #error Unhandled TFM
     #endif
 }
 ```
 
-This code is also resilient for cases where you add new frameworks with lower
-versions later. For example, if you start targeting .NET Core 3.0, the former
-code would go down the path for .NET 6 while the latter will fail with
-"Unhandled TFM", which is a lot more logical for the person having to maintain
-the code.
+The idea is to start from newest to oldest.
+
+This also makes the code more resilient for cases where you add new frameworks
+with lower versions later. For example, if you start targeting .NET Core 3.0,
+the former code would go down the path for .NET 6 while the latter will fail
+with "Unhandled TFM", which is a lot more logical for the person having to
+maintain the code.
 
 ## Scenarios and User Experience
 
