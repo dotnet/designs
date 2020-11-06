@@ -79,22 +79,25 @@ maintain the code.
 Joletta is building a cross-platform library for geolocation. Since there is no
 built-in API for accessing geolocation, she needs to call different APIs for
 different platforms, so she uses `#if` to write different code, depending on the
-OS she is building for. Since she needs to provide custom implementations per
-OS, she wants to fail whenever a new TFM is added.
+OS she is building for, plus a .NET Standard implementation that just throws
+`PlatformNotSupportedException`.
+
+Since she needs to provide custom implementations per OS, she wants to fail
+whenever a new TFM is added:
 
 ```C#
 public static class Gps
 {
     public static GpsCoordinate GetCoordinates()
     {
-        #if NETSTANDARD2_0
-            throw new PlatformNotSupportedException();
-        #elif WINDOWS7_0
-            return CallWindowsApi();
-        #elif ANDROID14_0
+        #if ANDROID
             return CallAndroidApi();
-        #elif IOS11_0
+        #elif IOS
             return CallIOSApi();
+        #elif WINDOWS
+            return CallWindowsApi();
+        #elif NETSTANDARD
+            throw new PlatformNotSupportedException();
         #else
             #error Provide implementation
         #endif
