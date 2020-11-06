@@ -160,7 +160,8 @@ The SDK will define `XXX_OR_GREATER` variants for the following TFMs:
       `NETCOREAPP3_1_OR_GREATER`, `NETCOREAPP3_0_OR_GREATER` etc.
 * .NET 5 and later
     - Applies to `netX.Y` and the `NET` symbol
-    - For example, `net6.0` will define `NET`, `NET6_0`, `NET6_0`, `NET5_0` etc.
+    - For example, `net6.0` will define `NET`, `NET6_0`, `NET6_0_OR_GREATER`,
+      `NET5_0_OR_GREATER` etc.
     - This will also include the corresponding defines a .NET Core X.Y would
       have gotten. For example, `net6.0` will also define `NETCOREAPP`,
       `NETCOREAPP6_0`, `NETCOREAPP5_0_OR_GREATER`, `NETCOREAPP3_1_OR_GREATER`
