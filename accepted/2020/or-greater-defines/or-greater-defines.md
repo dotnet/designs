@@ -7,7 +7,7 @@ representation. This includes both versionless- as well as version-specific
 symbols. For .NET 6, we plan to add `XXX_OR_GREATER` variants that are
 accumulative in nature:
 
-TFM                 | Existing | New
+TFM                 | Existing | Proposed Additions
 --------------------|----------|--------------------------------------------
 `net5.0`            | `NET5_0` | `NET5_0_OR_GREATER`
 `net6.0`            | `NET6_0` | `NET6_0_OR_GREATER`, `NET5_0_OR_GREATER`
@@ -18,7 +18,7 @@ without breaking existing code.
 The new symbols will make it easier to write code that doesn't need to be
 updated each time the project's `TargetFramework`/`TargetFrameworks` property is
 changed. For example, let's say you want a new code path that is triggered for
-.NET 6.0 and higher. This could either be a new API you want to call or relying
+.NET 6.0 and greater. This could either be a new API you want to call or relying
 on a new behavior. Today, you need to write code like that but you need to
 consider what version TFMs your project is targeting. Let's say you target .NET
 Framework 4.6.1, .NET Core 3.1, and .NET 5.
@@ -28,21 +28,21 @@ Today, you'd need to write code like this:
 ```C#
 void M()
 {
-    #if NET461
-        LegacyNetFxBehavior();
-    #elif NETCOREAPP3_1
-        LegacyNetCoreBehavior();
-    #elif NET
-        Net5OrHigherBehavior();
-    #else
-        #error Unhandled TFM
-    #endif
+#if NET461
+    LegacyNetFxBehavior();
+#elif NETCOREAPP3_1
+    LegacyNetCoreBehavior();
+#elif NET
+    Net5OrGreaterBehavior();
+#else
+    #error Unhandled TFM
+#endif
 }
 ```
 
 Please note that order is important here. You first handle all the legacy TFMs
 and then you handle the new behavior. To avoid breaking that code once you add
-target .NET 6, you use the versionless TFM for .NET 5 and higher platforms
+target .NET 6, you use the versionless TFM for .NET 5 and greater platforms
 (`NET`). However, the code still needs to be revised when you add lower versions
 of existing TFMs.
 
@@ -52,15 +52,15 @@ intuitive:
 ```C#
 void M()
 {
-    #if NET5_0_OR_GREATER
-        Net5OrHigherBehavior();
-    #elif NETCOREAPP3_1_OR_GREATER
-        LegacyNetCoreBehavior();
-    #elif NET461_OR_GREATER
-        LegacyNetFxBehavior();
-    #else
-        #error Unhandled TFM
-    #endif
+#if NET5_0_OR_GREATER
+    Net5OrGreaterBehavior();
+#elif NETCOREAPP3_1_OR_GREATER
+    LegacyNetCoreBehavior();
+#elif NET461_OR_GREATER
+    LegacyNetFxBehavior();
+#else
+    #error Unhandled TFM
+#endif
 }
 ```
 
@@ -90,24 +90,24 @@ public static class Gps
 {
     public static GpsCoordinate GetCoordinates()
     {
-        #if ANDROID
-            return CallAndroidApi();
-        #elif IOS
-            return CallIOSApi();
-        #elif WINDOWS
-            return CallWindowsApi();
-        #elif NETSTANDARD
-            throw new PlatformNotSupportedException();
-        #else
-            #error Provide implementation
-        #endif
+#if ANDROID
+        return CallAndroidApi();
+#elif IOS
+        return CallIOSApi();
+#elif WINDOWS
+        return CallWindowsApi();
+#elif NETSTANDARD
+        throw new PlatformNotSupportedException();
+#else
+        #error Provide implementation
+#endif
     }
 }
 ```
 
 ### When running on a later version of .NET, use a newer API
 
-Zachariah is building a .NET imaging library. On .NET 5, we have added enough
+Zachariah is building a .NET imaging library. In .NET 5, we have added enough
 hardware intrinsics so that he can implement the blur functionality in a much
 faster way. However, he still wants to support .NET Standard 2.0, so he decides
 to use `#if` to multi-target for .NET 5.
@@ -122,11 +122,11 @@ public class Picture
 {
     public void Blur(float radius)
     {
-        #if NET5_0_OR_HIGHER
-            FastBlurUsingHardwareIntrinsics();
-        #else
-            SlowBlurUsingSimpleMath();
-        #endif
+#if NET5_0_OR_GREATER
+        FastBlurUsingHardwareIntrinsics();
+#else
+        SlowBlurUsingSimpleMath();
+#endif
     }
 }
 ```
@@ -156,26 +156,27 @@ The SDK will define `XXX_OR_GREATER` variants for the following TFMs:
 * **.NET Framework**
     - Applies to `net1.0`-`net4x` and the `NETFRAMEWORK`/`NET` symbols
     - For example, `net4.8` will define `NETFRAMEWORK`, `NET48`,
-      `NET48_OR_GREATER` `NET472_OR_GREATER`, `NET471_OR_GREATER`, etc.
+      `NET48_OR_GREATER`, `NET472_OR_GREATER`, ... `NET20_OR_GREATER`.
 * .NET Core
     - Applies to `netcoreappX.Y` and the `NETCOREAPP` symbol
     - For example, `netcoreapp3.1` will define `NETCOREAPP`, `NETCOREAPP3_1`,
-      `NETCOREAPP3_1_OR_GREATER`, `NETCOREAPP3_0_OR_GREATER` etc.
+      `NETCOREAPP3_1_OR_GREATER`, .., `NETCOREAPP1_1_OR_GREATER`.
 * .NET 5 and later
     - Applies to `netX.Y` and the `NET` symbol
-    - For example, `net6.0` will define `NET`, `NET6_0`, `NET6_0_OR_GREATER`,
-      `NET5_0_OR_GREATER` etc.
+    - For example, `net6.0` will define `NET`, `NET6_0`, `NET6_0_OR_GREATER` and
+      `NET5_0_OR_GREATER`.
     - This will also include the corresponding defines a .NET Core 3.1 successor
       would have gotten. For example, `net5.0` will also define `NETCOREAPP`,
-      `NETCOREAPP3_1_OR_GREATER`, `NETCOREAPP3_0_OR_GREATER` etc. But it will
-      *neither* define a `NETCOREAPP5_0` or `NETCOREAPP5_0_OR_GREATER`.
+      `NETCOREAPP3_1_OR_GREATER`, .., `NETCOREAPP1_0_OR_GREATER`.
+    - This will *neither* define a `NETCOREAPP5_0` nor
+      `NETCOREAPP5_0_OR_GREATER`.
 * .NET 5 and later with operating systems
     - The OS flavors will also gain the `XXX_OR_GREATER` variants
     - For example, `net5.0-windows10.0.19222.0` will also define `WINDOWS`,
       `WINDOWS10_0_19041_0`, `WINDOWS10_0_19041_0_OR_GREATER`, etc.
 * Xamarin
-    - This covers the existing Xamarin offerings, the new .NET 6-based Xamarin
-      is handled by the previous sections.
+    - This covers the existing Xamarin offerings, the new .NET 6-based iOS and
+      Android support is handled by the previous sections.
     - The existing Xamarin platforms don't have versioned preprocessor symbols
     - Thus, we won't be adding those
 
