@@ -19,12 +19,12 @@ This document proposes a new API based on learning and scenarios from:
 # Dynamic
 The dynamic feature in C# is enabled by both language features and implementation in the `System.Linq.Expressions` assembly. The core interface detected by the language to enable this support is [IDynamicMetaObjectProvider](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.idynamicmetaobjectprovider?view=net-5.0).
 
-There are implementations of `IDynamicMetaObjectProvider` including [DynamicObject](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.dynamicobject?view=net-5.0) and [ExpandObject](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.expandoobject?view=netcore-3.1). However, both implementations are not ideal:
+There are implementations of `IDynamicMetaObjectProvider` including [DynamicObject](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.dynamicobject?view=net-5.0) and [ExpandObject](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.expandoobject?view=netcore-3.1). However, these implementations are not ideal:
 - There are many public members used for wiring up dynamic support, but are of little to no value for consumers so they would be confusing when mixed in with other methods intended to be used for writable DOM support.
 - It is not possible to efficiently combine writable DOM classes that are not tied to `dynamic` and `System.Linq.Expressions`:
   - If combined, there would need to be an assembly reference to the very large `System.Linq.Expressions.dll` event when `dynamic` features are not needed.
   - If separate, the `dynamic` classes delegate to separate writable DOM classes, which doubles the object instances and increases the concept count around interop between the types returned from `dynamic` vs. the writable DOM classes.
-- `ExpandoObject` does not support case insensitivity and throws an exception when accessing missing properties (a `null` is desired instead).
+- `ExpandoObject` does not support case insensitivity and throws an exception when accessing missing properties (a `null` is desired instead). This could be fixed, however.
 - `DynamicObject` prevents potential optimizations including property-lookup.
 
 Thus, the design presented here for `dynamic` assumes:
@@ -36,9 +36,8 @@ Thus, the design presented here for `dynamic` assumes:
 Having `System.Text.Json.dll` directly reference `System.Linq.Expressions.dll` is not desired:
 - Implementations of Blazor and stand-alone apps that do not use `dynamic` features do not want to carry the large `System.Linq.Expressions.dll`.
   - Referencing `System.Linq.Expressions.dll` will require ~5.5MB of disk size. `System.Linq.Expressions.dll` is around 5MB in size but since it also references to `System.Linq` (~400K) and `System.ObjectModel` (~80K) (which that are not referenced by STJ) it becomes ~5.5MB (crossgen'd size).
-  - STJ is considering removing its reference to using reflection emit, so referencing `System.Linq.Expressions.dll` would also require keeping the references to the various System.Reflection.* assemblies. However, since these are currently implemented in the runtime, it is not a factor today for disk size.
-
-- STJ is somewhat being pushed downstack with usage by other framework assemblies including the recent "BinaryData" work, so basic questions around the assembly dependency tree and potential cycles come into play.
+  - STJ is considering removing its reference to using reflection emit, so referencing `System.Linq.Expressions.dll` would require keeping the the various System.Reflection.* references. Since reflection emit is currently implemented in the runtime (`System.Private.CoreLib`), disk savings by avoiding the API surface layer in `SREmit.ILGeneration` and `SREmit.Lightweight` is limited to ~30K.
+- If STJ is needs to be used downstack by other framework assemblies, there may be basic questions around the assembly dependency tree and potential cycles.
 
 Thus the proposal is to add a `System.Text.Json.Dynamic.dll` assembly that will have a reference to both `System.Text.Json.dll` and `System.Linq.Expressions.dll` and contain the implementation supporting `dynamic`.
 
@@ -175,6 +174,9 @@ namespace System.Text.Json
 
         // Return the internal value or convert to T as necessary.
         public abstract T GetValue<T>();
+        public abstract object GetValue<Type type>();
+        public abstract bool TryGetValue<T>(out T? value);
+        public abstract bool TryGetValue(Type type, out object? value);
 
         // The token type from deserialization; otherwise JsonValueKind.Unspecified.
         public JsonValueKind ValueKind { get; }
@@ -190,6 +192,9 @@ namespace System.Text.Json
         // - JsonElement
         // - string or byte[] (as JSON)
         public override T GetValue<T>();
+        public override object GetValue<Type type>();
+        public override bool TryGetValue<T>(out T? value);
+        public override bool TryGetValue(Type type, out object? value);
     }
 
     public sealed class JsonObject : JsonNode, IDictionary<string, object>
@@ -203,6 +208,9 @@ namespace System.Text.Json
         // - JsonElement
         // - string or byte[] (as JSON)
         public override T GetValue<T>();
+        public override object GetValue<Type type>();
+        public override bool TryGetValue<T>(out T? value);
+        public override bool TryGetValue(Type type, out object? value);
     }
 
     public sealed class JsonValue : JsonNode
@@ -219,7 +227,9 @@ namespace System.Text.Json
 
         // Can be used to obtain any compatible value, including values from custom converters.
         public override T GetValue<T>();
+        public override object GetValue<Type type>();
         public override bool TryGetValue<T>(out T? value);
+        public override bool TryGetValue(Type type, out object? value);
 
         // These match the methods on JsonElement.
         // They can be used instead of GetValue<T> for performance since they don't cause generic
@@ -333,7 +343,7 @@ so it is possible to omit the options instance for non-root members. When a prop
 Pending design, it may be required that all option instances are the same across a given `JsonNode` tree.
 
 ### Using `System.Object` for values
-Both `JsonObject` and `JsonArray` allow `System.Object` to be specified for the property\array values. This allows a terse and more performant model, plus compatibility with `dynamic`:
+Both `JsonObject` and `JsonArray` allow `System.Object` to be specified for the property\array values. This allows a terse and more performant model, plus compatibility with Newtonsoft and `dynamic`:
 ```cs
     var jObject = new JsonObject(options)
     {
@@ -355,7 +365,33 @@ The values remain in the original form and are not converted to `JsonNode` insta
 
 During serialization, the appropriate converter is used to serialize either the primitive value or the underlying value held by a `JsonNode`.
 
-An alternative is to have `JsonObject` implement `IDictionary<string, JsonNode>` instead of `IDictionary<string, object>` and `JsonArray` implement `IList<JsonNode>` instead of `IList<object>`. However, if that is done, `dynamic` cases will compile without using `JsonNode` types but will cause an unexpected run-time exception since the underlying array\dictionary does not support non-`JsonNode` types. Supporting `object` in this way is also consistent with Newtonsoft.
+An alternative is to have `JsonObject` implement `IDictionary<string, JsonNode>` instead of `IDictionary<string, object>` and `JsonArray` implement `IList<JsonNode>` instead of `IList<object>`. However, if that is done, `dynamic` cases will compile without using `JsonNode` types but will cause an unexpected run-time exception since the underlying array\dictionary does not support non-`JsonNode` types:
+```cs
+    dynamic obj = JsonSerializer.Deserialize(...);
+    obj.Foo = true; // compiles fine, but exception at runtime since 'true' is not a 'JsonNode'
+    
+    MyPoco poco = JsonSerializer.Deserialize<MyPoco>(json);
+    obj.MyPoco = poco; // compiles fine, but exception at runtime since 'MyPoco' is not a 'JsonNode'
+```
+
+For the latter case with `MyPoco`, without support for `object`, the poco would need to be converted into a `JsonObject` and there isn't a performant way to do this. One slow workaround:
+``` cs
+    MyPoco poco = JsonSerializer.Deserialize<MyPoco>(...);
+
+    dynamic obj = JsonSerializer.Deserialize<object>(...);
+
+    // We want to set obj.MyPoco to poco, but can't do that directly:
+    string json = JsonSerializer.Serialize(poco);
+    JsonObject jObject = JsonSerializer.Deserialize<JsonObject>(json);
+    obj.MyPoco = jObject;
+    JsonSerializer.Serialize(jObject);
+```
+
+Thus having support for `object` in the object and collection cases instead of `JsonNode` helps in several ways:
+- Avoid a class of run-time errors where non-`JsonObject` derived types are used.
+- Consistent with Newtonsoft.
+- More terse and in some cases intuitive programming model. For example, a literal `true` or `false` can be used (without implicit operators) instead of `JsonBoolean(true)` and `JsonBoolean(false)`.
+- More performant that being forced to use JsonNode types (removes a somewhat unnecessary abstraction) such as the example above with `MyPoco`.
 
 ## Changing the deserialization of System.Object
 The serializer has always deserialized JSON mapping to a `System.Object` as a `JsonElement`. This will remain the default behavior going forward, however there will be a way to specify `JsonNode` instead:
