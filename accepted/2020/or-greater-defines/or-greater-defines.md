@@ -156,18 +156,18 @@ The SDK will define `XXX_OR_GREATER` variants for the following TFMs:
 * **.NET Framework**
     - Applies to `net1.0`-`net4x` and the `NETFRAMEWORK`/`NET` symbols
     - For example, `net4.8` will define `NETFRAMEWORK`, `NET48`,
-      `NET48_OR_GREATER`, `NET472_OR_GREATER`, ... `NET20_OR_GREATER`.
+      `NET48_OR_GREATER`, `NET472_OR_GREATER`..`NET20_OR_GREATER`.
 * .NET Core
     - Applies to `netcoreappX.Y` and the `NETCOREAPP` symbol
     - For example, `netcoreapp3.1` will define `NETCOREAPP`, `NETCOREAPP3_1`,
-      `NETCOREAPP3_1_OR_GREATER`, .., `NETCOREAPP1_1_OR_GREATER`.
+      `NETCOREAPP3_1_OR_GREATER`..`NETCOREAPP1_0_OR_GREATER`.
 * .NET 5 and later
     - Applies to `netX.Y` and the `NET` symbol
     - For example, `net6.0` will define `NET`, `NET6_0`, `NET6_0_OR_GREATER` and
       `NET5_0_OR_GREATER`.
     - This will also include the corresponding defines a .NET Core 3.1 successor
       would have gotten. For example, `net5.0` will also define `NETCOREAPP`,
-      `NETCOREAPP3_1_OR_GREATER`, .., `NETCOREAPP1_0_OR_GREATER`.
+      `NETCOREAPP3_1_OR_GREATER`..`NETCOREAPP1_0_OR_GREATER`.
     - This will *neither* define a `NETCOREAPP5_0` nor
       `NETCOREAPP5_0_OR_GREATER`.
 * .NET 5 and later with operating systems
