@@ -177,8 +177,10 @@ The SDK will define `XXX_OR_GREATER` variants for the following TFMs:
 * Xamarin
     - This covers the existing Xamarin offerings, the new .NET 6-based iOS and
       Android support is handled by the previous sections.
-    - The existing Xamarin platforms don't have versioned preprocessor symbols
-    - Thus, we won't be adding those
+    - The existing Xamarin Apple platforms don't have versioned preprocessor
+      symbols, but Android does: `__ANDROID_16__`
+    - We don't plan on adding `OR_GREATER` flavors like
+      `__ANDROID_16_OR_GREATER__`. Instead, we're only doing those for .NET 6.
 
 ### Doc changes
 
