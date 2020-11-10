@@ -23,43 +23,42 @@ There are implementations of `IDynamicMetaObjectProvider` including [DynamicObje
 - There are many public members used for wiring up dynamic support, but are of little to no value for consumers so they would be confusing when mixed in with other methods intended to be used for writable DOM support.
 - It is not possible to efficiently combine writable DOM classes that are not tied to `dynamic` and `System.Linq.Expressions`:
   - If combined, there would need to be an assembly reference to the very large `System.Linq.Expressions.dll` event when `dynamic` features are not needed.
-  - If separate, the `dynamic` classes delegate to separate writable DOM classes, which doubles the object instances and increases the concept count around interop between the types returned from `dynamic` vs. the writable DOM classes.
+  - If separate standalone classes, the `dynamic` class delegates to a separate writable DOM class, which doubles the object instances and increases the concept count around interop between the types returned from `dynamic` vs. the writable DOM classes.
 - `ExpandoObject` does not support case insensitivity and throws an exception when accessing missing properties (a `null` is desired instead). This could be fixed, however.
 - `DynamicObject` prevents potential optimizations including property-lookup.
 
 Thus, the design presented here for `dynamic` assumes:
 - Implementation of `IDynamicMetaObjectProvider`.
 - Use of the writable DOM without requiring a reference to `System.Linq.Expressions.dll` (when `dynamic` support is not desired).
-- Efficient implementation of tying both `IDynamicMetaObjectProvider` and the writable DOM classes into a single instance. Newtonsoft also has a single object model with [JToken](https://www.newtonsoft.com/json/help/html/T_Newtonsoft_Json_Linq_JToken.htm) which implements `IDynamicMetaObjectProvider`.
+- Efficient implementation of tying both `IDynamicMetaObjectProvider` and the writable DOM classes into a single instance and type hierarchy. Newtonsoft also has a single object model with [JToken](https://www.newtonsoft.com/json/help/html/T_Newtonsoft_Json_Linq_JToken.htm) which implements `IDynamicMetaObjectProvider`.
 
-## Adding a System.Text.Json.Dynamic.dll (STJD) assembly
-Having `System.Text.Json.dll` directly reference `System.Linq.Expressions.dll` is not desired:
+## Ability to not depend on `System.Linq.Expressions.dll`
+Having `System.Text.Json.dll` directly reference `System.Linq.Expressions.dll` is not desired unless the `dynamic` capability is desired:
 - Implementations of Blazor and stand-alone apps that do not use `dynamic` features do not want to carry the large `System.Linq.Expressions.dll`.
   - Referencing `System.Linq.Expressions.dll` will require ~5.5MB of disk size. `System.Linq.Expressions.dll` is around 5MB in size but since it also references to `System.Linq` (~400K) and `System.ObjectModel` (~80K) (which that are not referenced by STJ) it becomes ~5.5MB (crossgen'd size).
   - STJ is considering removing its reference to using reflection emit, so referencing `System.Linq.Expressions.dll` would require keeping the the various System.Reflection.* references. Since reflection emit is currently implemented in the runtime (`System.Private.CoreLib`), disk savings by avoiding the API surface layer in `SREmit.ILGeneration` and `SREmit.Lightweight` is limited to ~30K.
-- If STJ is needs to be used downstack by other framework assemblies, there may be basic questions around the assembly dependency tree and potential cycles.
+- Existing usages of STJ such as by the SDK and Visual Studio that do not use `dynamic` also do not want to carry `System.Linq.Expressions.dll`.
 
-Thus the proposal is to add a `System.Text.Json.Dynamic.dll` assembly that will have a reference to both `System.Text.Json.dll` and `System.Linq.Expressions.dll` and contain the implementation supporting `dynamic`.
-
-An alternative which may or may not be feasible in the 6.0 timeframe is to extend the linker to remove dependencies on applications such as Blazor or a stand-alone app if the `dynamic` feature is not used. Currently the linker is only ran against framework assemblies, not application assemblies. This will help the stand-alone scenario and perhaps Blazor, but not the downstack concerns.
-
-_For naming, also consider `S.T.J.DynamicSerialization.dll`._
-
-A more open-ended name of `S.T.J.Extensions.dll` was considered but is not discoverable, so a more feature-specific name was considered a better choice. By going with feature-specific names like `S.T.J.Dynamic.dll`, we may end up with additional assemblies in the future. If the need arises, these extension assemblies could forward to private common implementation assembly(s).
+The preferred approach is to ensure ILLinker can remove the dependency to `System.Linq.Expressions.dll` when `dynamic` is not needed. This is achieved by having an opt-in method `EnableDynamicTypes()` on `JsonSerializerOptions`.
 
 ## Proposed API to enable dynamic mode
-In the new STJD assembly:
+All classes to be located in STJ.dll.
+
 ```cs
 namespace System.Text.Json
 {
     public static class JsonExtensions
     {
+        // The root method that if not called, ILLinker will trim out:
+        // - The reference to the System.Object custom converter that supports 'dynamic'.
+        // - The custom converter's reference to the types in `System.Linq.Expressions.dll` including `IDynamicMetaObjectProvider`.
+        // - The reference to and `System.Linq.Expressions.dll`
         public static void EnableDynamic(JsonSerializerOptions this options);
     }
 }
 ```
 
-Thus a consumer would reference STJD.dll and then author code such as:
+Sample code to enable dynamic types:
 ```cs
     var options = new JsonSerializerOptions();
     options.EnableDynamicTypes();
@@ -72,14 +71,12 @@ Thus a consumer would reference STJD.dll and then author code such as:
 ```
 
 ### Internal implementation
-The types that are used at runtime to implement `dynamic` can be made `internal`. Instances are created by the System.Object custom converter which understands `dynamic`.
+The types that are used at runtime to implement `dynamic` can be made `internal`. Instances are created by the `System.Object` custom converter which understands `dynamic`.
 ```cs
 internal class JsonDynamicObject : JsonObject, IDynamicMetaObjectProvider {}
 internal class JsonDynamicArray : JsonArray, IDynamicMetaObjectProvider {}
 internal class JsonDynamicValue : JsonValue, IDynamicMetaObjectProvider {}
 ```
-
-where `JsonObject`, `JsonArray`, and `JsonValue` are new public types in STJ.dll.
 
 ### Varying the `T` in `Deserialize<T>`
 This
@@ -160,7 +157,7 @@ During serialization, the DOM is written using the serializer and uses any custo
 In the example, a JSON "NaN" string is deserialized into a `JsonValue` and when `GetValue<double>` is called, a `double` is returned, assuming the appropriate `JsonSerializerOptions` are configured for quoted numbers. When the node is serialized, it produces a JSON string (again, if configured). The consumer of the DOM is not necessarily aware that `double` values assigned to the node may be serialized to JSON as either a string or a JSON number, and after deserialization is not aware what the internal state is - it could be a `byte[]`, a `JsonElement` or a `string` depending on implementation and\or the JSON token (string or number).
 
 ## Primary API
-These types live in STJ.dll.
+All types live in STJ.dll.
 ```cs
 namespace System.Text.Json
 // Also consider existing S.T.J.Serialization namespace instead of S.T.J.
@@ -604,10 +601,8 @@ Other issues to consider along with this:
   - The DOM could be used in a future feature to make object and collection custom converters easier to use.
 
 # Todos
-- [ ] Review "Adding a System.Text.Json.Dynamic.dll (STJD) assembly".
 - [ ] Review general direction of API. Primarily using the serializer methods vs. new `node.Parse()` \ `node.Write()` methods and having a sealed `JsonValue` class instead of separate number, string and boolean classes.
 - [ ] Provide more samples (LINQ).
 - [ ] Prototype and usabilty study?
 - [ ] Create API issue and review.
-- [ ] Determine whether we should support `System.ComponenentModel.TypeConverter`.
 - [ ] Ensure any future "new dynamic" C# support for intellisense support is forward-compatible with the work here which uses the "old dynamic".
