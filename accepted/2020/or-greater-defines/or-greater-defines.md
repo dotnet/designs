@@ -183,6 +183,10 @@ The SDK will define `XXX_OR_GREATER` variants for the following TFMs:
       `__ANDROID_16_OR_GREATER__`. Instead, we're only adding the symbols
       described in the previous section for .NET 6.
 
+Note: The new `XXX_OR_GREATER` variants should not be generated when the existing
+implicit-TFM defines are disabled, i.e. `DisableImplicitFrameworkDefines` is set
+to `true`.
+
 ### Doc changes
 
 The [documentation table][docs-table] in the [#if (C# reference)][docs] will
