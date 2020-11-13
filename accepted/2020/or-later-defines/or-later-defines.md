@@ -1,16 +1,16 @@
-# OR_GREATER preprocessor symbols for TFMs
+# OR_LATER preprocessor symbols for TFMs
 
 **PM** [Immo Landwerth](https://github.com/terrajobst)
 
 Today, projects automatically define `#if` symbols based on the friendly TFM
 representation. This includes both versionless- as well as version-specific
-symbols. For .NET 6, we plan to add `XXX_OR_GREATER` variants that are
+symbols. For .NET 6, we plan to add `XXX_OR_LATER` variants that are
 accumulative in nature:
 
 TFM                 | Existing | Proposed Additions
 --------------------|----------|--------------------------------------------
-`net5.0`            | `NET5_0` | `NET5_0_OR_GREATER`
-`net6.0`            | `NET6_0` | `NET6_0_OR_GREATER`, `NET5_0_OR_GREATER`
+`net5.0`            | `NET5_0` | `NET5_0_OR_LATER`
+`net6.0`            | `NET6_0` | `NET6_0_OR_LATER`, `NET5_0_OR_LATER`
 
 The goal is to align the semantics between package folder names and `#if`
 without breaking existing code.
@@ -18,7 +18,7 @@ without breaking existing code.
 The new symbols will make it easier to write code that doesn't need to be
 updated each time the project's `TargetFramework`/`TargetFrameworks` property is
 changed. For example, let's say you want a new code path that is triggered for
-.NET 6.0 and greater. This could either be a new API you want to call or relying
+.NET 6.0 and later. This could either be a new API you want to call or relying
 on a new behavior. Today, you need to write code like that but you need to
 consider what version TFMs your project is targeting. Let's say you target .NET
 Framework 4.6.1, .NET Core 3.1, and .NET 5.
@@ -33,7 +33,7 @@ void M()
 #elif NETCOREAPP3_1
     LegacyNetCoreBehavior();
 #elif NET
-    Net5OrGreaterBehavior();
+    Net5OrLaterBehavior();
 #else
     #error Unhandled TFM
 #endif
@@ -42,7 +42,7 @@ void M()
 
 Please note that order is important here. You first handle all the legacy TFMs
 and then you handle the new behavior. To avoid breaking that code once you add
-target .NET 6, you use the versionless TFM for .NET 5 and greater platforms
+target .NET 6, you use the versionless TFM for .NET 5 and later platforms
 (`NET`). However, the code still needs to be revised when you add lower versions
 of existing TFMs.
 
@@ -52,11 +52,11 @@ intuitive:
 ```C#
 void M()
 {
-#if NET5_0_OR_GREATER
-    Net5OrGreaterBehavior();
-#elif NETCOREAPP3_1_OR_GREATER
+#if NET5_0_OR_LATER
+    Net5OrLaterBehavior();
+#elif NETCOREAPP3_1_OR_LATER
     LegacyNetCoreBehavior();
-#elif NET461_OR_GREATER
+#elif NET461_OR_LATER
     LegacyNetFxBehavior();
 #else
     #error Unhandled TFM
@@ -122,7 +122,7 @@ public class Picture
 {
     public void Blur(float radius)
     {
-#if NET5_0_OR_GREATER
+#if NET5_0_OR_LATER
         FastBlurUsingHardwareIntrinsics();
 #else
         SlowBlurUsingSimpleMath();
@@ -151,39 +151,39 @@ public class Picture
 
 ## Design
 
-The SDK will define `XXX_OR_GREATER` variants for the following TFMs:
+The SDK will define `XXX_OR_LATER` variants for the following TFMs:
 
 * **.NET Framework**
     - Applies to `net1.0`-`net4x` and the `NETFRAMEWORK`/`NET` symbols
     - For example, `net4.8` will define `NETFRAMEWORK`, `NET48`,
-      `NET48_OR_GREATER`, `NET472_OR_GREATER`..`NET20_OR_GREATER`.
+      `NET48_OR_LATER`, `NET472_OR_LATER`..`NET20_OR_LATER`.
 * .NET Core
     - Applies to `netcoreappX.Y` and the `NETCOREAPP` symbol
     - For example, `netcoreapp3.1` will define `NETCOREAPP`, `NETCOREAPP3_1`,
-      `NETCOREAPP3_1_OR_GREATER`..`NETCOREAPP1_0_OR_GREATER`.
+      `NETCOREAPP3_1_OR_LATER`..`NETCOREAPP1_0_OR_LATER`.
 * .NET 5 and later
     - Applies to `netX.Y` and the `NET` symbol
-    - For example, `net6.0` will define `NET`, `NET6_0`, `NET6_0_OR_GREATER` and
-      `NET5_0_OR_GREATER`.
+    - For example, `net6.0` will define `NET`, `NET6_0`, `NET6_0_OR_LATER` and
+      `NET5_0_OR_LATER`.
     - This will also include the corresponding defines a .NET Core 3.1 successor
       would have gotten. For example, `net5.0` will also define `NETCOREAPP`,
-      `NETCOREAPP3_1_OR_GREATER`..`NETCOREAPP1_0_OR_GREATER`.
+      `NETCOREAPP3_1_OR_LATER`..`NETCOREAPP1_0_OR_LATER`.
     - This will *neither* define a `NETCOREAPP5_0` nor
-      `NETCOREAPP5_0_OR_GREATER`.
+      `NETCOREAPP5_0_OR_LATER`.
 * .NET 5 and later with operating systems
-    - The OS flavors will also gain the `XXX_OR_GREATER` variants
+    - The OS flavors will also gain the `XXX_OR_LATER` variants
     - For example, `net5.0-windows10.0.19041.0` will also define `WINDOWS`,
-      `WINDOWS10_0_19041_0`, `WINDOWS10_0_19041_0_OR_GREATER`, etc.
+      `WINDOWS10_0_19041_0`, `WINDOWS10_0_19041_0_OR_LATER`, etc.
 * Xamarin
     - This covers the existing Xamarin offerings, the new .NET 6-based iOS and
       Android support is handled by the previous sections.
     - The existing Xamarin Apple platforms don't have versioned preprocessor
       symbols, but Android does: `__ANDROID_16__`
-    - We don't plan on adding `OR_GREATER` flavors like
-      `__ANDROID_16_OR_GREATER__`. Instead, we're only adding the symbols
+    - We don't plan on adding `OR_LATER` flavors like
+      `__ANDROID_16_OR_LATER__`. Instead, we're only adding the symbols
       described in the previous section for .NET 6.
 
-Note: The new `XXX_OR_GREATER` variants should not be generated when the existing
+Note: The new `XXX_OR_LATER` variants should not be generated when the existing
 implicit-TFM defines are disabled, i.e. `DisableImplicitFrameworkDefines` is set
 to `true`.
 
@@ -194,15 +194,15 @@ need to change as follows:
 
 > | Target Frameworks | Symbols |
 > | ------------------| ------- |
-> | .NET Framework    | `NETFRAMEWORK`, `NET48`, `NET472`, `NET471`, `NET47`, `NET462`, `NET461`, `NET46`, `NET452`, `NET451`, `NET45`, `NET40`, `NET35`, `NET20`, `NET48_OR_GREATER`, `NET472_OR_GREATER`, `NET471_OR_GREATER`, `NET47_OR_GREATER`, `NET462_OR_GREATER`, `NET461_OR_GREATER`, `NET46_OR_GREATER`, `NET452_OR_GREATER`, `NET451_OR_GREATER`, `NET45_OR_GREATER`, `NET40_OR_GREATER`, `NET35_OR_GREATER`, `NET20_OR_GREATER` |
-> | .NET Standard     | `NETSTANDARD`, `NETSTANDARD2_1`, `NETSTANDARD2_0`, `NETSTANDARD1_6`, `NETSTANDARD1_5`, `NETSTANDARD1_4`, `NETSTANDARD1_3`, `NETSTANDARD1_2`, `NETSTANDARD1_1`, `NETSTANDARD1_0`, `NETSTANDARD2_1_OR_GREATER`, `NETSTANDARD2_0_OR_GREATER`, `NETSTANDARD1_6_OR_GREATER`, `NETSTANDARD1_5_OR_GREATER`, `NETSTANDARD1_4_OR_GREATER`, `NETSTANDARD1_3_OR_GREATER`, `NETSTANDARD1_2_OR_GREATER`, `NETSTANDARD1_1_OR_GREATER`, `NETSTANDARD1_0_OR_GREATER` |
-> | .NET 6 (and .NET Core) | `NET6_0`, `NET5_0`, `NETCOREAPP`, `NETCOREAPP3_1`, `NETCOREAPP3_0`, `NETCOREAPP2_2`, `NETCOREAPP2_1`, `NETCOREAPP2_0`, `NETCOREAPP1_1`, `NETCOREAPP1_0`, `NET6_0_OR_GREATER`, `NET5_0_OR_GREATER`, `NETCOREAPP3_1_OR_GREATER`, `NETCOREAPP3_0_OR_GREATER`, `NETCOREAPP2_2_OR_GREATER`, `NETCOREAPP2_1_OR_GREATER`, `NETCOREAPP2_0_OR_GREATER`, `NETCOREAPP1_1_OR_GREATER`, `NETCOREAPP1_0_OR_GREATER` |
+> | .NET Framework    | `NETFRAMEWORK`, `NET48`, `NET472`, `NET471`, `NET47`, `NET462`, `NET461`, `NET46`, `NET452`, `NET451`, `NET45`, `NET40`, `NET35`, `NET20`, `NET48_OR_LATER`, `NET472_OR_LATER`, `NET471_OR_LATER`, `NET47_OR_LATER`, `NET462_OR_LATER`, `NET461_OR_LATER`, `NET46_OR_LATER`, `NET452_OR_LATER`, `NET451_OR_LATER`, `NET45_OR_LATER`, `NET40_OR_LATER`, `NET35_OR_LATER`, `NET20_OR_LATER` |
+> | .NET Standard     | `NETSTANDARD`, `NETSTANDARD2_1`, `NETSTANDARD2_0`, `NETSTANDARD1_6`, `NETSTANDARD1_5`, `NETSTANDARD1_4`, `NETSTANDARD1_3`, `NETSTANDARD1_2`, `NETSTANDARD1_1`, `NETSTANDARD1_0`, `NETSTANDARD2_1_OR_LATER`, `NETSTANDARD2_0_OR_LATER`, `NETSTANDARD1_6_OR_LATER`, `NETSTANDARD1_5_OR_LATER`, `NETSTANDARD1_4_OR_LATER`, `NETSTANDARD1_3_OR_LATER`, `NETSTANDARD1_2_OR_LATER`, `NETSTANDARD1_1_OR_LATER`, `NETSTANDARD1_0_OR_LATER` |
+> | .NET 6 (and .NET Core) | `NET6_0`, `NET5_0`, `NETCOREAPP`, `NETCOREAPP3_1`, `NETCOREAPP3_0`, `NETCOREAPP2_2`, `NETCOREAPP2_1`, `NETCOREAPP2_0`, `NETCOREAPP1_1`, `NETCOREAPP1_0`, `NET6_0_OR_LATER`, `NET5_0_OR_LATER`, `NETCOREAPP3_1_OR_LATER`, `NETCOREAPP3_0_OR_LATER`, `NETCOREAPP2_2_OR_LATER`, `NETCOREAPP2_1_OR_LATER`, `NETCOREAPP2_0_OR_LATER`, `NETCOREAPP1_1_OR_LATER`, `NETCOREAPP1_0_OR_LATER` |
 >
 > **Notes**:
 >
 > * Versionless symbols are defined regardless of the version you're targeting.
 > * Version-specific symbols are only defined for the version you're targeting.
-> * The `XXX_OR_GREATER` symbols are defined for the version you're targeting
+> * The `XXX_OR_LATER` symbols are defined for the version you're targeting
 >   and all earlier versions.
 
 [docs-table]: https://github.com/dotnet/docs/blob/master/includes/preprocessor-symbols.md
