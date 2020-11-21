@@ -12,8 +12,8 @@ check out [this document](proposals.md).
 
 ## Examples
 
-* [Windows Compatibility Pack](https://github.com/dotnet/designs/blob/master/accepted/compat-pack/compat-pack.md)
-* [Package Information in API Reference](https://github.com/dotnet/designs/blob/master/accepted/package-doc/package-doc.md)
+* [Windows Compatibility Pack](../accepted/2018/compat-pack/compat-pack.md)
+* [Package Information in API Reference](../accepted/2018/package-doc/package-doc.md)
 
 ## Template with Instructions
 
