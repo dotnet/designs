@@ -7,7 +7,7 @@ The design of single-file apps in .NET Core 3.0 can be found [here](design_3_0.m
 
 The goal of this effort is enable .Net-Core apps to be published and distributed as a single executable.
 
-There are several strategies to implement this feature -- ranging from bundling the published files into zip file to native compiling and linking all the binaries together. These options, along with their cost/benefit analysis is discussed in the [staging document](staging.md) and [related work](related.md).
+There are several strategies to implement this feature -- ranging from bundling the published files into zip file to native compiling and linking all the binaries together. These options, along with their cost/benefit analysis are discussed in the [staging document](staging.md) and [related work](related.md).
 
 #### Goals
 
@@ -62,7 +62,7 @@ When the `PublishSingleFile` property is set to true,
 * `RuntimeIdentifier` must be defined. Single-file builds generate a native binary for the specific platform and architecture.
 * `UseAppHost` cannot be  set to `false`.  
 * If `TargetFramework` is
-  * `netcoreapp5.0`, single-file publish works as described in this document.
+  * `net5.0`, single-file publish works as described in this document.
   * `netcoreapp3.0`  or `netcoreapp3.1` single-file publish works as described [here](design_3_0.md).
   * An earlier framework, causes a compilation error.
 
