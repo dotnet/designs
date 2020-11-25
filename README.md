@@ -3,7 +3,6 @@
 This repo contains [design proposals](meta/proposals.md) for the .NET platform.
 It focuses on designs for the runtime, framework, and the SDK. For others, see:
 
-* [ASP.NET Designs](https://github.com/aspnet/specs)
 * [C# Language Designs (dotnet/csharplang)](https://github.com/dotnet/csharplang)
 * [VB Language Designs (dotnet/vblang)](https://github.com/dotnet/vblang)
 * [F# Language Designs (fsharp/fslang-design)](https://github.com/fsharp/fslang-design)
