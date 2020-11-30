@@ -17,19 +17,19 @@ Trimming a framework-dependent application can also be advantageous since the
 application may depend on libraries and only use a small subset of the
 functionality available in those libraries.
 
-The [ILLink](https://github.com/mono/linker) is a tool that is able to take
+[ILLink](https://github.com/mono/linker) is a tool that is able to take
 an application and trim the classes and methods that are not used by the
 application. In many scenarios, this results in a significantly smaller packaged
 application.
 
 This document describes how to modify libraries to work well with the ILLink.
 
-*Note:For .NET Core frameworks our goal is to use the .NET Libraries for all
+*Note: For .NET Core, our goal is to use the .NET libraries implemented in dotnet/runtime for all
 .NET applications. In previous releases, Xamarin and Blazor applications
-have been using the Mono libraries, which have been written with size in mind.
-However, the .NET Libraries have traditionally been concerned with throughput
+have been using the Mono libraries from the mono/mono repo, which have been written with size in mind.
+However, the libraries implemented in dotnet/runtime have traditionally been concerned with throughput
 and not size. As such, it may take multiple releases to meet all size goals
-with the .NET Libraries.*
+with the .NET libraries.*
 
 In the context of trimming applications, there are two main concerns:
 
@@ -100,12 +100,12 @@ for more information on how the process works.
 
 #### Annotating code
 
-Some library code can use reflection or other problematic patterns and thus
-running the trimming tool on it can break its functionality and it generates
+Some library code can use reflection or other problematic patterns such that
+running the trimming tool on it can break its functionality and generate
 trim analysis warnings.
 
 Warnings originating in the library code itself are not actionable by the end
-user as they frequently point to internal implementation details and it's
+user as they frequently point to internal implementation details, and it's
 typically hard to determine which part of the application relies on
 the affected functionality.
 
@@ -115,10 +115,10 @@ in the context of an application. The goal is for the library code itself to
 not generate any warnings (as those are not actionable) and instead either
 resolve them (by providing annotations which help the trimming tool correctly
 recognize all dependencies) or to annotate public APIs such that the problem
-can be resolved in the call site by the tool automatically or the warning
-is generated pointing at the user code which uses the affected API.
+can be resolved in the call site by the tool automatically or by the user following the guidance
+provided by the warning and the affected API it calls out.
 
-Depending on the specific problematic pattern different solutions can be employed.
+Depending on the specific problematic pattern, different solutions can be employed.
 The list below is not complete list, it's just the most common patterns we've seen
 so far. The list below describes the progression of improvements which should
 be made for any affected feature.
@@ -128,19 +128,19 @@ apply the solutions as they go roughly in increasing order of complexity.
 
 #### Refactor hardcoded reflection
 
-The trim tool can already recognize lot of reflection patterns if they are hard
+The trim tool can already recognize a lot of reflection patterns if they are hard
 coded (type and member names specified as literals in the code). But it doesn't work
 on all such patterns. If the affected code is using what can be described as
 hard coded reflection it is often possible to rewrite it in such a way that the
 trim tool can recognize all of its patterns and avoid any issues that way. If that
-is not possible or practical a reasonable attempt should be made to improve the trimming
+is not possible or practical, a reasonable attempt should be made to improve the trimming
 tool and teach it about such pattern.
 
 Example of a refactoring: [Using statically known types instead of types from reflection.](https://github.com/dotnet/runtime/commit/29c4895d13ed8768ee5e8307ccef01dff38c1289#diff-58f0fbbb8b2d1c2d89fdae163e981f01697cb4c2de1fe67e6e171504bc615586L1176-L1178)
 
 #### Annotate with DynamicallyAccessedMembers
 
-If the code passes around values of `System.Type` type, these can be annotated
+If the code passes around values of the `System.Type` type, these can be annotated
 with [`DynamicallyAccessedMembersAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.dynamicallyaccessedmembersattribute.-ctor?view=net-5.0)
 to declare requirements on the type stored in the value. The trim tool uses
 this information to both enforce the fulfillment of the requirements
@@ -160,7 +160,7 @@ via `GetConstructor`.](https://github.com/dotnet/runtime/pull/36532/files#diff-5
 
 #### Suppress warnings
 
-If the warning while technically correct does not affect app's functionality,
+If the warning while technically correct does not affect an app's functionality,
 consider suppressing it. For this add [`UnconditionalSuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.unconditionalsuppressmessageattribute?view=net-5.0)
 (its usage is nearly identical to [`SuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.suppressmessageattribute?view=net-5.0),
 but it will be kept in the code for all configurations).
@@ -374,7 +374,7 @@ For example, a Xamarin iOS application can safely turn COM support off.
 #### Analyzing Canonical Applications
 
 Application size is similar to throughput performance in that you can't guess
-at what could effect an application size. You have to measure it. In order to
+at what could affect an application size. You have to measure it. In order to
 measure it, it's a good idea to define a set of canonical applications that we
 want to measure. Once we have these applications, we can trim them and then analyze
 the output to see what pieces are remaining, why, and investigate how to remove
