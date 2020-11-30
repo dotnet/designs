@@ -517,7 +517,8 @@ See [Default values for feature switches in trimmed console apps](https://github
 for a discussion of such defaults for console applications.
 
 Important note is that these changes will be made based on the intent
-to trim the app (`PublishTrimmed=true` in project file as described above)
+to trim the app (`PublishTrimmed=true` in project file as described in
+[Analysis and feedback](#Analysis-and-feedback))
 and thus will take effect in every stage of SDK.
 So `dotnet run` on such app will still have these features disabled,
 not just `dotnet publish`. As already mentioned, the goal is to have a
