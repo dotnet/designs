@@ -22,14 +22,15 @@ an application and trim the classes and methods that are not used by the
 application. In many scenarios, this results in a significantly smaller packaged
 application.
 
-This document describes how to modify libraries to work well with the ILLink.
+This document describes how to modify libraries to work well with ILLink.
 
-*Note: For .NET Core, our goal is to use the .NET libraries implemented in dotnet/runtime for all
-.NET applications. In previous releases, Xamarin and Blazor applications
-have been using the Mono libraries from the mono/mono repo, which have been written with size in mind.
-However, the libraries implemented in dotnet/runtime have traditionally been concerned with throughput
-and not size. As such, it may take multiple releases to meet all size goals
-with the .NET libraries.*
+*Note: For .NET Core, our goal is to use the .NET libraries implemented in
+`dotnet/runtime` for all .NET applications. In previous releases,
+Xamarin and Blazor applications have been using the Mono libraries from the
+`mono/mono` repo, which have been written with size in mind.
+However, the libraries implemented in dotnet/runtime have traditionally
+been concerned with throughput and not size. As such, it may take multiple
+releases to meet all size goals with the .NET libraries.*
 
 In the context of trimming applications, there are two main concerns:
 
@@ -43,7 +44,7 @@ Therefore it is critical that any necessary code must be preserved in the applic
 
 ## Scenarios and User Experience
 
-The ILLink can be executed on a .NET application and the developer will be
+ILLink can be executed on a .NET application and the developer will be
 confident that the trimmed application works correctly, while reducing its
 final size.
 
@@ -63,14 +64,15 @@ There are a number of things the author of a library needs to undertake in order
 to make it work well with trimmed applications. In general they fall into
 the two buckets outlined above:
 
-1. Trimming compatibility
-1. Smaller Size
+1. Ensuring code required for the app the work is preserved by the linker
+1. Ensuring as much of the library as possible is trimmable if not needed 
+by the app
 
 ### Trimming compatibility
 
 Ensuring required code is preserved by the linker is not easy. .NET has a very
 rich Reflection capability that enables dynamic invocation of code. There are
-many cases where a static analysis tool (like the ILLink) is not able to know
+many cases where a static analysis tool (like ILLink) is not able to know
 which code is required and which isn't. For example, a .NET application could
 read a Type name from a file and create a new instance of that Type through
 Reflection. When the linker analyzes the application statically, it doesn't see
@@ -115,8 +117,8 @@ in the context of an application. The goal is for the library code itself to
 not generate any warnings (as those are not actionable) and instead either
 resolve them (by providing annotations which help the trimming tool correctly
 recognize all dependencies) or to annotate public APIs such that the problem
-can be resolved in the call site by the tool automatically or by the user following the guidance
-provided by the warning and the affected API it calls out.
+can be resolved in the call site by the tool automatically or by the user
+following the guidance provided by the warning and the affected API it calls out.
 
 Depending on the specific problematic pattern, different solutions can be employed.
 The list below is not complete list, it's just the most common patterns we've seen
@@ -126,22 +128,29 @@ be made for any affected feature.
 The order of these is essentially the recommended order in which to try to
 apply the solutions as they go roughly in increasing order of complexity.
 
-#### Refactor hardcoded reflection
+#### Hardcoded reflection
 
 The trim tool can already recognize a lot of reflection patterns if they are hard
 coded (type and member names specified as literals in the code). But it doesn't work
 on all such patterns. If the affected code is using what can be described as
 hard coded reflection it is often possible to rewrite it in such a way that the
 trim tool can recognize all of its patterns and avoid any issues that way. If that
-is not possible or practical, a reasonable attempt should be made to improve the trimming
-tool and teach it about such pattern.
+is not possible or practical, a reasonable attempt should be made to improve
+the trimming tool and teach it about such pattern.
 
 Example of a refactoring: [Using statically known types instead of types from reflection.](https://github.com/dotnet/runtime/commit/29c4895d13ed8768ee5e8307ccef01dff38c1289#diff-58f0fbbb8b2d1c2d89fdae163e981f01697cb4c2de1fe67e6e171504bc615586L1176-L1178)
 
-#### Annotate with DynamicallyAccessedMembers
+#### Requirements on `Type` values
 
-If the code passes around values of the `System.Type` type, these can be annotated
-with [`DynamicallyAccessedMembersAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.dynamicallyaccessedmembersattribute.-ctor?view=net-5.0)
+Frequently a certain method uses `Type` value to perform some reflection
+(for example getting a value of a property from the type), but the type
+in question is not known by the method, it's passed in as a parameter for example.
+Another part of the code uses such method and passes in a known type.
+Such pattern is technically possible to analyze statically as both the type
+and the requirements on it are known. To help the trim tool analyze such cases
+the `Type` values can be annotated with the requirements.
+
+This is done by adding the [`DynamicallyAccessedMembersAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.dynamicallyaccessedmembersattribute.-ctor?view=net-5.0)
 to declare requirements on the type stored in the value. The trim tool uses
 this information to both enforce the fulfillment of the requirements
 as well as validate that these are sufficient for the code using the values.
@@ -158,7 +167,7 @@ Example of using these annotations:
 [Annotate type parameter to include constructor if the method body asks for it
 via `GetConstructor`.](https://github.com/dotnet/runtime/pull/36532/files#diff-58f0fbbb8b2d1c2d89fdae163e981f01697cb4c2de1fe67e6e171504bc615586L1116-L1131)
 
-#### Suppress warnings
+#### False positives
 
 If the warning while technically correct does not affect an app's functionality,
 consider suppressing it. For this add [`UnconditionalSuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.unconditionalsuppressmessageattribute?view=net-5.0)
@@ -168,7 +177,7 @@ but it will be kept in the code for all configurations).
 Example of suppressing warning on code which doesn't change behavior when trimmed:
 [Trimming fields on attributes doesn’t affect equality](https://github.com/dotnet/runtime/commit/0f97c7af662c68862995c0b2ab59e87242eff459#diff-a911305f19a82ebd3a64f9293f9e5347ff15c74d5440f6bc56af65f1fa56e9b8L17-L18)
 
-#### Declare explicit dynamic dependency
+#### Dependencies which are static but not analyzable by the tool
 
 In cases where the trimming tool is not able to infer the dependency or
 the developer wants to be explicit, the [`DynamicDependencyAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.dynamicdependencyattribute?view=net-5.0)
@@ -179,10 +188,11 @@ is included in the application, its declared dynamic dependency will also be inc
 Example of using dynamic dependency: [Declaring dependency from `Queryable.Where`
 to `IEnumerable.Where`](https://github.com/dotnet/runtime/commit/20710bbcae006e32f8a133c372c8d78722890982#diff-0d3f3d1b5d2d66a392f61078fc14b72085f52da3d95f46196ae4a6d547cfa74cL31-L32)
 
-#### Mark an API as incompatible with trimming
+#### Functionality incompatible with trimming
 
 If none of the above works, the first step should be to annotate the functionality
 with [`RequiresUnreferencedCodeAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.requiresunreferencedcodeattribute?view=net-5.0).
+This marks the functionality as incompatible with trimming.
 Unless the feature is fundamentally incompatible with trimming, over time
 a different solution which makes the code of the feature compatible with
 trimming should be implemented. Until that is complete though, it's better
@@ -214,7 +224,7 @@ propagating the trim incompatibility up the call tree.
 
 For example: [Annotating startup hook functionality as incompatible with trimming](https://github.com/dotnet/runtime/pull/44050/files#diff-9c65180e471f0d5b540d61b5aee02e5f6992374bef257ef165ac44099f75dfd4L98-L99)
 
-#### Separate incompatible functionality
+#### Only parts of a feature are incompatible with trimming
 
 The next step in improving the experience is to enable at least some subset
 of the functionality while trimming. Frequently only some parts of a feature
@@ -230,7 +240,7 @@ more details on this approach.
 Example using the feature switch approach: [Introducing the `EventSourceSupported`
 feature switch](https://github.com/dotnet/runtime/commit/a547d4178cd2d71d9b6a7a99600e20a3211d4436)
 
-#### Making the feature truly compatible with trimming
+#### No trimming incompatibilities
 
 Finally, invest into built-time tooling (or other approaches) to enable usage of
 the full feature even for trimmed apps. For example,
@@ -261,9 +271,6 @@ the methods required by those assemblies. If the core application doesn't need
 `string.Split`, trimming will remove the `Split` method. When an assembly that
 the trim tool didn't know about is loaded dynamically, it may need `string.Split`,
 and fail to run.
-* `System.Reflection.Emit`
-    * A method or property that is only called by dynamically generated code may
-be trimmed if the linker isn't aware of it.
 
 #### Serialization
 
@@ -303,7 +310,11 @@ necessary and can be removed. A lot of times it is obvious that if a method
 isn't called, it can be trimmed and the trim tool will recognize this automatically.
 But there are places where unnecessary code looks like it is being called.
 
-#### Removing features
+#### On-by-default functionality
+
+Functionality which is on by default without any specific reference to it.
+For example diagnostic features which are always enabled, but only activated
+when asked for.
 
 One mechanism we are adding that will allow us to conditionally remove code from
 applications is [feature switches](#Feature-Switches). Using this mechanism, an SDK
@@ -330,19 +341,19 @@ for more information.
 place to write the events. We can introduce a feature switch to remove
 `EventSource` code/calls. [Issue tracking this work](https://github.com/dotnet/runtime/issues/37414)
 
-#### Removing embedded descriptor files
+#### Usage of descriptor files
 
-There are libraries which use private Reflection to call
-between assemblies. One reason for this is layering. If Assembly A references
-Assembly B, and Assembly B needs to call a method in Assembly A, it can't
-reference it directly. We've solved that with a Reflection call.
+Trimming .NET applications has been around for a while in the Xamarin scenarios.
+To add the ability to overcome limitations of the trim tool,
+a descriptor files where introduces. These are instructions to the trim tool
+to preserve some type/method always, without seeing a direct reference to it.
 
-In order to ensure the trim tool doesn't remove the private method, these
-libraries may have added "Embedded Descriptor Files" (or `ILLinkTrim.xml`
-in the `dotnet/runtime` repo) which get embedded into the built assembly.
-These tell the trim tool not to trim the specified method/type. The problem is
-that the trim tool never trims the specified method/type, even if the call site
-of the Reflection is not needed.
+There are libraries which already use these descriptor files (or `ILLinkTrim.xml`
+in the `dotnet/runtime` repo) which are embedded into the library assembly.
+
+The problem is that the trim tool never trims the specified method/type,
+even if the part of the library which requires such dependency is not needed
+by the application and is actually trimmed away.
 
 See [issue](https://github.com/dotnet/runtime/issues/31712) and
 [another issue](https://github.com/dotnet/runtime/issues/35199)
@@ -390,7 +401,7 @@ of questions a typical developer needs to ask are:
 
 ##### Potential Size Analysis Tooling
 
-The ILLink is capable of saving the dependency graph when it trims
+ILLink is capable of saving the dependency graph when it trims
 an application. There is a tool, [Linker Analyzer](https://github.com/mono/linker/tree/master/src/analyzer),
 that can load this graph and allows a developer to analyze it.
 
@@ -421,7 +432,7 @@ multiple tools to provide feedback to developers about the application's compati
 with trimming (and other modes of deploying the app). These tools will run in
 different stages of the SDK pipeline. Roslyn analyzers will be added to provide
 immediate feedback about the source code during code editing and in inner build loops.
-There’s already the ILLink tool which performs trimming but also analyses the app
+There’s already ILLink tool which performs trimming but also analyses the app
 as a whole and provides feedback about the entire app. All these tools need
 to be enabled only when it makes sense. If the user has no plans to ever trim
 the application, it would be a bad experience to show warnings about trimming.
