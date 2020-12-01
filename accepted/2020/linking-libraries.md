@@ -81,8 +81,8 @@ executed, an error occurs because the Type is no longer available in the applica
 
 #### How trimming works
 
-The trimming operates on the entire application including the application assemblies
-any dependent libraries and frameworks. It starts with known entry points to
+Trimming operates on the entire application: including the application assemblies,
+any dependent libraries, and frameworks. It starts with known entry points to
 the application (for example the `Main` method) and marks everything the entry point
 needs to run. This logic is applied recursively to mark all the code the application
 needs.
@@ -93,8 +93,8 @@ patterns and relies on annotations like `RequiresUnreferencedCodeAttribute` or
 a pattern which it can't recognize or handle for other reasons it generates
 a trim analysis warning.
 
-Such warning tells the user that there's code in the application which may
-require additional dependency which the tool could not figure out and thus
+Such warnings tell the user that there's code in the application which may
+require additional dependencies which the tool could not figure out. Thus,
 it's possible the app will not work correctly after trimming.
 
 See the [Linker Reflection Flow Design](https://github.com/mono/linker/blob/master/docs/design/reflection-flow.md)
@@ -102,8 +102,8 @@ for more information on how the process works.
 
 #### Annotating code
 
-Some library code can use reflection or other problematic patterns such that
-running the trimming tool on it can break its functionality and generate
+Some library code uses reflection, or other problematic patterns, such that
+running the trimming tool on an application can break its functionality and generate
 trim analysis warnings.
 
 Warnings originating in the library code itself are not actionable by the end
@@ -114,11 +114,13 @@ the affected functionality.
 For this reason, affected libraries need to be annotated to help trimming tools
 to better understand the code and to generate warnings which are actionable
 in the context of an application. The goal is for the library code itself to
-not generate any warnings (as those are not actionable) and instead either
-resolve them (by providing annotations which help the trimming tool correctly
-recognize all dependencies) or to annotate public APIs such that the problem
-can be resolved in the call site by the tool automatically or by the user
-following the guidance provided by the warning and the affected API it calls out.
+not generate any warnings (as those are not actionable) and instead either:
+
+1. Resolve the warnings by providing annotations which help the trimming tool correctly
+recognize all dependencies.
+- or -
+2. To annotate public APIs such that the problem can be resolved by the user following
+the guidance provided by the warning.
 
 Depending on the specific problematic pattern, different solutions can be employed.
 The list below is not complete list, it's just the most common patterns we've seen
@@ -160,7 +162,7 @@ in C# 8 in that they are both viral. `DynamicallyAccessedMembers` needs to be
 applied from the actual usage of Reflection all the way through the call tree
 to the location that specifies the Type, which may be a public API.
 
-[Cross method annotation](https://github.com/mono/linker/blob/master/docs/design/reflection-flow.md#cross-method-annotations)
+The [Cross-method annotations](https://github.com/mono/linker/blob/master/docs/design/reflection-flow.md#cross-method-annotations) section 
 has more details on the design of this trimming feature.
 
 Example of using these annotations:
@@ -169,10 +171,10 @@ via `GetConstructor`.](https://github.com/dotnet/runtime/pull/36532/files#diff-5
 
 #### False positives
 
-If the warning while technically correct does not affect an app's functionality,
-consider suppressing it. For this add [`UnconditionalSuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.unconditionalsuppressmessageattribute?view=net-5.0)
-(its usage is nearly identical to [`SuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.suppressmessageattribute?view=net-5.0),
-but it will be kept in the code for all configurations).
+If the warning, while technically correct, does not affect an app's functionality,
+consider suppressing it. To suppress a warning, add an [`UnconditionalSuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.unconditionalsuppressmessageattribute?view=net-5.0). 
+Its usage is nearly identical to [`SuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.suppressmessageattribute?view=net-5.0),
+but it will be kept in the compiled assembly for all build configurations.
 
 Example of suppressing warning on code which doesn't change behavior when trimmed:
 [Trimming fields on attributes doesn’t affect equality](https://github.com/dotnet/runtime/commit/0f97c7af662c68862995c0b2ab59e87242eff459#diff-a911305f19a82ebd3a64f9293f9e5347ff15c74d5440f6bc56af65f1fa56e9b8L17-L18)
@@ -190,7 +192,7 @@ to `IEnumerable.Where`](https://github.com/dotnet/runtime/commit/20710bbcae006e3
 
 #### Functionality incompatible with trimming
 
-If none of the above works, the first step should be to annotate the functionality
+If none of the above works, the next step should be to annotate the functionality
 with [`RequiresUnreferencedCodeAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.requiresunreferencedcodeattribute?view=net-5.0).
 This marks the functionality as incompatible with trimming.
 Unless the feature is fundamentally incompatible with trimming, over time
@@ -229,12 +231,12 @@ For example: [Annotating startup hook functionality as incompatible with trimmin
 The next step in improving the experience is to enable at least some subset
 of the functionality while trimming. Frequently only some parts of a feature
 are incompatible with trimming while other parts can still be used without issues.
-To resolve this the feature and often also its public API needs to be changed
+To resolve this, the feature and often also its public API needs to be changed
 such that static analysis can determine if the incompatible functionality
 is in use or not.
 
-If this is not possible the incompatible functionality can also be disabled
-using [feature switches](#Feature-Switches). See a separate section below about
+If this is not possible, the incompatible functionality can also be disabled
+using feature switches. See the [Feature Switches](#Feature-Switches) section below for
 more details on this approach.
 
 Example using the feature switch approach: [Introducing the `EventSourceSupported`
@@ -242,7 +244,7 @@ feature switch](https://github.com/dotnet/runtime/commit/a547d4178cd2d71d9b6a7a9
 
 #### No trimming incompatibilities
 
-Finally, invest into built-time tooling (or other approaches) to enable usage of
+Finally, invest into build-time tooling (or other approaches) to enable usage of
 the full feature even for trimmed apps. For example,
 [source generators](https://devblogs.microsoft.com/dotnet/introducing-c-source-generators/)
 can be used to help with this effort.
@@ -274,7 +276,7 @@ and fail to run.
 
 #### Serialization
 
-An especially hard situation for the trimming is code that uses Reflection to
+An especially hard situation for the trimming tool is code that uses Reflection to
 serialize and deserialize object graphs to and from some external representation.
 Examples in the .NET Libraries include (but are not limited to):
 
@@ -291,7 +293,7 @@ has its own rules about what it looks for:
 * Does call (even optionally) any methods on the objects during
 serialization or deserialization?
 
-As of this writing, there is not a bullet proof solution for the trimming to work
+As of this writing, there is not a bullet proof solution for trimming to work
 in all serialization cases. See [Recursive properties](https://github.com/mono/linker/issues/1087)
 for a proposal on what it would take to make `JsonSerializer` at least partially
 trim compatible.
@@ -345,7 +347,7 @@ place to write the events. We can introduce a feature switch to remove
 
 Trimming .NET applications has been around for a while in the Xamarin scenarios.
 To add the ability to overcome limitations of the trim tool,
-a descriptor files where introduces. These are instructions to the trim tool
+descriptor files were introduced. These are instructions to the trim tool
 to preserve some type/method always, without seeing a direct reference to it.
 
 There are libraries which already use these descriptor files (or `ILLinkTrim.xml`
@@ -432,7 +434,7 @@ multiple tools to provide feedback to developers about the application's compati
 with trimming (and other modes of deploying the app). These tools will run in
 different stages of the SDK pipeline. Roslyn analyzers will be added to provide
 immediate feedback about the source code during code editing and in inner build loops.
-There’s already ILLink tool which performs trimming but also analyses the app
+There’s already ILLink which performs trimming but also analyses the app
 as a whole and provides feedback about the entire app. All these tools need
 to be enabled only when it makes sense. If the user has no plans to ever trim
 the application, it would be a bad experience to show warnings about trimming.
@@ -447,8 +449,8 @@ feature during publishing. The values for these properties should be set in the
 project of the application to declare such intent.
 
 At publishing they will be the defaults but can still be overwritten with
-command-line or publish-only settings. These values will also have no direct
-effect on for example building the application, that is setting `PublishSingleFile=true`
+command-line or publish-only settings. These values will have no direct
+effect on the output of building the application. That is, setting `PublishSingleFile=true`
 will not produce a single-file from `dotnet build`.
 
 More details provided in [Analyzers for publish only functionality](https://github.com/dotnet/sdk/issues/14562)
@@ -457,12 +459,11 @@ More details provided in [Analyzers for publish only functionality](https://gith
 
 Feature switches were introduced to make it possible to disable functionality
 which is typically included by default with a given .NET Core application,
-but it's either incompatible with trimming or it makes the resulting application
+but either is incompatible with trimming or makes the resulting application
 unnecessarily large.
 
-.NET has quite a few features which don't have a clear public API which would
-disable the functionality fully, instead it's part of every application and
-it is "enabled on demand". For example, features related to improving debugging
+.NET has quite a few features that are part of every application and
+are "enabled on demand". For example, features related to improving debugging
 experience are often activated only when a debugger is attached.
 
 If the user wants the resulting application as small as possible and have
@@ -503,7 +504,7 @@ if a given feature is disabled, but the app still calls it. The ideal behavior
 in this case is very scenario dependent, ideally it should produce a warning
 (probably via `RequiresUnreferencedCode`) to provide build-time feedback.
 * Feature switches are not added just for trimming - they are added to allow
-users to disable certain functionality. The reason to disable a functionality
+users to disable certain functionality. The reason to disable functionality
 may or may not include trimming. Trimming is just one of the use cases
 for feature switches.
 
@@ -511,7 +512,7 @@ Detailed design document and how to implement a [Feature switch](https://github.
 
 #### Feature switches and defaults
 
-Typically feature switch default values should be to enable the respective
+Typically the default value of a feature switch should be to enable the respective
 functionality as that has been the norm of how .NET behaves
 (things work by default).  
 
