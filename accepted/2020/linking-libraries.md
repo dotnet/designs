@@ -65,7 +65,7 @@ to make it work well with trimmed applications. In general they fall into
 the two buckets outlined above:
 
 1. Ensuring code required for the app the work is preserved by the linker
-1. Ensuring as much of the library as possible is trimmable if not needed 
+1. Ensuring as much of the library as possible is trimmable if not needed
 by the app
 
 ### Trimming compatibility
@@ -116,10 +116,10 @@ to better understand the code and to generate warnings which are actionable
 in the context of an application. The goal is for the library code itself to
 not generate any warnings (as those are not actionable) and instead either:
 
-1. Resolve the warnings by providing annotations which help the trimming tool correctly
+* Resolve the warnings by providing annotations which help the trimming tool correctly
 recognize all dependencies.
-- or -
-2. To annotate public APIs such that the problem can be resolved by the user following
+* or -
+* Annotate public APIs such that the problem can be resolved by the user following
 the guidance provided by the warning.
 
 Depending on the specific problematic pattern, different solutions can be employed.
@@ -162,8 +162,8 @@ in C# 8 in that they are both viral. `DynamicallyAccessedMembers` needs to be
 applied from the actual usage of Reflection all the way through the call tree
 to the location that specifies the Type, which may be a public API.
 
-The [Cross-method annotations](https://github.com/mono/linker/blob/master/docs/design/reflection-flow.md#cross-method-annotations) section 
-has more details on the design of this trimming feature.
+The [Cross-method annotations](https://github.com/mono/linker/blob/master/docs/design/reflection-flow.md#cross-method-annotations)
+section has more details on the design of this trimming feature.
 
 Example of using these annotations:
 [Annotate type parameter to include constructor if the method body asks for it
@@ -172,8 +172,8 @@ via `GetConstructor`.](https://github.com/dotnet/runtime/pull/36532/files#diff-5
 #### False positives
 
 If the warning, while technically correct, does not affect an app's functionality,
-consider suppressing it. To suppress a warning, add an [`UnconditionalSuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.unconditionalsuppressmessageattribute?view=net-5.0). 
-Its usage is nearly identical to [`SuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.suppressmessageattribute?view=net-5.0),
+consider suppressing it. To suppress a warning, add an [`UnconditionalSuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.unconditionalsuppressmessageattribute?view=net-5.0)
+. Its usage is nearly identical to [`SuppressMessageAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.suppressmessageattribute?view=net-5.0),
 but it will be kept in the compiled assembly for all build configurations.
 
 Example of suppressing warning on code which doesn't change behavior when trimmed:
@@ -184,8 +184,8 @@ Example of suppressing warning on code which doesn't change behavior when trimme
 In cases where the trimming tool is not able to infer the dependency or
 the developer wants to be explicit, the [`DynamicDependencyAttribute`](https://docs.microsoft.com/dotnet/api/system.diagnostics.codeanalysis.dynamicdependencyattribute?view=net-5.0)
 can be used to state an explicit dependency from a method to a type/method.
-The trimming tool doesn’t reason about this dependency. If the annotated method
-is included in the application, its declared dynamic dependency will also be included.
+If the annotated method is included in the application, its declared
+dynamic dependency will also be included.
 
 Example of using dynamic dependency: [Declaring dependency from `Queryable.Where`
 to `IEnumerable.Where`](https://github.com/dotnet/runtime/commit/20710bbcae006e32f8a133c372c8d78722890982#diff-0d3f3d1b5d2d66a392f61078fc14b72085f52da3d95f46196ae4a6d547cfa74cL31-L32)
@@ -199,9 +199,8 @@ Unless the feature is fundamentally incompatible with trimming, over time
 a different solution which makes the code of the feature compatible with
 trimming should be implemented. Until that is complete though, it's better
 to annotate the API with `RequiresUnreferencedCodeAttribute`
-to improve the experience. In this case the main goal is to avoid generating
-warnings from within the library and provide a more actionable experience
-to the user.
+to improve the experience. In this case the main goal is to improve user experience
+by providing more understandable feedback.
 
 For example, loading new code into the process with APIs like `Assembly.LoadFrom`
 will in general break the application when trimmed (since the tooling can't
@@ -224,7 +223,7 @@ The attribute instructs the tooling to automatically suppress any trim analysis
 warnings from the annotated method's body. This makes it suitable for
 propagating the trim incompatibility up the call tree.
 
-For example: [Annotating startup hook functionality as incompatible with trimming](https://github.com/dotnet/runtime/pull/44050/files#diff-9c65180e471f0d5b540d61b5aee02e5f6992374bef257ef165ac44099f75dfd4L98-L99)
+For example: [Mark CryptoConfig.CreateName as incompatible with trimming](https://github.com/dotnet/runtime/blob/c8a97ff77957202323b64b8513f363366010343f/src/libraries/System.Security.Cryptography.Algorithms/src/System/Security/Cryptography/CryptoConfig.cs#L327-L328)
 
 #### Only parts of a feature are incompatible with trimming
 
@@ -236,8 +235,8 @@ such that static analysis can determine if the incompatible functionality
 is in use or not.
 
 If this is not possible, the incompatible functionality can also be disabled
-using feature switches. See the [Feature Switches](#Feature-Switches) section below for
-more details on this approach.
+using feature switches. See the [Feature Switches](#Feature-Switches) section below
+for more details on this approach.
 
 Example using the feature switch approach: [Introducing the `EventSourceSupported`
 feature switch](https://github.com/dotnet/runtime/commit/a547d4178cd2d71d9b6a7a99600e20a3211d4436)
@@ -328,20 +327,7 @@ An example of an existing feature switch we have today is
 We can add more switches to the libraries to allow large, optional pieces of code
 to be removed during trimming.
 
-Examples of other feature switches:
-
-* `ResourceManager`
-    * `ResourceManager` has logic that can load types from the resource file.
-This could be conditionally disabled by a feature switch. It is already disabled
-when loading a `.resource` file directly from disk, which is not embedded in a
-resource assembly. [Issue tracking this work](https://github.com/dotnet/runtime/issues/45272).
-    * Another possibility is a switch to make exception/resource messages
-smaller in the libraries. See [issue](https://github.com/dotnet/runtime/issues/34057)
-for more information.
-* `EventSource`
-    * On some devices the `EventSource` logic is unnecessary because it has no
-place to write the events. We can introduce a feature switch to remove
-`EventSource` code/calls. [Issue tracking this work](https://github.com/dotnet/runtime/issues/37414)
+Examples of other feature switches: [Trimming options](https://docs.microsoft.com/dotnet/core/deploying/trimming-options#trimming-framework-library-features)
 
 #### Usage of descriptor files
 
@@ -368,7 +354,8 @@ ideally not have any descriptor files in them, as those unconditionally add code
 into the application potentially making it unnecessarily large.
 [Example of a discussion on solutions of this problem](https://github.com/dotnet/runtime/issues/31712)
 
-There are 2 existing cases which are somewhat special here worth mentioning:
+In other cases the dependency is not from any part of the managed code,
+but it's used from some native code or the runtime itself. For example:
 
 1. Types only used for Debugging
 1. Types used for COM support
@@ -383,6 +370,8 @@ the application is going to use COM or not.
 To solve these, we can define a [feature switch](#Feature-Switches) for each of
 these scenarios. An application (or SDK) can default these to on or off, as appropriate.
 For example, a Xamarin iOS application can safely turn COM support off.
+The descriptor is retained, but the entries in it are conditionally applied
+based on the respective feature switch.
 
 #### Analyzing Canonical Applications
 
