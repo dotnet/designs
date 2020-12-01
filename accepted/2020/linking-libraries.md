@@ -495,7 +495,8 @@ in this case is very scenario dependent, ideally it should produce a warning
 * Feature switches are not added just for trimming - they are added to allow
 users to disable certain functionality. The reason to disable functionality
 may or may not include trimming. Trimming is just one of the use cases
-for feature switches.
+for feature switches. Other use cases can be security
+(for example `UTF7` and `BinaryFormatter`) or deprecation of functionality.
 
 Detailed design document and how to implement a [Feature switch](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md).
 
