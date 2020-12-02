@@ -338,4 +338,4 @@ that are normally supported by default:
 </ItemGroup>
 ```
 
-[platform-checks]: ../platform-check/platform-checks.md
+[platform-checks]: ../platform-checks/platform-checks.md
