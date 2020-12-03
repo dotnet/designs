@@ -1,6 +1,6 @@
 # Overview and goals
 
-October 30th, 2020.
+December 3rd, 2020.
 
 This document provides options and recommendations for 6.0 to support both a writable DOM and the C# `dynamic` keyword.
 
@@ -21,25 +21,28 @@ The dynamic feature in C# is enabled by both language features and implementatio
 
 There are implementations of `IDynamicMetaObjectProvider` including [DynamicObject](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.dynamicobject?view=net-5.0) and [ExpandObject](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.expandoobject?view=netcore-3.1). However, these implementations are not ideal:
 - There are many public members used for wiring up dynamic support, but are of little to no value for consumers so they would be confusing when mixed in with other methods intended to be used for writable DOM support.
-- It is not possible to efficiently combine writable DOM classes that are not tied to `dynamic` and `System.Linq.Expressions`:
-  - If combined, there would need to be an assembly reference to the very large `System.Linq.Expressions.dll` event when `dynamic` features are not needed.
-  - If separate standalone classes, the `dynamic` class delegates to a separate writable DOM class, which doubles the object instances and increases the concept count around interop between the types returned from `dynamic` vs. the writable DOM classes.
+- It is not possible to have a single class hierachy that are not tied to `dynamic` and thus `System.Linq.Expressions`:
+  - If combined, there would need to be an assembly reference to the very large `System.Linq.Expressions.dll` event when `dynamic` features are not needed (the ILLinker will not be able to remove the reference to `System.Linq.Expressions`).
+  - If separate standalone classes, the `dynamic` class would likely forward to a separate writable DOM class, which doubles the object instances and increases the concept count around interop between the types returned from `dynamic` vs. the writable DOM classes.
 - `ExpandoObject` does not support case insensitivity and throws an exception when accessing missing properties (a `null` is desired instead). This could be fixed, however.
 - `DynamicObject` prevents potential optimizations including property-lookup.
 
 Thus, the design presented here for `dynamic` assumes:
 - Implementation of `IDynamicMetaObjectProvider`.
-- Use of the writable DOM without requiring a reference to `System.Linq.Expressions.dll` (when `dynamic` support is not desired).
-- Efficient implementation of tying both `IDynamicMetaObjectProvider` and the writable DOM classes into a single instance and type hierarchy. Newtonsoft also has a single object model with [JToken](https://www.newtonsoft.com/json/help/html/T_Newtonsoft_Json_Linq_JToken.htm) which implements `IDynamicMetaObjectProvider`.
+- Use of the writable DOM without requiring a reference to `System.Linq.Expressions.dll` (when `dynamic` support is not used).
+- Efficient implementation of tying both `IDynamicMetaObjectProvider` and the writable DOM classes into a single instance and type hierarchy. Note that Newtonsoft has a single object model with [JToken](https://www.newtonsoft.com/json/help/html/T_Newtonsoft_Json_Linq_JToken.htm) which implements `IDynamicMetaObjectProvider`.
 
-## Ability to not depend on `System.Linq.Expressions.dll`
-Having `System.Text.Json.dll` directly reference `System.Linq.Expressions.dll` is not desired unless the `dynamic` capability is desired:
+## Prototype
+A prototype for 6.0 that is available at https://github.com/steveharter/runtime/tree/WriteableDomAndDynamic.
+
+## Depending on `System.Linq.Expressions.dll`
+Having `System.Text.Json.dll` directly reference `System.Linq.Expressions.dll` is only feasible if the ILLinker can remove the reference to the large `System.Linq.Expressions.dll` when the dynamic functionality is not used.
 - Implementations of Blazor and stand-alone apps that do not use `dynamic` features do not want to carry the large `System.Linq.Expressions.dll`.
   - Referencing `System.Linq.Expressions.dll` will require ~5.5MB of disk size. `System.Linq.Expressions.dll` is around 5MB in size but since it also references to `System.Linq` (~400K) and `System.ObjectModel` (~80K) (which that are not referenced by STJ) it becomes ~5.5MB (crossgen'd size).
   - STJ is considering removing its reference to using reflection emit, so referencing `System.Linq.Expressions.dll` would require keeping the the various System.Reflection.* references. Since reflection emit is currently implemented in the runtime (`System.Private.CoreLib`), disk savings by avoiding the API surface layer in `SREmit.ILGeneration` and `SREmit.Lightweight` is limited to ~30K.
 - Existing usages of STJ such as by the SDK and Visual Studio that do not use `dynamic` also do not want to carry `System.Linq.Expressions.dll`.
 
-The preferred approach is to ensure ILLinker can remove the dependency to `System.Linq.Expressions.dll` when `dynamic` is not needed. This is achieved by having an opt-in method `EnableDynamicTypes()` on `JsonSerializerOptions`.
+The preferred approach is to ensure ILLinker can remove the dependency to `System.Linq.Expressions.dll` when `dynamic` is not needed. This is achieved by having an opt-in method `EnableDynamicTypes()` on `JsonSerializerOptions` that roots all internal usages of `System.Linq.Expressions.dll`.
 
 ## Proposed API to enable dynamic mode
 All classes to be located in STJ.dll.
@@ -47,13 +50,11 @@ All classes to be located in STJ.dll.
 ```cs
 namespace System.Text.Json
 {
-    public static class JsonExtensions
+    public static class JsonSerializerOptions
     {
-        // The root method that if not called, ILLinker will trim out:
-        // - The reference to the System.Object custom converter that supports 'dynamic'.
-        // - The custom converter's reference to the types in `System.Linq.Expressions.dll` including `IDynamicMetaObjectProvider`.
-        // - The reference to and `System.Linq.Expressions.dll`
-        public static void EnableDynamic(JsonSerializerOptions this options);
+        // The root method that if not called, ILLinker will trim out the reference to `System.Linq.Expressions.dll`.
+        // Any System.Object-qualified type specified in a called to JsonSerializer.Deserialize() will create either a DynamicJsonArray, DynamicJsonObject or DynamicJsonValue.
+        public static void EnableDynamicTypes();
     }
 }
 ```
@@ -63,38 +64,30 @@ Sample code to enable dynamic types:
     var options = new JsonSerializerOptions();
     options.EnableDynamicTypes();
 
-    dynamic obj = JsonSerializer.Deserialize<dynamic>("{\"MyProp\":42}", options);
+    dynamic obj = JsonSerializer.Deserialize<JsonNode>("{\"MyProp\":42}", options);
     int i = obj.MyProp;
     Debug.Assert(i == 42);
 
-    string json = JsonSerializer.Serialize(obj);
-```
-
-### Internal implementation
-The types that are used at runtime to implement `dynamic` can be made `internal`. Instances are created by the `System.Object` custom converter which understands `dynamic`.
-```cs
-internal class JsonDynamicObject : JsonObject, IDynamicMetaObjectProvider {}
-internal class JsonDynamicArray : JsonArray, IDynamicMetaObjectProvider {}
-internal class JsonDynamicValue : JsonValue, IDynamicMetaObjectProvider {}
+    string json = obj.Serialize();
 ```
 
 ### Varying the `T` in `Deserialize<T>`
 This
 ```cs
-    dynamic obj = JsonSerializer.Deserialize<dynamic>("{\"MyProp\":42}", options);
+    dynamic obj = JsonSerializer.Deserialize<object>("{\"MyProp\":42}", options);
 ```
 is equivalent to
 ```cs
-    dynamic obj = JsonSerializer.Deserialize<object>("{\"MyProp\":42}", options);
+    dynamic obj = JsonSerializer.Deserialize<dynamic>("{\"MyProp\":42}", options);
 ```
 and these (assuming `options.EnableDynamicTypes()` was called)
 ```cs
-    dynamic obj = JsonSerializer.Deserialize<JsonNode>("{\"MyProp\":42}", options);
-    dynamic obj = JsonSerializer.Deserialize<JsonObject>("{\"MyProp\":42}", options);
+    dynamic obj = JsonSerializer.Deserialize<DynamicJsonNode>("{\"MyProp\":42}", options);
+    dynamic obj = JsonSerializer.Deserialize<DynamicJsonObject>("{\"MyProp\":42}", options);
 ```
 
 ### Supporting non-dynamic to dynamic
-If a previously created non-dynamic `JsonNode` object needs dynamic support, an extension could be provided:
+If a previously created non-dynamic `JsonNode` object needs dynamic support, an helper could be provided:
 ```cs
 namespace System.Text.Json
 {
@@ -111,16 +104,14 @@ Called like this:
     dynamic obj = node.ToDynamic();
 ```
 
-The implementation of `ToDynamic()` is somewhat slow since it does a deep clone. It would be similar to the code below except a bit faster since some overhead of the serialize\deserialize methods may be avoided:
+The implementation of `ToDynamic()` is efficient since it will perform a shallow clone by copying the internal value (for `JsonValue`), array (for `JsonArray`) or dictionary (for `JsonObject`):
 ```cs
     JsonNode node = ... // a non-dynamic JsonNode
-    byte[] utf8 = JsonSerializer.SerializeToUtf8Bytes(node, options);
+    byte[] utf8 = node.SerializeToUtf8Bytes();
     dynamic obj = JsonSerializer.Deserialize<JsonNode>(utf8, options);
 ```
 
 # Writable DOM
-_This section is preliminary and not yet ready for an API review._
-
 A deserialized DOM is based upon JSON token types (object, array, number, string, true, false) since the corresponding CLR types are not known, unlike deserializing against a strongly-typed POCO. This is consistent with `JsonElement` semantics as well.
 
 Although a deserializated DOM in "read mode" fully maps to the JSON token types, once in "edit mode", CLR values to be assigned to nodes which do not necessarily map to JSON token types. Two common examples:
@@ -136,7 +127,7 @@ double dlb = number.GetValue<double>();
 
 // Change to "NaN".
 number.Value = double.Nan;
-string json = JsonSerializer.Serialize(number);
+string json = number.Serialize();
 Debug.Assert(json == "\"NaN\""); // Due to quoted number support, this works.
 
 // However what about round-tripping?
@@ -165,9 +156,19 @@ namespace System.Text.Json
 {
     public abstract class JsonNode
     {
+        internal JsonNode(); // prevent external derived classes.
         public JsonNode(JsonSerializerOptions options = null);
 
         public JsonSerializerOptions Options { get; }
+
+        // Support terse syntax for JsonArray (no cast necessary to JsonArray).
+        public System.Text.Json.Serialization.JsonNode? this[int index] { get; set; }
+
+        // Support terse syntax for JsonObject (no cast necessary to JsonObject).
+        public virtual System.Text.Json.Serialization.JsonNode? this[string key] { get; set; }
+
+        // Support terse syntax for JsonValue (no cast necessary to JsonValue to change a value).
+        public virtual object Value {get; set;}
 
         // Return the internal value or convert to T as necessary.
         public abstract T GetValue<T>();
@@ -177,12 +178,18 @@ namespace System.Text.Json
 
         // The token type from deserialization; otherwise JsonValueKind.Unspecified.
         public JsonValueKind ValueKind { get; }
+
+        // Serialize() wrappers which pass the value and options.
+        // The existing JsonSerializer.Deserialize* methods are still called.
+        public string Serialize();
+        public void Serialize(System.Text.Json.Utf8JsonWriter writer);
+        public System.Threading.Tasks.Task SerializeAsync(Stream utf8Json, CancellationToken cancellationToken = default);
+        public byte[] SerializeToUtf8Bytes();
     }
 
     public sealed class JsonArray : JsonNode, IList<object>
     {
         public JsonArray(JsonSerializerOptions options = null);
-        public JsonArray(JsonElement value, JsonSerializerOptions options = null);
 
         // Can be used to return:
         // - Any compatible collection type
@@ -197,7 +204,6 @@ namespace System.Text.Json
     public sealed class JsonObject : JsonNode, IDictionary<string, object>
     {
         public JsonObject(JsonSerializerOptions options = null);
-        public JsonObject(JsonElement value, JsonSerializerOptions options = null);
 
         // Can be used to return:
         // - Any compatible dictionary type
@@ -212,8 +218,6 @@ namespace System.Text.Json
 
     public sealed class JsonValue : JsonNode
     {
-        public JsonValue(JsonSerializerOptions options = null);
-        public JsonValue(JsonElement value, JsonSerializerOptions options = null);
         public JsonValue(object value, JsonSerializerOptions options = null);
 
         // The internal raw value.
@@ -227,52 +231,33 @@ namespace System.Text.Json
         public override object GetValue<Type type>();
         public override bool TryGetValue<T>(out T? value);
         public override bool TryGetValue(Type type, out object? value);
-
-        // These match the methods on JsonElement.
-        // They can be used instead of GetValue<T> for performance since they don't cause generic
-        // method expansion, and when the internal value is a JsonElement it avoids multiple `if`
-        // statements that need to match typeof(T) to the appropriate JsonElement method.
-        public bool GetBoolean();
-        public byte GetByte();
-        public byte[] GetBytesFromBase64();
-        public System.DateTime GetDateTime();
-        public System.DateTimeOffset GetDateTimeOffset();
-        public decimal GetDecimal();
-        public double GetDouble();
-        public System.Guid GetGuid();
-        public short GetInt16();
-        public int GetInt32();
-        public long GetInt64();
-        public string GetRawText();
-        public sbyte GetSByte();
-        public float GetSingle();
-        public string? GetString();
-        public ushort GetUInt16();
-        public uint GetUInt32();
-        public ulong GetUInt64();
-        public bool TryGetByte(out byte value);
-        public bool TryGetBytesFromBase64(out byte[]? value);
-        public bool TryGetDateTime(out System.DateTime value);
-        public bool TryGetDateTimeOffset(out System.DateTimeOffset value);
-        public bool TryGetDecimal(out decimal value);
-        public bool TryGetDouble(out double value);
-        public bool TryGetGuid(out System.Guid value);
-        public bool TryGetInt16(out short value);
-        public bool TryGetInt32(out int value);
-        public bool TryGetInt64(out long value);
-        public bool TryGetSByte(out sbyte value);
-        public bool TryGetSingle(out float value);
-        public bool TryGetUInt16(out ushort value);
-        public bool TryGetUInt32(out uint value);
-        public bool TryGetUInt64(out ulong value);
     }
+
+    // These types are used with dynamic support.
+    // JsonSerializerOptions.EnableDynamicTypes must be called before using.
+    public class JsonDynamicObject : JsonObject, IDynamicMetaObjectProvider { }
+    public class JsonDynamicArray : JsonArray, IDynamicMetaObjectProvider { }
+    public class JsonDynamicValue : JsonValue, IDynamicMetaObjectProvider { }
 }
 ```
 
 ## Serializer interop
-Unlike the 5.0 `JsonNode` prototype and the existing `JsonDocument`, the `JsonNode` types are intended to be used by the serializer directly and do not contain `Parse()` or `Write()` methods themselves because:
-- The existing serializer methods can be used which support UTF8, string, Utf8JsonReader\Writer and Stream. Any future overloads will just work.
-- Serializer-specific functionality including custom converters and quoted numbers just work.
+For deserializating JSON to a `JsonNode` instance, the existing static JsonSerializer.Deserialize() methods are used.
+
+For serializing a `JsonNode` instance to JSON, instance helpers on `JsonNode` are provided that pass in the value and options:
+```cs
+JsonObject obj = ...
+
+// short version:
+string json = obj.Serialize();
+
+// equivalent longer versions:
+string json = JsonSerializer.Serialize(obj, obj.GetType(), obj.Options);
+string json = JsonSerializer.Serialize<JsonObject>(obj, obj.Options);
+string json = JsonSerializer.Serialize<JsonNode>(obj, obj.Options);
+```
+
+Serializer-specific functionality including custom converters and quoted numbers just work.
 
 The `JsonSerializerOptions` is passed to `JsonNode` and used to specify any run-time added custom converters, handle other options such as quoted numbers, and to respect the `PropertyNameCaseInsensitive` to determine whether the string-based lookup of property names on `JsonObject` are case-sensitive (for both direct use of `JsonObject` and also indirect use through `dynamic`). If we have `static JsonValue Parse()` methods, those would also need an override to specify the `JsonSerializerOptions`.
 
@@ -282,7 +267,7 @@ Although the serializer can be used to directly (de)serialize `JsonNode` types, 
     string str;
 
     // This works, but has no caching:
-    byte[] utf8 = JsonSerializer.SerializeToUtf8Bytes(node, options);
+    byte[] utf8 = node.SerializeToUtf8Bytes();
     str = JsonSerializer.Deserialize<string>(utf8, options);
 
     // For ease-of-use and performance, use GetValue().
@@ -293,17 +278,37 @@ Although the serializer can be used to directly (de)serialize `JsonNode` types, 
 ### Cast operators
 No explicit or implicit cast operators exist since `GetValue<T>` allows for a single, consistent programming model. This also works on not just the "known" types in the CLR but also custom data types known by the serializer.
 
-Cast operators do not work in all languages such as F# and even for C# would not work nicely since `System.Object` is allowed for `JsonArray` and `JsonCollection` elements. For example:
+Cast operators do not work in all languages such as F# and even for C# would not work for all types:
 ```cs
 JsonArray jArray = ...
-jArray[2] = "hello";
-// Is jArray[2] a string or a JsonValue?
+jArray[0] = "hello"; // Possible though a string implicit operator.
+jArray[1] = myCustomDataType; // We can't know all types, so this won't work.
 
-jArray[2] = 2;
-// jArray[2] is always an int since we can't have implicit cast operators for number types.
+string v0 = jArray[0];
+MyCustomDataType v1 = jArray[1]; // We can't know all types, so this won't work.
 ```
 
-Although it is possible to add cast operators for `JsonValue` to\from string\bool, number types should not have any implicit operator since they may throw - for example, an internal value of "3.14" cannot be converted into `int` so an exception must be thrown.
+Proposed (non-dynamic):
+```cs
+JsonArray jArray = ...
+jArray[0] = new JsonValue("hello");
+jArray[1] = new JsonValue(myCustomDataType);
+
+string v0 = (string)jArray[0].Value;
+MyCustomDataType v1 = (MyCustomDataType)jArray[1].Value;
+// or to support a possible conversion:
+MyCustomDataType v1 = jArray[1].GetValue<MyCustomDataType>();
+```
+
+Proposed (dynamic):
+```cs
+DynamicJsonArray jArray = ...
+jArray[0] = "hello";
+jArray[1] = myCustomDataType;
+
+string v0 = jArray[0];
+MyCustomDataType v1 = jArray[1];
+```
 
 ### Specifying the `JsonSerializerOptions` instance
 The `JsonSerializerOptions` instance needs to be specified in order for any run-time added custom converters to be found and to use `PropertyNameCaseInsensitive` for property lookup with `JsonObject`.
@@ -337,58 +342,35 @@ so it is possible to omit the options instance for non-root members. When a prop
     }
 ```
 
-Pending design, it may be required that all option instances are the same across a given `JsonNode` tree.
+It is required that all option instances are the same across a given `JsonNode` tree.
 
 ### Using `System.Object` for values
-Both `JsonObject` and `JsonArray` allow `System.Object` to be specified for the property\array values. This allows a terse and more performant model, plus compatibility with Newtonsoft and `dynamic`:
+Both `JsonObject` and `JsonArray` have indexers that allow `JsonNode` types to be specified for the property\array values. This allows a terse and more performant mode:
 ```cs
     var jObject = new JsonObject(options)
     {
-        ["MyString"] = "Hello!",
-        ["MyBoolean"] = false,
-        ["MyArray"] = new int[] {2, 3, 42};
+        ["Child"]["Array"][0]["Message"] = new JsonValue("Hello!");
+        ["Child"]["Array"][1]["Message"] = new JsonValue("Hello!!");
     }
 ```
 
-The values remain in the original form and are not converted to `JsonNode` instances:
+If `System.Object` was used instead of `JsonNode`, the above syntax wouldn't work and a more verbose syntax would be necessary:
 ```cs
     var jObject = new JsonObject(options)
     {
-        ["MyString"] = "Hello!",
+        ((JsonObject)((JsonArray)((JsonObject)jObject["Child"])["Array"])[0])["Message"] = new JsonValue("Hello!");
+        ((JsonObject)((JsonArray)((JsonObject)jObject["Child"])["Array"])[1])["Message"] = new JsonValue("Hello!!");
     }
-
-    Debug.Assert(jObject["MyString"].GetType() == typeof(string));
 ```
 
 During serialization, the appropriate converter is used to serialize either the primitive value or the underlying value held by a `JsonNode`.
 
-An alternative is to have `JsonObject` implement `IDictionary<string, JsonNode>` instead of `IDictionary<string, object>` and `JsonArray` implement `IList<JsonNode>` instead of `IList<object>`. However, if that is done, `dynamic` cases will compile without using `JsonNode` types but will cause an unexpected run-time exception since the underlying array\dictionary does not support non-`JsonNode` types:
-```cs
-    dynamic obj = JsonSerializer.Deserialize(...);
-    obj.Foo = true; // compiles fine, but exception at runtime since 'true' is not a 'JsonNode'
-    
-    MyPoco poco = JsonSerializer.Deserialize<MyPoco>(json);
-    obj.MyPoco = poco; // compiles fine, but exception at runtime since 'MyPoco' is not a 'JsonNode'
-```
-
-For the latter case with `MyPoco`, without support for `object`, the poco would need to be converted into a `JsonObject` and there isn't a performant way to do this. One slow workaround:
+It is also possible to take a given CLR type and wrap it in a `JsonValue` efficiently:
 ``` cs
-    MyPoco poco = JsonSerializer.Deserialize<MyPoco>(...);
-
-    dynamic obj = JsonSerializer.Deserialize<object>(...);
-
-    // We want to set obj.MyPoco to poco, but can't do that directly:
-    string json = JsonSerializer.Serialize(poco);
-    JsonObject jObject = JsonSerializer.Deserialize<JsonObject>(json);
-    obj.MyPoco = jObject;
-    JsonSerializer.Serialize(jObject);
+    JsonObject jObject = ...
+    obj.MyPoco = new int[] {0, 1}; // serialized as an array
+    string json = jObject.Serialize();
 ```
-
-Thus having support for `object` in the object and collection cases instead of `JsonNode` helps in several ways:
-- Avoid a class of run-time errors where non-`JsonObject` derived types are used.
-- Consistent with Newtonsoft.
-- More terse and in some cases intuitive programming model. For example, a literal `true` or `false` can be used (without implicit operators) instead of `JsonBoolean(true)` and `JsonBoolean(false)`.
-- More performant that being forced to use JsonNode types (removes a somewhat unnecessary abstraction) such as the example above with `MyPoco`.
 
 ## Changing the deserialization of System.Object
 The serializer has always deserialized JSON mapping to a `System.Object` as a `JsonElement`. This will remain the default behavior going forward, however there will be a way to specify `JsonNode` instead:
@@ -403,7 +385,7 @@ namespace System.Text.Json
 }
 ```
 
-This setting has no effect if the extension method `JsonSerializerOptions.EnableDynamic` is called since it overrides the handling of unknown types. When polymorphic deserialiazation is added as a separate feature, the meaning may change slightly to handle the case of a type being deserialized with JSON "known type metadata" specifying an unknown or unhandled type on the CLR side.
+This setting has no effect if the extension method `JsonSerializerOptions.EnableDynamicTypes` is called since it overrides the handling of unknown types. When polymorphic deserialiazation is added as a separate feature, the meaning may change slightly to handle the case of a type being deserialized with JSON "known type metadata" specifying an unknown or unhandled type on the CLR side.
 
 The serializer has always supported placing "overflow" properties in JSON into a dictionary on a property that has the `[JsonExtensionData]` attribute. The property itself can either be declared as:
 - `Dictionary<string, object>`
@@ -420,12 +402,12 @@ If `UseJsonObjectForUnknownTypes` is `true`, and the property is declared with
 then `JsonNode` is used instead of `JsonElement`.
 
 ## Missing vs. null
-`JsonObject` semantics return `null` for missing properties. This aligns with:
+The indexer for `JsonObject` and `DynamicJsonObject` return `null` for missing properties. This aligns with:
 - Expected support for `dynamic`.
 - Newtonsoft.
 - The serializer today when deserializing JSON mapping to `System.Object`; i.e. a `JsonElement` with `JsonValueKind.Null` is not created.
 
-However, for some scenarios, it is important to distinguish between a `null` value deserialized from JSON vs. a missing property. Since `JsonObject` implements `IDictionary<string, object>` it can be inspected:
+However, for some scenarios, it is important to distinguish between a `null` value deserialized from JSON vs. a missing property. Since `JsonObject` implements `IDictionary<string, JsonNode>` it can be inspected:
 ```cs
 JsonObject jObject = ...
 bool found = jObject.TryGetValue("NonExistingProperty", out object value);
@@ -434,7 +416,7 @@ bool found = jObject.TryGetValue("NonExistingProperty", out object value);
 An alternative, not currently recommended, is to add a `JsonNull` node type along with a `JsonSerializerOptions.DeserializeNullAsJsonNull` option to configure.
 
 ## Interop with JsonElement
-The constructors of `JsonNode` have a `JsonElement` overload.
+The constructors of `JsonNode` allow any type to be specified including a `JsonElement`.
 
 `JsonNode.GetValue<JsonElement>()` can be used to obtain the current `JsonElement`, or create one if the internal value is not a `JsonElement`.
 
@@ -468,34 +450,28 @@ The constructors of `JsonNode` have a `JsonElement` overload.
         }
     };
 
-    string json = JsonSerializer.Serialize(jObject, options);
+    string json = jObject.Serialize();
 }
 ```
-## New DOM, using raw CLR types:
+## New DOM, using dynamic:
 ```cs
     var options = new JsonSerializerOptions();
     options.EnableDynamicTypes();
 
-    var jObject = new JsonObject(options)
-    {
-        ["MyString"] = "Hello!",
-        ["MyNull"] = null,
-        ["MyBoolean"] = false,
-        ["MyInt"] = 43,
-        ["MyDateTime"] = new DateTime(2020, 7, 8),
-        ["MyGuid"] = new Guid("ed957609-cdfe-412f-88c1-02daca1b4f51"),
-        ["MyArray"] = new int[] {2, 3, 42}, // direct IEnumerable assignment supported via serializer.
-        ["MyObject"] = new JsonObject()
-        {
-            ["MyString"] = "Hello!!"
-        },
-        ["Child"] = new JsonObject()
-        {
-            ["ChildProp"] = 1
-        }
-    };
+    dynamic jObject = new DynamicJsonObject(options);
+    jObject.MyString = "Hello!"; // converted to: new JsonValue("Hello!")
+    jObject.MyNull = null;
+    jObject.MyBoolean = false;
+    jObject.MyInt = 43;
+    jObject.MyDateTime = new DateTime(2020, 7, 8);
+    jObject.MyGuid = new Guid("ed957609-cdfe-412f-88c1-02daca1b4f51");
+    jObject.MyArray = new int[] {2, 3, 42};
+    jObject.MyArray.MyObject = new JsonDynamicObject();
+    jObject.MyArray.MyObject.MyString = "Hello!!"
+    jObject.MyArray.MyObject.Child = new DynamicJsonObject();
+    jObject.MyArray.MyObject.Child.ChildProp = 1;
 
-    string json = JsonSerializer.Serialize(jObject, options);
+    string json = jObject.Serialize();
 ```
 
 ## Number
@@ -551,7 +527,7 @@ Setting values:
 ```
 
 ## LINQ
-todo; `JObject` and `JElement` implement `IEnumerable`...
+todo; `JObject` and `JElement` implement `IEnumerable` so LINQ comes along... Dynamic types can also call methods.
 
 ## Interop with custom converter + dynamic
 ```cs
@@ -559,19 +535,19 @@ todo; `JObject` and `JElement` implement `IEnumerable`...
     {
         public override Person Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            dynamic jObject = JsonSerializer.Deserialize(ref reader, options);
+            dynamic jObject = JsonSerializer.Deserialize<object>(ref reader, options);
 
             // Pass a value into the constructor, which was hard to do before in a custom converter
             // since all of the values need to be manually read and cached ahead of time.
-            Person person = new Person(jObject.Id);
-
-            // Any missing properties will be assigned 'null'.
-            person.Name = jObject.name; // JSON property names exactly match JSON or be case insensitive depending on options.
-            person.AddressLine1 = jObject.addr1; // support 'JsonPropertyName["addr1"]'
-            person.AddressLine2 = jObject.addr2; // support 'JsonPropertyName["addr2"]'
-            person.City = jObject.city;
-            person.State = jObject.state;
-            person.Zip = jObject.zip;
+            Person person = new Person(jObject.Id)
+            {
+                Name = jObject.name, // JSON property names exactly match JSON or be case insensitive depending on options.
+                AddressLine1 = jObject.addr1, // support 'JsonPropertyName["addr1"]'
+                AddressLine2 = jObject.addr2, // support 'JsonPropertyName["addr2"]'
+                City = jObject.city,
+                State = jObject.state,
+                Zip = jObject.zip
+            }
 
             return person;
         }
