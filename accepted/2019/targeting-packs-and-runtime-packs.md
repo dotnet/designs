@@ -136,7 +136,7 @@ The naming requirements are:
  * Microsoft.NETCore.App.Runtime.linux-x64 ("base" runtime pack for .NET Core for Linux OS and x64 CPU)
  * Microsoft.NETCore.App.Host.linux-x64 (apphost pack for .NET Core for Linux OS and x64 CPU)
  * Microsoft.ASPNetCore.App.Runtime.osx-x64 (runtime pack for ASP.NET Core for Mac OS and x64 CPOU)
- * Microsoft.WindowsDesktop.App.Runtime.win-x86 (targeting pack for WPF/Winforms on .NET Core for Windows OS and x64 CPU)
+ * Microsoft.WindowsDesktop.App.Runtime.win-x86 (runtime pack for WPF/Winforms on .NET Core for Windows OS and x64 CPU)
 
 
 ## Package Versions
