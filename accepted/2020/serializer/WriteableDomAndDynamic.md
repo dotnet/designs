@@ -1,6 +1,6 @@
 # Overview and goals
 
-December 3rd, 2020.
+January 19th, 2021.
 
 This document provides options and recommendations for 6.0 to support both a writable DOM and the C# `dynamic` keyword.
 
@@ -50,11 +50,11 @@ All classes to be located in STJ.dll.
 ```cs
 namespace System.Text.Json
 {
-    public static class JsonSerializerOptions
+    public class JsonSerializerOptions
     {
         // The root method that if not called, ILLinker will trim out the reference to `System.Linq.Expressions.dll`.
         // Any System.Object-qualified type specified in a called to JsonSerializer.Deserialize() will create either a DynamicJsonArray, DynamicJsonObject or DynamicJsonValue.
-        public static void EnableDynamicTypes();
+        public void EnableDynamicTypes();
     }
 }
 ```
@@ -87,18 +87,7 @@ and these (assuming `options.EnableDynamicTypes()` was called)
 ```
 
 ### Supporting non-dynamic to dynamic
-If a previously created non-dynamic `JsonNode` object needs dynamic support, an helper could be provided:
-```cs
-namespace System.Text.Json
-{
-    public static class JsonExtensions
-    {
-        public static dynamic ToDynamic(JsonNode this value);
-    }
-}
-```
-
-Called like this:
+If a previously created non-dynamic `JsonNode` object needs dynamic support:
 ```cs
     JsonNode node = ... // a non-dynamic JsonNode
     dynamic obj = node.ToDynamic();
@@ -118,7 +107,7 @@ Although a deserializated DOM in "read mode" fully maps to the JSON token types,
 - Quoted numbers. A CLR number (`Double`, `Int32`, etc) is normally serialized to JSON as a number. However, a number may be serialized as a JSON string instead - which is necessary to support CLR numbers that can't be represented in JSON as a number, such as `Double.NaN` or `Double.PositiveInfinity`.
 - String Enums. A CLR `Enum` is normally serialized to JSON as a number, but through a custom converter (including `JsonStringEnumConverter`), an `Enum` can be serialized as the string representation.
 
-For example, consider this hypothetical API that has a `JsonNumber` class:
+For example, consider this **hypothetical API** that has a `JsonNumber` class (and not the proposal of using just `JsonNode`)
 ```cs
 // Ask for a number with a JSON number token type.
 // Internally probably stored as a byte[] or JsonElement.
@@ -141,7 +130,7 @@ number = JsonSerializer.Deserialize<JsonNumber>(json); // Throws
 // no way of knowing these should map to a JsonNumber (or a CLR number).
 ```
 
-Thus the DOM is based on CLR types (not JSON tokens) in edit mode and during serialization. The JSON "value" types (number, string, boolean) are represented as a common `JsonValue` sealed class, and not separate `JsonNumber`, `JsonString` and `JsonBoolean` classes as shown in the example above.
+Thus the DOM is based on CLR types (not JSON tokens) in edit mode and during serialization. The JSON "value" types (number, string, boolean) are represented as a common `JsonValue` sealed class, and **not** separate `JsonNumber`, `JsonString` and `JsonBoolean` classes as shown in the example above.
 
 During serialization, the DOM is written using the serializer and uses any custom converters that may be configured. In all but idiocentric scenarios (e.g. a custom converter can do anything), the behavior is natural and JSON is round-tripped as expected.
 
@@ -168,6 +157,7 @@ namespace System.Text.Json
         public virtual System.Text.Json.Serialization.JsonNode? this[string key] { get; set; }
 
         // Support terse syntax for JsonValue (no cast necessary to JsonValue to change a value).
+        // This represents the internal value, and no conversion is performed.
         public virtual object Value {get; set;}
 
         // Return the internal value or convert to T as necessary.
@@ -176,11 +166,16 @@ namespace System.Text.Json
         public abstract bool TryGetValue<T>(out T? value);
         public abstract bool TryGetValue(Type type, out object? value);
 
+        // Convert a non-dynamic node to a dynamic.
+        public dynamic ToDynamic();
+
         // The token type from deserialization; otherwise JsonValueKind.Unspecified.
         public JsonValueKind ValueKind { get; }
 
         // Serialize() wrappers which pass the value and options.
-        // The existing JsonSerializer.Deserialize* methods are still called.
+        // These are helpers and thus can be considered an optional API feature.
+        // There are no wrappers for JsonSerializer.Deserialize* methods since the
+        // existing Deserialize* methods can be called.
         public string Serialize();
         public void Serialize(System.Text.Json.Utf8JsonWriter writer);
         public System.Threading.Tasks.Task SerializeAsync(Stream utf8Json, CancellationToken cancellationToken = default);
@@ -221,10 +216,10 @@ namespace System.Text.Json
         public JsonValue(object value, JsonSerializerOptions options = null);
 
         // The internal raw value.
-        // During deserialization, this will be a JsonElement (pending design) since it supports
+        // During deserialization, this will be a JsonElement (pending design) since that supports
         // delayed creation of string and on-demand creation of numbers.
         // In edit mode, can be set to any object.
-        public object Value {get; set;}
+        public override object Value {get; set;}
 
         // Can be used to obtain any compatible value, including values from custom converters.
         public override T GetValue<T>();
@@ -235,6 +230,7 @@ namespace System.Text.Json
 
     // These types are used with dynamic support.
     // JsonSerializerOptions.EnableDynamicTypes must be called before using.
+    // These types are public for "edit mode" scenarios when using dynamic.
     public class JsonDynamicObject : JsonObject, IDynamicMetaObjectProvider { }
     public class JsonDynamicArray : JsonArray, IDynamicMetaObjectProvider { }
     public class JsonDynamicValue : JsonValue, IDynamicMetaObjectProvider { }
@@ -242,7 +238,7 @@ namespace System.Text.Json
 ```
 
 ## Serializer interop
-For deserializating JSON to a `JsonNode` instance, the existing static JsonSerializer.Deserialize() methods are used.
+For deserializating JSON to a `JsonNode` instance, the existing static `JsonSerializer.Deserialize()` methods are used.
 
 For serializing a `JsonNode` instance to JSON, instance helpers on `JsonNode` are provided that pass in the value and options:
 ```cs
@@ -294,9 +290,11 @@ JsonArray jArray = ...
 jArray[0] = new JsonValue("hello");
 jArray[1] = new JsonValue(myCustomDataType);
 
+// Get the internal values based on above.
 string v0 = (string)jArray[0].Value;
 MyCustomDataType v1 = (MyCustomDataType)jArray[1].Value;
-// or to support a possible conversion:
+
+// If the type is not known, call GetValue() which supports a possible conversion:
 MyCustomDataType v1 = jArray[1].GetValue<MyCustomDataType>();
 ```
 
@@ -345,7 +343,7 @@ so it is possible to omit the options instance for non-root members. When a prop
 It is required that all option instances are the same across a given `JsonNode` tree.
 
 ### Using `System.Object` for values
-Both `JsonObject` and `JsonArray` have indexers that allow `JsonNode` types to be specified for the property\array values. This allows a terse and more performant mode:
+`JsonNode` has indexers that allow `JsonObject` properties and `JsonArray` elements to be specified. This allows a terse and more performant mode:
 ```cs
     var jObject = new JsonObject(options)
     {
@@ -354,9 +352,9 @@ Both `JsonObject` and `JsonArray` have indexers that allow `JsonNode` types to b
     }
 ```
 
-If `System.Object` was used instead of `JsonNode`, the above syntax wouldn't work and a more verbose syntax would be necessary:
+If `System.Object` was used instead of `JsonNode`, or the indexers were not exposed on `JsonNode`, the above terse syntax wouldn't work and a more verbose syntax would be necessary:
 ```cs
-    var jObject = new JsonObject(options)
+    object jObject = new JsonObject(options)
     {
         ((JsonObject)((JsonArray)((JsonObject)jObject["Child"])["Array"])[0])["Message"] = new JsonValue("Hello!");
         ((JsonObject)((JsonArray)((JsonObject)jObject["Child"])["Array"])[1])["Message"] = new JsonValue("Hello!!");
@@ -365,15 +363,15 @@ If `System.Object` was used instead of `JsonNode`, the above syntax wouldn't wor
 
 During serialization, the appropriate converter is used to serialize either the primitive value or the underlying value held by a `JsonNode`.
 
-It is also possible to take a given CLR type and wrap it in a `JsonValue` efficiently:
+It is also possible to take a given CLR type and assign it to `Value`:
 ``` cs
-    JsonObject jObject = ...
-    obj.MyPoco = new int[] {0, 1}; // serialized as an array
-    string json = jObject.Serialize();
+    JsonArray jArray = ...
+    jArray.Value = new int[] {0, 1}; // raw array used instead of JsonValue
+    string json = jArray.Serialize();
 ```
 
 ## Changing the deserialization of System.Object
-The serializer has always deserialized JSON mapping to a `System.Object` as a `JsonElement`. This will remain the default behavior going forward, however there will be a way to specify `JsonNode` instead:
+The serializer has always deserialized JSON that maps to a `System.Object` as a `JsonElement`. This will remain the default behavior going forward, however there will be a way to specify `JsonNode` instead:
 
 ```cs
 namespace System.Text.Json
@@ -385,7 +383,7 @@ namespace System.Text.Json
 }
 ```
 
-This setting has no effect if the extension method `JsonSerializerOptions.EnableDynamicTypes` is called since it overrides the handling of unknown types. When polymorphic deserialiazation is added as a separate feature, the meaning may change slightly to handle the case of a type being deserialized with JSON "known type metadata" specifying an unknown or unhandled type on the CLR side.
+This setting has no effect if `JsonSerializerOptions.EnableDynamicTypes()` is called since it overrides the handling of unknown types. When polymorphic deserialization is added as a separate feature, the meaning may change slightly to handle the case of a type being deserialized with JSON "known type metadata" specifying an unknown or unhandled type on the CLR side. i.e. for polymorphic deserialization, a `System.Object` property during deserialization may be set to a concrete POCO type and not `JsonNode` or `JsonElement`.
 
 The serializer has always supported placing "overflow" properties in JSON into a dictionary on a property that has the `[JsonExtensionData]` attribute. The property itself can either be declared as:
 - `Dictionary<string, object>`
@@ -453,7 +451,7 @@ The constructors of `JsonNode` allow any type to be specified including a `JsonE
     string json = jObject.Serialize();
 }
 ```
-## New DOM, using dynamic:
+## Same result as above, with using dynamic instead of explicit `JsonNode`:
 ```cs
     var options = new JsonSerializerOptions();
     options.EnableDynamicTypes();
@@ -465,11 +463,11 @@ The constructors of `JsonNode` allow any type to be specified including a `JsonE
     jObject.MyInt = 43;
     jObject.MyDateTime = new DateTime(2020, 7, 8);
     jObject.MyGuid = new Guid("ed957609-cdfe-412f-88c1-02daca1b4f51");
-    jObject.MyArray = new int[] {2, 3, 42};
-    jObject.MyArray.MyObject = new JsonDynamicObject();
-    jObject.MyArray.MyObject.MyString = "Hello!!"
-    jObject.MyArray.MyObject.Child = new DynamicJsonObject();
-    jObject.MyArray.MyObject.Child.ChildProp = 1;
+    jObject.MyArray = new int[] { 2, 3, 42 };
+    jObject.MyObject = new JsonDynamicObject();
+    jObject.MyObject.MyString = "Hello!!"
+    jObject.MyObject.Child = new DynamicJsonObject();
+    jObject.MyObject.Child.ChildProp = 1;
 
     string json = jObject.Serialize();
 ```
@@ -493,8 +491,8 @@ GetValue:
 Setting values:
 ```cs
     JsonValue jValue = new JsonValue(42);
-    int i1 = (int)jValue.Value; // cast is not always safe
-    int i2 = jValue.GetValue<int>(); // safe
+    int i1 = (int)jValue.Value; // cast is not always safe since returning internal value
+    int i2 = jValue.GetValue<int>(); // safe since a conversion occurs if necessary
 
     jValue.Value = 3.14;
 
@@ -512,7 +510,7 @@ Setting values:
 ```cs
     JsonValue jValue = JsonSerializer.Deserialize<JsonValue>("Hello");
 
-    string s1 = (string)jValue.Value; // cast is not always safe
+    string s1 = (string)jValue.Value; // not always safe
     string s2 = jValue.GetValue<string>(); // safe
     Enum e = jValue.GetValue<MyEnum>();
 ```
@@ -521,13 +519,15 @@ Setting values:
 ```cs
     JsonValue jValue = JsonSerializer.Deserialize<JsonValue>("true");
 
-    bool b1 = (bool)jValue.Value; // cast is not always safe
+    bool b1 = (bool)jValue.Value; // not always safe
     bool b2 = jValue.GetValue<bool>(); // safe
     MyBoolCompatibleType o = jValue.GetValue<MyBoolCompatibleType>();
 ```
 
 ## LINQ
-todo; `JObject` and `JElement` implement `IEnumerable` so LINQ comes along... Dynamic types can also call methods.
+`JObject` and `JElement` implement `IEnumerable` so no extra work for LINQ there.
+
+Dynamic types support LINQ expressions that can call methods; we need to spec whether we want to support that or not.
 
 ## Interop with custom converter + dynamic
 ```cs
@@ -562,8 +562,8 @@ todo; `JObject` and `JElement` implement `IEnumerable` so LINQ comes along... Dy
 
 # Performance notes
 - `JsonElement` for 6.0 is [now ~2x faster](https://github.com/dotnet/runtime/pull/42538) which may make it suitable to use internally. It supports delayed creation of values which is important for cases that don't fully access each property or element.
-  - If `JsonElement` is not used internally, add a delayed creation to `JsonValue` for `string` (`JsonTokenType.String`), meaning the `UTF-8` is preserved until the string is requested. The same applies to the underlying dictionary in `JsonObject` and the underlying list in `JsonArray`.
-- `JsonValue` caches the last return value, so subsequent calls to `GetValue<T>` return the previous value if `T` is the same type as the previous value's type.
+  - If `JsonElement` is not used internally, the design should add a delayed creation mechanism to `JsonValue` for `string` (`JsonTokenType.String`). This would have a `UTF-8` value until the string is requested to lazily create the `string`. The same applies to the underlying dictionary in `JsonObject` and the underlying list in `JsonArray`.
+- `JsonValue` should cache the last return value, so subsequent calls to `GetValue<T>` return the previous value if `T` is the same type as the previous value's type.
 - The property-lookup algorithm can be made more efficient than the standard dictionary by using ordering heuristics (like the current serializer) or a bucketless B-Tree with no need to call `Equals()`. The Azure `dynamic` prototyping effort has been thinking of the B-Tree approach.
 
 # Dependencies
