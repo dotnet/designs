@@ -50,9 +50,10 @@ All classes to be located in STJ.dll.
 ```cs
 namespace System.Text.Json
 {
-    public class JsonSerializerOptions
+    public partial class JsonSerializerOptions
     {
         // The root method that if not called, ILLinker will trim out the reference to `System.Linq.Expressions.dll`.
+        // STJ does not expose any types from SLE publically.
         // Any System.Object-qualified type specified in a called to JsonSerializer.Deserialize() will create either a DynamicJsonArray, DynamicJsonObject or DynamicJsonValue.
         public void EnableDynamicTypes();
     }
@@ -167,7 +168,9 @@ namespace System.Text.Json
         public abstract bool TryGetValue(Type type, out object? value);
 
         // Convert a non-dynamic node to a dynamic.
-        public dynamic ToDynamic();
+        public object ToDynamic();
+        // This would also work assume the linker will remove the reference to SLE if not called:
+        // public dynamic ToDynamic();
 
         // The token type from deserialization; otherwise JsonValueKind.Unspecified.
         public JsonValueKind ValueKind { get; }
@@ -525,7 +528,7 @@ Setting values:
 ```
 
 ## LINQ
-`JObject` and `JElement` implement `IEnumerable` so no extra work for LINQ there.
+`JObject` and `JElement` implement `IEnumerable` so no extra work for LINQ there. Currently, there is no "Parent" property support so that should be considered.
 
 Dynamic types support LINQ expressions that can call methods; we need to spec whether we want to support that or not.
 
@@ -561,7 +564,7 @@ Dynamic types support LINQ expressions that can call methods; we need to spec wh
 ```
 
 # Performance notes
-- `JsonElement` for 6.0 is [now ~2x faster](https://github.com/dotnet/runtime/pull/42538) which may make it suitable to use internally. It supports delayed creation of values which is important for cases that don't fully access each property or element.
+- `JsonElement` for 6.0 is [now ~2x faster](https://github.com/dotnet/runtime/pull/42538) which may make it suitable to use internally. Since it supports delayed creation of values, it is performant for scenarios that don't fully access each property or element, or even the contents of a string-based value.
   - If `JsonElement` is not used internally, the design should add a delayed creation mechanism to `JsonValue` for `string` (`JsonTokenType.String`). This would have a `UTF-8` value until the string is requested to lazily create the `string`. The same applies to the underlying dictionary in `JsonObject` and the underlying list in `JsonArray`.
 - `JsonValue` should cache the last return value, so subsequent calls to `GetValue<T>` return the previous value if `T` is the same type as the previous value's type.
 - The property-lookup algorithm can be made more efficient than the standard dictionary by using ordering heuristics (like the current serializer) or a bucketless B-Tree with no need to call `Equals()`. The Azure `dynamic` prototyping effort has been thinking of the B-Tree approach.
@@ -577,8 +580,8 @@ Other issues to consider along with this:
   - The DOM could be used in a future feature to make object and collection custom converters easier to use.
 
 # Todos
-- [ ] Review general direction of API. Primarily using the serializer methods vs. new `node.Parse()` \ `node.Write()` methods and having a sealed `JsonValue` class instead of separate number, string and boolean classes.
+- [x] Review general direction of API. Primarily using the serializer methods vs. new `node.Parse()` \ `node.Write()` methods and having a sealed `JsonValue` class instead of separate number, string and boolean classes.
 - [ ] Provide more samples (LINQ).
 - [ ] Prototype and usabilty study?
 - [ ] Create API issue and review.
-- [ ] Ensure any future "new dynamic" C# support for intellisense support is forward-compatible with the work here which uses the "old dynamic".
+- [ ] Ensure any future "new dynamic" C# support (being considered for intellisense support based on schema) is forward-compatible with the work here which uses the "old dynamic".
