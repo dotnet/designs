@@ -114,6 +114,19 @@ bullets to this section based on early feedback and reviews where requirements
 are brought that you need to scope out.
 -->
 
+## Stakeholders and Reviewers
+
+<!--
+We noticed that even in the cases where we have specs, we sometimes surprise key
+stakeholders because we didn't pro-actively involve them in the initial reviews
+and early design process.
+
+Please take a moment and add a bullet point list of teams and individuals you
+think should be involved in the design process and ensure they are involved
+(which might mean being tagged on GitHub issues, invited to meetings, or sent
+early drafts).
+-->
+
 ## Design
 
 <!--
@@ -164,6 +177,8 @@ If you're a minimalist, just copy and paste the code below:
 ### Goals
 
 ### Non-Goals
+
+## Stakeholders and Reviewers
 
 ## Design
 
