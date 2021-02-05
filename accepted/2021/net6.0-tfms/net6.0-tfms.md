@@ -71,15 +71,24 @@ example of this. The same rational can be applied to `netcoreapp` where this
 would logically be the server implementation (or maybe a .NET Core 3.x desktop
 implementation).
 
-> ***OPEN QUESTION**: Should `net6.0-maccatalyst` also have a compatibility
-> relationship with any of the **existing** Xamarin TFMs, such as `xamarin.mac`
-> or `xamarin.tvos`?*
->
-> ***OPEN QUESTION**: Should `net6.0-maccatalyst` also have a compatibility
-> relationship with any of the **new** Xamarin TFMs, such as `net6.0-mac`?*
->
-> ***OPEN QUESTION**: Should `net6.0-maccatalyst` generate a warning when assets
-> from `xamarin.ios` are being used?
+A `net6.0-maccatalyst` project referencing a NuGet package should behave as
+follows:
+
+* It should prefer `xamarin.ios` assets over `netcoreapp` and `netstandard`
+  assets.
+    - However, it should still prefer `net5.0`/`net6.0` assets over
+      `xamarin.ios`.
+    - It also shouldn't be compatible with any other existing Xamarin TFM (such
+      as `xamarin.mac`)
+* Generate NuGet warning [NU1701] when a `xamarin.ios` asset is being used
+    - Package 'packageId' was restored using 'xamarin.ios' instead the project
+      target framework 'net6.0-maccatalyst'. This package may not be fully
+      compatible with your project.
+* Should only use compatible `net5.0` based TFMs, namely `net5.0`, `net6.0`, and
+  `net6.0-maccatalyst`.
+    - Specifically, it should not accept `net6.0-ios`. The expectation is that
+      moving forward libraries that want to work on iOS and Mac Catalyst should
+      use `net6.0` or multi-target for `net6.0-ios` and `net6.0-maccatalyst`
 
 ## Q & A
 
@@ -105,4 +114,11 @@ compatibility mode which is:
 > Instead of blocking things that might not work, unblock things that could
 > work.
 
+### Why didn't we make `net6.0-ios` compatible with `net6.0-maccatalyst`?
+
+The expectation is that moving forward libraries that want to work on iOS and
+Mac Catalyst would use `net6.0` or multi-target for `net6.0-ios` and
+`net6.0-maccatalyst`
+
 [net5.0]: ../../2020/net5/net5.md
+[NU1701]: https://docs.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu1701
