@@ -109,7 +109,21 @@ namespace System
 
 We need to add RIDs for all these platforms:
 
-* TBD
+* `net6.0-android`
+    - TBD
+* `net6.0-ios`
+    - TBD
+* `net6.0-maccatalyst`
+    - `maccatalyst-arm64`
+    - `maccatalyst-arm64-13`
+    - `maccatalyst-arm64-14`
+    - `maccatalyst-x64`
+    - `maccatalyst-x64-13`
+    - `maccatalyst-x64-14`
+* `net6.0-macos`
+    - TBD
+* `net6.0-tvos`
+    - TBD
 
 ## Q & A
 
