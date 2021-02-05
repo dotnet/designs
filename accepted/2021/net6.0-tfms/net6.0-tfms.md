@@ -90,6 +90,27 @@ follows:
       moving forward libraries that want to work on iOS and Mac Catalyst should
       use `net6.0` or multi-target for `net6.0-ios` and `net6.0-maccatalyst`
 
+## APIs
+
+We need to add platform detection APIs for Mac Catalyst:
+
+```C#
+namespace System
+{
+    public partial class OperatingSystem
+    {
+        public static bool IsMacCatalyst();
+        public static bool IsMacCatalystVersionAtLeast(int major, int minor = 0, int build = 0);
+    }
+}
+```
+
+## RIDs
+
+We need to add RIDs for all these platforms:
+
+* TBD
+
 ## Q & A
 
 ### Why didn't we name it `net6.0-macos-catalyst`?
