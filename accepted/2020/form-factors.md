@@ -165,8 +165,7 @@ The native AOT support added to existing programming environments faces form-fac
 We have an opportunity to participate in this trend. The .NET community has demonstrated interest in this form factor by shipping apps using CoreRT, despite it never being released:
 
 - [http://SoundFlow.org's macOS and Linux apps also proudly built on #CoreRT](https://twitter.com/SoundFlow_org/status/1200155734585094156)
-- [Carrion's Halloween Demo used CoreRT on Windows and Linux](https://twitter.com/kroskiewicz/status/1200126309856350209)
-    - The game was officially released on 23 Jul, 2020, using CoreRT on Linux/macOS/Windows - a global best seller! [Steam](https://store.steampowered.com/app/953490/CARRION/) - [Twitter](https://twitter.com/kroskiewicz/status/1286776766460309506)
+- [Carrion used CoreRT on Linux/macOS/Windows](https://twitter.com/kroskiewicz/status/1286776766460309506) - [Steam](https://store.steampowered.com/app/953490/CARRION/)
 - [Streets of Rage 4 successfully used CoreRT for the Steam release on Windows](https://github.com/dotnet/corert/issues/7200#issuecomment-624990602) - [Steam](https://store.steampowered.com/app/985890)
 
 The ingredients of successful native AOT support in .NET are:
