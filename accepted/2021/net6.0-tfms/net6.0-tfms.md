@@ -3,9 +3,9 @@
 **PM** [Immo Landwerth](https://github.com/terrajobst)
 
 In [.NET 5.0][net5.0] we defined a new syntax for target frameworks (TFM) that
-allows us to avoids tools and humans to use a decoder ring, such as the .NET
-Standard version table, to figure out what is compatible with what. In this
-document, we're listing which TFMs we're adding in .NET 6.0.
+makes it unnecessary for both tools and humans to use a decoder ring, such as
+the .NET Standard version table, to figure out what is compatible with what. In
+this document, we're listing which TFMs we're adding in .NET 6.0.
 
 ## Scenarios and User Experience
 
@@ -59,7 +59,7 @@ TFM automatically compatible with:
 
 The `net5.0` TFM has the additional twist that it's compatible with
 `netcoreapp3.2` (and earlier), `netstandard2.1` (and earlier) as well as .NET
-Framework (`net4.x` and earlier, but under a warning). The .NET Framework
+Framework (`net4x` and earlier, but under a warning). The .NET Framework
 compatibility is achieved as a *fallback*, that is, it's only used when nothing
 else applies.
 
