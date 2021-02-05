@@ -44,8 +44,6 @@ TBD
 |                    | (+everything else inherited from net6.0) |
 | net6.0-tvos        | xamarin.tvos                             |
 |                    | (+everything else inherited from net6.0) |
-| net6.0-watchos     | xamarin.watchos                          |
-|                    | (+everything else inherited from net6.0) |
 
 ### Compatibility rules
 
