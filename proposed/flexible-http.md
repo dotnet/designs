@@ -26,7 +26,7 @@ This API consists of an abstraction and concrete implementations:
 Performance is of high priority:
 
 - Operate on `Span<byte>` rather than `string` and `Uri`.
-    - Validation will only check for protocol correctness. Things like ASCII or URI validation will not be performed.
+    - Parameters will not be validated (to enable efficient forwarding), but helpers will be exposed to allow user to perform validation.
 - Zero allocations (steady-state).
 
 Ease of use is an explicit non-goal:
@@ -43,13 +43,26 @@ These APIs are constructed on top of `Stream`. This has some implications worth 
 
 Huffman compression will be opt-in on a per-header basis.
 
-The API must be efficient for forwarding scenarios, as in reverse proxies.
+Content will be read and written directly to the `HttpConnection`, without using `Stream` or a `HttpContent`-equivalent, to avoid the associated allocations.
+
+Expect Continue will not be implemented here, but full informational responses will be returned to allow the caller to implement their own Expect Continue processing.
+
+Callers must be able to implement connection pooling logic on top of this. This means exposing some features:
+
+    - Is a HTTP/2 stream available?
+        - E.g. if there are multiple connections, and one is fully booked, try another.
+    - Is GOAWAY being processed?
+        - E.g. to remove connection from being eligible for new requests.
+    - If an exception occurs, was the request possibly processed?
+        - E.g. to allow retry on another connection.
+
+The API must be efficient for forwarding scenarios, such as (reverse) proxies.
 
 ## Compositional APIs
 
 Compositional APIs are built on top of low-level APIs to provide additional features, as well as some opinionated implemenations.
 
-This will mean a `HttpConnection` implementation implementing some features:
+This will mean a `HttpConnection` that implements some features:
 
 - Automatic decompression.
 - Automatic redirects.
