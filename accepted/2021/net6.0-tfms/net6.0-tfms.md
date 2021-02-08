@@ -134,9 +134,9 @@ namespace System
 
 It seems the Xamarin team wants to have a single assembly with bindings for the
 iOS platforms (e.g. Mac Catalyst and iOS). The APIs should be annotated with
-`SupportedOSPlatformAttribute` and don't need any
-`UnsupportedOSPlatformAttribute` (the absence of a platform is interpreted as
-the platform not being supported). For instance:
+`[SupportedOSPlatform]` and don't need any `[UnsupportedOSPlatform]` (the
+absence of a platform is interpreted as the platform not being supported). For
+instance:
 
 ```C#
 public class SomeType
