@@ -107,6 +107,14 @@ follows:
       moving forward libraries that want to work on iOS and Mac Catalyst should
       use `net6.0` or multi-target for `net6.0-ios` and `net6.0-maccatalyst`
 
+> ***OPEN QUESTION** Should `xamarin.ios` take precedence over the new
+> cross-platform `net5.0` (and higher) as well? On the one hand, it seems that
+> people who upgrade their package for .NET 5+ would also use the new TFMs. On
+> the other hand, it doesn't seem unlikely for Xamarin authors to support both
+> the new as well as the old TFMs for a while. That might include
+> `net5.0`/`net6.0` for bait & switch scenarios, where preferring them over
+> `xamarin.ios` would be undesirable.
+
 ## APIs
 
 We need to add platform detection APIs for Mac Catalyst:
