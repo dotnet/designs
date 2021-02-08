@@ -257,10 +257,10 @@ We need to add RIDs for all these platforms:
     - `ios.13-x64`
 * `net6.0-maccatalyst`
     - `maccatalyst-arm64`
-    - `maccatalyst.13-arm64`
-    - `maccatalyst.14-arm64`
     - `maccatalyst-x64`
+    - `maccatalyst.13-arm64`
     - `maccatalyst.13-x64`
+    - `maccatalyst.14-arm64`
     - `maccatalyst.14-x64`
 * `net6.0-macos`
     - `osx`
