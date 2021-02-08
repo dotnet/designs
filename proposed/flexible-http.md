@@ -100,7 +100,10 @@ As well as some additional APIs for working with the `HttpConnection` API:
 
 - Header parsing/printing.
 - Input validation.
-- Proxy implemenations
+- Proxy resolver.
+    - "HTTP_PROXY" etc. environment variables.
+    - WinInet settings.
+- Proxy implemenations.
     - HTTP proxy as `HttpConnection`.
     - CONNECT proxy as `Stream`.
     - SOCKS proxy as `Stream`.
@@ -131,6 +134,7 @@ Expect 100 Continue will be implemented here.
 | Version upgrades        |         | x       |        |
 | Authentication          |         | x       |        |
 | Header parsing/printing |         |         | x      |
+| Proxy resolver          |         | x       |        |
 | HTTP proxy              |         | x       |        |
 | CONNECT proxy           |         | x       |        |
 | SOCKS proxy             |         | x       |        |
