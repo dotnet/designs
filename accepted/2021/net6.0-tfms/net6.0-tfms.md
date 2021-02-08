@@ -153,6 +153,10 @@ Catalyst and iOS. A developer either has to target Mac Catalyst (via
 multi-target for both but that means two binaries are being produced which means
 the Xamarin bindings could also be provided as separate libraries.
 
+This is slightly different for cross-platform BCL APIs. Here we'd follow the
+path we took for Blazor WebAssembly and mark APIs that don't work in Xamarin
+with attributes like `[UnsupportedOSPlatform("iOS")].
+
 ## RIDs
 
 We need to add RIDs for all these platforms:
