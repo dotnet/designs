@@ -56,7 +56,7 @@ TFM automatically compatible with:
 4. Earlier versions of the corresponding `netX.Y` TFM
 
 The `net5.0` TFM has the additional twist that it's compatible with
-`netcoreapp3.2` (and earlier), `netstandard2.1` (and earlier) as well as .NET
+`netcoreapp3.1` (and earlier), `netstandard2.1` (and earlier) as well as .NET
 Framework (`net4x` and earlier, but under a warning). The .NET Framework
 compatibility is achieved as a *fallback*, that is, it's only used when nothing
 else applies.
