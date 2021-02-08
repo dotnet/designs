@@ -11,19 +11,19 @@ this document, we're listing which TFMs we're adding in .NET 6.0.
 
 ### Using an existing library in Mac Catalyst
 
-Sophia is building her an application for Mac Catalyst. From her experience with
+Sophia is building an application for Mac Catalyst. From her experience with
 Xamarin iOS she knows the library `Xamarin.FFImageLoading` and wants to use it.
 The package installs successfully, but upon building she gets the following
 warning:
 
-> Package 'Xamarin.FFImageLoading' was restored using 'xamarin.ios' instead the
-> project target framework 'net6.0-maccatalyst'. This package may not be fully
-> compatible with your project.
+> Package 'Xamarin.FFImageLoading' was restored using 'xamarin.ios' instead of
+> the project target framework 'net6.0-maccatalyst'. This package may not be
+> fully compatible with your project.
 
-To find our more, she visit's the packages project site, which is on GitHub. She
+To find out more, she visits the package's project site, which is on GitHub. She
 decides to file an issue to ask whether the library will add support for Mac
-Catalyst, but for the time being she's unblocked and can continue the
-development on her app.
+Catalyst, but for the time being she's unblocked and can continue to develop her
+app.
 
 ## Requirements
 
