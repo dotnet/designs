@@ -1,10 +1,39 @@
 # Flexible HTTP APIs
 
+[Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer)
+
 This design doc describes a set of flexible, high-performance APIs for HTTP.
 
 ## Target customers
 
 This API is intended for advanced users who need control or performance beyond what `HttpClient` offers, and to eventually replace the `SocketsHttpHandler` implementation.
+
+Some specific scenarios this must satisfy:
+
+- Opening connections without making a request.
+- Making requests without using a connection pool.
+- Ability to build a custom connection pool. Some features this requires:
+    - Is a HTTP/2 stream available?
+        - E.g. if there are multiple connections, and one is fully booked, try another.
+    - Is GOAWAY being processed?
+        - E.g. to remove connection from being eligible for new requests.
+    - If an exception occurs, was the request possibly processed?
+        - E.g. to allow retry on another connection.
+- Retrieving statistics about the connection used for the request.
+    - e.g. TCP EStats.
+- Retrieving fine-grained timings for a request.
+    - Connection established.
+    - TLS handshake finished.
+    - Response received.
+    - Headers received.
+    - Content received.
+    - Trailing headers received.
+    - Request finished.
+- Tracking request and connection status.
+    - TBD, see e.g. [gRPC status codes](https://github.com/grpc/grpc/blob/master/doc/statuscodes.md).
+- Efficient and lossless forwarding (e.g. proxy).
+- Better control over TLS handshakes.
+    - TBD.
 
 ## APIs
 
@@ -14,14 +43,19 @@ The APIs are split into three groups:
 - Compositional APIs
 - High-level APIs
 
+### Definitions
+
+- `Span<byte>` indicates a contiguous blob of unvalidated `byte` and may be used as a placeholder for all its variants e.g. `ReadOnlyMemory<byte>`.
+
+- `string` indicates a contiguous blob of `char` and may be used as a placeholder for all its variants e.g. `Span<char>`.
+
+- For discussion sake (actual API TBD), we will consider that this API consists of an abstraction and concrete implementations:
+    - `HttpConnection`, the abstraction.
+    - `Http1Connection`, `Http2Connection`, `Http3Connection`, the low-level implementations.
+
 ## Low-level API
 
-Low-level APIs implement HTTP without any additional features or opinions. They return HTTP data direct to the user without transformation, and are built to support new HTTP features (e.g. HTTP/2 and HTTP/3 extension frames) in the future.
-
-This API consists of an abstraction and concrete implementations:
-
-- `HttpConnection`, the abstraction.
-- `Http1Connection`, `Http2Connection`, `Http3Connection`.
+Low-level APIs implement HTTP without any additional features or opinions. They return HTTP data direct to the user without transformation, and are built to be forward-compatible with new HTTP features (e.g. HTTP/2 and HTTP/3 extension frames) in the future.
 
 Performance is of high priority:
 
@@ -43,26 +77,15 @@ These APIs are constructed on top of `Stream`. This has some implications worth 
 
 Huffman compression will be opt-in on a per-header basis.
 
-Content will be read and written directly to the `HttpConnection`, without using `Stream` or a `HttpContent`-equivalent, to avoid the associated allocations.
+Content will be read and written directly to the `HttpConnection`'s request type, without using `Stream` or a `HttpContent`-equivalent, to avoid the associated allocations.
 
 Expect Continue will not be implemented here, but full informational responses will be returned to allow the caller to implement their own Expect Continue processing.
-
-Callers must be able to implement connection pooling logic on top of this. This means exposing some features:
-
-    - Is a HTTP/2 stream available?
-        - E.g. if there are multiple connections, and one is fully booked, try another.
-    - Is GOAWAY being processed?
-        - E.g. to remove connection from being eligible for new requests.
-    - If an exception occurs, was the request possibly processed?
-        - E.g. to allow retry on another connection.
-
-The API must be efficient for forwarding scenarios, such as (reverse) proxies.
 
 ## Compositional APIs
 
 Compositional APIs are built on top of low-level APIs to provide additional features, as well as some opinionated implemenations.
 
-This will mean a `HttpConnection` that implements some features:
+Every higher-level feature that `SocketsHttpHandler` currently supports should have an implementation here. This will mean one or more `HttpConnection` that implements some features:
 
 - Automatic decompression.
 - Automatic redirects.
@@ -73,7 +96,8 @@ This will mean a `HttpConnection` that implements some features:
 
 As well as some additional APIs for working with the `HttpConnection` API:
 
-- Header parsing.
+- Header parsing/printing.
+- Input validation.
 - Proxy implemenations
     - HTTP proxy as `HttpConnection`.
     - CONNECT proxy as `Stream`.
@@ -97,14 +121,14 @@ Expect 100 Continue will be implemented here.
 | HTTP/1                  | x       |         |        |
 | HTTP/2                  | x       |         |        |
 | HTTP/3                  |         |         | x      |
-| Prepared Headers        |         |         | x      |
+| Prepared headers        |         |         | x      |
 | Header compression      |         |         | x      |
 | Automatic decompression |         | x       |        |
 | Automatic redirect      |         | x       |        |
 | Connection pooling      |         | x       |        |
 | Version upgrades        |         | x       |        |
 | Authentication          |         | x       |        |
-| Header parsing          |         |         | x      |
+| Header parsing/printing |         |         | x      |
 | HTTP proxy              |         | x       |        |
 | CONNECT proxy           |         | x       |        |
 | SOCKS proxy             |         | x       |        |
