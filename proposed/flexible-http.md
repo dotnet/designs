@@ -75,9 +75,15 @@ These APIs are constructed on top of `Stream`. This has some implications worth 
 - Connections are not established by these APIs: the user must establish the connection.
 - Connecting via a proxy, or over TLS is not done by this API: the user must pass in a `Stream` that already has these established.
 
+### Header handling
+
+Headers are read and written "streaming", without going through a collection.
+
 "Prepared" headers will enable dynamic table compression and pre-validation/serialization equivalent to existing internal "known header" concept of `SocketsHttpHandler`.
 
 Huffman compression will be opt-in on a per-header basis.
+
+### Content handling
 
 Content will be read and written directly to the `HttpConnection`'s request type, without using `Stream` or a `HttpContent`-equivalent, to avoid the associated allocations.
 
@@ -141,4 +147,3 @@ Expect 100 Continue will be implemented here.
 | Stream wrappers         |         | x       |        |
 | JSON extensions         |         |         | x      |
 | HttpMessageHandler      | x       | x       | x      |
-|                         |         |         |        |
