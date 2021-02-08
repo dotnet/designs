@@ -255,6 +255,9 @@ We need to add RIDs for all these platforms:
     - `ios.13`
     - `ios.13-arm64`
     - `ios.13-x64`
+    - `ios.14`
+    - `ios.14-arm64`
+    - `ios.14-x64`
 * `net6.0-maccatalyst`
     - `maccatalyst-arm64`
     - `maccatalyst-x64`
@@ -306,6 +309,9 @@ We need to add RIDs for all these platforms:
     - `tvos.13`
     - `tvos.13-arm64`
     - `tvos.13-x64`
+    - `tvos.14`
+    - `tvos.14-arm64`
+    - `tvos.14-x64`
 
 ## Q & A
 
