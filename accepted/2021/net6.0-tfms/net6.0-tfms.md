@@ -110,9 +110,91 @@ namespace System
 We need to add RIDs for all these platforms:
 
 * `net6.0-android`
-    - TBD
+    - `android`
+    - `android-arm`
+    - `android-arm64`
+    - `android-x64`
+    - `android-x86`
+    - `android.21`
+    - `android.21-arm`
+    - `android.21-arm64`
+    - `android.21-x64`
+    - `android.21-x86`
+    - `android.22`
+    - `android.22-arm`
+    - `android.22-arm64`
+    - `android.22-x64`
+    - `android.22-x86`
+    - `android.23`
+    - `android.23-arm`
+    - `android.23-arm64`
+    - `android.23-x64`
+    - `android.23-x86`
+    - `android.24`
+    - `android.24-arm`
+    - `android.24-arm64`
+    - `android.24-x64`
+    - `android.24-x86`
+    - `android.25`
+    - `android.25-arm`
+    - `android.25-arm64`
+    - `android.25-x64`
+    - `android.25-x86`
+    - `android.26`
+    - `android.26-arm`
+    - `android.26-arm64`
+    - `android.26-x64`
+    - `android.26-x86`
+    - `android.27`
+    - `android.27-arm`
+    - `android.27-arm64`
+    - `android.27-x64`
+    - `android.27-x86`
+    - `android.28`
+    - `android.28-arm`
+    - `android.28-arm64`
+    - `android.28-x64`
+    - `android.28-x86`
+    - `android.29`
+    - `android.29-arm`
+    - `android.29-arm64`
+    - `android.29-x64`
+    - `android.29-x86`
+    - `android.30`
+    - `android.30-arm`
+    - `android.30-arm64`
+    - `android.30-x64`
+    - `android.30-x86`
 * `net6.0-ios`
-    - TBD
+    - `ios`
+    - `ios-arm`
+    - `ios-arm64`
+    - `ios-x64`
+    - `ios-x86`
+    - `ios.8`
+    - `ios.8-arm`
+    - `ios.8-arm64`
+    - `ios.8-x64`
+    - `ios.8-x86`
+    - `ios.9`
+    - `ios.9-arm`
+    - `ios.9-arm64`
+    - `ios.9-x64`
+    - `ios.9-x86`
+    - `ios.10`
+    - `ios.10-arm`
+    - `ios.10-arm64`
+    - `ios.10-x64`
+    - `ios.10-x86`
+    - `ios.11`
+    - `ios.11-arm64`
+    - `ios.11-x64`
+    - `ios.12`
+    - `ios.12-arm64`
+    - `ios.12-x64`
+    - `ios.13`
+    - `ios.13-arm64`
+    - `ios.13-x64`
 * `net6.0-maccatalyst`
     - `maccatalyst-arm64`
     - `maccatalyst-arm64-13`
@@ -121,9 +203,49 @@ We need to add RIDs for all these platforms:
     - `maccatalyst-x64-13`
     - `maccatalyst-x64-14`
 * `net6.0-macos`
-    - TBD
+    - `osx`
+    - `osx-arm64`
+    - `osx-x64`
+    - `osx.10.10`
+    - `osx.10.10-arm64`
+    - `osx.10.10-x64`
+    - `osx.10.11`
+    - `osx.10.11-arm64`
+    - `osx.10.11-x64`
+    - `osx.10.12`
+    - `osx.10.12-arm64`
+    - `osx.10.12-x64`
+    - `osx.10.13`
+    - `osx.10.13-arm64`
+    - `osx.10.13-x64`
+    - `osx.10.14`
+    - `osx.10.14-arm64`
+    - `osx.10.14-x64`
+    - `osx.10.15`
+    - `osx.10.15-arm64`
+    - `osx.10.15-x64`
+    - `osx.10.16`
+    - `osx.10.16-arm64`
+    - `osx.10.16-x64`
+    - `osx.11.0`
+    - `osx.11.0-arm64`
+    - `osx.11.0-x64`
 * `net6.0-tvos`
-    - TBD
+    - `tvos`
+    - `tvos-arm64`
+    - `tvos-x64`
+    - `tvos.10`
+    - `tvos.10-arm64`
+    - `tvos.10-x64`
+    - `tvos.11`
+    - `tvos.11-arm64`
+    - `tvos.11-x64`
+    - `tvos.12`
+    - `tvos.12-arm64`
+    - `tvos.12-x64`
+    - `tvos.13`
+    - `tvos.13-arm64`
+    - `tvos.13-x64`
 
 ## Q & A
 
