@@ -4,6 +4,8 @@
 
 This design doc describes a set of flexible, high-performance APIs for HTTP.
 
+In shorthand, this may be referred to as "LLHTTP".
+
 ## Target customers
 
 This API is intended for advanced users who need control or performance beyond what `HttpClient` offers, and to eventually replace the `SocketsHttpHandler` implementation.
