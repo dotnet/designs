@@ -128,6 +128,14 @@ public class SomeType
 }
 ```
 
+However, from a user experience it's irrelevant if the Xamarin team provides the
+bindings in separate libraries or in a single library because there is no TFM
+that developers can use to build a single binary that can work in both Mac
+Catalyst and iOS. A developer either has to target Mac Catalyst (via
+`net6.0-maccatalyst`) or iOS (via `net6.0-ios`). Of course, the developer can
+multi-target for both but that means two binaries are being produced which means
+the Xamarin bindings could also be provided as separate libraries.
+
 ## RIDs
 
 We need to add RIDs for all these platforms:
