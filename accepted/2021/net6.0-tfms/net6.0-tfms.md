@@ -105,6 +105,29 @@ namespace System
 }
 ```
 
+## Platform support annotations
+
+It seems the Xamarin team wants to have a single assembly with bindings for the
+iOS platforms (e.g. Mac Catalyst and iOS). The APIs should be annotated with
+`SupportedOSVersionAttribute` and don't need any `UnsupportedOSVersionAttribute`
+(the absence of a platform is interpreted as the platform not being supported).
+For instance:
+
+```C#
+public class SomeType
+{
+    [SupportedOSPlatform("ios8.0")]
+    [SupportedOSPlatform("maccatalyst13.0")]
+    public void MethodSupportedOn_iOS_and_Mac_Catalyst(); 
+
+    [SupportedOSPlatform("ios8.0")]
+    public void MethodSupportedOn_iOS_Only(); 
+
+    [SupportedOSPlatform("maccatalyst13.0")]
+    public void MethodSupportedOn_Mac_Catalyst_Only(); 
+}
+```
+
 ## RIDs
 
 We need to add RIDs for all these platforms:
