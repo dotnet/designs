@@ -197,11 +197,11 @@ We need to add RIDs for all these platforms:
     - `ios.13-x64`
 * `net6.0-maccatalyst`
     - `maccatalyst-arm64`
-    - `maccatalyst-arm64-13`
-    - `maccatalyst-arm64-14`
+    - `maccatalyst.13-arm64`
+    - `maccatalyst.14-arm64`
     - `maccatalyst-x64`
-    - `maccatalyst-x64-13`
-    - `maccatalyst-x64-14`
+    - `maccatalyst.13-x64`
+    - `maccatalyst.14-x64`
 * `net6.0-macos`
     - `osx`
     - `osx-arm64`
@@ -262,7 +262,7 @@ Looks like [Apple refers to it as "Mac Catalyst"](https://developer.apple.com/ma
 
 ### Why did we make `net6.0-maccatalyst` compatible with the existing Xamarin TFMs?
 
-It's true that for native code existing binaries largely don't work in Mac
+It's true that for native code existing binaries don't work in Mac
 Catalyst and that developers are generally expected to recompile. However, the
 Xamarin team believes that enough managed code would just work that makes this
 compat relationship useful. This follows the principle of the .NET Framework
