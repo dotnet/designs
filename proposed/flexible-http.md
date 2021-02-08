@@ -8,7 +8,7 @@ In shorthand, this may be referred to as "LLHTTP".
 
 ## Target customers
 
-This API is intended for advanced users who need control or performance beyond what `HttpClient` offers, and to eventually replace the `SocketsHttpHandler` implementation.
+This API is intended for advanced users who need control or performance beyond what `HttpClient` offers. `HttpClient` would be kept as the "easy" API, and this API would be the exposed layer that exists beneath `HttpClient`.
 
 Some specific scenarios this must satisfy:
 
@@ -36,6 +36,7 @@ Some specific scenarios this must satisfy:
 - Efficient and lossless forwarding (e.g. proxy).
 - Better control over TLS handshakes.
     - TBD.
+- This should be able to replace the internals of `SocketsHttpHandler`.
 
 ## APIs
 
@@ -54,6 +55,7 @@ The APIs are split into three groups:
 - For discussion sake (actual API TBD), we will consider that this API consists of an abstraction and concrete implementations:
     - `HttpConnection`, the abstraction.
     - `Http1Connection`, `Http2Connection`, `Http3Connection`, the low-level implementations.
+    - `HttpRequest`, the abstraction over a request/response.
 
 ## Low-level API
 
@@ -85,7 +87,7 @@ Huffman compression will be opt-in on a per-header basis.
 
 ### Content handling
 
-Content will be read and written directly to the `HttpConnection`'s request type, without using `Stream` or a `HttpContent`-equivalent, to avoid the associated allocations.
+Content will be read and written directly to the `HttpRequest`, without using `Stream` or a `HttpContent`-equivalent, to avoid the associated allocations.
 
 Expect Continue will not be implemented here, but full informational responses will be returned to allow the caller to implement their own Expect Continue processing.
 
@@ -113,14 +115,14 @@ As well as some additional APIs for working with the `HttpConnection` API:
     - HTTP proxy as `HttpConnection`.
     - CONNECT proxy as `Stream`.
     - SOCKS proxy as `Stream`.
-- Wrapper to work with `HttpConnection` as a `Stream`.
+- Wrapper to work with `HttpRequest` as a `Stream`.
 - JSON helper extensions on top of `HttpConnection`.
 
 ## High-level APIs
 
 This is a `HttpMessageHandler` implementation for use with `HttpClient`. It will either wrap a user-supplied `HttpConnection`, or will provide `SocketsHttpHandler`-parity functionality.
 
-Once we are confident in implementation and features, this would replace `SocketsHttpHandler`.
+Once we are confident in implementation and features, we would refactor the `SocketsHttpHandler` guts to use use this implementation.
 
 Expect 100 Continue will be implemented here.
 
