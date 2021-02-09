@@ -8,7 +8,7 @@ In shorthand, this may be referred to as "LLHTTP".
 
 ## Target customers
 
-This API is intended for advanced users who need control or performance beyond what `HttpClient` offers. `HttpClient` would be kept as the "easy" API, and this API would be the exposed layer that exists beneath `HttpClient`.
+This API is intended for advanced users who need control or performance beyond what `HttpClient` offers. `HttpClient` would be kept as the feature-rich "easy" API.
 
 Some specific scenarios this must satisfy:
 
@@ -21,7 +21,7 @@ Some specific scenarios this must satisfy:
         - E.g. to remove connection from being eligible for new requests.
     - If an exception occurs, was the request possibly processed?
         - E.g. to allow retry on another connection.
-- Retrieving statistics about the connection used for the request.
+- Retrieving statistics about the connection used for a request.
     - e.g. TCP EStats.
 - Retrieving fine-grained timings for a request.
     - Connection established.
@@ -36,7 +36,7 @@ Some specific scenarios this must satisfy:
 - Efficient and lossless forwarding (e.g. proxy).
 - Better control over TLS handshakes.
     - TBD.
-- This should be able to replace the internals of `SocketsHttpHandler`.
+- The entirety of `SocketsHttpHandler` must be able to be built as a layer on top of this API.
 
 ## APIs
 
@@ -72,12 +72,14 @@ Ease of use is an explicit non-goal:
 - We assume users will know more about HTTP than `HttpClient` currently requires of them.
 - It is okay if it takes more code to use than `HttpClient`.
 
+### Connections
+
 These APIs are constructed on top of `Stream`. This has some implications worth noting:
 
 - Connections are not established by these APIs: the user must establish the connection.
 - Connecting via a proxy, or over TLS is not done by this API: the user must pass in a `Stream` that already has these established.
 
-### Header handling
+### Headers
 
 Headers are read and written "streaming", without going through a collection.
 
@@ -85,15 +87,15 @@ Headers are read and written "streaming", without going through a collection.
 
 Huffman compression will be opt-in on a per-header basis.
 
-### Content handling
+### Content
 
 Content will be read and written directly to the `HttpRequest`, without using `Stream` or a `HttpContent`-equivalent, to avoid the associated allocations.
 
-Expect Continue will not be implemented here, but full informational responses will be returned to allow the caller to implement their own Expect Continue processing.
+Expect 100 Continue will not be implemented here, but full informational responses will be returned to allow the caller to implement their own Expect Continue processing.
 
 ## Compositional APIs
 
-Compositional APIs are built on top of low-level APIs to provide additional features, as well as some opinionated implemenations.
+Compositional APIs are built on top of low-level APIs to provide additional features, as well as some opinionated implementations.
 
 Every higher-level feature that `SocketsHttpHandler` currently supports should have an implementation here. This will mean one or more `HttpConnection` that implements some features:
 
@@ -111,20 +113,22 @@ As well as some additional APIs for working with the `HttpConnection` API:
 - Proxy resolver.
     - "HTTP_PROXY" etc. environment variables.
     - WinInet settings.
-- Proxy implemenations.
+- Proxy support.
     - HTTP proxy as `HttpConnection`.
     - CONNECT proxy as `Stream`.
     - SOCKS proxy as `Stream`.
 - Wrapper to work with `HttpRequest` as a `Stream`.
+- Expect 100 Continue handling.
+- WebSockets.
 - JSON helper extensions on top of `HttpConnection`.
 
 ## High-level APIs
 
-This is a `HttpMessageHandler` implementation for use with `HttpClient`. It will either wrap a user-supplied `HttpConnection`, or will provide `SocketsHttpHandler`-parity functionality.
+High-level APIs are one or more `HttpMessageHandler` implementations for use with `HttpClient` allowing:
 
-Once we are confident in implementation and features, we would refactor the `SocketsHttpHandler` guts to use use this implementation.
-
-Expect 100 Continue will be implemented here.
+- A full `SocketsHttpHandler`-parity implementation.
+    - Once we are confident in implementation and features, we would refactor the `SocketsHttpHandler` guts to use use this implementation.
+- Wrapping a caller-supplied `HttpConnection` in a `HttpMessageHandler`.
 
 ## Timeline
 
@@ -147,5 +151,7 @@ Expect 100 Continue will be implemented here.
 | CONNECT proxy           |         | x       |        |
 | SOCKS proxy             |         | x       |        |
 | Stream wrappers         |         | x       |        |
+| Expect 100 Continue     |         | x       |        |
+| WebSockets              |         |         | x      |
 | JSON extensions         |         |         | x      |
 | HttpMessageHandler      | x       | x       | x      |
