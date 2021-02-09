@@ -113,7 +113,7 @@ follows:
 > the other hand, it doesn't seem unlikely for Xamarin authors to support both
 > the new as well as the old TFMs for a while. That might include
 > `net5.0`/`net6.0` for bait & switch scenarios, where preferring them over
-> `xamarin.ios` would be undesirable.
+> `xamarin.ios` would be undesirable.*
 
 ## APIs
 
