@@ -91,10 +91,9 @@ implementation).
 A `net6.0-maccatalyst` project referencing a NuGet package should behave as
 follows:
 
-* It should prefer `xamarin.ios` assets over `netcoreapp` and `netstandard`
-  assets.
-    - However, it should still prefer `net5.0`/`net6.0` assets over
-      `xamarin.ios`.
+* It should prefer `xamarin.ios` assets over `netcoreapp`, `netstandard`,
+  and `net5.0` assets.
+    - However, it should still prefer `net6.0` assets over `xamarin.ios`.
     - It also shouldn't be compatible with any other existing Xamarin TFM (such
       as `xamarin.mac`)
 * Generate NuGet warning [NU1701] when a `xamarin.ios` asset is being used
@@ -106,14 +105,6 @@ follows:
     - Specifically, it should not accept `net6.0-ios`. The expectation is that
       moving forward libraries that want to work on iOS and Mac Catalyst should
       use `net6.0` or multi-target for `net6.0-ios` and `net6.0-maccatalyst`
-
-> ***OPEN QUESTION** Should `xamarin.ios` take precedence over the new
-> cross-platform `net5.0` (and higher) as well? On the one hand, it seems that
-> people who upgrade their package for .NET 5+ would also use the new TFMs. On
-> the other hand, it doesn't seem unlikely for Xamarin authors to support both
-> the new as well as the old TFMs for a while. That might include
-> `net5.0`/`net6.0` for bait & switch scenarios, where preferring them over
-> `xamarin.ios` would be undesirable.*
 
 ## APIs
 
@@ -336,6 +327,25 @@ compatibility mode which is:
 
 > Instead of blocking things that might not work, unblock things that could
 > work.
+
+### Why did we make `net6.0-maccatalyst` prefer `net6.0` over `xamarin.ios`?
+
+The intention of making `net6.0-maccatalyst` being able to use `xamarin.ios` is
+so that the new platform can use packages that were designed before Mac Catalyst
+existed but would have a high chance of working just fine.
+
+Considering that many Xamarin packages use bait & switch (that is they provide a
+cross-platform API but have a Xamarin-specific implementation) it is desirable
+that `xamarin.ios` is preferred over `netcoreapp` and `netstandard`. This also
+includes `net5.0`, because it is the successor of `netstandard` and existed
+before `net6.0-maccatalyst`.
+
+This rationale doesn't apply for packages that target .NET 6. When they do that,
+they are generally not expected to target the old Xamarin TFMs but the new .NET
+6 TFMs, such as `net6.0-maccatalyst` and `net6.0-ios`. As such, preferring
+`net6.0` over `xamarin.ios` is more sensible. It also avoids ambiguities for
+package authors that want to ship assets for the old Xamarin stack and the new
+.NET 6-based Xamarin stack.
 
 ### Why didn't we make `net6.0-ios` compatible with `net6.0-maccatalyst`?
 
