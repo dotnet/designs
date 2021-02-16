@@ -106,6 +106,45 @@ follows:
       moving forward libraries that want to work on iOS and Mac Catalyst should
       use `net6.0` or multi-target for `net6.0-ios` and `net6.0-maccatalyst`
 
+We want the same rules for `net6.0-ios` except that using `xamarin.ios` should
+not generate a warning. This reasoning results in these precedence rules:
+
+**net6.0-ios**
+
+1. `net6.0-ios`
+1. `net6.0`
+1. `xamarin.ios` (no warning)
+1. `net5.0`
+1. `netcoreapp3.1` – `1.0`
+1. `netstandard2.1` – `1.0`
+1. `net4.x` – `1.0` (warning)
+
+**net6.0-maccatalyst**
+
+1. `net6.0-ios`
+1. `net6.0`
+1. `xamarin.ios` ([NU1701] warning)
+1. `net5.0`
+1. `netcoreapp3.1` – `1.0`
+1. `netstandard2.1` – `1.0`
+1. `net4.x` – `1.0 ([NU1701] warning)
+
+**net6.0-macos**
+
+1. `net6.0-macos`
+1. `net6.0` - `5.0`
+1. `netcoreapp3.1` – `1.0`
+1. `netstandard2.1` – `1.0`
+1. `net4.x` – `1.0` ([NU1701] warning)
+
+**net6.0-tvos**
+
+1. `net6.0-tvos`
+1. `net6.0` - `5.0`
+1. `netcoreapp3.1` – `1.0`
+1. `netstandard2.1` – `1.0`
+1. `net4.x` – `1.0` ([NU1701] warning)
+
 ## APIs
 
 We need to add platform detection APIs for Mac Catalyst:
