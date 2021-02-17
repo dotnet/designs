@@ -121,7 +121,7 @@ not generate a warning. This reasoning results in these precedence rules:
 
 **net6.0-maccatalyst**
 
-1. `net6.0-ios`
+1. `net6.0-maccatalyst`
 1. `net6.0`
 1. `xamarin.ios` ([NU1701] warning)
 1. `net5.0`
