@@ -1,5 +1,5 @@
 # Overview
-February 16th, 2021.
+February 17th, 2021.
 
 This document covers the API and design for a writable DOM along with support for the [C# `dynamic` keyword](https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/dynamic-language-runtime-overview).
 
@@ -45,30 +45,41 @@ This design is based on learning and scenarios from these reference implementati
 - The dynamic support code example.
   - During 5.0, [dynamic support](https://github.com/dotnet/runtime/issues/29690) was not able to be implemented due to schedule constraints. Instead, a [code example](https://github.com/dotnet/runtime/pull/42097) was provided that enables `dynamic` and a writeable DOM that can be used by any 3.0+ runtime in order to unblock the community and also has been useful in gathering feedback for the design proposed here.
 - Azure prototyping. The Azure team needs a writable DOM, and supporting `dynamic` is important for some scenarios but not all. A [prototype](https://docs.microsoft.com/en-us/dotnet/api/azure.core.dynamicjson?view=azure-dotnet-preview) has been created. Work is also being coordinated with the C# team to support Intellisense with `dynamic`, although that is not expected to be implemented in time to be used in 6.0.
-- Newtonsoft's Json.NET. This has a similar `JToken` class hierarchy and support for `dynamic`. The `JToken` hierarchy includes a single `JValue` type to represent all types, like is being proposed here (instead of separate types for string, number and boolean). Json.NET also has implicit and explicit operators similar as to what is being proposed here.
+- Newtonsoft's Json.NET. This has a similar `JToken` class hierarchy and support for `dynamic`. The `JToken` hierarchy includes a single `JValue` type to represent all value types, like is being proposed here (instead of separate types for string, number and boolean). Json.NET also has implicit and explicit operators similar as to what is being proposed here.
   - Converting Json.NET code to System.Text.Json should be fairly straightforward although not all Json.NET features are implemented. See the "Features not proposed in first round" section for more information.
 
 ## API walkthrough
-A deserialized `JsonNode` value internally holds a `JsonElement` which knows about the JSON kind (object, array, number, string, true, false) and the raw UTF-8 value.
+A deserialized `JsonNode` value internally holds a `JsonElement` which knows about the JSON kind (object, array, number, string, true, false) and the raw UTF-8 value including any child nodes (for a JSON object or array).
 
-When the consumer obtains a primitive value through `jvalue.GetValue<double>()`, for example, the CLR `Double` value is deserialized from the raw UTF-8. Thus the mapping between UTF-8 JSON and the CLR object model is deferred. Deferring is consistent with existing `JsonElement` semantics where, for example, a JSON number is not automatically mapped to any CLR type until the consumer calls a method such as `JsonElement.GetDecimal()` or `JsonElement.GetDouble()`. This design is preferred over "guessing" what the CLR type should be based upon the contents of the JSON such as whether the JSON contains a decimal point or the presence of an exponent. Guessing can lead to issues including overflow\underflow or precision loss.
+When the consumer obtains a primitive value through `jvalue.GetValue<double>()`, for example, the CLR `double` value is deserialized from the raw UTF-8. Thus the mapping between UTF-8 JSON and the CLR object model is deferred until manually mapped by the consumer by specifying the expected type.
+
+Deferring is consistent with existing `JsonElement` semantics where, for example, a JSON number is not automatically mapped to any CLR type until the consumer calls a method such as `JsonElement.GetDecimal()` or `JsonElement.GetDouble()`. This design is preferred over "guessing" what the CLR type should be based upon the contents of the JSON such as whether the JSON contains a decimal point or the presence of an exponent. Guessing can lead to issues including overflow\underflow or precision loss.
+
+In addition to deferring the creation of numbers in this manner, the other node types are also deferred including strings. In addition, `JsonObject` and `JsonArray` instances are not populated with child nodes until traversed. Using `JsonElement` in this way along with defferred creation of values and child nodes greatly improves CPU performance and reduces allocations especially when a subset of a graph is used.
 
 Simple deserialization example:
 ```cs
 JsonObject jObject = JsonObject.Parse("{""MyProperty"":42}");
 JsonValue jValue = jObject["MyProperty"];
+
+// Verify the contents
 Debug.Assert(jValue is JsonValue<JsonElement>); // On deserialize, the value is JsonElement
-int i = jValue.GetValue<int>(); // Same programming model as below.
+int i = jValue.GetValue<int>(); // Same programming model as the sample below.
+Debug.Assert(i == 42);
 ```
 
-To change the value to a CLR type, a new node instance must be created:
+To mutate the value, a new node instance must be created:
 ```cs
 jObject["MyProperty"] = 43;
-Debug.Assert(jObject["MyProperty"] is JsonValue<int>);
-int i = jValue.GetValue<int>(); // Same programming model as above.
+
+// Verify the contents
+JsonValue jValue = jObject["MyProperty"];
+Debug.Assert(jValue is JsonValue<int>);
+int i = jValue.GetValue<int>(); // Same programming model as the sample above.
+Debug.Assert(i == 42);
 ```
 
-Note that in both cases `GetValue<int>` is called: this is important because it means there is a common programming model for cases when a given `JsonValue<T>` is backed by `JsonElement` or backed by the actual `int` value, for example. This means for a given property, the consumer does not need to be concerned about the internal `<T>` type -- the consumer always knows the "MyProperty" number property in JSON will can be returned as an `int`.
+Note that in both cases `GetValue<int>()` is called: this is important because it means there is a common programming model for cases when a given `JsonValue<T>` is backed by `JsonElement` (for read mode \ deserialization) or backed by an actual value (for edit mode or serialization) such as `int`. In this example, the consumer always knows that the "MyProperty" number property can be returned as an `int` when given a `JsonValue` and doesn't have to be concerned about whether it is backed by an `int` or `JsonElement`.
 
 Note that an implicit operator was used in the above example:
 ```cs
@@ -84,6 +95,7 @@ The `JsonValue<T>.Value` property can also have its internal value changed witho
 var jValue = JsonValue<int>(43);
 jValue.Value = 44;
 ```
+although the type itself (`int` in this example) can't be changed without creating a new `JsonValue<T>`.
 
 A `JsonValue` supports custom converters that were added via `JsonSerializerOptions.Converters.Add()` or specified in the `JsonValue<T>()` constructor. A common use case would be to add the `JsonStringEnumConverter` which serializes `Enum` values as a string instead of an integer, but also supports user-defined custom converters:
 ```cs
@@ -92,18 +104,16 @@ JsonValue jValue = jObject["Amount"];
 Money money = jValue.GetValue<Money>();
 ```
 
-Above the `GetValue<Money>()` calls the custom converter for `Money`.
-
-Although `JsonValue<T>` is intended to support simple value types, any CLR value including POCOs and various collection types can be specified, assuming they are supported by the serializer. However, normally one would use `JsonArray` or `JsonObject` instead to create a new POCO or collection. Supporting this "bring-your-own-object" scenario is a convenience and also supported by Newtonsoft. The POCO or collection is serialized as expected but when deserialized the type will be either a `JsonObject` or a `JsonArray`, not a `JsonValue<T>`.
+The call to `GetValue<Money>()` above calls the custom converter for `Money`.
 
 During serialization, some features specified on `JsonSerializerOptions` are supported including quoted numbers and null handling. See the "Interop" section.
 
 Serialization can be performed in several ways:
-- Calling `string json = JsonNode.ToJsonString()`.
-- Calling `JsonNode.WriteTo(utf8JsonWriter)`
+- Calling `string json = jNode.ToJsonString()`.
+- Calling `jNode.WriteTo(utf8JsonWriter)`
 - Assigning a node to a POCO or adding to a collection and serializing that.
-- Using the existing `JsonSerializer.Serialize<JsonNode>(value)` methods.
-- Obtaining a `JsonElement` from a node and serializing the element.
+- Using the existing `JsonSerializer.Serialize<JsonNode>(jNode)` methods.
+- Obtaining a `JsonElement` from a node and serializing that through `jElement.WriteTo(utf8JsonWriter)`.
 
 # Proposed API
 All types live in `System.Text.Json.dll. The proposed namespace is **"System.Text.Json.Node"** since the node types overlap with both "Document" and "Serializer" semantics, so having its own namespace makes sense.
@@ -639,6 +649,15 @@ However, for some scenarios, it is important to distinguish between a `null` val
 bool found = jObject.TryGetValue("NonExistingProperty", out object _);
 ```
 
+## Allowing any CLR type in JsonValue<T>
+Although `JsonValue<T>` is intended to support simple value types, any CLR value including POCOs and various collection types can be specified, assuming they are supported by the serializer.
+
+However, normally one would use `JsonArray` or `JsonObject` instead to create a new POCO or collection. A POCO or collection in this scenario is serialized as expected (as a JSON object or array) but when deserialized the type will be either a `JsonObject` or a `JsonArray`, not a `JsonValue<T>`.
+
+One reason to support this (and not throw) is because it is not possible to identify what comprises a POCO (`JsonObject`) vs. a value from the `<T>` in `JsonValue<T>`. However, an array (`JsonArray`) can be identified somewhat reliabily since `<T>` will implement `IEnumerable`. 
+
+Unless we remove the support for custom data types, allowing any type of object in `JsonValue<T>` is assumed.
+
 ## Support for C# object initializers
 ### Terse syntax with operators (non-dynamic)
 ```cs
@@ -673,7 +692,7 @@ jObject.MyDateTime = new DateTime(2020, 7, 8);
 jObject.MyGuid = new Guid("ed957609-cdfe-412f-88c1-02daca1b4f51");
 jObject.MyArray = new JsonArray(2, 3, 42);
 jObject.MyObject = new JsonObject();
-// Here we call .MyObject again, but could cache the previous value for perf.
+// We call .MyObject again, but could manually reference the previous value for perf.
 jObject.MyObject.MyString = "Hello!!"
 jObject.MyObject.Child = new JsonObject();
 jObject.MyObject.Child.ChildProp = 1;
@@ -753,7 +772,7 @@ const string Linq_Query_Json = @"
 
 {
     // Query for orders
-    JsonArray allOrders = (JsonArray)JsonNode.Parse(Linq_Query_Json);
+    JsonArray allOrders = JsonArray.Parse(Linq_Query_Json);
     IEnumerable<JsonNode> orders = allOrders.Where(o => o["Customer"]["City"].GetValue<string>() == "Fargo");
 
     Debug.Assert(2 == orders.Count());
@@ -765,7 +784,7 @@ const string Linq_Query_Json = @"
 
 {
     // Query for orders with dynamic
-    IEnumerable<dynamic> allOrders = (IEnumerable<dynamic>)JsonNode.Parse(Linq_Query_Json);
+    IEnumerable<dynamic> allOrders = (IEnumerable<dynamic>)JsonArray.Parse(Linq_Query_Json);
     IEnumerable<dynamic> orders = allOrders.Where(o => ((string)o.Customer.City) == "Fargo");
 
     Debug.Assert(2 == orders.Count());
@@ -779,15 +798,15 @@ const string Linq_Query_Json = @"
 # Dynamic
 The dynamic feature in C# is implemented in the CLR by both language features and in the `System.Linq.Expressions` assembly. The core interface is [IDynamicMetaObjectProvider](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.idynamicmetaobjectprovider?view=net-5.0).
 
-There are existing implementations of `IDynamicMetaObjectProvider` including [DynamicObject](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.dynamicobject?view=net-5.0) and [ExpandObject](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.expandoobject?view=netcore-3.1). However, these implementations are not ideal for JSON scenarios:
-- There are many public members used for wiring up dynamic support, but are of little to no value for consumers so they would be confusing when mixed in with other methods intended to be used for writable DOM support.
+There are existing implementations of `IDynamicMetaObjectProvider` including [DynamicObject](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.dynamicobject?view=net-5.0) and [ExpandObject](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.expandoobject?view=netcore-3.1). However, these implementations are not ideal for JSON scenarios because:
+- There are many public members used for wiring up dynamic support, but are of little to no value for consumers thus they would be confusing when mixed in with other methods intended to be used for writable DOM support.
 - `ExpandoObject` does not support case insensitivity and throws an exception when accessing missing properties (a `null` is desired instead).
 - `DynamicObject` prevents potential optimizations including property-lookup and avoiding some reflection calls.
 
 Thus, the design presented here for `dynamic` assumes explicit interface implementation of `IDynamicMetaObjectProvider`. This is also what Newtonsoft does; its [JToken](https://www.newtonsoft.com/json/help/html/T_Newtonsoft_Json_Linq_JToken.htm) implements `IDynamicMetaObjectProvider`.
 
 ## Referencing the `System.Linq.Expressions` assembly
-Having `System.Text.Json.dll` directly reference `System.Linq.Expressions.dll` is feasible because the ILLinker removes the reference to the large `System.Linq.Expressions.dll` when the dynamic functionality is not used. In tests, a simple `JsonNode` stand-alone console app not using `dynamic` was ~10.5MB and using dynamic was ~11.5MB. It was also verified the SLE assembly reference in STJ was removed.
+Having `System.Text.Json.dll` directly reference `System.Linq.Expressions.dll` is feasible because the ILLinker is able to remove the reference to the large `System.Linq.Expressions.dll` when the dynamic functionality is not used. In tests, a simple `JsonNode` stand-alone console app not using `dynamic` was ~10.5MB and using dynamic grew to ~11.5MB. It was also verified the SLE assembly reference in STJ was removed when not using `dynamic`.
 
 ## Varying the `T` in `Deserialize<T>`
 For a `JsonObject`, this programming model:
