@@ -355,8 +355,8 @@ Sample code to enable:
 Currently the extension property can be declared in several ways:
 ```cs
     // Existing support:
-    [JsonExtensionData] public Dictionary<string, object> ExtensionData {get; set;}
-    [JsonExtensionData] public IDictionary<string, object> ExtensionData {get; set;}
+    [JsonExtensionData] public Dictionary<string, object?> ExtensionData {get; set;}
+    [JsonExtensionData] public IDictionary<string, object?> ExtensionData {get; set;}
     [JsonExtensionData] public Dictionary<string, JsonElement> ExtensionData {get; set;}
     [JsonExtensionData] public IDictionary<string, JsonElement> ExtensionData {get; set;}
 ```
@@ -364,7 +364,7 @@ Currently the extension property can be declared in several ways:
 Going forward, `JsonObject` can also be specified as the property type, which is useful if the missing properties should be writable or support LINQ:
 ```cs
     // New support:
-    [JsonExtensionData] public JsonObject ExtensionData {get; set;};
+    [JsonExtensionData] public JsonObject? ExtensionData {get; set;}
 ```
 
 These and other unnecessary permutations are not supported:
@@ -681,7 +681,7 @@ var jObject = new JsonObject()
 };
 ```
 ### dynamic
-Currently `dynamic` doesn't support object initializers, so a mode verbose model is required:
+Currently `dynamic` doesn't support object initializers, so a more verbose model is required:
 ```cs
 dynamic jObject = new JsonObject();
 jObject.MyString = "Hello!";
