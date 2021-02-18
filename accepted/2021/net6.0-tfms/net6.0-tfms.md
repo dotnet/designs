@@ -132,7 +132,9 @@ not generate a warning. This reasoning results in these precedence rules:
 **net6.0-macos**
 
 1. `net6.0-macos`
-1. `net6.0` - `5.0`
+1. `net6.0`
+1. `xamarin.macos` (no warning)
+1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
 1. `net4.x` – `1.0` ([NU1701] warning)
@@ -140,7 +142,9 @@ not generate a warning. This reasoning results in these precedence rules:
 **net6.0-tvos**
 
 1. `net6.0-tvos`
-1. `net6.0` - `5.0`
+1. `net6.0`
+1. `xamarin.tvos` (no warning)
+1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
 1. `net4.x` – `1.0` ([NU1701] warning)
