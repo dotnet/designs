@@ -49,7 +49,7 @@ A developer has confidence that their library using source generators will conti
 
 ### Framework provided source generators
 
-Framework provided source generators should have a mechanism to be exposed and versioned along side the framework and library which they extend.  These source generators will be passed to the compiler when that framework is targeted.  These source generators will not ne used when the framework is not targeted.  For example, ASP.NET specific source generators will not be used with ASP.NET is not referenced.  The version of the analyzers specific to the TargetFramework version will be used.  For example, when targeting .NET 6.0 the analyzers specific to net6.0 will be used and not those for .NET 7.0, even when using the SDK that ships with .NET 7.0.
+Framework provided source generators should have a mechanism to be exposed and versioned along side the framework and library which they extend.  These source generators will be passed to the compiler when that framework is targeted.  These source generators will not ne used when the framework is not targeted.  For example, ASP.NET specific source generators will not be used when ASP.NET is not referenced.  The version of the analyzers specific to the TargetFramework version will be used.  For example, when targeting .NET 6.0 the analyzers specific to net6.0 will be used and not those for .NET 7.0, even when using the SDK that ships with .NET 7.0.
 
 To facilitate this, we will package analyzers inside [reference packs](https://github.com/dotnet/designs/blob/main/accepted/2019/targeting-packs-and-runtime-packs.md).  We will use the standard [nuget conventions for describing analyzers](https://github.com/dotnet/designs/blob/main/accepted/2019/targeting-packs-and-runtime-packs.md).  The .NET SDK will be responsible for locating the appropriate analyzers for the TargetFramework and creating `@(Analyzer)` items as part of the `ResolveTargetingPackAssets` task.  These items will be conflict-resolved with other Analyzer sources based as described in the following section.
 
@@ -67,9 +67,9 @@ Source generators should be strongly named and update assembly version with ever
 
 ### Source generator compatibility concerns
 
-Source generators should only use public API in framework components they extend.  This public API already needs to meet the strict binary compatibility garuntees as framework API.  As such libraries containing source-generated code will be binary-compatible with future releases, just as if the user wrote this code directly.
+Source generators should only use public API in framework components they extend.  This public API already needs to meet the strict binary compatibility guarantees as framework API.  As such libraries containing source-generated code will be binary-compatible with future releases, just as if the user wrote this code directly.
 
-Source generators should not use public API with "reserved" or "undocumented" functionality in attempts to avoid public API garuntees.  Libraries paired with source generators need to provide the same garuntees as libraries alone do today.
+Source generators should not use public API with "reserved" or "undocumented" functionality in attempts to avoid public API guarantees.  Libraries paired with source generators need to provide the same guarantees as libraries alone do today.
 
 Source generators should avoid emitting public API in user's projects.  Such API can create a compatibility contract in that user's library which needs to be maintained.  If a source generator produces public API in a user's project by design, that public API must be strictly maintained following the same rules as framework components across versions of the source generator.  Care should be taken to the public API which is generated and should be reviewed by the Framework Design Council.  A similar constraint applies to internal API: users will have source that expects to interact with the generated internal API and the user will expect that code to continue to compile between versions.
 
@@ -83,7 +83,7 @@ Source generators target .NETStandard and must run on both .NETFramework and .NE
 
 Source generators should limit their dependencies.  There is no scheme for encoding framework-specific nor runtime-specific implementations of dependencies or source generators based on the runtime environment so source generators should avoid any dependencies on assemblies which need to differ by framework or runtime.  Source generators may depend on packages which are known dependencies of the compiler and should depend on versions less than or equal to that provided by the compiler and should not include that dependency in their package.
 
-Source generators should not directly reference nor execute runtime code.  Despite inbox source generators being coupled to a specific framework version, source generators cannot assume they will be running on that framework.  They may be running on a newer, older, or completely different framework.  There is no type-equivalence garunteed between references of the source generator and those of the user code that is under analysis.  As such source generators will need to examine user code references by name, or when needing to make equivalence checks can resolve types in the user code's type reference set to ensure valid equivalence checks.  Source sharing should be considered as an alternative for cases where source generators need to execute runtime library code.
+Source generators should not directly reference nor execute runtime code.  Despite inbox source generators being coupled to a specific framework version, source generators cannot assume they will be running on that framework.  They may be running on a newer, older, or completely different framework.  There is no type-equivalence guaranteed between references of the source generator and those of the user code that is under analysis.  As such source generators will need to examine user code references by name, or when needing to make equivalence checks can resolve types in the user code's type reference set to ensure valid equivalence checks.  Source sharing should be considered as an alternative for cases where source generators need to execute runtime library code.
 
 ## Q & A
 
@@ -115,7 +115,7 @@ Nothing is preventing analyzers and code fixes from shipping in the same manner.
 
 The SDK already has a means for acquisition and selection of ref packs.  The inputs to the selection of ref packs are the same as that of source generators (Version, FrameworkReference, and TargetFramework).  Ref packs user normal nuget convention which support analyzers and source generators.
 
-It may be desireable to create a seperate package just for analyzers in order to reduce risk in servicing.  We support servicing ref packs today, but we have to be careful not to expose new API nor change any assembly identites.  
+It may be desirable to create a separate package just for analyzers in order to reduce risk in servicing.  We support servicing ref packs today, but we have to be careful not to expose new API nor change any assembly identities.  
 
 ### Why in the ref pack, what not runtime pack?
 
