@@ -147,11 +147,11 @@ public void DoesNotWorkOnWindows();
 ```
 
 Now let's say that in .NET 6 we made the API work in Windows, but only on
-Windows `10.0.1903`. We'd update the API as follows:
+Windows `10.0.18362` (aka Windows 10 May 2019 Update). We'd update the API as follows:
 
 ```C#
 [UnsupportedOSPlatform("windows")]
-[SupportedOSPlatform("windows10.0.1903")]
+[SupportedOSPlatform("windows10.0.18362")]
 public void DoesNotWorkOnWindows();
 ```
 
@@ -163,15 +163,15 @@ and remove APIs:
 
 ```C#
 [UnsupportedOSPlatform("windows")]
-[SupportedOSPlatform("windows10.0.1903")]
-[ObsoletedInOSPlatform("windows10.0.1909")]
-[UnsupportedOSPlatform("windows10.0.2004")]
+[SupportedOSPlatform("windows10.0.18362")]
+[ObsoletedInOSPlatform("windows10.0.18363")]
+[UnsupportedOSPlatform("windows10.0.19041")]
 public void DoesNotWorkOnWindows();
 ```
 
 This describes an API that is supported by all platforms, except for Windows.
-And on Windows, it's supported for Windows 10 1903 and 1909, but it was
-obsoleted in 1909 and then became unsupported again in 2004.
+And on Windows, it's supported for Windows 10 18362 and 18363, but it was
+obsoleted in 18363 and then became unsupported again in 19041.
 
 Platform-specific APIs like the iOS and Android bindings are still expressible
 the same way:
