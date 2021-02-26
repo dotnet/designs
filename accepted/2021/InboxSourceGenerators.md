@@ -170,7 +170,7 @@ It is a goal for source-generators to be part of the default experience.  Additi
 
 NuGet packages are a good option in addition to the ref pack for components which already ship as NuGet packages, such as `System.Text.Json`.  In this way the source generator can deliver the integrated experience of being *part of* the library.
 
-Standalone source-generator NuGet packages may be used for components which are in the shared framework when the source-generator is not ready to stabalize at the same time as the shared framework, and the component inside the shared framework does not need to be changed.  If the component in the shared framework needs to be changed, it should be done so by either a library+generator NuGet package (`System.Text.Json`) or an experimental build of the entire framework, typically from a codebase like [dotnet/runtimelab](https://github.com/dotnet/runtimelab).
+Standalone source-generator NuGet packages may be used for components which are in the shared framework when the source-generator is not ready to stabilize at the same time as the shared framework, and the component inside the shared framework does not need to be changed.  If the component in the shared framework needs to be changed, it should be done so by either a library+generator NuGet package (`System.Text.Json`) or an experimental build of the entire framework, typically from a codebase like [dotnet/runtimelab](https://github.com/dotnet/runtimelab).
 
 ###  I really really need to execute runtime code on the TargetFramework!
 
