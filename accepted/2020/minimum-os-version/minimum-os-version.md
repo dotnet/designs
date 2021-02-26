@@ -42,7 +42,7 @@ Availability annotations are intended to be used both in third-party assemblies 
 
 Earlier versions of this section proposed a form of these annotation attributes based on the Xamarin.iOS/Xamarin.Mac attributes, but it has been superseded by a further refined and generalized form defined in the [attributes section of the Platform Checks spec](../platform-checks/platform-checks.md#attributes).
 
-These availability attributes omit the `Deprecated` availability kind from the Xamarin attibutes as it’s redundant, and rename `Introduced` to `Supported` to better reflect their alternate purpose of annotating multi-platform assemblies. They also omit the ability to differentiate availability based on architecture for reduction of scope, thought this could be added if needed in future.
+These availability attributes omit the `Deprecated` availability kind from the Xamarin attributes as it’s redundant, and rename `Introduced` to `Supported` to better reflect their alternate purpose of annotating multi-platform assemblies. They also omit the ability to differentiate availability based on architecture for reduction of scope, though this could be added if needed in future.
 
 > ***NOTE*** If and when C# support target typing for enums, we could add convenience overloads that would improve readability:
 >
@@ -151,4 +151,3 @@ The availability analyzers described in the [Platform Checks spec](../platform-c
 # See Also
 - [Swift](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html) `[@available](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html)` [attribute](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html)
 - [Xamarin.iOS/Mac](https://docs.microsoft.com/en-us/dotnet/api/objcruntime.availabilitybaseattribute?view=xamarin-ios-sdk-12) `AvailabilityBaseAttribute` and its subclasses
-
