@@ -153,9 +153,16 @@ The toplevel is a JSON object, containing the following keys:
 |--|--|--|--|
 | `version` | int | The version of the manifest. Must match the version of the NuGet package that contains the manifest. | Yes |
 | `description` | string | Description of the content and/or purpose of the manifest. This is primarily for commenting and/or diagnostic purposes and is not expected to be surfaced in the UX. | No |
+| `depends-on` | object | Declares any dependency on other manifests | No |
 | `workloads` | object | Workload definitions keyed by workload ID. | No |
 | `packs` | object | Pack definitions keyed by pack ID. | No |
 | `data` | object | Allows manifests to include arbitrary key-value without risk of conflict. | No |
+
+## Dependencies
+
+The `depends-on` key allows workloads to declare a minimum-version dependency on other manifests that contain workloads extended by workloads in this manifest or packs included by workloads in this manifests. It does not affect acquisition; it is only used to verify consistency when composing manifests together to resolve workloads/packs.
+
+It is a map of manifest ID strings to manifest version integers.
 
 ## Workload Definitions
 
