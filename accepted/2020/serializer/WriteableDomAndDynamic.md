@@ -7,7 +7,7 @@ It is expected that a significant percent of existing System.Text.JSON consumers
 - A need for a lightweight, simple API especially for one-off cases.
 - A need for `dynamic` capabilities for varying reasons including sharing of loosely-typed, script-based code.
 - To efficiently read or modify a subset of a large graph. For example, it is possible to efficiently navigate to a subsection of a large graph and read an array or deserialize a POCO from that subsection. LINQ can also be used with that.
-- Those unable to use the serializer for varying reasons:
+- Those unable or unwilling to use the serializer for varying reasons:
   - Too heavyweight; requires compilation of POCO types.
   - Limitations in the serializer such as polymorphism or to address denormalization scenarios.
   - JSON schema is not fixed and must be inspected.
@@ -29,9 +29,11 @@ namespace System.Text.Json.Node
 ```
 
 ## Background
-The existing `JsonDocument` and `JsonElement` types represent the DOM support today which is read-only. It maintains a single immutable UTF-8 buffer and returns `JsonElement` value types from that buffer on demand. That design minimizes the initial `JsonDocument.Parse()` time and associated heap allocs but also makes it slow to re-obtain the same value (which is common with LINQ) and does not lend itself to being directly extended to support writability. Although the internal UTF-8 buffer will continue to be immutable with the design proposed here, a `JsonElement` will indirectly support writability by forwarding serialization to a linked `JsonNode`.
+The existing `JsonDocument` and `JsonElement` types represent the DOM support today which is read-only. `JsonDocument` maintains a single immutable UTF-8 buffer and returns `JsonElement` value types from that buffer on demand. That design minimizes the initial `JsonDocument.Parse()` time and associated heap allocs but also makes it slow to re-obtain the same value (which is common with LINQ) and does not lend itself to being directly extended to support writability.
 
-Currently there is no direct support for `dynamic` in System.Text.Json. Adding support for that implies adding a writeable DOM. So considering both `dynamic` and non-`dynamic` scenarios for a writeable DOM in a single design allows for a common API, shared code and intuitive interop between the two.
+Although the internal UTF-8 buffer will continue to be immutable with the design proposed here, a `JsonElement` will indirectly support writability by forwarding serialization to a linked `JsonNode`. When a linked `JsonElement` is serialized, it will forward to the `JsonNode`. This `JsonNode` interop is not intended as the primary "writeable DOM" API, but is useful for scenarios that already use `JsonElement`.
+
+Currently there is no direct support for `dynamic` in System.Text.Json. Adding support for that implies adding a writeable DOM. The design proposed here considers both `dynamic` and non-`dynamic` scenarios for a writeable DOM which allows for a common API, shared code and intuitive interop between the two.
 
 This design is based on learning and scenarios from these reference implementations:
 - The writable DOM prototype.
@@ -49,7 +51,7 @@ This design is based on learning and scenarios from these reference implementati
   - Converting Json.NET code to System.Text.Json should be fairly straightforward although not all Json.NET features are implemented. See the "Features not proposed in first round" section for more information.
 
 ## Layering
-During deserialization, `JsonNode` uses `JsonElement`. During serialization, `JsonNode` uses both `JsonElement` and the serializer. Layering on the serializer is necessary to support `dynamic` (since arbitrary CLR types can be assigned to object properties and array elements) and to support custom converters (to support custom data types) along with other serialization features including quotes numbers.
+During deserialization, `JsonNode` uses `JsonElement`. During serialization, `JsonNode` uses both `JsonElement` and the serializer. Layering on the serializer is necessary to support `dynamic` since arbitrary CLR types, POCOs, collections, anonymous types, etc can be assigned to dynamic object properties and array elements and these are expected to serialize. Layering on the serializer also allows support for custom converters (to support custom data types or explicit serialization of POCOs or collections) along with other serialization features including quoted numbers.
 
 ## API walkthrough
 A deserialized `JsonNode` value internally holds a `JsonElement` which knows about the JSON kind (object, array, number, string, true, false) and the raw UTF-8 value including any child nodes (for a JSON object or array).
