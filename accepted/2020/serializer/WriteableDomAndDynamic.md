@@ -119,7 +119,9 @@ Serialization can be performed in several ways:
 - Obtaining a `JsonElement` from a node and serializing that through `jElement.WriteTo(utf8JsonWriter)`.
 
 # Proposed API
-All types live in `System.Text.Json.dll. The proposed namespace is **"System.Text.Json.Node"** since the node types overlap with both "Document" and "Serializer" semantics, so having its own namespace makes sense.
+All types live in `System.Text.Json.dll`.
+
+The proposed namespace is **"System.Text.Json.Node"** although "System.Text.Json" is also a suitable namespace since it contains the existing `JsonDocument`, `JsonElement` and `JsonSerializer` classes.
 
 ## Main API: JsonNode and derived classes
 ```cs
@@ -144,7 +146,7 @@ namespace System.Text.Json.Node
         // JsonValue terse syntax (no JsonValue<T> cast necessary).
         // Return the internal value, a JsonElement conversion, or a custom conversion to the provided type.
         // Allows for common programming model when JsonValue<T> is based on JsonElement or a CLR value.
-        // "TypeToGet" vs "T" to prevent collision on JsonValue<T>.
+        // "TypeToGet" vs "T" to prevent collision on JsonValue<T>. (could just be "T" if made non-virtual and dispatch to internal virtual methods instead)
         public virtual JsonValue? GetValue<TypeToGet>();
         public virtual bool TryGetValue<TypeToGet>(out TypeToGet? value);
         // Overloads with the converter for <TypeToGet>:
@@ -159,6 +161,7 @@ namespace System.Text.Json.Node
         public string Path { get; }
 
         // Serialize\deserialize wrappers. These are helpers and thus can be considered optional.
+        // "TypeToDeserialize" could be "T" instead.
         public abstract TypeToDeserialize? Deserialize<TypeToDeserialize>();
         public abstract bool TryDeserialize<TypeToDeserialize>(out TypeToDeserialize? value);
         public string ToJsonString(); // serialize as a string
@@ -335,12 +338,12 @@ namespace System.Text.Json.Node
     }
 
     // Separate class to make it easy to check type via "if (node is JsonValue)"
+    // and to support passing of a value class polymorphically (without the <T>)
     public abstract class JsonValue : JsonNode
     {
         public JsonValue(JsonSerializerOptions? options = null);
 
-        // Possible factory method to create JsonValue<T> without specifying <T>
-        // leveraging generic type inference.
+        // Possible factory method that doesn't require specifying <T> due to generic type inference:
         // public static JsonValue<T> Create(T value);
     }
 
@@ -371,11 +374,12 @@ namespace System.Text.Json.Node
 ```
 
 ## JsonSerializerOptions additions
-Currently (and going back to 3.0) `JsonElement` is created in two cases by the serializer:
-- When a CLR property\field is of type `System.Object`.
-- When a property exists in JSON but does not map to any CLR property. Currently this is stored in a dictionary-backed property (e.g.`IDictionary<string, JsonElement>`) with the `[JsonExtensionData]` attribute.
+Currently (and going back to 3.0) a `JsonElement` instance is created in three cases by the serializer:
+1) When a CLR property\field is of type `JsonElement`.
+2) When a CLR property\field is of type `System.Object`.
+3) When a property exists in JSON but does not map to any CLR property. Currently this is stored in a dictionary-backed property (e.g.`IDictionary<string, JsonElement>`) with the `[JsonExtensionData]` attribute.
 
-However, using the node classes instead may be super convenient since they are editable plus easier to use. So we return `JsonNode`-derived classes for `System.Object` and `JsonObect` for extension data.
+However, using the node classes instead of `JsonElement` for the last two cases may be super convenient since they are editable plus easier to use. So we return `JsonNode`-derived classes for `System.Object` and `JsonObect` for extension data.
 
 ```cs
 namespace System.Text.Json
