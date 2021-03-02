@@ -194,7 +194,6 @@ namespace System.Text.Json.Node
         [CLSCompliantAttribute(false)]
         public static explicit operator sbyte(JsonNode value);
         public static explicit operator float(JsonNode value);
-        public static explicit operator string(JsonNode value);
         public static explicit operator char(JsonNode value);
         [CLSCompliantAttribute(false)]
         public static explicit operator ushort(JsonNode value);
@@ -239,7 +238,6 @@ namespace System.Text.Json.Node
         [CLSCompliantAttribute(false)]
         public static implicit operator JsonNode(sbyte value);
         public static implicit operator JsonNode(float value);
-        public static implicit operator JsonNode?(string? value);
         public static implicit operator JsonNode?(char value);
         [CLSCompliantAttribute(false)]
         public static implicit operator JsonNode?(ushort value);
@@ -256,6 +254,7 @@ namespace System.Text.Json.Node
         public static implicit operator JsonNode(double? value);
         public static implicit operator JsonNode(Guid? value);
         public static implicit operator JsonNode(short? value);
+        public static implicit operator JsonNode(string? value);
         public static implicit operator JsonNode(int? value);
         public static implicit operator JsonNode(long? value);
         [CLSCompliantAttribute(false)]
@@ -339,6 +338,10 @@ namespace System.Text.Json.Node
     public abstract class JsonValue : JsonNode
     {
         public JsonValue(JsonSerializerOptions? options = null);
+
+        // Possible factory method to create JsonValue<T> without specifying <T>
+        // leveraging generic type inference.
+        // public static JsonValue<T> Create(T value);
     }
 
     public sealed class JsonValue<T> : JsonValue
@@ -653,10 +656,10 @@ var jObject = new JsonObject(options)
     },
 }
 ```
-and the terse syntax which omits the options instance for non-root members. When a property or element is added, the options instance is set to the parent's instance:
+and the terse syntax which omits the options instance for non-root members:
 ```cs
 // Terse syntax
-var jObject = new JsonObject(options) // options still needed at root level
+var jObject = new JsonObject(options) // options can just be at root
 {
     ["MyString"] = new JsonValue<string>("Hello!"),
     ["MyBoolean"] = new JsonValue<bool>(false),
@@ -668,13 +671,12 @@ var jObject = new JsonObject(options) // options still needed at root level
     },
 }
 ```
-
-Defaulting the options also allows support for implicit operators and `JsonArray` support for `params`:
+including implicit operators and `JsonArray` support for `params`:
 ```cs
-var jObject = new JsonObject(options) // options still needed at root level
+var jObject = new JsonObject(options) // options can just be at root
 {
     ["MyString"] = "Hello!",
-    ["MyBoolean"] = false,
+    ["MyCustomDataType"] = false,
     ["MyArray"] = new JsonArray(2, 3, 42)
 }
 ```
@@ -685,7 +687,7 @@ If the "node options" are not specified, the `JsonNode.Options` property will re
 
 If both "node options" and "serialize options" are specified, the "serialize options" will be used since they are specified later. Using the "serializer options" in this manner supports static caching of nodes that can be used across different `JsonSerializerOption` instances.
 
-During serialization, only the options instance of the node passed to "serialize" is used. Child nodes use the parent options even if they have a different options instance. Thus if a node has "node options" and that node is added as a child to another node which has a different options instance (or `null` meaning the default), then during serialization of the parent node the options are obtained from the parent node; no exception is thrown if a child node has a different options instance. This avoids having to deal with many options instance during tree serialization, but still allows for some flexibility for having different option instances.
+During serialization, only the options instance of the node passed to "serialize" is used. Child nodes use the parent options even if they have a different options instance. Thus if a node has "node options" and that node is added as a child to another node which has a different options instance (or `null` meaning the default), then during serialization of the parent node the options are obtained from the parent node; no exception is thrown if a child node has a different options instance. This avoids having to deal with many options instance during tree serialization, but still allows for some flexibility for having different option instances for caching or other reasons.
 
 ## Adding `JsonNode` indexers for objects\arrays and GetValue() for values
 `JsonNode` has indexers that allow `JsonObject` properties and `JsonArray` elements to be specified. This allows a terse mode:
