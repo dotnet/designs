@@ -1,9 +1,9 @@
 # Overview
-March 2nd, 2021.
+March 3rd, 2021.
 
 This document covers the API and design for a writable DOM along with support for the [C# `dynamic` keyword](https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/dynamic-language-runtime-overview).
 
-It is expected that a significant percent of existing System.Text.JSON consumers will use these new APIs, and also attract new consumers including:
+It is expected that a significant percent of existing System.Text.Json consumers will use these new APIs, and also attract new consumers including:
 - A need for a lightweight, simple API especially for one-off cases.
 - A need for `dynamic` capabilities for varying reasons including sharing of loosely-typed, script-based code.
 - To efficiently read or modify a subset of a large graph. For example, it is possible to efficiently navigate to a subsection of a large graph and read an array or deserialize a POCO from that subsection. LINQ can also be used with that.
@@ -44,23 +44,26 @@ This design is based on learning and scenarios from these reference implementati
      - What's different:
        - `JsonValue` instead of `JsonString`, `JsonNumber` and `JsonBoolean`.
        - The writable `JsonValue` internal value is based on CLR types, not a string representing JSON. For example, a `JsonValue` initialized with an `int` keeps that `int` value without boxing or converting to a string-based field.
-- The dynamic support code example.
-  - During 5.0, [dynamic support](https://github.com/dotnet/runtime/issues/29690) was not able to be implemented due to schedule constraints. Instead, a [code example](https://github.com/dotnet/runtime/pull/42097) was provided that enables `dynamic` and a writeable DOM that can be used by any 3.0+ runtime in order to unblock the community and also has been useful in gathering feedback for the design proposed here.
+- The dynamic support code example. During 5.0, [dynamic support](https://github.com/dotnet/runtime/issues/29690) was not able to be implemented due to schedule constraints. Instead, a [code example](https://github.com/dotnet/runtime/pull/42097) was provided that enables `dynamic` and a writeable DOM that can be used by any 3.0+ runtime in order to unblock the community and also has been useful in gathering feedback for the design proposed here.
 - Azure prototyping. The Azure SDK team needs a writable DOM, and supporting `dynamic` is important for some scenarios but not all. A [prototype](https://github.com/Azure/azure-sdk-for-net/tree/master/sdk/core/Azure.Core.Experimental) has been created. Work is also being coordinated with the C# team to support Intellisense with `dynamic`, although that is not expected to be implemented in time to be used in 6.0.
 - Newtonsoft's Json.NET. This has a similar `JToken` class hierarchy and support for `dynamic`. The `JToken` hierarchy includes a single `JValue` type to represent all value types, like is being proposed here (instead of separate types for string, number and boolean). Json.NET also has implicit and explicit operators similar as to what is being proposed here.
-  - Converting Json.NET code to System.Text.Json should be fairly straightforward although not all Json.NET features are implemented. See the "Features not proposed in first round" section for more information.
+  - Converting code using Json.NET to System.Text.Json should be fairly straightforward although not all Json.NET features are implemented. See the "Features not proposed in first round" section for more information.
 
 ## Layering
-During deserialization, `JsonNode` uses `JsonElement`. During serialization, `JsonNode` uses both `JsonElement` and the serializer. Layering on the serializer is necessary to support `dynamic` since arbitrary CLR types, POCOs, collections, anonymous types, etc can be assigned to dynamic object properties and array elements and these are expected to serialize. Layering on the serializer also allows support for custom converters (to support custom data types or explicit serialization of POCOs or collections) along with other serialization features including quoted numbers.
+During deserialization, `JsonNode` uses `JsonElement`.
+
+During serialization, `JsonNode` uses `JsonElement` if the values are backed by `JsonElement` otherwise `JsonNode` uses `JsonSerializer`.
+
+Layering on `JsonSerializer` is necessary to support `dynamic` since arbitrary CLR types, POCOs, collections, anonymous types, etc can be assigned to dynamic object properties and array elements and these are expected to serialize. This layering also supports the use serialization features including custom converters that support (de)serialization of custom data types.
 
 ## API walkthrough
 A deserialized `JsonNode` value internally holds a `JsonElement` which knows about the JSON kind (object, array, number, string, true, false) and the raw UTF-8 value including any child nodes (for a JSON object or array).
 
 When the consumer obtains a primitive value through `jvalue.GetValue<double>()`, for example, the CLR `double` value is deserialized from the raw UTF-8. Thus the mapping between UTF-8 JSON and the CLR object model is deferred until manually mapped by the consumer by specifying the expected type.
 
-Deferring is consistent with existing `JsonElement` semantics where, for example, a JSON number is not automatically mapped to any CLR type until the consumer calls a method such as `JsonElement.GetDecimal()` or `JsonElement.GetDouble()`. This design is preferred over "guessing" what the CLR type should be based upon the contents of the JSON such as whether the JSON contains a decimal point or the presence of an exponent. Guessing can lead to issues including overflow\underflow or precision loss.
+Deferring is consistent with existing `JsonElement` semantics where, for example, a JSON number is not automatically mapped to any CLR type until the consumer calls a method such as `JsonElement.GetDecimal()` or `JsonElement.GetDouble()`. This design is preferred over eager "guessing" what the CLR type should be based upon the contents of the JSON such as whether the JSON contains a decimal point or the presence of an exponent. Guessing can lead to issues including overflow\underflow or precision loss.
 
-In addition to deferring the creation of numbers in this manner, the other node types are also deferred including strings. In addition, `JsonObject` and `JsonArray` instances are not populated with child nodes until traversed. Using `JsonElement` in this way along with defferred creation of values and child nodes greatly improves CPU performance and reduces allocations especially when a subset of a graph is used.
+In addition to deferring the creation of numbers in this manner, the other node types are also deferred including strings. In addition, `JsonObject` and `JsonArray` instances are not populated with child nodes until traversed. Using `JsonElement` in this way along with deferred creation of values and child nodes greatly improves CPU performance and reduces allocations especially when a subset of a graph is traversed.
 
 Simple deserialization example:
 ```cs
@@ -81,10 +84,10 @@ jObject["MyProperty"] = 43;
 JsonValue jValue = jObject["MyProperty"];
 Debug.Assert(jValue is JsonValue<int>);
 int i = jValue.GetValue<int>(); // Same programming model as the sample above.
-Debug.Assert(i == 42);
+Debug.Assert(i == 43);
 ```
 
-Note that in both cases `GetValue<int>()` is called: this is important because it means there is a common programming model for cases when a given `JsonValue<T>` is backed by `JsonElement` (for read mode \ deserialization) or backed by an actual value (for edit mode or serialization) such as `int`. In this example, the consumer always knows that the "MyProperty" number property can be returned as an `int` when given a `JsonValue` and doesn't have to be concerned about whether it is backed by an `int` or `JsonElement`.
+Note that in both cases `GetValue<int>()` is called: this is important because it means there is a common programming model for cases when a given `JsonValue<T>` is backed by `JsonElement` (for read mode \ deserialization) or backed by an actual value such as `int` (for edit mode or serialization). In this example, the consumer always knows that the "MyProperty" number property can be returned as an `int` when given a `JsonValue` and doesn't have to be concerned about whether it is backed by an `int` or `JsonElement`.
 
 Note that an implicit operator was used in the above example:
 ```cs
@@ -100,7 +103,7 @@ The `JsonValue<T>.Value` property can also have its internal value changed witho
 var jValue = JsonValue<int>(43);
 jValue.Value = 44;
 ```
-although the type itself (`int` in this example) can't be changed without creating a new `JsonValue<T>`.
+although the type itself (`int` in this example) can't be changed without creating a new `JsonValue<T>` where `<T>` is `int`.
 
 A `JsonValue` supports custom converters that were added via `JsonSerializerOptions.Converters.Add()` or specified in the `JsonValue<T>()` constructor. A common use case would be to add the `JsonStringEnumConverter` which serializes `Enum` values as a string instead of an integer, but also supports user-defined custom converters:
 ```cs
@@ -120,6 +123,42 @@ Serialization can be performed in several ways:
 - Using the existing `JsonSerializer.Serialize<JsonNode>(jNode)` methods.
 - Obtaining a `JsonElement` from a node and serializing that through `jElement.WriteTo(utf8JsonWriter)`.
 
+# API changes based on previous API review on 3/2/2021
+An assumption in this document is that this explicit model is possible but not acceptable:
+```cs
+    int i = ((JsonArray((JsonObject)((JsonObject)jNode)["Child"])["Array"])[1].GetValue<int>();
+```
+
+Using `dynamic`:
+```cs
+    int i = jNode.Child.Array[1];
+```
+
+The `JsonNode` API proposed here aligns with the `dynamic` syntax plus makes the most common scenarios look like:
+```cs
+    int i = jNode["Child"]["Array"][1].GetValue<int>();
+```
+
+This works by adding the following helper methods to JsonNode:
+```cs
+    public virtual JsonNode? this[int index] { get; set; }
+    public virtual JsonNode? this[string propertyName] { get; set; }
+    public virtual TValue? GetValue<TValue>();
+```
+
+However, no other helper methods such `.Add()` is present (for `JsonArray`).
+
+The above terse syntax is still assumed, but adding "As*()" methods would allow easier navigation to `JsonArray.Add()` and others without casting. For example, here's a verbose way to obtain the value using the new "As*()" methods and without using the 3 helper methods above.
+```cs
+    int i = jNode.AsObject()["Child"].AsObject()["Array"].AsArray()[1].GetValue<int>();
+```
+
+With the "As*()" methods, Add() can be called inline in one line of code and without casting:
+```cs
+    JsonObject jObjectToAdd = ...
+    jNode["Child"]["Array"].AsArray().Add(jObjectToAdd);
+```
+
 # Proposed API
 All types live in `System.Text.Json.dll`.
 
@@ -133,50 +172,61 @@ namespace System.Text.Json.Node
     {
         internal JsonNode(); // prevent external derived classes.
 
-        public JsonNode Clone(); // Deep clone.
+        // Alternative to casting to allow for in-line dot syntax.
+        // Throws InvalidOperationException on mismatch.
+        public JsonArray AsArray();
+        public JsonObject AsObject();
+        public JsonValue AsValue();
 
-        // Returns the options specified during creation\deserialization otherwise null.
-        // If null, child nodes obtain value from parent nodes recursively.
-        public JsonSerializerOptions? Options { get; }
-
-        // JsonArray terse syntax support (no JsonArray cast necessary).
+        // JsonArray terse syntax support.
+        // Throws InvalidOperationException on non-JsonArray instances.
+        // Use AsArray() to get access members other than this indexer.
         public virtual JsonNode? this[int index] { get; set; }
 
-        // JsonObject terse syntax (no JsonObject cast necessary).
+        // JsonObject terse syntax.
+        // Throws InvalidOperationException on non-JsonObject instances.
+        // Use AsObject() to get access members other than this indexer.
         public virtual JsonNode? this[string propertyName] { get; set; }
 
-        // JsonValue terse syntax (no JsonValue<T> cast necessary).
-        // Return the internal value, a JsonElement conversion, or a custom conversion to the provided type.
+        // JsonValue terse syntax.
+        // Throws InvalidOperationException on non-JsonValue instances.
+        // Use AsValue() to get access members other than this method.
+        // Returns the internal value, a JsonElement conversion, or a custom conversion to the provided type.
         // Allows for common programming model when JsonValue<T> is based on JsonElement or a CLR value.
-        // "TypeToGet" vs "T" to prevent collision on JsonValue<T>. (could just be "T" if made non-virtual and dispatch to internal virtual methods instead)
-        public virtual JsonValue? GetValue<TypeToGet>();
-        public virtual bool TryGetValue<TypeToGet>(out TypeToGet? value);
-        // Overloads with the converter for <TypeToGet>:
-        public virtual JsonValue? GetValue<TypeToGet>(JsonConverter converter);
-        public virtual bool TryGetValue<TypeToGet>(JsonConverter converter, out TypeToGet? value);
+        // "TValue" vs "T" to prevent collision with JsonValue<T>.
+        public virtual TValue? GetValue<TValue>();
 
         // Return the parent and root nodes; useful for LINQ.
         public JsonNode? Parent { get; }
         public JsonNode? Root { get; }
 
-        // The JSON Path; same "JsonPath" syntax we use for JsonException information.
-        public string Path { get; }
+        // Deep clone. Expensive.
+        public JsonNode Clone();
 
-        // Serialize\deserialize wrappers. These are helpers and thus can be considered optional.
-        // "TypeToDeserialize" could be "T" instead.
-        public abstract TypeToDeserialize? Deserialize<TypeToDeserialize>();
-        public abstract bool TryDeserialize<TypeToDeserialize>(out TypeToDeserialize? value);
-        public string ToJsonString(); // serialize as a string
-        // public byte[] ToUtf8Bytes(); // not proposed, but may be useful
-        // WriteTo() terminology consistent with Utf8JsonWriter.
-        public abstract void WriteTo(System.Text.Json.Utf8JsonWriter writer);
-        // Parse() terminology consistent with Utf8JsonReader\JsonDocument.
+        // The JSON Path; same "JsonPath" syntax we use for JsonException information.
+        // Not a simple calculation since nodes can change order in JsonArray.
+        public string GetPath();
+
+        // Same as ToJsonString() unless called on a root string-based JsonValue in which case the string will not be quoted.
+        public override string ToString();
+
+        // Serialize as a string
+        public string ToJsonString(JsonSerializerOptions? options = null);
+
+        // Serialize as Utf8
+         public byte[] ToUtf8Bytes(JsonSerializerOptions? options = null);
+
+        // Common string- and byte- based deserialization.
         public static JsonNode? Parse(string? json, JsonSerializerOptions? options = null);
         public static JsonNode? ParseUtf8Bytes(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null);
-        public static JsonNode? ReadFrom(ref Utf8JsonReader reader, JsonSerializerOptions? options = null);
 
-        // The ValueKind from deserialization. Not used internally but may be useful for consumers.
-        public JsonValueKind ValueKind { get; }
+        // Reader\writer interop
+        public static JsonNode? ReadFrom(ref Utf8JsonReader reader, JsonSerializerOptions? options = null);
+        public void WriteTo(System.Text.Json.Utf8JsonWriter writer, JsonSerializerOptions? options = null);
+
+        // Utf8-based Stream interop
+        public static JsonNode? ReadFromUtf8Stream(Stream utf8Json, JsonSerializerOptions? options = null);
+        public void WriteToUtf8Stream(Stream utf8Json, JsonSerializerOptions? options = null);
 
         // JsonElement interop
         public static JsonNode GetNode(JsonElement jsonElement);
@@ -282,18 +332,19 @@ namespace System.Text.Json.Node
         public JsonArray(JsonSerializerOptions? options, params JsonNode[] items);
         public JsonArray(params JsonNode[] items);
 
-        public override JsonNode Clone();
-
-        public override void WriteTo(System.Text.Json.Utf8JsonWriter writer);
-
         public static JsonArray? Parse(string? json, JsonSerializerOptions? options = null);
         public static JsonArray? ParseUtf8Bytes(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null);
+
         public static JsonArray? ReadFrom(ref Utf8JsonReader reader, JsonSerializerOptions? options = null);
+        public static JsonArray? ReadFromUtf8Stream(Stream utf8Json, JsonSerializerOptions? options = null);
+
+        // When a value can't be implicitly converted to JsonNode, here's a helper that
+        // allows "Add(obj)" instead of the more verbose "Add(new JsonValue<object>(obj))".
+        public void Add<T>(T value);
 
         // IList<JsonNode?> (some hidden via explicit implementation):
         public int Count { get ;}
         bool ICollection<JsonNode?>.IsReadOnly { get ;}
-        public void Add(object? item);
         public void Add(JsonNode? item);
         public void Clear();
         public bool Contains(JsonNode? item);
@@ -311,15 +362,12 @@ namespace System.Text.Json.Node
         public JsonObject(JsonSerializerOptions? options = null);
         public JsonObject(JsonElement jsonElement, JsonSerializerOptions? options = null);
 
-        public override JsonNode Clone();
-
         public bool TryGetPropertyValue(string propertyName, outJsonNode? jsonNode);
-
-        public override void WriteTo(System.Text.Json.Utf8JsonWriter writer);
 
         public static JsonObject? Parse(string? json, JsonSerializerOptions? options = null);
         public static JsonObject? ParseUtf8Bytes(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null);
         public static JsonObject? ReadFrom(ref Utf8JsonReader reader, JsonSerializerOptions? options = null);
+        public static JsonObject? ReadFromUtf8Stream(Stream utf8Json, JsonSerializerOptions? options = null);
 
         // IDictionary<string, JsonNode?> (some hidden via explicit implementation):
         public int Count { get; }
@@ -340,37 +388,41 @@ namespace System.Text.Json.Node
     }
 
     // Separate class to make it easy to check type via "if (node is JsonValue)"
-    // and to support passing of a value class polymorphically (without the <T>)
+    // and to support polymorphic scenarios without the <T>
     public abstract class JsonValue : JsonNode
     {
         public JsonValue(JsonSerializerOptions? options = null);
 
-        // Possible factory method that doesn't require specifying <T> due to generic type inference:
-        // public static JsonValue<T> Create(T value);
+        public abstract TValue? GetValue<TValue>(JsonConverter converter);
+        public abstract bool TryGetValue<TValue>(out TValue? value);
+        public abstract bool TryGetValue<TValue>(JsonConverter converter, out TValue? value);
+
+        // Factory and deserialize methods below that doen't require specifying <T> due to generic type inference which is necessary for anonymous types.
+        public static JsonValue<T> Create(T value, JsonSerializerOptions? options = null);
+
+        // Deserialize methods.
+        public static JsonValue? Parse(string? json, JsonSerializerOptions? options = null);
+        public static JsonValue? ParseUtf8Bytes(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null);
+        public static JsonValue? ReadFrom(ref Utf8JsonReader reader, JsonSerializerOptions? options = null);
+        public static JsonValue? ReadFromUtf8Stream(Stream utf8Json, JsonSerializerOptions? options = null);
     }
 
     public sealed class JsonValue<T> : JsonValue
     {
         public JsonValue(T value, JsonSerializerOptions? options = null);
 
-        // Allow a custom converter and JsonValueKind to be specified.
-        public JsonValue(T value, JsonConverter? converter = null, JsonValueKind valueKind, JsonSerializerOptions? options = null);
-
-        public override JsonNode Clone();
-
-        public override TypeToReturn GetValue<TypeToReturn>();
-        public override TypeToReturn GetValue<TypeToReturn>(JsonConverter converter);
-        public override bool TryGetValue<TypeToReturn>(out TypeToReturn value);
-        public override bool TryGetValue<TypeToReturn>(JsonConverter converter, out TypeToReturn value);
+        public override TValue GetValue<TValue>();
+        public override TValue GetValue<TValue>(JsonConverter converter);
+        public override bool TryGetValue<TValue>(out TValue value);
+        public override bool TryGetValue<TValue>(JsonConverter converter, out TypeToReturn value);
 
         // The internal raw value.
-        public override T Value {get; set;}
+        public T Value {get; set;}
 
-        public override void WriteTo(System.Text.Json.Utf8JsonWriter writer);
-
-        public static JsonValue<T> Parse(string? json, JsonSerializerOptions? options = null);
-        public static JsonValue<T> ParseUtf8Bytes(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null);
-        public static JsonValue<T> ReadFrom(ref Utf8JsonReader reader, JsonSerializerOptions? options = null);
+        public static JsonValue<T>? Parse(string? json, JsonSerializerOptions? options = null);
+        public static JsonValue<T>? ParseUtf8Bytes(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null);
+        public static JsonValue<T>? ReadFrom(ref Utf8JsonReader reader, JsonSerializerOptions? options = null);
+        public static JsonValue<T>? ReadFromUtf8Stream(Stream utf8Json, JsonSerializerOptions? options = null);
     }
 }
 ```
@@ -656,9 +708,9 @@ var jObject = new JsonObject(options)
     ["MyBoolean"] = new JsonValue<bool>(false, options),
     ["MyArray"] = new JsonArray(options)
     {
-        new JsonValue(2, options),
-        new JsonValue(3, options),
-        new JsonValue(42, options)
+        new JsonValue<int>(2, options),
+        new JsonValue<int>(3, options),
+        new JsonValue<int>(42, options)
     },
 }
 ```
@@ -698,22 +750,14 @@ During serialization, only the options instance of the node passed to "serialize
 ## Adding `JsonNode` indexers for objects\arrays and GetValue() for values
 `JsonNode` has indexers that allow `JsonObject` properties and `JsonArray` elements to be specified. This allows a terse mode:
 ```cs
-    var jObject = new JsonObject(options)
-    {
-        // Terse programming model:
-        ["Child"]["Array"][0]["Message"] = "Hello!";
-        ["Child"]["Array"][1]["Message"] = "Hello!!";
-    }
+    // Terse programming model:
+    string str = jNode["Child"]["Array"][0]["Message"].GetValue<string>();
 ```
 
 If `System.Object` was used instead of `JsonNode`, or the indexers were not exposed on `JsonNode`, the above terse syntax wouldn't work and a more verbose syntax would be necessary:
 ```cs
-    object jObject = new JsonObject(options)
-    {
-        // Programming model not acceptable:
-        ((JsonObject)((JsonArray)((JsonObject)jObject["Child"])["Array"])[0])["Message"] = "Hello!";
-        ((JsonObject)((JsonArray)((JsonObject)jObject["Child"])["Array"])[1])["Message"] = "Hello!!";
-    }
+    // Programming model not acceptable:
+    string str = ((JsonValue)((JsonObject)((JsonArray)((JsonObject)((JsonObject)jObject)["Child"])["Array"])[0])["Message"]).GetValue<string>();
 ```
 
 A `JsonNode.GetValue<T>()` helper method also exists for `JsonValue<T>`.
@@ -953,13 +997,15 @@ The design of values uses generics to hold internal `<T>` value. This avoids box
 ## Property lookup
 The property-lookup algorithm can be made more efficient than the standard dictionary by using ordering heuristics (like the current serializer) or a bucketless B-Tree with no need to call `Equals()`. The Azure `dynamic` prototyping effort has been thinking of the B-Tree approach.
 
+## Debugging
+A `[DebuggerDisplay]` attribute will be added to `JsonNode` that can performs a pretty-printed version of the JSON via `ToJsonString()`.
+
 # Features not proposed in 6.0
 These feature are reasonable, but not proposed (at least for the first round):
 - Adding `public byte[] ToUtf8Bytes()` to JsonNode to serialize as UTF-8 (as a mirror method for `ToJsonString()`). This can be added later if necessary; the workaround is fairly easy.
 - Reading\writing JSON comments. Not implemented since `JsonDocument` doesn't support it, although the reader and writer support them. 
   - Cost to implement is not known (no known prototype or PR).
-  - For the public API, a `JsonValueKind.Comment` enum value would be added and a setter added to `JsonNode.ValueKind` (the getter is already there).
-  - A comment would be represented by a `JsonValue<string>` with the `ValueKind` property value == `JsonValueKind.Comment`
+  - For the public API, a `JsonValueKind.Comment` enum value would be added and then a mechanism such as a ValueKind property added to `JsonNode`.
 - `IEqualityComparer<T>` implementation such as a `JsonNodeComparer` class. This would imply a deep compare which is expensive, although that would be expected.
 - "JsonPath" query support. Newtonsoft has this as a way to parse a subset of JSON into a `JToken`.
 - Annotations. Newtonsoft has this to provide LineNumber and Position and user-specified values.
@@ -977,7 +1023,6 @@ These features will likely never be implemented:
   - Performance. When reference handling is enabled, all nodes must be materialized eagerly.
   - Likely not expected since a DOM is lower-level than an object graph. Consumers would expect the metadata to be available to them programmatically, not hidden (although it could be an option).
 - `Equals()`, `==` and `!=` operators. These would be slow since they imply a deep compare in non-trivial cases. The `IEqualityComparer<T>` mechanism is more suitable. It would be useful for those with a custom dictionary or similar cases; it would likely use the case senstivity options for comparing property names.
-- `ToString()`. Similar to `Equals` etc above, this would be very slow since it would imply serialization. `ToJsonString()` is the proposal here instead. Note that for debugging, a `[DebuggerDisplay]` attribute can be added to `JsonNode` that can perform a limited `ToJsonString()` such as the first 100 characters or so.
 
 # Dependencies
 Other issues to consider along with this:
