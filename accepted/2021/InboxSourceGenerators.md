@@ -92,7 +92,7 @@ Source generators contribute significant code to user assemblies and that code m
 
 Due to the limited servicing agility for code-generated code, we should be very careful about the complexity of the code which is generated.  Where possible we should limit generated code to "glue code", only that which must be specific to the user's assembly or types.  We should try to put more complex code inside the framework or library itself, even if it means exposing public API that is specifically for source generated code to call.
 
-Inbox source generators will be serviced in their side-by-side location.  Should a bug exist in a osurce generator we will evaluate the bug against the bar for each framework it exists and patch them independently.  In this way the servicing process for these source generators will match the .NET runtime.
+Inbox source generators will be serviced in their side-by-side location.  Should a bug exist in a source generator we will evaluate the bug against the bar for each framework it exists and patch them independently.  In this way the servicing process for these source generators will match the .NET runtime.
 
 **Open issue:** should we do anything to make it easier to identify assemblies which might need an update?  We can consider some case studies.  
 
