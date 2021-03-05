@@ -17,6 +17,11 @@ This design provides a uniform description of all platform dependencies for .NET
 
 By providing a means for .NET contributors to describe the product's platform dependencies -- both runtime and source build toolchain -- in a common model format, it can be used to satisfy other downstream workflows that require the data. Contributors also need to understand what their responsibilities are in order to maintain the model and avoid having its contents go stale. This design provides a developer workflow that describes what actions need to be taken by contributors in a variety of scenarios.
 
+## Definitions
+
+* Runtime: In this context, runtime refers to the execution of any of the .NET shared frameworks and libraries. The term is meant to be broad and not be limited to the ".NET runtime" but also include the execution of .NET SDK logic. In other words, it represents the [runtime lifecycle phase](https://en.wikipedia.org/wiki/Run_time_(program_lifecycle_phase)) of .NET functionality, not the .NET [runtime system](https://en.wikipedia.org/wiki/Runtime_system).
+* Toolchain: The set of tools and libraries that are needed in order to build .NET from source.
+
 ## Scenarios and User Experience
 
 ### Keep other product assets up-to-date
