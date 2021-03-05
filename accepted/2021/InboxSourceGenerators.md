@@ -35,6 +35,7 @@ A developer has confidence that their library using inbox source generators will
 - Define any changes to the source generator architecture.
 - Define any implementation details of source generators or source generator tests.
 - Define a process around internal or non-shipping source generators
+- Define guidelines applicable to all source generators.
 
 ## Stakeholders and Reviewers
 
@@ -56,7 +57,7 @@ Source generators and analyzers are represented and communicated in the same man
 
 To facilitate this, we will package source generators inside [reference packs](https://github.com/dotnet/designs/blob/main/accepted/2019/targeting-packs-and-runtime-packs.md).  We will use the standard [NuGet conventions for describing analyzers](https://docs.microsoft.com/en-us/nuget/guides/analyzers-conventions) with respect to the location in the package, however the SDK will not probe this path.  All source generators and their metadata will be listed in FrameworkList.xml, similar to references.  Analyzers will be added as `File` elements with `Type="Analyzer"` (constrasting to `Type="Managed"` which is currently used for references) and optionally `Language="cs|vb"`.  Omitting the `Language` attribute means the analyzer applies to all languages.  The .NET SDK will be responsible for locating the appropriate source generators from the refpack, based on the project's `$(Language)` and creating `@(Analyzer)` items as part of the `ResolveTargetingPackAssets` task.  These items will be conflict-resolved with other `@(Analyzer)` sources as described in the following section.  When viewed from the IDE it should be clear that the source of the `Analyzer` is the framework reference, similarly to how it is clear that the source of NuGet package analyzers come from packaages.
 
-Existing public functionality which controls the behavior of shared-framework references should also apply to source generators.  `$(DisableImplicitFrameworkReferences)` should disable the creation of `@(Analyzer)` items.  Any other property which might disable the creation of `@(Reference)` items from the ref-pack should also disable the creation of `@(Analyzer)` items.  Additionally, a new property should be introduced to disable the creation of `@(Analyzer)` items: `$(DisableFrameworkReferenceAnalyzers)`.
+Existing public functionality which controls the behavior of shared-framework references should also apply to source generators.  `$(DisableImplicitFrameworkReferences)` should disable the creation of `@(Analyzer)` items.  Any other property which might disable the creation of `@(Reference)` items from the ref-pack should also disable the creation of `@(Analyzer)` items.  Additionally, a new property should be introduced to disable the creation of `@(Analyzer)` items: `$(DisableFrameworkReferenceAnalyzers)`.  No mechanism will be provided to select individual `@(Analyzer)` items, just as there is no mechanism to select individual `@(Reference)` items.
 
 Alternative designs are listed in the [Q & A](#Q%20&%20A) section below.
 
@@ -92,7 +93,7 @@ Source generators contribute significant code to user assemblies and that code m
 
 Due to the limited servicing agility for code-generated code, we should be very careful about the complexity of the code which is generated.  Where possible we should limit generated code to "glue code", only that which must be specific to the user's assembly or types.  We should try to put more complex code inside the framework or library itself, even if it means exposing public API that is specifically for source generated code to call.
 
-Inbox source generators will be serviced in their side-by-side location.  Should a bug exist in a source generator, we will evaluate the bug against the bar for each framework in which it exists and patch them independently.  In this way the servicing process for these source generators will match the .NET runtime.
+Inbox source generators will be serviced in their framework-specific location by shipping a new version of the ref-pack.  Should a bug exist in a source generator, we will evaluate the bug against the bar for each framework in which it exists and patch them independently.  In this way the servicing process for these source generators will match the .NET runtime.
 
 **Open issue:** should we do anything to make it easier to identify assemblies which might need an update?  We can consider some case studies.  
 
@@ -103,7 +104,8 @@ If a runtime assembly has a bug, we have multiple avenues of detection.  We coul
 For means of detection we have:
 1. Manual
 2. PDB indicator: source generator assembly version, file version, hash
-3. Assembly metadata in consuming user project: GeneratedCodeAttribute("System.Foo.Generator", "5.0.0+cf258a14b70ad9069470a108f13765e0e5988f51")
+3. Assembly attribte in consuming user `[assembly: AssemblyMetadata("CodeGenerator", "System.Foo.Generator, 5.0.0+cf258a14b70ad9069470a108f13765e0e5988f51")`
+3. Attribute on generated types/members: `[GeneratedCode("System.Foo.Generator", "5.0.0+cf258a14b70ad9069470a108f13765e0e5988f51")`
 4. Runtime breadcrumbs
 
 For means of update we have:
@@ -123,6 +125,8 @@ Source generator assemblies execute in the compiler process and must target .NET
 Source generators should limit their dependencies.  There is no scheme for encoding framework-specific nor runtime-specific implementations of dependencies or source generators based on the runtime environment so source generators should avoid any dependencies on assemblies which need to differ by framework or runtime.  Source generators may depend on packages which are known dependencies of the compiler and should depend on versions less than or equal to that provided by the compiler and should not include that dependency in their package.
 
 Source generators should not rely on referencing nor executing framework types they wish to extend.  Despite inbox source generators being coupled to a specific framework version, source generators cannot assume they will be running on that framework.  They may be running on a newer, older, or completely different framework.  For example, API added to help a source generator do its job may not be present when running on .NET Framework or the .NET Core version the compiler is running on.  There is no type-equivalence guaranteed between types loaded in the compiler process and those of the user code that is under analysis.  For example, a source generator cannot instantiate attribute instances in the compiler process from user references to those attributes in source.  Should a source generator need to identify type usage it will need to examine user code references by name or resolve types in the user's references to ensure valid equivalence checks.  Source sharing should be considered as an alternative for cases where source generators need to execute runtime library helper code when generating source.  For example, serializer code which needs to examine the shape of user types can be shared between the runtime library and source generator.  Common abstractions can be made over metadata to allow the same code to handle different sources of metadata (source vs reflection).
+
+Source generators should localize any diagnostic messages displayed to the user.  This can be done using localized resource sattelite assemblies.  These assemblies should be distributed with the source generator assembly. 
 
 ## Q & A
 
@@ -150,15 +154,15 @@ What this strategy does do is reduce risk.  We eliminate the channel where the l
 
 ### Is it bad to have multiple versions of a source generator possibly loaded by a repository?
 
-A repository may have projects targeting multiple frameworks.  These frameworks may contain different versions of the same source generator.  When building the repository this may require the same compiler server instance to load multiple copies of a source generator.  The same compiler would not likely load multiple copies of analyzers which do not ship side by side.  
+A repository may have projects targeting multiple frameworks.  These frameworks may contain different versions of the same source generator.  When building the repository this may require the same compiler instance to load multiple copies of a source generator.  The same compiler would not load multiple copies of source generators which ship in a non-framework specific location.  This should work and be supported based on source generator versioning.
 
 ### Should all inbox source generators be tied to a shared framework?
 
-No, some source generators might be independent of libraries in a shared framework: these could go in a non-side-by-side location (eg: analyzers folder).  Other source generators may not contain functionality but may instead just build some convenience API on top of existing public API.  These could be considered stable enough to place in a non-side-by-side location.
+No, some source generators might be independent of a target framework. One example of such a source generators may not contain functionality but may instead just build some convenience API on top of existing public API that is unlikely to ever change.  These could be considered stable enough to place in a non-framework-specific location like the SDK's analyzer folder.  Source generators which choose to ship this way should be highly specified and will need to support backwards compatibility and test on all frameworks.
 
 ### Should only source generators be shipped this way?  What about analyzers and code-fixes?
 
-Nothing is preventing analyzers and code fixes from shipping in the same manner.  If it is desirable for a such a component to ship with the framework rather than the compiler then that component may ship in this manner.  We should only do this if we have a good reason, stable analyzers that are lanaguage extensions or tied to stable public API should ship non-side-by-side with the compiler as they do today.  Analyzers that need to validate source generator usage, or analyzers that are closely tied to runtime functionality may consider shipping side-by-side with the framework.
+Nothing is preventing analyzers and code fixes from shipping in the same manner.  If it is desirable for a such a component to ship with the framework rather than the compiler then that component may ship in this manner.  We should only do this if we have a good reason, stable analyzers that are lanaguage extensions or tied to stable public API should ship non-framework-specific with the SDK as they do today.  Analyzers that need to validate source generator usage, or analyzers that are closely tied to runtime functionality may consider shipping with the framework.
 
 ### Why in the ref pack, why not some other "analyzer" pack?
 
