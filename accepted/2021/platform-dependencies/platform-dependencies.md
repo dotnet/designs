@@ -99,6 +99,11 @@ namespace Microsoft.DotNet.Dependencies.Platform
     {
         // Major.Minor.Patch version of .NET release the dependencies are associated with
         public string DotnetReleaseVersion { get; set; }
+
+        // Set of available dependency usages that can be referenced by a platform dependency.
+        // A dependency usage is a descriptor of how a dependency is used by a component (e.g. default, diagnostics, localization).
+        // This maps the name of the name of the usage to its description.
+        public IDictionary<string, string> DependencyUsages { get; }
         
         // Set of top-level platforms whose dependencies are described
         public IList<Platform> Platforms { get; }
@@ -153,8 +158,8 @@ namespace Microsoft.DotNet.Dependencies.Platform
         // Minimum version of the dependency artifact
         public string? MinimumVersion { get; set; }
 
-        // A value indicating in what scenario the dependency is relevant
-        public DependencyUsage Usage { get; set; }
+        // A value indicating in what manner the dependency is used
+        public string Usage { get; set; }
 
         // Reference to the dependency from the nearest parent platform that this dependency overrides
         public DependencyRef? Overrides { get; set; }
@@ -171,22 +176,6 @@ namespace Microsoft.DotNet.Dependencies.Platform
 
         // A Linux package contained in a repository
         LinuxPackage
-    }
-
-    // Descriptor of how a dependency is used by a component
-    public enum DependencyUsage
-    {
-        // Component uses the dependency by default or for canonical scenarios
-        Default,
-
-        // Component uses the dependency for diagnostic scenarios
-        Diagnostics,
-
-        // Component uses the dependency for ASP.NET Core apps that are configured to use the HTTP.sys web server
-        HttpSys,
-
-        // Component uses the dependency for localization scenarios
-        Localization
     }
 
     // A reference to a dependency
@@ -230,6 +219,12 @@ Dependencies are able to override the content of another dependency that is inhe
 ```json
 {
   "dotnetReleaseVersion": "6.0.0",
+  "dependencyUsages": {
+    "default": "Used by default or for canonical scenarios",
+    "diagnostics": "Used for diagnostic scenarios such as tracing or debugging",
+    "httpSys": "Used for ASP.NET Core apps that are configured to use the HTTP.sys web server",
+    "localization": "Used for locale and culture scenarios"
+  },
   "platforms": [
     {
       "rid": "debian",
