@@ -84,7 +84,7 @@ Generated code should not be generated in System namespaces, it should prefer th
 
 ### Deterministic failure
 
-The absence of a required source generator from code that requires it should produce a clear diagnosable error message from the compiler, like the error from a missing reference.  A codebase that was written to make use of a source-generator should never compile and silently omit the source generated code.  For example: if a source generator uses and attribute to activate the generator and then generates extension methods with overloads that are automatically preferred, the source generator should define the attribute in the source generator, not the framework library.  This will ensure that the project fails to compile if the source generator is absent.
+The absence of a required source generator from code that requires it should produce a clear diagnosable error message from the compiler, like the error from a missing reference.  A codebase that was written to make use of a source-generator should never compile and silently omit the source generated code.  For example: if a source generator uses an attribute to activate the generator and then generates extension methods with overloads that are automatically preferred, the source generator should define the attribute in the source generator, not the framework library.  This will ensure that the project fails to compile if the source generator is absent.
 
 ### Source generator servicing
 
@@ -92,7 +92,7 @@ Source generators contribute significant code to user assemblies and that code m
 
 Due to the limited servicing agility for code-generated code, we should be very careful about the complexity of the code which is generated.  Where possible we should limit generated code to "glue code", only that which must be specific to the user's assembly or types.  We should try to put more complex code inside the framework or library itself, even if it means exposing public API that is specifically for source generated code to call.
 
-Inbox source generators will be serviced in their side-by-side location.  Should a bug exist in a source generator we will evaluate the bug against the bar for each framework it exists and patch them independently.  In this way the servicing process for these source generators will match the .NET runtime.
+Inbox source generators will be serviced in their side-by-side location.  Should a bug exist in a source generator, we will evaluate the bug against the bar for each framework in which it exists and patch them independently.  In this way the servicing process for these source generators will match the .NET runtime.
 
 **Open issue:** should we do anything to make it easier to identify assemblies which might need an update?  We can consider some case studies.  
 
