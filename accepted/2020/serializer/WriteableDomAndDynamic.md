@@ -1,5 +1,5 @@
 # Overview
-March 9th, 2021.
+March 11th, 2021.
 
 This document covers the API and design for a writable DOM along with support for the [C# `dynamic` keyword](https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/dynamic-language-runtime-overview).
 
@@ -72,7 +72,7 @@ Layering on `JsonSerializer` is necessary to support `dynamic` since arbitrary C
   - A POCO property or collection element can be a `JsonNode` or a derived type.
   - The extension data property (to capture extra JSON properties that don't map to a CLR type) can now be `JsonObject` instead of `JsonElement`.
   - Ability to deserialize `System.Object` as `JsonNode` instead of `JsonElement`.
-  - Bi-direction interop between `JsonNode` and `JsonElement` via `JsonNode.AsElement()` and `JsonElement.AsNode()`.
+  - Interop from `JsonElement` to `JsonNode` via `JsonElement.AsNode()`.
 - Debugging
   - `ToString()` returns JSON for easy inspection (same as `JsonElement.ToString()`).
   - `GetPath()` to determine where a given node is at in a tree. This is also used to provide detail in exceptions.
@@ -202,6 +202,7 @@ JsonObject jObject = JsonNode.Parse(...).AsJsonObject();
 // is an in-line alternative to:
 JsonObject jObject = (JsonObject)JsonNode.Parse(...);
 ```
+
 # Proposed API
 All types live in `System.Text.Json.dll`.
 
@@ -254,9 +255,6 @@ namespace System.Text.Json.Node
         // The JSON Path; same "JsonPath" syntax we use for JsonException information.
         // Not a simple calculation since nodes can change order in JsonArray.
         public string GetPath();
-
-        // Interop with JsonElement
-        public abstract JsonElement AsJsonElement();
 
         // Not to be used as deserializable JSON.
         // - Pretty printed (JsonWriterOptions.Indented).
@@ -396,8 +394,6 @@ namespace System.Text.Json.Node
         public JsonArray(params JsonNode[] items);
         public JsonArray(JsonNodeOptions options, params JsonNode[] items);
 
-        public override JsonElement AsJsonElement();
-
         // When a value can't be implicitly converted to JsonValue<T>, here's a helper that
         // allows "Add(value)" instead of the more verbose "Add(new JsonValue<MyType>(value))".
         public void Add<T>(T value);
@@ -425,8 +421,6 @@ namespace System.Text.Json.Node
         // are normally applied only to root nodes since a child node will use the Root node's options.
         public JsonObject(JsonNodeOptions? options = null);
 
-        public override JsonElement AsJsonElement();
-
         public bool TryGetPropertyValue(string propertyName, outJsonNode? jsonNode);
 
         // IDictionary<string, JsonNode?> (some hidden via explicit implementation):
@@ -451,8 +445,6 @@ namespace System.Text.Json.Node
     // and to support polymorphic scenarios (not required to specify the <T> in JsonValue<T>)
     public abstract class JsonValue : JsonNode
     {
-        public override JsonElement AsJsonElement();
-
         public abstract TValue? GetValue<TValue>(
             JsonConverter<TValue> converter,
             JsonSerializerOptions options = null);
@@ -644,9 +636,7 @@ MyPoco? obj = JsonSerializer.Deserialize<MyPoco>(jNode.ToJsonString());
 ```
 
 ## Interop with JsonElement
-Bi-direction interop is achieved with `JsonElement.AsNode()` and `JsonNode.AsElement()`.
-
-`JsonElement.AsNode()` can be used to navigate to an editable node. This may help usability for those familiar with `JsonDocument` or `JsonElement` or perhaps help first-time usability. The method is also useful to navigate to a lower tree of JSON, call `AsNode()` and then modify a subsection which will not include the parent nodes.
+`JsonElement.AsNode()` can be used to navigate to an editable node. This may help usability for those familiar with `JsonDocument` or `JsonElement` and perhaps help first-time usability to discover the node types. The method is also useful to navigate to a lower tree of JSON, call `AsNode()` and then modify a subsection which will not include the parent nodes.
 
 The existing methods on `JsonElement` can be used including:
 - `ToInt32()` etc which forwards to `JsonValue<T>`
@@ -654,34 +644,6 @@ The existing methods on `JsonElement` can be used including:
 - `EnumerateArray` that forwards to `JsonArray`.
 - `WriteTo` that forwards to the respective node.
 - `ToString` which forwards to `JsonNode.ToString()`.
-
-```cs
-var jsonObject = new JsonObject
-{
-    { "text", "property value" }
-};
-
-// Get a JsonElement that knows how to forward to nodes.
-JsonElement jsonElement = jsonObject.AsJsonElement();
-
-// We can read the value.
-Debug.Assert(jsonElement.GetProperty("text").GetStringValue() == "property value");
-
-// The element will see changes made to nodes.
-jsonObject["text"] = "new value";
-Debug.Assert(jsonElement.GetProperty("text").GetStringValue() == "new value");
-
-// Serialization of modified values is also supported.
-jsonElement.WriteTo(writer);
-```
-
-To obtain a node from an element, use the node constructors:
-```cs
-JsonElement jsonElement = ...
-var jValue = new JsonValue<JsonElement>(jsonElement);
-var jObject = new JsonObject(jsonElement);
-var jArray = new JsonArray(jsonElement);
-```
 
 # Programming model notes
 ## Why `JsonValue` and not `JsonNumber` + `JsonString` + `JsonBoolean`?
@@ -1009,8 +971,6 @@ Note that `JsonElement` is [now ~2x faster](https://github.com/dotnet/runtime/pu
 The design supports lazy and shallow creation which is performant when only a subset of the tree is accessed.
 
 A `JsonNode` tree is populated when `JsonObject` and `JsonArray` instances are navigated. For example, a `JsonObject` contains only its internal `JsonElement` value after deserialization. When a property is accessed for the first time, a `JsonNode` instance is created for every property and added to the `JsonObject`'s internal dictionary. Each of those child nodes maintains a single reference to its corresponding `JsonElement` which internally still points to the shared UTF-8 buffer on the parent `JsonDocument`.
-
-Accessing properties and elements in a read-only manner does not require `JsonNode` instances to be created. This is important to improve performance primarily for very large collections. This can be achieved by obtaining the `JsonElement` via `JsonNode.AsJsonElement()` and enumerating through existing APIs on `JsonElement`. No `JsonNode` instances need to be created in this case.
 
 ## Boxing and mutating of `Value<T>`
 The design of values uses generics to hold internal `<T>` value. This avoids boxing for value types. A given `Value<T>`, such as `Value<int>` can be modified by the `Value` property which can be used to avoid creation of a new `JsonValue` instance.
