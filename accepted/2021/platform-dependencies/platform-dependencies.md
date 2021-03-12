@@ -144,6 +144,10 @@ namespace Microsoft.DotNet.Dependencies.Platform
     // Types of .NET components
     public enum ComponentType
     {
+        // A git repository (e.g. https://github.com/dotnet/runtime.git). This is used when needing to describe that a .NET repository has platform dependencies
+        // in order to build it.
+        GitRepository,
+
         // A shared framework (e.g. Microsoft.NETCore.App, Microsoft.AspNetCore.App)
         SharedFramework,
 
@@ -219,7 +223,7 @@ A key piece of metadata that gives context to the dependency is the "usage" fiel
 
 Dependencies are able to override the content of another dependency that is inherited from its platform hierarchy. The "overrides" field identifies the name and type of the target dependency to be overridden.  Any other fields that are set in the dependency will override the corresponding values from the referenced dependency.
 
-#### Example Model
+#### Example Runtime Model
 
 ```json
 {
@@ -322,16 +326,63 @@ Dependencies are able to override the content of another dependency that is inhe
 }
 ```
 
+#### Example Toolchain Model
+
+```json
+{
+  "dependencyUsages": {
+    "default": "Used by default or for canonical scenarios",
+    "numa": "Used to enable NUMA support"
+  },
+  "platforms": [
+    {
+      "rid": "debian",
+      "components": [
+        {
+          "name": "https://github.com/dotnet/runtime.git",
+          "type": "GitRepository",
+          "platformDependencies": [
+            // Just a snippet of the full list is shown
+            {
+              "name": "clang-9",
+              "dependencyType": "LinuxPackage",
+              "usage": "default"
+            },
+            {
+              "name": "cmake",
+              "dependencyType": "LinuxPackage",
+              "usage": "default"
+            },
+            {
+              "name": "libnuma-dev",
+              "dependencyType": "LinuxPackage",
+              "usage": "numa"
+            },
+            {
+              "name": "llvm-9",
+              "dependencyType": "LinuxPackage",
+              "usage": "default"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
 The model above uses the Debian Linux distro as an example. It shows the `Microsoft.NETCore.App` shared framework as having a base set of dependencies but for Debian 10, the `libicu57` package dependency is overriden to be `libicu63` since that is the version available in Debian 10. It also shows that the `System.DirectoryServices.Protocols` NuGet package has a dependency on `libldap-2.4-2`.
 
 ### File Storage
 
 Dependencies will change over time from release to release. For that reason, it is reasonable to consider the platform dependency model to be a release artifact, tied to a particular release. Precedent already exists for this kind of artifact with the [releases.json](https://github.com/dotnet/core/blob/master/release-notes/5.0/releases.json) file. In order to provide a consistent experience for consuming release artifacts, this design roughly follows that pattern used for the releases.json file.
 
-The dependency model will be represented as a JSON file and be stored in the [release-notes folder](https://github.com/dotnet/core/tree/master/release-notes) for each release. For example, the 6.0.0 release would have the dependency model located at https://github.com/dotnet/core/blob/master/release-notes/6.0/6.0.0/6.0.0-platform-dependencies.json; a preview release would be located at https://github.com/dotnet/core/blob/master/release-notes/6.0/preview/6.0.0-preview.1-platform-dependencies.json. This design deviates from the releases.json file which is stored at major/minor folder level instead of the patch folder for a couple reasons:
+The **runtime** dependency model will be represented as a JSON file and be stored in the [release-notes folder](https://github.com/dotnet/core/tree/master/release-notes) for each release. For example, the 6.0.0 release would have the runtime dependency model located at https://github.com/dotnet/core/blob/master/release-notes/6.0/6.0.0/6.0.0-runtime-deps.json; a preview release would be located at https://github.com/dotnet/core/blob/master/release-notes/6.0/preview/6.0.0-preview.1-runtime-deps.json. This design deviates from the releases.json file which is stored at major/minor folder level instead of the patch folder for a couple reasons:
 
 * There is no dependency data that is common to all patch releases. While there could end up being commonality in the data, it is not an inherent feature.
 * From a human-readability standpoint, the size of the json file would be quite large and difficult to navigate as patch releases accumulate.
+
+The **toolchain** dependency model will also be represented as a JSON file but be stored in each .NET git repository at a known location: `eng/toolchain-dependencies.json`. It's not treated as a release artifact in the same way as the runtime dependency model. Its purpose is more relevant to the repo so it is co-located there instead of consolidating them into the dotnet/core repo.
 
 ## Engineering Workflow
 
