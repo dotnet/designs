@@ -167,7 +167,7 @@ We need to adopt a more holistic approach to unsafe features and APIs that we ex
 
 `ArrayPool<T>` and other similar custom object pools are equivalent of the classic C malloc. Manual lifetime management traditionally suffers from use-after-free and double-free security vulnerabilities. Many years were spent on implementing diagnostics and mitigations of these vulnerabilities for malloc.
 
-We need to implement similar diagnostic and mitigation capabilities for ArrayPool\&lt;T\&gt; and friends. It is [not unusual](https://github.com/dotnet/corefx/pull/37270) to find security bugs caused by incorrect `ArrayPool<T>` use even in dotnet/runtime libraries.
+We need to implement similar diagnostic and mitigation capabilities for `ArrayPool<T>` and friends. It is [not unusual](https://github.com/dotnet/corefx/pull/37270) to find security bugs caused by incorrect `ArrayPool<T>` use even in dotnet/runtime libraries.
 
 We are also going to be continually pushed to expose APIs like those we use internally which make potential misuse even easier, e.g. `ValueStringBuilder`. Thus far we have simply said &quot;we're not comfortable doing that&quot;, but it is unlikely going to be a satisfactory answer long-term. It is something we need to keep thinking about.
 
