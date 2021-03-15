@@ -42,17 +42,17 @@ as well as from customers using preview builds of the upcoming .NET version.
 Sadly, preview feedback isn't always sufficient to judge how well a feature
 works because
 
-1. Much fewer people use preview builds of .NET and
+1. Many fewer people use preview builds of .NET and
 2. Many people don't use .NET previews for their production projects, thus
    greatly reducing the breadth & depth at which previews are being exercised.
 
-This document is exploring a model where RTM quality builds of .NET can contain
+This document is exploring a model where GA quality builds of .NET can contain
 features that are considered experimental.
 
 The goal is to ensure that customers can discover those features & have an easy
 way to play with them while simultaneously being fully aware that these features
-aren't support yet and thus might change between versions of .NET, just like
-they would in preview builds.
+aren't supported yet and thus might change (or be removed entirely) between versions of .NET, just like
+they could in preview builds.
 
 ## Scenarios and User Experience
 
