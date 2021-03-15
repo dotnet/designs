@@ -72,8 +72,11 @@ project file as follows:
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <ExperimentalFeatures>FancyGC</ExperimentalFeatures>
   </PropertyGroup>
+
+  <ItemGroup>
+    <EnableExperimentalFeature Include="FancyGC" />
+  </ItemGroup>
 
 </Project>
 ```
@@ -101,8 +104,11 @@ on, which modifies her project file as follows:
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <ExperimentalFeatures>StaticInterfaceMembers</ExperimentalFeatures>
   </PropertyGroup>
+
+  <ItemGroup>
+    <EnableExperimentalFeature Include="StaticInterfaceMembers" />
+  </ItemGroup>
 
 </Project>
 ```
@@ -127,7 +133,7 @@ The code immediately produces an error message:
 > 'StaticInterfaceMembers' which must be turned on explicitly.
 
 After taking a quick look at the blog post, Ainsley realizes that they only need
-to set the `ExperimentalFeatures` property in the project files.
+to add an `ExperimentalFeature` item to the project files.
 
 ### Consuming a library that uses an experimental feature
 
@@ -190,8 +196,11 @@ the library into the production instance of Fabrikam.
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <ExperimentalFeatures>StaticInterfaceMembers</ExperimentalFeatures>
   </PropertyGroup>
+
+  <ItemGroup>
+    <EnableExperimentalFeature Include="StaticInterfaceMembers" />
+  </ItemGroup>
 
 </Project>
 ```
@@ -207,9 +216,10 @@ For example, this project information:
 ```xml
 <Project>
 
-  <PropertyGroup>
-    <ExperimentalFeatures>StaticInterfaceMembers;FancyGC</ExperimentalFeatures>
-  </PropertyGroup>
+  <ItemGroup>
+    <EnableExperimentalFeature Include="StaticInterfaceMembers" />
+    <EnableExperimentalFeature Include="FancyGC" />
+  </ItemGroup>
 
 </Project>
 ```
@@ -227,12 +237,12 @@ dependencies ([discussed later](#api-analyzer)).
 
 ### runtime.json
 
-The `ExperimentalFeatures` should be written into the `runtime.json` file such
+The `ExperimentalFeature` should be written into the `runtime.json` file such
 that the host/runtime can use it to make decisions.
 
 ### Compilation context
 
-The `ExperimentalFeatures` needs to be passed to the compilers. Roslyn (C#/VB)
+The `ExperimentalFeature` needs to be passed to the compilers. Roslyn (C#/VB)
 already has a mechanism for this which is exposed to both the compiler as well
 as for analyzers/source generators. Alternatively, we could say the information
 about experimental features can be retrieved from the generated assembly-level
@@ -270,8 +280,7 @@ namespace System.Runtime.Versioning
 
 We'll ship a built-in analyzer that will report diagnostics when an API is being
 called that is marked with this attribute and the feature name is not contained
-in the project's `ExperimentalFeatures` property. The default severity is
-`error`.
+in the project's `ExperimentalFeature` items. The default severity is `error`.
 
 This analyzer will also validate that all referenced assemblies only have
 assembly-level attributes for experimental features that the consuming project
@@ -280,9 +289,9 @@ also declared. For example, if a project has this configuration:
 ```xml
 <Project>
 
-  <PropertyGroup>
-    <ExperimentalFeatures>StaticInterfaceMembers</ExperimentalFeatures>
-  </PropertyGroup>
+  <ItemGroup>
+    <EnableExperimentalFeature Include="StaticInterfaceMembers" />
+  </ItemGroup>
 
 </Project>
 ```
