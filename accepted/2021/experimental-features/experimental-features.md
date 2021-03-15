@@ -174,8 +174,9 @@ the library into the production instance of Fabrikam.
 ## Stakeholders and Reviewers
 
 * Runtime teams
-* C#, VB, F# teams
+* C#, VB, F# compiler and IDE teams
 * Library teams
+* Project system team
 * SDK team
 * MSBuild team
 * NuGet team
