@@ -382,6 +382,21 @@ make the cut for RTM quality and we might decide to mark features we shipped in
 a previous preview as experimental. The reverse is also possible (and argubly
 not a breaking change) but probably less likely.
 
+### What is the quality bar for experimental features?
+
+Since experimental features ship with an GA build, there will still be a quality
+bar. For instance, we don't want experimental features to adversely affect the
+performance or stability of Visual Studio or unrelated areas in the .NET runtime
+itself. The reason being that developers frequently forgot that they turned
+experimental features on and if Visual Studio is becoming unresponsive or
+crashes, they will likely blame Visual Studio, without realizing that this is
+due to an experimental feature. This can result in negative customer sentiment
+which we need to avoid.
+
+Also, for Watson reports we likely want to record if experimental features were
+turned on (and which ones). This will allow us to measure how responsible
+experimental features are with respect to hangs and crashes.
+
 ### Can 3rd parties introduce their own experimental APIs?
 
 In this design the system has no way to prevent this and it will in fact just
