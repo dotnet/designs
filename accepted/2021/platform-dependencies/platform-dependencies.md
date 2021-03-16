@@ -158,14 +158,14 @@ namespace Microsoft.DotNet.Dependencies.Platform
     // Description of a platform dependency
     public class PlatformDependency
     {
-        // Name of the dependency artifact
+        // ID of the dependency
+        public string Id { get; set; }
+
+        // The name expression of the dependency artifact
         public string Name { get; set; }
 
         // Type of the dependency
         public DependencyType Type { get; set; }
-
-        // Minimum version of the dependency artifact
-        public string? MinimumVersion { get; set; }
 
         // A value indicating in what manner the dependency is used
         public string Usage { get; set; }
@@ -190,8 +190,8 @@ namespace Microsoft.DotNet.Dependencies.Platform
     // A reference to a dependency
     public class DependencyRef
     {
-        // Name of the referenced dependency
-        public string Name { get; set; }
+        // ID of the referenced dependency
+        public string Id { get; set; }
 
         // Type of the referenced dependency
         public DependencyType DependencyType { get; set; }
@@ -212,9 +212,47 @@ Within each platform can be described a set of components. These components repr
 
 #### Platform Dependency
 
-Each component describes the dependencies it has for the platform it is contained within. A dependency is identified by its name and type (Linux distro package, DLL).
+Each component describes the dependencies it has for the platform it is contained within. A dependency is identified by its ID, which defaults to the value of the name, and type (Linux distro package, DLL).
 
-A key piece of metadata that gives context to the dependency is the "usage" field. This field is set to one of the well-known values that describes the scenario in which this dependency applies. Here are some examples of usage values:
+The name of a dependency is an expression that can be used to describe a variety of conditions. The syntax allows for version ranges to be specified using [interval notation](https://docs.microsoft.com/nuget/concepts/package-versioning#version-ranges). Examples:
+
+* `libgcc1`: Any version of the `libgcc1` package.
+* `libgcc1:4.9.2`: Version 4.9.2 or higher of the `libgcc1` package.
+* `libgcc1:[4.9.2,5.0)`: A version of the `libgcc1` package that lies within the range 4.9.2 >= x < 5.0.
+* `libssl1.0.0 || libssl1.1`: Any version of the `libssl1.0.0` or `libssl1.1` packages.
+
+Expression syntax (BNF):
+
+```bnf
+<name-expr>         ::= <dependency> | <name-expr> <logical-op> <dependency>
+<dependency>        ::= <dependency-name> | <dependency-name> ":" <version-range>
+<version-range>     ::= <version-num> | <start-range> <range-version-num> "," <range-version-num> <end-range>
+<range-version-num> ::= <version-num> | ""
+<start-range>       ::= "[" | "("
+<end-range>         ::= "]" | ")"
+<logical-op>        ::= "||"
+```
+
+Supported operators:
+
+* Logical OR (`||`): Indicates that the component can use either of the specified dependency names. Operands should be listed in the order with the most preferred usage listed last; this allows consumers of the model to resolve the expression to a single value in cases where a value needs to be outputted.
+
+The logical OR operator is specifically useful in cases where a platform provides multiple dependency artifacts with distinct names and the component is compatible with any of them. As an example, the .NET runtime is compatible with either version 1.0.0 or 1.1 of libssl. If the platform happens to provide both of these packages, whose names are distinct, it can be described in the model as the following:
+
+```json
+{
+  "id": "libssl",
+  "name": "libssl1.0.0:1.0.1t-1 || libssl1.1:1.1.1d-0",
+  "dependencyType": "LinuxPackage",
+  "usage": "default"
+},
+```
+
+> Notes: The `id` field is set here to provide a valid addressable ID for the platform dependency. The minimum version for `libssl1.0.0` is `1.0.1t-1` while the minimum version for `libssl1.1` is `1.1.1d-0`.
+
+The ID of the dependency can be explicitly set; otherwise, its value defaults to the name portion of the dependency's name expression. For example, a dependency with a name expression of `libgcc1:4.9.2` will have its ID defaulted to `libgcc1`. This allows the dependency to easily be referenced for overriding without unnecessarily specifying the version portion of the expression.
+
+A key piece of metadata that gives context to the dependency is the "usage" field. This field is set to one of the model-defined values that describes the scenario in which this dependency applies. Here are some examples of usage values:
 
 * default: Indicates that the dependency applies to a canonical app scenario (i.e. Hello World).  Note that this is specifically about a canonical app and not intended to be a description of required dependencies in the absolute sense. An example of this is libicu. While libicu is not required to run an app if it has been set to use invariant globalization, the default/canonical setting of a .NET app is that invariant globalization is set to false in which case libicu is necessary. This is why the term "default" is used rather than something like "required".
 * diagnostics: Indicates the dependency should be used in scenarios where diagnostic tools are being used such as with LTTng-UST.
