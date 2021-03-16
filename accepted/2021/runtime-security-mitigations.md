@@ -4,7 +4,7 @@
 
 _From Wikipedia: Mitigation is the reduction of something harmful or the reduction of its harmful effects._
 
-Security is our top concern. The .NET platform combines many layers of security measures that include design and code security reviews, threat modeling, fuzzing of sensitive components, analyzers to detect potential security issue, documentation of security best practices, shipping of regular security updates throughout the support life cycle, bug bounty programs and mandatory security trainings for engineers. This redundancy of methods is known as [defense-in-depth](https://en.wikipedia.org/wiki/Defense_in_depth_(computing)).
+Security is our top concern. The .NET platform combines many layers of security measures that include design and code security reviews, threat modeling, fuzzing of sensitive components, analyzers to detect potential security issues, documentation of security best practices, shipping of regular security updates throughout the support life cycle, bug bounty programs and mandatory security trainings for engineers. This redundancy of methods is known as [defense-in-depth](https://en.wikipedia.org/wiki/Defense_in_depth_(computing)).
 
 This document is focused on mitigations for memory security vulnerabilities. These mitigations are one of the redundant layers for defense-in-depth. They do not make the system secure on their own nor the lack of them make the system insecure. They make systems more secure by preventing attackers from turning vulnerabilities into exploits before the vulnerabilities are patched.
 
@@ -49,9 +49,9 @@ The mitigations for memory safety violations must be typically applied to all co
 
 # Executable Space Protection
 
-_Known as Data Execution Prevention (DEP) on Windows_
-
 The simplest path for an attack is to write new malicious code in memory and then get control flow to jump to it. Executable space protection enforces that memory has independent write and execution permissions. Attacks can no longer create new code because executable memory is not writable and writable memory is not executable.
+
+Executable space protection on Windows is called Data Execution Prevention (DEP).
 
 ## W^X
 
@@ -61,7 +61,7 @@ Apple has made the W^X mandatory for future versions of macOS desktop operating 
 
 ## Protect Intermediate Language (IL) Code
 
-IL code is equivalent of executable code. The IL code might be overwritten with malicious IL. An attacker could then wait for the IL to be compiled or re-compiled via tiering and have malicious code injected that way.
+IL code is equivalent of executable code. The IL code might be overwritten with malicious IL. An attacker could then wait for the IL to be compiled or [re-compiled via tiering](https://github.com/dotnet/runtime/blob/main/docs/design/features/tiered-compilation.md) and have malicious code injected that way.
 
 .NET runtime should treat the IL code same way as directly executable code, ie make IL read-only or otherwise protected wherever possible.
 
@@ -93,7 +93,7 @@ We do not see strong need for introducing out of process JIT for .NET runtime in
 
 Once attackers are no longer able to inject arbitrary code into the process thanks to executable space protections, they start looking for creative ways to leverage existing code in the process to mount the attack. [Return-oriented Programming](https://en.wikipedia.org/wiki/Return-oriented_programming) (ROP) and [Jump-oriented Programming](https://www.csc2.ncsu.edu/faculty/xjiang4/pubs/ASIACCS11.pdf) (JOP) are generalized exploit techniques that take advantage of situations where the program uses indirection for control transfer. The affected indirection is return address for ROP and function pointer for JOP. Control-flow integrity adds validation of these indirections to eliminate or reduce chance of them being used to mount successful attacks.
 
-The control-flow integrity validations are emerging area. They are not yet standardized across operating systems or hardware vendors.
+The control-flow integrity validations are an emerging area. It isn't currently feasible to achieve mitigations with the matching security characteristics across operating systems and hardware vendors as the capabilities are not standardized enough.
 
 ## Intel Control-flow Enforcement Technology (CET)
 
@@ -105,7 +105,7 @@ A second stack of return addresses that is mostly invisible to the program is ma
 
 Low-level techniques used by .NET runtime such as return address hijacking for GC thread suspension have to be updated for compatibility with shadow stack.
 
-We have been working closely with Windows team on ensuring that the shadow stack support in the operating system can work well together with .NET runtime. The result of this collaboration are new Windows APIs e.g. `RtlGetReturnAddressHijackTarget` that is in private preview currently. The new APIs should help other language runtimes to enable this mitigation. Our plan is complete support for shadow stack mitigation on Windows in .NET 6.
+We have been working closely with Windows team on ensuring that the shadow stack support in the operating system can work well together with .NET runtime. New Windows APIs designed as part of this effort are going to be introduced to make it possible. These new APIs should help other similar language runtimes to enable this mitigation as well. Our plan is complete support for shadow stack mitigation on Windows in .NET 6.
 
 Linux support for shadow stack is [still being worked on](https://lore.kernel.org/linux-mm/20210217222730.15819-1-yu-cheng.yu@intel.com/T/#t) at the time of writing. Once the shadow stack support lands in mainstream Linux kernels, we will make sure that .NET runtime is compatible with it. We expect that supporting shadow stack on Linux will be easier due to the less restrictive approach taken to implement this mitigation in Linux kernel. Unlike Windows, the shadow stack mismatches can be handled by the user code on Linux that is less secure, but also easier to work with.
 
@@ -161,7 +161,7 @@ Library and language design have always played a key role in mitigating security
 
 Number of newer APIs such as `Memory<T>` and friends come with security risks that are not clearly communicated.
 
-We need to adopt a more holistic approach to unsafe features and APIs that we expose for public use. Developers need feedback in the IDE so that they understand that they are using constructs that are unsafe and are [informed of the specific risks that come with using those APIs](https://github.com/dotnet/runtime/issues/41418). Over time, we bias more to constructs and paradigms that are safe by default (possibly inspired by Rust).
+We need to adopt a more holistic approach to unsafe features and APIs that we expose for public use. Developers need feedback so that they understand that they are using constructs that are unsafe and are [informed of the specific risks that come with using those APIs](https://github.com/dotnet/runtime/issues/41418). Over time, we bias more to constructs and paradigms that are safe by default (possibly inspired by Rust).
 
 ## Object and Array Pooling
 
@@ -169,20 +169,19 @@ We need to adopt a more holistic approach to unsafe features and APIs that we ex
 
 We need to implement similar diagnostic and mitigation capabilities for `ArrayPool<T>` and friends. It is [not unusual](https://github.com/dotnet/corefx/pull/37270) to find security bugs caused by incorrect `ArrayPool<T>` use even in dotnet/runtime libraries.
 
-We are also going to be continually pushed to expose APIs like those we use internally which make potential misuse even easier, e.g. `ValueStringBuilder`. Thus far we have simply said &quot;we're not comfortable doing that&quot;, but it is unlikely going to be a satisfactory answer long-term. It is something we need to keep thinking about.
+We are continually pushed to expose potentially dangerous APIs we use internally, e.g. ValueStringBuilder. Thus far we have simply said "we're not comfortable doing that", and we will continue to examine the balance of security against utility. If an API can be safe by default or the unsafe usage patterns can be detected by analyzers, it is more likely to be included.
 
 ## Secrets in Presence of GC Heap Compaction
 
 GC heap compaction can create a second copy of secrets stored in managed memory. It makes it impossible for an application to reliably clear in-memory secrets stored in managed memory after they are no longer used.
 
-We will introduce GC feature that clears unused memory after GC heap compaction. Having the GC clear memory after compaction improves the security of applications for which heap dumps and in-memory probes are within their scope of threat. [dotnet/runtime#10480](https://github.com/dotnet/runtime/issues/10480) has more details.
+We will introduce a GC feature that clears unused memory after GC heap compaction. Having the GC clear memory after compaction improves the security of applications for which heap dumps and in-memory probes are within their scope of threat. [dotnet/runtime#10480](https://github.com/dotnet/runtime/issues/10480) has more details.
 
 ## Dangerous Deserialization
 
 Object deserialization vulnerabilities continue to be a major issue for many type safe languages. These vulnerabilities allow the attacker to introduce unexpected object graphs into the remote process.
 
-We plan to gradually [deprecate binary formatter](https://github.com/dotnet/designs/blob/main/accepted/2020/better-obsoletion/binaryformatter-obsoletion.md) that has been the source of the worst .NET serialization vulnerabilities. We will work on excising other similar dangerous serialization patterns from the .NET ecosystem.
-
+We plan to gradually [deprecate binary formatter](https://github.com/dotnet/designs/blob/main/accepted/2020/better-obsoletion/binaryformatter-obsoletion.md) that has been the source of the worst .NET serialization vulnerabilities. We will work on raising awareness about other similar dangerous serialization patterns within .NET ecosystem.
 # Looking forward
 
 This roadmap involves quite a bit of work that will be spread over multiple releases. Going forward, .NET should adopt mitigations as they become available. We will look for opportunities to engage security experts and academics to help us identify new and possibly unique mitigations.
