@@ -397,6 +397,12 @@ Also, for Watson reports we likely want to record if experimental features were
 turned on (and which ones). This will allow us to measure how responsible
 experimental features are with respect to hangs and crashes.
 
+And lastly this is for experimental features that we think are ready for
+consumption and gathering feedback. This is *not* for unfinished feature work.
+Experimental features have to be in a state that we'd consider acceptable for
+previews. For highly speculative work, we'd likely keep that outside of GA
+builds, e.g. in feature branches or experimental repos, such as `runtimelabs`.
+
 ### Can 3rd parties introduce their own experimental APIs?
 
 In this design the system has no way to prevent this and it will in fact just
