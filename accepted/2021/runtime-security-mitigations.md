@@ -103,7 +103,7 @@ The control-flow integrity validations are emerging area. They are not yet stand
 
 A second stack of return addresses that is mostly invisible to the program is maintained on the side in addition to the ordinary stack. Return instruction uses the second stack to confirm that the return address on the ordinary stack has not been tampered with. This prevents attacks from leveraging stack buffer overruns to overwrite return addresses and hijack the control flow.
 
-Low-level techniques used by .NET runtime such as return address hijacking for GC thread suspension have to be updated for compatible with shadow stack.
+Low-level techniques used by .NET runtime such as return address hijacking for GC thread suspension have to be updated for compatibility with shadow stack.
 
 We have been working closely with Windows team on ensuring that the shadow stack support in the operating system can work well together with .NET runtime. The result of this collaboration are new Windows APIs e.g. `RtlGetReturnAddressHijackTarget` that is in private preview currently. The new APIs should help other language runtimes to enable this mitigation. Our plan is complete support for shadow stack mitigation on Windows in .NET 6.
 
