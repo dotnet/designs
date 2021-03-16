@@ -51,8 +51,8 @@ features that are considered experimental.
 
 The goal is to ensure that customers can discover those features & have an easy
 way to play with them while simultaneously being fully aware that these features
-aren't supported yet and thus might change (or be removed entirely) between versions of .NET, just like
-they could in preview builds.
+aren't supported yet and thus might change (or be removed entirely) between
+versions of .NET, just like they could in preview builds.
 
 ## Scenarios and User Experience
 
