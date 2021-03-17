@@ -275,6 +275,12 @@ Thus, the garbage collection process will be as follows:
   - Write: Create key
   - Delete: Delete key
 
+### Elevation
+
+Installing MSIs requires Administrator permissions.  If a workload installation command is run from a non-admin command prompt, then a UAC prompt should be displayed to elevate to Administrator permissions.
+
+To show the UAC prompt, a separate process must be launched.  So if an operation requires admin permissions, the Standalone Windows IAL implementation should elevate and show the UAC prompt by launching a new dotnet process with admin permissions.  The elevated process should establish a connection with the non-elevated process (likely using connection information passed via a command line argument) which allows the IAL implementation to send commands that require elevation to the elevated process.  The elevated process should remain active until the top-level workload operation is complete, in order to avoid having to elevate multiple times for a single user workload action.
+
 ### Workload pack and manifest MSIs and NuGet packages
 There will be MSIs for both workload packs and workload manifests.  Both of these will also be wrapped up in NuGet packages to allow them to be downloaded via NuGet.  The MSIs and NuGet packages for workload packs and workload manifests will share the following properties:
 
