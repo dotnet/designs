@@ -63,14 +63,19 @@ When the .NET SDK is updated to a new version, developers may expect for the sam
   - For SDK installations managed by Visual Studio, in-place updates can include updating to a new SDK feature band.  In that case the workload installation is managed by Visual Studio, so the workloads will be updated as we want with the plans we have today
 - When installing a new version of the .NET SDK side-by-side with an existing version, we should default to installing the same workloads that were installed for the previous version.  The developer should be able to override this, for example by unchecking the corresponding checkboxes in an installer UI
 
-Given that for some installers we won't be able to automatically, as part of the first run experience we should check to see if there were workloads installed for a previous version, and if there were print a message telling the developer how to install them.  The process for this will be:
+Given that for some installers we won't be able to automatically, we should make it easy to install the same workloads that were installed for a previous version of the .NET SDK.  If there are workloads that were previously installed, we should also print a message as part of the first run experience telling the developer how to update them.
 
-- Determine highest previously installed SDK feature band
-- Via IAL, read workload installation records for that band (NOT the current one) to find out which workloads were installed
-- If no workloads were installed, then end process and don't print a message
-- Otherwise, ask IAL if it supports installing workloads or just giving instructions
-  - If it supports installing, print message suggesting command similar to `dotnet workload install workload1 workload2 workload3` (but listing the actual workloads)
-  - If it doesn't support installing, then call IAL to get the command(s) needed to install the workloads, and suggest that command
+We will use the `dotnet workload update` command for this.  This means that if there are any workload installation records for the current SDK feature band, it will update them.  Otherwise, it will use the workloads installation records from the most recent SDK feature band prior to the current one that has any workload installation records, and install those workloads.
+
+We will print a message on first run suggesting updating the workloads in the following cases:
+
+- A new feature band of the SDK was installed.  This will be if the following are both true:
+  - There are no workload installation records for the current SDK feature band
+  - There are workload installation records for any SDK feature band prior to the current one
+- A patch to the SDK was installed which updated the baseline workload manifest.  This is likely to happen for workloads that are shipped in sync with the .NET SDK, such as Blazor.  We will detect this by:
+  - From IAL: Get list of workload installation records for the current SDK
+  - Map these via the workload manifests to workload packs that should be installed
+  - Check if all those packs are installed.  If any aren't then print the the message
 
 ## Updating the workload manifests
 
@@ -130,6 +135,10 @@ To install updated manifests, the following process will be used (for each workl
 ## Workload update process
 - Update workload advertising manifests
 - From IAL: Get list of workloads installed from workload installation record
+- If there are no workload installation records for the current band, then:
+  - From IAL: Get list of feature bands that have workload installation records
+  - From that list of feature bands, select the most recent one prior to the current SDK Feature band
+  - If such a feature band exists, then get the list of workloads installed for that feature band, and use that as the list of workloads to install.  Otherwise, there is nothing to update, and quit the update process
 - With rollback:
   - Install updated workload manifests
   - Run workload installation process for list of workloads that were installed
@@ -168,6 +177,7 @@ To install updated manifests, the following process will be used (for each workl
   - List installed workloads (SDK feature band)
   - Write installation record (workload ID, SDK feature band)
   - Delete installation record (workload ID, SDK feature band)
+  - List feature bands that have workload installation records
 
 # Installer implementations
 
@@ -291,6 +301,7 @@ There will be MSIs for both workload packs and workload manifests.  Both of thes
 ### Workload manifest MSIs
 - MSI should upgrade previous versions of the workload manifest MSI for the same workload manifest ID and SDK Feature Band
   - This is different than most MSIs for the .NET SDK, such as the workload packs, which install side-by-side.
+  - In order to properly support upgrading, the semantic version number for the workload manifest needs to be mapped to a MSI version, preserving the version ordering present in the original semantic version.  As there are only 32 significant bits between the MSI Major, Minor, and Build numbers, it's not possible to do this for arbitrary semantic versions.  The mapping we use should ensure that for all public releases and public previews, the ordering is preserved correctly, and should make a best effort to satisfy this for daily builds.
 - DependencyProviderKey should include the Manifest ID, SDK Feature Band, and the InstallerPlatform.  It should not include the workload manifest version, as updated versions of the manifest are installed in-place and should not be ref-counted separately
 
 Reference counting for the workload manifest MSIs will work as follows:
