@@ -239,13 +239,11 @@ Supported operators:
 
 The logical OR operator is specifically useful in cases where a platform provides multiple dependency artifacts with distinct names and the component is compatible with any of them. As an example, the .NET runtime is compatible with either version 1.0.0 or 1.1 of libssl. If the platform happens to provide both of these packages, whose names are distinct, it can be described in the model as the following:
 
-```json
-{
-  "id": "libssl",
-  "name": "libssl1.0.0:1.0.1t-1 || libssl1.1:1.1.1d-0",
-  "dependencyType": "LinuxPackage",
-  "usage": "default"
-},
+```yaml
+- id: libssl
+  name: libssl1.0.0:1.0.1t-1 || libssl1.1:1.1.1d-0
+  dependencyType: LinuxPackage
+  usage: default
 ```
 
 > Notes: The `id` field is set here to provide a valid addressable ID for the platform dependency. The minimum version for `libssl1.0.0` is `1.0.1t-1` while the minimum version for `libssl1.1` is `1.1.1d-0`.
@@ -263,150 +261,88 @@ Dependencies are able to override the content of another dependency that is inhe
 
 #### Example Runtime Model
 
-```json
-{
-  "dotnetReleaseVersion": "6.0.0",
-  "dependencyUsages": {
-    "default": "Used by default or for canonical scenarios",
-    "diagnostics": "Used for diagnostic scenarios such as tracing or debugging",
-    "httpSys": "Used for ASP.NET Core apps that are configured to use the HTTP.sys web server",
-    "localization": "Used for locale and culture scenarios"
-  },
-  "platforms": [
-    {
-      "rid": "debian",
-      "components": [
-        {
-          "name": "Microsoft.NETCore.App",
-          "type": "Framework",
-          "platformDependencies": [
-            {
-              "name": "libc6",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            },
-            {
-              "name": "libgcc1",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            },
-            {
-              "name": "libgssapi-krb5-2",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            },
-            {
-              "name": "libicu57",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            },
-            {
-              "name": "liblttng-ust0",
-              "dependencyType": "LinuxPackage",
-              "usage": "diagnostics"
-            },
-            {
-              "name": "libssl1.1",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            },
-            {
-              "name": "libstdc++6",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            },
-            {
-              "name": "tzdata",
-              "dependencyType": "LinuxPackage",
-              "usage": "localization"
-            },
-            {
-              "name": "zlib1g",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            }
-          ]
-        },
-        {
-          "name": "System.DirectoryServices.Protocols",
-          "type": "NuGetPackage",
-          "platformDependencies": [
-            {
-              "name": "libldap-2.4-2",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            }
-          ]
-        }
-      ],
-      "platforms": [
-        {
-          "rid": "debian.10",
-          "components": [
-            {
-              "name": "Microsoft.NETCore.App",
-              "type": "Framework",
-              "platformDependencies": [
-                {
-                  "name": "libicu63",
-                  "overrides": {
-                    "name": "libicu57",
-                    "dependencyType": "LinuxPackage"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+```yaml
+dotnetReleaseVersion: 6.0.0
+dependencyUsages:
+  default: Used by default or for canonical scenarios
+  diagnostics: Used for diagnostic scenarios such as tracing or debugging
+  httpSys: Used for ASP.NET Core apps that are configured to use the HTTP.sys web server
+  localization: Used for locale and culture scenarios
+platforms:
+- rid: debian
+  components:
+  - name: Microsoft.NETCore.App
+    type: Framework
+    platformDependencies:
+    - name: libc6
+      dependencyType: LinuxPackage
+      usage: default
+    - name: libgcc1
+      dependencyType: LinuxPackage
+      usage: default
+    - name: libgssapi-krb5-2
+      dependencyType: LinuxPackage
+      usage: default
+    - name: libicu57
+      dependencyType: LinuxPackage
+      usage: default
+    - name: liblttng-ust0
+      dependencyType: LinuxPackage
+      usage: diagnostics
+    - name: libssl1.1
+      dependencyType: LinuxPackage
+      usage: default
+    - name: libstdc++6
+      dependencyType: LinuxPackage
+      usage: default
+    - name: tzdata
+      dependencyType: LinuxPackage
+      usage: localization
+    - name: zlib1g
+      dependencyType: LinuxPackage
+      usage: default
+  - name: System.DirectoryServices.Protocols
+    type: NuGetPackage
+    platformDependencies:
+    - name: libldap-2.4-2
+      dependencyType: LinuxPackage
+      usage: default
+  platforms:
+  - rid: debian.10
+    components:
+    - name: Microsoft.NETCore.App
+      type: Framework
+      platformDependencies:
+      - name: libicu63
+        overrides:
+          name: libicu57
+          dependencyType: LinuxPackage
 ```
 
 #### Example Toolchain Model
 
-```json
-{
-  "dependencyUsages": {
-    "default": "Used by default or for canonical scenarios",
-    "numa": "Used to enable NUMA support"
-  },
-  "platforms": [
-    {
-      "rid": "debian",
-      "components": [
-        {
-          "name": "https://github.com/dotnet/runtime.git",
-          "type": "GitRepository",
-          "platformDependencies": [
-            // Just a snippet of the full list is shown
-            {
-              "name": "clang-9",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            },
-            {
-              "name": "cmake",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            },
-            {
-              "name": "libnuma-dev",
-              "dependencyType": "LinuxPackage",
-              "usage": "numa"
-            },
-            {
-              "name": "llvm-9",
-              "dependencyType": "LinuxPackage",
-              "usage": "default"
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+```yaml
+dependencyUsages:
+  default: Used by default or for canonical scenarios
+  numa: Used to enable NUMA support
+platforms:
+- rid: debian
+  components:
+  - name: https://github.com/dotnet/runtime.git
+    type: GitRepository
+    platformDependencies: # Just a snippet of the full list is shown
+    - name: clang-9
+      dependencyType: LinuxPackage
+      usage: default
+    - name: cmake
+      dependencyType: LinuxPackage
+      usage: default
+    - name: libnuma-dev
+      dependencyType: LinuxPackage
+      usage: numa
+    - name: llvm-9
+      dependencyType: LinuxPackage
+      usage: default
 ```
 
 The model above uses the Debian Linux distro as an example. It shows the `Microsoft.NETCore.App` shared framework as having a base set of dependencies but for Debian 10, the `libicu57` package dependency is overriden to be `libicu63` since that is the version available in Debian 10. It also shows that the `System.DirectoryServices.Protocols` NuGet package has a dependency on `libldap-2.4-2`.
@@ -415,12 +351,12 @@ The model above uses the Debian Linux distro as an example. It shows the `Micros
 
 Dependencies will change over time from release to release. For that reason, it is reasonable to consider the platform dependency model to be a release artifact, tied to a particular release. Precedent already exists for this kind of artifact with the [releases.json](https://github.com/dotnet/core/blob/master/release-notes/5.0/releases.json) file. In order to provide a consistent experience for consuming release artifacts, this design roughly follows that pattern used for the releases.json file.
 
-The **runtime** dependency model will be represented as a JSON file and be stored in the [release-notes folder](https://github.com/dotnet/core/tree/master/release-notes) for each release. For example, the 6.0.0 release would have the runtime dependency model located at https://github.com/dotnet/core/blob/master/release-notes/6.0/6.0.0/6.0.0-runtime-deps.json; a preview release would be located at https://github.com/dotnet/core/blob/master/release-notes/6.0/preview/6.0.0-preview.1-runtime-deps.json. This design deviates from the releases.json file which is stored at major/minor folder level instead of the patch folder for a couple reasons:
+The **runtime** dependency model will be represented as a YAML file and be stored in the [release-notes folder](https://github.com/dotnet/core/tree/master/release-notes) for each release. For example, the 6.0.0 release would have the runtime dependency model located at https://github.com/dotnet/core/blob/master/release-notes/6.0/6.0.0/6.0.0-runtime-deps.yml; a preview release would be located at https://github.com/dotnet/core/blob/master/release-notes/6.0/preview/6.0.0-preview.1-runtime-deps.yml. This design deviates from the releases.json file which is stored at major/minor folder level instead of the patch folder for a couple reasons:
 
 * There is no dependency data that is common to all patch releases. While there could end up being commonality in the data, it is not an inherent feature.
-* From a human-readability standpoint, the size of the json file would be quite large and difficult to navigate as patch releases accumulate.
+* From a human-readability standpoint, the size of the file would be quite large and difficult to navigate as patch releases accumulate.
 
-The **toolchain** dependency model will also be represented as a JSON file but be stored in each .NET git repository at a known location: `eng/toolchain-dependencies.json`. It's not treated as a release artifact in the same way as the runtime dependency model. Its purpose is more relevant to the repo so it is co-located there instead of consolidating them into the dotnet/core repo.
+The **toolchain** dependency model will also be represented as a YAML file but be stored in each .NET git repository at a known location: `eng/toolchain-dependencies.yml`. It's not treated as a release artifact in the same way as the runtime dependency model. Its purpose is more relevant to the repo so it is co-located there instead of consolidating them into the dotnet/core repo.
 
 ## Engineering Workflow
 
