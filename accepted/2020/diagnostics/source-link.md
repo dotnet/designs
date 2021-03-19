@@ -1,4 +1,7 @@
 # Source Link
+
+**Dev** [Tomáš Matoušek](https://github.com/tmat)
+
 Source Link is a developer productivity feature that allows unique information about an assembly's original source code to be embedded in its PDB during compilation. The [Roslyn](https://github.com/dotnet/roslyn/wiki/Roslyn%20Overview) compiler flag for Source Link is `/sourcelink:<file>`.
 
 ## Why Source Link?

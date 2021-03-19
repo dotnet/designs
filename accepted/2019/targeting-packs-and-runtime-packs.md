@@ -1,5 +1,8 @@
 # Background
 
+**PM** [Rich Lander](https://github.com/richlander) |
+**Dev** [Nick Guerrera](https://github.com/nguerrera) |
+
 The objectives here are:
 
 1. Summarize the new approach of FrameworkReferences, targeting packs and runtime packs

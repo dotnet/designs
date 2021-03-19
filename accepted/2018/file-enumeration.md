@@ -1,6 +1,7 @@
 # Extensible File Enumeration
 
-**PM** [Immo Landwerth](https://github.com/terrajobst) | **Dev** [Jeremy Kuhne](https://github.com/jeremykuhne)
+**PM** [Immo Landwerth](https://github.com/terrajobst) |
+**Dev** [Jeremy Kuhne](https://github.com/jeremykuhne)
 
 Enumerating files in .NET provides limited configurability. You can specify a simple DOS style pattern and whether or not to look recursively. More complicated filtering requires post filtering all results which can introduce a significant performance drain.
 

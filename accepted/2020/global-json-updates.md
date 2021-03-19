@@ -1,5 +1,7 @@
 # Proposal for global.json
 
+**PM** [Kathleen Dollard](https://github.com/KathleenDollard)
+
 ---
 **NOTE:** 
 
