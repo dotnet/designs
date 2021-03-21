@@ -1040,9 +1040,10 @@ And to check for things before a specific version do a comparison like this:
 <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' &lt; '3.0'">
 ```
 
-The reason to use the .NET SDK's ``_TargetFrameworkVersionWithoutV`` instead
-of the ``TargetFrameworkVersion`` that is public is because it does not
-prefix the version with a ``v`` making it a string and unable to be compareable.
+If we had used ``TargetFrameworkVersion`` instead of ``_TargetFrameworkVersionWithoutV`` we would see this error for both conditions:
+
+````error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' >= '3.0'".````
+``error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' &lt; '3.0'".``
 
 By us mapping `net5.0` we break less of that code because existing code will
 treat it correctly (i.e. as a future version of .NET Core) and also avoid
