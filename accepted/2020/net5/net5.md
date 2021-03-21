@@ -1042,7 +1042,7 @@ And to check for things before a specific version do a comparison like this:
 
 If we had used ``TargetFrameworkVersion`` instead of ``_TargetFrameworkVersionWithoutV`` we would see this error for both conditions:
 
-````error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' >= '3.0'".````
+``error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' >= '3.0'".``
 ``error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' &lt; '3.0'".``
 
 By us mapping `net5.0` we break less of that code because existing code will
