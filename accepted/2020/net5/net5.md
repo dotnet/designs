@@ -456,26 +456,25 @@ maintainers some idea of what's available to them.
 
 These are the relevant MSBuild properties:
 
-Property                                  | Meaning                                               | Examples
-------------------------------------------|-------------------------------------------------------|---------------------------------
-`TargetFramework` (TFM)                   | The friendly name                                     | `net4`, `netcoreapp3.0`
-`TargetFrameworkIdentifier` (TFI)         | The long name                                         | `.NETFramework` or `.NETCoreApp`
-`TargetFrameworkVersion` (TFV)            | The version number                                    | `v2`, `v3.0`, `v3.1`
-`_TargetFrameworkVersionWithoutV` (TFVWV) | Same as TFV, but without the v in the resulting value | `2`, `3.0`, `3.1`
-`TargetFrameworkProfile` (TFP)            | The profile                                           | `Client` or `Profile124`
-`TargetPlatformIdentifier` (TPI)          | The OS platform                                       | `iOS`, `Android`, `Windows`
-`TargetPlatformVersion` (TPV)             | The OS platform version                               | `12.0` or `13.0`
-`SupportedOSPlatformVersion` (SOPV)       | The minimum OS platform version                       | `12.0` or `13.0`
+Property                              | Meaning                         | Examples
+--------------------------------------|---------------------------------|---------------------------------
+`TargetFramework` (TFM)               | The friendly name               | `net4`, `netcoreapp3.0`
+`TargetFrameworkIdentifier` (TFI)     | The long name                   | `.NETFramework` or `.NETCoreApp`
+`TargetFrameworkVersion` (TFV)        | The version number              | `v2`, `v3.0`, `v3.1`
+`TargetFrameworkProfile` (TFP)        | The profile                     | `Client` or `Profile124`
+`TargetPlatformIdentifier` (TPI)      | The OS platform                 | `iOS`, `Android`, `Windows`
+`TargetPlatformVersion` (TPV)         | The OS platform version         | `12.0` or `13.0`
+`SupportedOSPlatformVersion` (SOPV)   | The minimum OS platform version | `12.0` or `13.0`
 
 We're going to map the TFMs as follows:
 
-TF                 | TFI           | TFV     | TFVWV | TFP | TPI     | TPV | SOPV
--------------------|---------------|---------|-------|-----|---------|-----|----------------
-net4.X             | .NETFramework | v4.X    |  4.X  |     |         |     |
-net5.0             | .NETCoreApp   | v5.0    |  5.0  |     |         |     |
-net5.0-androidX.Y  | .NETCoreApp   | v5.0    |  5.0  |     | Android | X.Y | X.Y (defaulted)
-net5.0-iosX.Y      | .NETCoreApp   | v5.0    |  5.0  |     | iOS     | X.Y | X.Y (defaulted)
-net5.0-windowsX.Y  | .NETCoreApp   | v5.0    |  5.0  |     | Windows | X.Y | X.Y (defaulted)
+TF                 | TFI           | TFV      | TFP | TPI     | TPV | SOPV
+-------------------|---------------|----------|-----|---------|-----|----------------
+net4.X             | .NETFramework | v4.X     |     |         |     |
+net5.0             | .NETCoreApp   | v5.0     |     |         |     |
+net5.0-androidX.Y  | .NETCoreApp   | v5.0     |     | Android | X.Y | X.Y (defaulted)
+net5.0-iosX.Y      | .NETCoreApp   | v5.0     |     | iOS     | X.Y | X.Y (defaulted)
+net5.0-windowsX.Y  | .NETCoreApp   | v5.0     |     | Windows | X.Y | X.Y (defaulted)
 
 Specifically:
 
@@ -493,12 +492,6 @@ Specifically:
 * **SupportedOSPlatformVersion is defaulted to TargetPlatformVersion**. However,
   the customer can override this in the project file to a lower version (using a
   higher version than `TargetPlatformVersion` should generate an error).
-
- * **_TargetFrameworkVersionWithoutV is normally set only internally in the Microsft.NET.Sdk SDK**.
-   However, the customer might want to use this instead of `TargetFrameworkVersion`
-   because the resulting value is not a string then and is then easily checkable
-   to trap newer or older framework targets to do special stuff with each. This
-   is used in the SDK as well for default implicit framework/packagereferences.
 
 _**Open Issue**. Please note that `net5.0`+ will map the TFI to `.NETCoreApp`.
 We need to announce this change so that package authors with custom .props and
@@ -1031,19 +1024,19 @@ because that would be a string comparison. Rather, you need to do a comparison
 like this:
 
 ```xml
-<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' >= '3.0'">
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '3.0'))">
 ```
 
 And to check for things before a specific version do a comparison like this:
 
 ```xml
-<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' &lt; '3.0'">
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0')">
 ```
 
-If we had used ``TargetFrameworkVersion`` instead of ``_TargetFrameworkVersionWithoutV`` we would see this error for both conditions:
+If we had used ``TargetFrameworkVersion`` instead of using the ``VersionLessThan`` and the ``VersionGreaterThanOrEquals`` msbuild functions we would see this error for both conditions:
 
-``error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' >= '3.0'".``
-``error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(_TargetFrameworkVersionWithoutV)' &lt; '3.0'".``
+``error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(TargetFrameworkVersion)' >= '3.0'".``
+``error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(TargetFrameworkVersion)' &lt; '3.0'".``
 
 By us mapping `net5.0` we break less of that code because existing code will
 treat it correctly (i.e. as a future version of .NET Core) and also avoid
