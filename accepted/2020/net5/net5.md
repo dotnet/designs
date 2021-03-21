@@ -1030,7 +1030,7 @@ like this:
 And to check for things before a specific version do a comparison like this:
 
 ```xml
-<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0')">
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0'))">
 ```
 
 If we had used ``TargetFrameworkVersion`` instead of using the ``VersionLessThan`` and the ``VersionGreaterThanOrEquals`` msbuild functions we would see this error for both conditions:
