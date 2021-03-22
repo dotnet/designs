@@ -1024,13 +1024,13 @@ because that would be a string comparison. Rather, you need to do a comparison
 like this:
 
 ```xml
-<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), 'v3.0'))">
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '3.0'))">
 ```
 
 And to check for things before a specific version do a comparison like this:
 
 ```xml
-<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), 'v3.0'))">
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0'))">
 ```
 
 If we had used ``TargetFrameworkVersion`` instead of using the ``VersionLessThan`` and the ``VersionGreaterThanOrEquals`` msbuild functions we would see this error for both conditions:
