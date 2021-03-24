@@ -1,5 +1,7 @@
 # BinaryFormatter Obsoletion Strategy
 
+**Dev** [Levi Broderick](https://github.com/GrabYourPitchforks)
+
 This document applies to the following framework versions:
 
 * .NET 5.0+

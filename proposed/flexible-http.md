@@ -1,6 +1,7 @@
 # Flexible HTTP APIs
 
-[Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer)
+**Dev** [Cory Nelson](https://github.com/scalablecory) |
+**Dev** [Geoff Kizer](https://github.com/geoffkizer)
 
 This design doc describes a set of flexible, high-performance APIs for HTTP.
 

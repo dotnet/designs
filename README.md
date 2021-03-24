@@ -1,7 +1,7 @@
 # .NET Design Proposals
 
-This repo contains [design proposals](meta/proposals.md) for the .NET platform.
-It focuses on designs for the runtime, framework, and the SDK. For others, see:
+This repo contains [design proposals](meta/proposals.md) for the .NET platform. For a complete listing, see [INDEX.md](INDEX.md).
+This repo focuses on designs for the runtime, framework, and the SDK. For others, see:
 
 * [C# Language Designs and Suggestions (dotnet/csharplang)](https://github.com/dotnet/csharplang)
 * [VB Language Designs and Suggestions (dotnet/vblang)](https://github.com/dotnet/vblang)

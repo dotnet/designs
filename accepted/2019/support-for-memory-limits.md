@@ -1,5 +1,7 @@
 # .NET Core GC Support for Docker Limits
 
+**PM** [Rich Lander](https://github.com/richlander)
+
 .NET Core has support for [control groups](https://en.wikipedia.org/wiki/Cgroups) (cgroups), which is the basis of [Docker limits](https://docs.docker.com/config/containers/resource_constraints/). We found that the algorithm we use to honor cgroups works well for larger memory size limits (for example, >500MB), but that it is not possible to configure a .NET Core application to run indefinitely at lower memory levels. This document proposes an approach to support low memory size limits, <100MB.
 
 Note: Windows has a concept similar to cgroups called [job objects](https://docs.microsoft.com/windows/desktop/ProcThread/job-objects). .NET Core should honor job objects in the same way as cgroups, as appropriate. This document will focus on cgroups throughout.

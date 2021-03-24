@@ -1,5 +1,12 @@
 # .NET SDK Workload Manifests
 
+**PM** [Rich Lander](https://github.com/richlander)
+
+// FIXME: do these count as PMs/Devs?
+Co-authored-by: Kathleen Dollard
+Co-authored-by: Steve Kirbach
+Co-authored-by: Stephen Toub
+
 # Overview
 
 .NET SDK workload manifests describe workloads that are available to be installed in the .NET SDK.  They provide version mappings that allow MSBuild targets and other SDK tools to resolve the packs that comprise these workloads from the SDK installation directory, and can be used to acquire, repair, and update the workloads and their components.

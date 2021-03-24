@@ -1,5 +1,7 @@
 # Rolling self-contained .NET Core app deployments forward to the latest patch
 
+**Dev** [Daniel Plaisted](https://github.com/dsplaisted)
+
 ## Goal
 
 Self-contained deployments of .NET Core apps should roll forward to the latest patch version of the .NET Core runtime.  Framework-dependent deployments should by default target the ".0" patch version of the .NET Core runtime, and will be rolled forward to the latest patch version available on the machine when they are run.
