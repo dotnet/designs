@@ -1,5 +1,5 @@
 # Overview
-March 11th, 2021.
+March 25th, 2021.
 
 This document covers the API and design for a writable DOM along with support for the [C# `dynamic` keyword](https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/dynamic-language-runtime-overview).
 
@@ -46,8 +46,9 @@ This design is based on learning and scenarios from these reference implementati
        - The writable `JsonValue` internal value is based on CLR types, not a string representing JSON. For example, a `JsonValue` initialized with an `int` keeps that `int` value without boxing or converting to a string-based field.
 - The dynamic support code example. During 5.0, [dynamic support](https://github.com/dotnet/runtime/issues/29690) was not able to be implemented due to schedule constraints. Instead, a [code example](https://github.com/dotnet/runtime/pull/42097) was provided that enables `dynamic` and a writeable DOM that can be used by any 3.0+ runtime in order to unblock the community and also has been useful in gathering feedback for the design proposed here.
 - Azure prototyping. The Azure SDK team needs a writable DOM, and supporting `dynamic` is important for some scenarios but not all. A [prototype](https://github.com/Azure/azure-sdk-for-net/tree/master/sdk/core/Azure.Core.Experimental) has been created. Work is also being coordinated with the C# team to support Intellisense with `dynamic`, although that is not expected to be implemented in time to be used in 6.0.
-- Newtonsoft's Json.NET. This has a similar `JToken` class hierarchy and support for `dynamic`. The `JToken` hierarchy includes a single `JValue` type to represent all value types, like is being proposed here (instead of separate types for string, number and boolean). Json.NET also has implicit and explicit operators similar as to what is being proposed here.
+- Newtonsoft's Json.NET. This has a similar `JToken` class hierarchy and support for `dynamic`. The `JToken` hierarchy includes a single `JValue` type to represent known value types. Json.NET also has implicit and explicit operators similar as to what is being proposed here.
   - Converting code using Json.NET to System.Text.Json should be fairly straightforward although not all Json.NET features are implemented. See the "Features not proposed in first round" section for more information.
+  - The `JsonValue` proposed here supports assigning any value (custom data types, POCOs, collection, anonymous types) which will be serialized appropriately; this is useful for building JSON to match non-trivial contracts. This is not possible with Json.NET as it only allows "known" primitive types for `JValue` along with `JObject` and `JArray` for objects and collections.
 
 ## Layering
 During deserialization, `JsonNode` uses `JsonElement`.
@@ -73,6 +74,7 @@ Layering on `JsonSerializer` is necessary to support `dynamic` since arbitrary C
   - The extension data property (to capture extra JSON properties that don't map to a CLR type) can now be `JsonObject` instead of `JsonElement`.
   - Ability to deserialize `System.Object` as `JsonNode` instead of `JsonElement`.
   - Interop from `JsonElement` to `JsonNode` via `JsonElement.AsNode()`.
+  - Interop from `JsonNode` to `JsonElement` via `JsonNode.ToElement()`.
 - Debugging
   - `ToString()` returns JSON for easy inspection (same as `JsonElement.ToString()`).
   - `GetPath()` to determine where a given node is at in a tree. This is also used to provide detail in exceptions.
@@ -223,9 +225,9 @@ namespace System.Text.Json.Node
 
         // Alternative to casting to allow for in-line dot syntax.
         // Throws InvalidOperationException on mismatch.
-        public JsonArray? AsArray();
-        public JsonObject? AsObject();
-        public JsonValue? AsValue();
+        public JsonArray AsArray();
+        public JsonObject AsObject();
+        public JsonValue AsValue();
 
         // JsonArray terse syntax support.
         // Throws InvalidOperationException on non-JsonArray instances.
@@ -249,30 +251,30 @@ namespace System.Text.Json.Node
         public JsonNode? Parent { get; }
         public JsonNode? Root { get; }
 
-        // Deep clone. Expensive.
-        public JsonNode Clone();
-
         // The JSON Path; same "JsonPath" syntax we use for JsonException information.
         // Not a simple calculation since nodes can change order in JsonArray.
         public string GetPath();
 
+        // Creates a new mutable JsonElement from this node
+        public JsonElement ToJsonElement();
+
         // Not to be used as deserializable JSON.
         // - Pretty printed (JsonWriterOptions.Indented).
         // - A string-based root JsonValue will not be quoted.
-        public override string ToString(JsonSerializerOptions options = null);
+        public override string ToString(JsonSerializerOptions? options = null);
 
         // Serialize as JSON that can later be used to deserialize.
-        public string ToJsonString(JsonSerializerOptions options = null);
+        public string ToJsonString(JsonSerializerOptions? options = null);
 
         // Serialize as Utf8
-        public byte[] ToUtf8Bytes(JsonSerializerOptions options = null);
+        public byte[] ToUtf8Bytes(JsonSerializerOptions? options = null);
 
         // Wrappers over ReadFrom(JsonDocument.Parse().RootElement.Clone()) for common string- and byte- based deserialization:
         public static JsonNode? Parse(string json,
             JsonNodeOptions? nodeOptions = null,
             JsonDocumentOptions documentOptions = default(JsonDocumentOptions));
 
-        public static JsonNode? ParseUtf8Bytes(ReadOnlyMemory<byte> utf8Json,
+        public static JsonNode? ParseUtf8Bytes(ReadOnlySpan<byte> utf8Json,
             JsonNodeOptions? nodeOptions = null,
             JsonDocumentOptions documentOptions = default(JsonDocumentOptions));
 
@@ -283,7 +285,7 @@ namespace System.Text.Json.Node
             JsonNodeOptions? nodeOptions = null,
             JsonDocumentOptions documentOptions = default(JsonDocumentOptions));
 
-        public void WriteTo(
+        public abstract void WriteTo(
             Utf8JsonWriter writer,
             JsonSerializerOptions? options = null);
 
@@ -297,6 +299,8 @@ namespace System.Text.Json.Node
         // Explicit operators (can throw) from known primitives.
         public static explicit operator bool(JsonNode value);
         public static explicit operator byte(JsonNode value);
+        public static explicit operator char(JsonNode value);
+        [CLSCompliantAttribute(false)]
         public static explicit operator DateTime(JsonNode value);
         public static explicit operator DateTimeOffset(JsonNode value);
         public static explicit operator decimal(JsonNode value);
@@ -308,8 +312,6 @@ namespace System.Text.Json.Node
         [CLSCompliantAttribute(false)]
         public static explicit operator sbyte(JsonNode value);
         public static explicit operator float(JsonNode value);
-        public static explicit operator char(JsonNode value);
-        [CLSCompliantAttribute(false)]
         public static explicit operator ushort(JsonNode value);
         [CLSCompliantAttribute(false)]
         public static explicit operator uint(JsonNode value);
@@ -318,6 +320,8 @@ namespace System.Text.Json.Node
 
         public static explicit operator bool?(JsonNode value);
         public static explicit operator byte?(JsonNode value);
+        public static explicit operator char?(JsonNode value);
+        [CLSCompliantAttribute(false)]
         public static explicit operator DateTime?(JsonNode value);
         public static explicit operator DateTimeOffset?(JsonNode value);
         public static explicit operator decimal?(JsonNode value);
@@ -330,8 +334,6 @@ namespace System.Text.Json.Node
         public static explicit operator sbyte?(JsonNode value);
         public static explicit operator float?(JsonNode value);
         public static explicit operator string?(JsonNode value);
-        public static explicit operator char?(JsonNode value);
-        [CLSCompliantAttribute(false)]
         public static explicit operator ushort?(JsonNode value);
         [CLSCompliantAttribute(false)]
         public static explicit operator uint?(JsonNode value);
@@ -394,8 +396,10 @@ namespace System.Text.Json.Node
         public JsonArray(params JsonNode[] items);
         public JsonArray(JsonNodeOptions options, params JsonNode[] items);
 
+        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null);
+
         // When a value can't be implicitly converted to JsonValue<T>, here's a helper that
-        // allows "Add(value)" instead of the more verbose "Add(new JsonValue<MyType>(value))".
+        // allows "Add(value)" instead of the more verbose "Add(new JsonValue<T>(value))".
         public void Add<T>(T value);
 
         // IList<JsonNode?> (some hidden via explicit implementation):
@@ -415,13 +419,13 @@ namespace System.Text.Json.Node
 
     public sealed class JsonObject : JsonNode, IDictionary<string, JsonNode?>
     {
-        public JsonObject();
-
         // JsonNodeOptions in the constructors below allow for case-insensitive property names and
         // are normally applied only to root nodes since a child node will use the Root node's options.
         public JsonObject(JsonNodeOptions? options = null);
 
         public bool TryGetPropertyValue(string propertyName, outJsonNode? jsonNode);
+
+        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null);
 
         // IDictionary<string, JsonNode?> (some hidden via explicit implementation):
         public int Count { get; }
@@ -445,36 +449,33 @@ namespace System.Text.Json.Node
     // and to support polymorphic scenarios (not required to specify the <T> in JsonValue<T>)
     public abstract class JsonValue : JsonNode
     {
-        public abstract TValue? GetValue<TValue>(
-            JsonConverter<TValue> converter,
-            JsonSerializerOptions options = null);
+        public abstract TValue? GetValue<TValue>(JsonSerializerOptions? options = null);
 
         public abstract bool TryGetValue<TValue>(
             out TValue? value,
-            JsonConverter<TValue> converter = null,
-            JsonSerializerOptions options = null);
+            JsonSerializerOptions? options = null);
 
         // Factory and deserialize methods below that doen't require specifying <T> due to generic type inference. This is necessary for anonymous types.
         // T is normally a primitive but can also be JsonElement or any other type.
-        public static JsonValue<T> Create(T value);
+        public static JsonValue<T>? Create<T>(T value, JsonNodeOptions? options = null);
     }
 
     public sealed class JsonValue<T> : JsonValue
     {
         public JsonValue(T value);
 
-        public override TValue? GetValue<TValue>(JsonConverter<TValue> converter, JsonSerializerOptions options = null);
-        public override bool TryGetValue<TValue>(out TValue? value, JsonConverter<TValue> converter = null, JsonSerializerOptions options = null);
+        public override TValue? GetValue<TValue>(JsonSerializerOptions? options = null);
+        public override bool TryGetValue<TValue>(out TValue? value, JsonSerializerOptions? options = null);
 
         // The internal raw value.
         public T Value {get; set;}
+
+        public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null);
     }
 
     public struct JsonNodeOptions
     {
         public bool PropertyNameCaseInsensitive { get; set; }
-
-        maxlevel\recusion
 
         // Possibly add later:
         // DuplicatePropertyNameHandling { get; set; }
@@ -488,10 +489,18 @@ namespace System.Text.Json
 {
     public partial struct JsonElement
     {
-        // Returns a JsonNode that has a back-link to a copy of the current JsonElement.
-        // A copy of the current JsonElement is necessary since a JsonElement is immutable.
-        // Thus the Element and Node both have referencs to eachother, allowing interop.
-        public JsonNode AsNode(JsonNodeOptions? options = null);
+        // Returns the underlying JsonNode, otherwise an InvalidOperationException is thrown.
+        // The node does not have a back link to this JsonElement: the navigation is one-way from element to node.
+        public JsonNode AsNode();
+
+        // Creates a new JsonNode with the current element. Since JsonElement is immutable, the current element instance
+        // will not have a reference to the new JsonNode. Instead, a new JsonElement is created.
+        public JsonNode ToNode();
+
+        // Returns whether this element contains a reference to a node.
+        // If true, AsNode() will succeed.
+        // If false, AsNode() will throw InvalidOperationException.
+        public bool IsNode {get;}
     }
 }
 ```
@@ -557,7 +566,7 @@ These and other unnecessary permutations are not supported:
 public partial class JsonSerializer
 {
         public override TValue GetValue<TValue>(JsonSerializerOptions options = null);
-        public override TValue GetValue<TValue>(JsonConverter converter, JsonSerializerOptions options = null)
+        public override TValue GetValue<TValue>(JsonSerializerOptions options = null)
 }
 ```
 
@@ -644,6 +653,8 @@ The existing methods on `JsonElement` can be used including:
 - `EnumerateArray` that forwards to `JsonArray`.
 - `WriteTo` that forwards to the respective node.
 - `ToString` which forwards to `JsonNode.ToString()`.
+
+`Clone()` is not supported since it is not possible to clone arbitrary types from `JsonValue<T>`.
 
 # Programming model notes
 ## Why `JsonValue` and not `JsonNumber` + `JsonString` + `JsonBoolean`?
