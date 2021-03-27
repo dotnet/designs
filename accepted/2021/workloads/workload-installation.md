@@ -85,15 +85,15 @@ A baseline version of each manifest will be included in the .NET SDK, which will
 
 Because the manifests may be out of date (especially the baseline manifest), the workload manifests will by default be updated to the latest version when installing or updating workloads.
 
-In order to support rolling back a failed install, as well as to support notifying about available workload updates, there will be separate "advertising manifests", which represent a version of the workload manifest that is available but may not have been installed.  The advertising manifests will be acquired via a NuGet package and stored in the NuGet [global-packages](https://docs.microsoft.com/en-us/nuget/Consume-Packages/managing-the-global-packages-and-cache-folders) folder.  The installed manifests will be in the .NET SDK installation folder, and may be installed via the native installation technology that is in use for the SDK install (for example, there will be an MSI that installs each manifest in the Program Files folder on Windows).
+There may be separate [advertising manifests](https://github.com/dotnet/designs/blob/main/accepted/2020/workloads/workload-manifest.md#advertising), which represent a version of the workload manifest that is available but may not have been installed.  The advertising manifests will be acquired via a NuGet package and stored in `~/.dotnet/sdk-advertising/{sdk-band}/{manifest-id}/`.  The installed manifests will be in the .NET SDK installation folder, and may be installed via the native installation technology that is in use for the SDK install (for example, there will be an MSI that installs each manifest in the Program Files folder on Windows).
 
-The advertising manifest will be updated as part of other commands (such as workload install or workload update).  It will use the following process for each workload manifest:
+Updating the workload manifests will consist of updating the advertising manifests to the latest version, and then installing the advertised manifests into the dotnet folder.  To update the advertising manifest, the following process will be used for each workload manifest:
 
 - Each workload manifest should be delivered in a NuGet package
-  - The package ID should be the following: `<ManifestID>.Manifest.<SdkFeatureBand>`.  For example, `Microsoft.NET.Android.Manifest.6.0.100`.
+  - The package ID should be the following: `<ManifestID>.Manifest-<SdkFeatureBand>`.  For example, `Microsoft.NET.Android.Manifest-6.0.100`.
   - The manifest payload (`WorkloadManifest.json`, `WorkloadManifest.targets`, and any other files to be included with the manifest) should be in a `data/` folder in the NuGet package.  This ensures that there's not confusion about whether a file in the root is part of the workload manifest or a file owned by NuGet.
 - Download the latest version of the workload manifest NuGet package using NuGet
-  - The package should be extracted into the NuGet [global-packages](https://docs.microsoft.com/en-us/nuget/Consume-Packages/managing-the-global-packages-and-cache-folders) folder.
+  - The package should be extracted into the `~/.dotnet/sdk-advertising/{sdk-band}/{manifest-id}/` folder.
 
 *Possible optimization: For some installers, it will be necessary to have a native installation package that includes the workload manifest.  For example, there will need to be an MSI which installs the manifest files to the `dotnet` folder in `Program Files`.  To avoid downloading the same manifest twice, we could have the IAL be involved in downloading the workload manifest package, and extracting the information in it as the advertising manifest.  However, this could add significant complexity, and the manifests should be small, so we won't plan to do this optimization initially.*
 
@@ -149,12 +149,12 @@ To install updated manifests, the following process will be used (for each workl
 
 # Installer Abstraction API
 
-- Get unit of installation: workloads or packs
+- Get *unit of installation*: workloads or packs
 - If unit of installation is workloads
   - Install workload
     - Optionally using offline installation cache folder
     - Should support transaction / rollback
-  - Download workload artifacts to offline cache folder
+  - Download workload artifacts to offline cache folder (for a given workload)
     - This should support using the currently installed workload manifests, or another set of manifest, which may be for a future SDK feature band.  This is so that VS for Mac can use the currently installed version of the SDK to pre-download the assets for an updated SDK.
   - Uninstall workload
   - List installed workloads
@@ -204,7 +204,7 @@ To install updated manifests, the following process will be used (for each workl
   - This will use the same download mechanics as when installing a workload pack.  However, the target folder will be different (passed in via an argument) and the pack won't be installed to the dotnet folder
 - Garbage collect: See below
 - Install workload manifest
-  - This implementation doesn't need to support downloading the .nupkg manifest, as the advertised manifest from the NuGet global packages folder suffices
+  - This implementation doesn't need to support downloading the .nupkg manifest, as the files can simply be copied from the advertised manifest
   - Calculate workload manifest package ID: `<ManifestID>.<SdkFeatureBand>`
   - Look for specified version of workload manifest package in global packages folder
   - Copy contents of `data` folder from package to `<DOTNET ROOT>/sdk-manifests/<SdkFeatureBand>/<ManifestID>/`
@@ -258,7 +258,7 @@ Thus, the garbage collection process will be as follows:
 - Install workload manifest
   - Acquire workload manifest MSI
     - MSI will be wrapped in a NuGet package
-      - NuGet package ID will be `<ManifestID>.Manifest.<SdkFeatureBand>.Msi.<InstallerPlatform>`
+      - NuGet package ID will be `<ManifestID>.Manifest-<SdkFeatureBand>.Msi.<InstallerPlatform>`
     - Download workload manifest MSI NuGet package (to temporary folder)
   - Extract MSI to the package cache
   - Install MSI
