@@ -47,7 +47,7 @@ Here are some examples of SDK workloads and the packs that they might include:
 
 Manifest versioning broadly tracks SDK versioning: manifests are always associated with an SDK band, and each SDK instance uses only the manifests corresponding to its own band. This association only holds at the band level; manifest versions are completely independent of SDK patch levels. An SDK uses the latest available versions of the manifests available for its band.
 
-To make this relationship more explicit, the SDK band for a manifest is encoded into the manifest’s ID e.g. `Microsoft.NET.Sdk.Android.SdkManifest-5.0.200`. The “version” of a manifest package can then be as simple as a monotonic integer value.
+To make this relationship more explicit, the SDK band for a manifest is encoded into the manifest’s ID e.g. `Microsoft.NET.Sdk.Android.SdkManifest-5.0.200`. The “version” of a manifest package can then be a semantic version that may or may not have a relationship to the SDK band.
 
 > NOTE: Workloads are completely independent of SDK servicing version e.g. SDK 6.0.100 will get the exact same workload manifests as SDK 6.0.106.
 
@@ -158,7 +158,7 @@ The toplevel is a JSON object, containing the following keys:
 
 | Key | Type | Value | Required |
 |--|--|--|--|
-| `version` | int | The version of the manifest. Must match the version of the NuGet package that contains the manifest. | Yes |
+| `version` | string | The (semantic) version of the manifest. Must match the version of the NuGet package that contains the manifest. | Yes |
 | `description` | string | Description of the content and/or purpose of the manifest. This is primarily for commenting and/or diagnostic purposes and is not expected to be surfaced in the UX. | No |
 | `depends-on` | object | Declares any dependency on other manifests | No |
 | `workloads` | object | Workload definitions keyed by workload ID. | No |
@@ -264,7 +264,7 @@ Here is a *hypothetical* example manifest. It's not prescriptive but demonstrate
 
 ```json5
 {
-    "version": 5,
+    "version": "5.0.0",
     "workloads": {
         // this is a dev workload that would typically be installed
         // by a developer getting started with this platform. it's
