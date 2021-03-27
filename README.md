@@ -19,6 +19,7 @@ To create a proposal:
 1. Create a new branch off of `main`
 2. Create a document in the `accepted` folder and use [meta/template.md](meta/template.md) as your
    starting point.
+3. Run `./update-index > INDEX.md` to update the [INDEX](INDEX.md).
 3. Create a pull request against `main`
 4. Once broad agreement is reached, merge the PR
 

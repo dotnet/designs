@@ -1,11 +1,6 @@
 # .NET SDK Workload Manifests
 
-**PM** [Rich Lander](https://github.com/richlander)
-
-// FIXME: do these count as PMs/Devs?
-Co-authored-by: Kathleen Dollard
-Co-authored-by: Steve Kirbach
-Co-authored-by: Stephen Toub
+**Dev** [Mikayla Hutchinson](https://github.com/mhutch)
 
 # Overview
 
