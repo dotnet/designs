@@ -17,8 +17,8 @@ Use update-index to regenerate it:
 
 # Accepted
 
-| Year | Design Name | Owner |
-| ---- | ----------- | ----- |
+| Year | Design Name | Owners |
+| ---- | ----------- | ------ |
 | 2018 | [.NET Core SDK Versioning](accepted/2018/sdk-version-scheme.md) | [Kathleen Dollard](https://github.com/KathleenDollard) |
 | 2018 | [.NET Platform Dependent Intrinsics](accepted/2018/platform-intrinsics.md) | [Russell Hadley](https://github.com/russellhadley) |
 | 2018 | [Automatic Binding Redirection By Default](accepted/2018/automatic-redirects-by-default/automatic-redirects-by-default.md) | [Immo Landwerth](https://github.com/terrajobst), [Rainer Sigwald](https://github.com/rainersigwald) |
@@ -48,7 +48,7 @@ Use update-index to regenerate it:
 | 2020 | [Easy Acquisition of .NET Framework Targeting Packs](accepted/2020/targeting-packs/targeting-packs.md) | [Immo Landwerth](https://github.com/terrajobst), [Daniel Plaisted](https://github.com/dsplaisted) |
 | 2020 | [Feature switch](accepted/2020/feature-switch.md) | [Vitek Karas](https://github.com/vitek-karas) |
 | 2020 | [Globalization Support in .NET 5](accepted/2020/mono-convergence/globalization-support-in-.net5.md) | [Steve Pfister](https://github.com/steveisok) |
-| 2020 | [Improve Activity API usability and OpenTelemetry integration](accepted/2020/diagnostics/activity-improvements.md) | [Sourabh Shirhatti](https://github.com/shirhatti), [Ankit Srivastava](https://github.com/ankit-oss) [Tarek Mahmoud Sayed](https://github.com/tarekgh) |
+| 2020 | [Improve Activity API usability and OpenTelemetry integration](accepted/2020/diagnostics/activity-improvements.md) | @shirhatti, anksr, @tarekgh |
 | 2020 | [Improve Activity API usability and OpenTelemetry integration (Part 2)](accepted/2020/diagnostics/activity-improvements-2.md) | [Sourabh Shirhatti](https://github.com/shirhatti), [Tarek Mahmoud Sayed](https://github.com/tarekgh) |
 | 2020 | [Install location search for .NET Core](accepted/2020/install-locations.md) | [Vitek Karas](https://github.com/vitek-karas) |
 | 2020 | [JSON extension methods for HttpClient](accepted/2020/json-http-extensions/json-http-extensions.md) | [Immo Landwerth](https://github.com/terrajobst) |
@@ -77,8 +77,9 @@ Use update-index to regenerate it:
 
 # Proposed
 
-| Design Name | Owner |
-| ----------- | ----- |
+| Design Name | Owners |
+| ----------- | ------ |
 | [Flexible HTTP APIs](proposed/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
 | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
+

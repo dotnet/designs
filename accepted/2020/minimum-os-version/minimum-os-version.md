@@ -1,6 +1,6 @@
 # .NET 5 Minimum OS Versioning
 
-**Dev** [Mikayla Hutchinson](https://github.com/mhutch)
+**Owner** [Mikayla Hutchinson](https://github.com/mhutch)
 
 # Introduction
 

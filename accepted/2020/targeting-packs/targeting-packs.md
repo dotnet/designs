@@ -1,7 +1,7 @@
 # Easy Acquisition of .NET Framework Targeting Packs
 
-**PM** [Immo Landwerth](https://github.com/terrajobst) |
-**Dev** [Daniel Plaisted](https://github.com/dsplaisted)
+**Owner** [Immo Landwerth](https://github.com/terrajobst) |
+**Owner** [Daniel Plaisted](https://github.com/dsplaisted)
 
 This proposal is about enabling acquisition of the .NET Framework targeting
 packs via NuGet so that compiling code for a specific version of the .NET

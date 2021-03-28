@@ -30,12 +30,11 @@ communication, such as email or Twitter, if the person chooses to disclose that
 information.
 
 The bolded roles makes it easier for people to understand who the driver of the
-proposal is (PM) and who can be asked for technical questions (Dev). At
-Microsoft, these roles happen to match to job titles too, but that's irrelevant.
+proposal is.
 -->
 
-**PM** [John Doe](https://github.com/johndoe) |
-**Dev** [Jane Doe](https://github.com/janedoe)
+**Owner** [John Doe](https://github.com/johndoe) |
+**Owner** [Jane Doe](https://github.com/janedoe)
 
 <!--
 Provide a broad problem statement here. This might include some history and the
@@ -167,8 +166,8 @@ If you're a minimalist, just copy and paste the code below:
 ```Markdown
 # Your Feature
 
-**PM** [John Doe](https://github.com/johndoe) |
-**Dev** [Jane Doe](https://github.com/janedoe)
+**Owner** [John Doe](https://github.com/johndoe) |
+**Owner** [Jane Doe](https://github.com/janedoe)
 
 ## Scenarios and User Experience
 

@@ -1,7 +1,7 @@
 # Reproducible Build Validation
 
-**PM** [Claire Novotny](https://github.com/clairernovotny) |
-**Dev** [Jared Parsons](https://github.com/jaredpar)
+**Owner** [Claire Novotny](https://github.com/clairernovotny) |
+**Owner** [Jared Parsons](https://github.com/jaredpar)
 
 ## Overview
 

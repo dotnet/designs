@@ -1,6 +1,6 @@
 # .NET SDK Workload Manifests
 
-**PM** [Rich Lander](https://github.com/richlander)
+**Owner** [Rich Lander](https://github.com/richlander)
 
 // FIXME: do these count as PMs/Devs?
 Co-authored-by: Kathleen Dollard

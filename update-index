@@ -52,16 +52,13 @@ Use update-index to regenerate it:
 
     designs = sorted(designs, key=lambda d: d.title)
     designs = sorted(designs, key=lambda d: d.year)
-    print('| Year | Design Name | Owner |')
-    print('| ---- | ----------- | ----- |')
+    print('| Year | Design Name | Owners |')
+    print('| ---- | ----------- | ------ |')
     for design in designs:
-        owners = []
-        owners.extend(design.pm)
-        owners.extend(design.dev)
         print('| %s | [%s](%s) | %s |' % (design.year,
                                           design.title,
                                           design.path,
-                                          ', '.join(owners)))
+                                          ', '.join(design.owners)))
     print()
 
     print('# Proposed')
@@ -76,13 +73,10 @@ Use update-index to regenerate it:
                     designs.append(design)
 
     designs = sorted(designs, key=lambda d: d.title)
-    print('| Design Name | Owner |')
-    print('| ----------- | ----- |')
+    print('| Design Name | Owners |')
+    print('| ----------- | ------ |')
     for design in designs:
-        owners = []
-        owners.extend(design.pm)
-        owners.extend(design.dev)
-        print('| [%s](%s) | %s |' % (design.title, design.path, ', '.join(owners)))
+        print('| [%s](%s) | %s |' % (design.title, design.path, ', '.join(design.owners)))
     print()
 
     return 0
@@ -91,11 +85,10 @@ class Design(NamedTuple):
     path: str
     title: str
     year: Optional[int]
-    pm: List[str]
-    dev: List[str]
+    owners: List[str]
 
 def parse_design(f, everything_is_a_design: bool, log) -> Optional[Design]:
-    PM_DEV_REGEX = r'^\*\*(?:Libraries)? *(PM|Dev) ?\*\*(.+)$'
+    OWNER_REGEX = r'^\*\*(?:Libraries)? *Owner ?\*\*(.+)$'
 
     title = ''
     year = None
@@ -104,8 +97,7 @@ def parse_design(f, everything_is_a_design: bool, log) -> Optional[Design]:
     except ValueError:
         pass
 
-    dev: List[str] = []
-    pm: List[str] = []
+    owners: List[str] = []
 
     log.info(f'parsing {f}')
 
@@ -117,33 +109,27 @@ def parse_design(f, everything_is_a_design: bool, log) -> Optional[Design]:
                 if title.endswith(' #'):
                     title = title[:-2]
                 title = title.strip()
-            pm_or_dev_match = re.search(PM_DEV_REGEX, line)
-            if pm_or_dev_match:
-                role = pm_or_dev_match.group(1)
-                names = pm_or_dev_match.group(2)
+            owner_match = re.search(OWNER_REGEX, line)
+            if owner_match:
+                name = owner_match.group(1)
                 # pipe char breaks how we use the name, plus it's not actually part of the name
-                names = names.replace('|', '')
-                if 'PM' in role:
-                    a_pm = names.strip()
-                    pm.append(a_pm)
-                if 'Dev' in role:
-                    a_dev = names.strip()
-                    a_dev = a_dev.replace('|', '')
-                    dev.append(a_dev)
+                name = name.replace('|', '')
+                an_owner = name.strip()
+                owners.append(an_owner)
 
     # Some designs have sub-designs, so use a heuristic relying on
-    # PM/Dev fields to find the 'main' designs
-    if not everything_is_a_design and not pm and not dev:
+    # the Owner field to find the 'main' designs
+    if not everything_is_a_design and not owners:
         log.debug(f'{f} is NOT a design')
         return None
 
     if not title:
         log.warning(f'Unable to parse a title from design {f}')
 
-    if not pm and not dev:
-        log.warning(f'No Dev or PM for {f}')
+    if not owners:
+        log.warning(f'No Owner for {f}')
 
-    return Design(f, title, year, pm, dev)
+    return Design(f, title, year, owners)
 
 if __name__ == '__main__':
     sys.exit(main())

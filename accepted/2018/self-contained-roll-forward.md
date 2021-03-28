@@ -1,6 +1,6 @@
 # Rolling self-contained .NET Core app deployments forward to the latest patch
 
-**Dev** [Daniel Plaisted](https://github.com/dsplaisted)
+**Owner** [Daniel Plaisted](https://github.com/dsplaisted)
 
 ## Goal
 
