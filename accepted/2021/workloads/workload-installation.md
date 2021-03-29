@@ -40,7 +40,7 @@ This is a copy of the .NET SDK installed as a package from a package manager suc
 
 # Choosing the installer abstraction
 
-Before any installation operation is started, the .NET SDK will need to choose which installer abstraction will be used and instantiate it.  To do so, it will look for marker files in the `<DOTNET ROOT>/sdk-manifests/<SdkFeatureBand>/.installertype/` folder.  If a `visualstudio` file is present in that folder, the Visual Studio installer abtraction will be used.  Otherwise, if an `msi` file is present, the standalone Windows installation abstraction will be used.  Otherwise, the .NET SDK managed installer abstraction will be used.
+Before any installation operation is started, the .NET SDK will need to choose which installer abstraction will be used and instantiate it.  To do so, it will look for marker files in the `<DOTNET ROOT>/metadata/workloads/<SdkFeatureBand>/installertype/` folder.  If a `visualstudio` file is present in that folder, the Visual Studio installer abtraction will be used.  Otherwise, if an `msi` file is present, the standalone Windows installation abstraction will be used.  Otherwise, the .NET SDK managed installer abstraction will be used.
 
 This means that the installer packages that we create for the .NET SDK will need to include these files.  For Windows, we will include the `visualstudio` file in the placeholder MSI which we create for Visual Studio, and the `msi` file will go in the main SDK MSI.
 
@@ -202,32 +202,32 @@ To install updated manifests, the following process will be used (for each workl
 - Garbage collect: See below
 - Install workload manifest
   - This implementation doesn't need to support downloading the .nupkg manifest, as the files can simply be copied from the advertised manifest
-  - Calculate workload manifest package ID: `<ManifestID>.<SdkFeatureBand>`
+  - Calculate workload manifest package ID: `<ManifestID>.Manifest-<SdkFeatureBand>`
   - Look for specified version of workload manifest package in global packages folder
   - Copy contents of `data` folder from package to `<DOTNET ROOT>/sdk-manifests/<SdkFeatureBand>/<ManifestID>/`
     - To support rollback: first copy existing contents to temporary folder
     - To rollback: delete folder in SDK and copy contents back from temporary folder
 - Read / write workload installation record
-  - Installation records should be empty files with workload ID name under `sdk-manifests/<SdkFeatureBand>/.installedworkloads/`
+  - Installation records should be empty files with workload ID name under `<DOTNET ROOT>/metadata/workloads/<SdkFeatureBand>/installedworkloads/`
   - Read: List files in band directory
   - Write: Create file
   - Delete: Delete file
 
 ### Workload Pack installation records and garbage collection
 
-A workload pack installation record will be a folder with the path `<DOTNET ROOT>/sdk-manifests/.installedpacks/v1/<Pack ID>/<Pack Version>/`.  The `v1` element in the path gives us some flexibility to change the format in a later version if we need to.  A reference count for an SDK feature band will be a `<SdkFeatureBand>` folder under the installation record folder.  When there are no SDK feature band reference count folders under a workload pack installation record folder, then the workload pack can be deleted from disk, and then the whole workload pack installation record folder can be deleted.
+A workload pack installation record will be a folder with the path `<DOTNET ROOT>/metadata/workloads/installedpacks/v1/<Pack ID>/<Pack Version>/`.  The `v1` element in the path gives us some flexibility to change the format in a later version if we need to.  A reference count for an SDK feature band will be a `<SdkFeatureBand>` file under the installation record folder.  When there are no SDK feature band reference count files under a workload pack installation record folder, then the workload pack can be deleted from disk, and then the whole workload pack installation record folder can be deleted.
 
 Thus, the garbage collection process will be as follows:
 
 - Get installed SDK versions and map them to SDK feature bands (ie 6.0.200-preview6 or 6.0.205 would map to 6.0.200)
 - Get installed workloads for current SDK feature band
 - Using current workload manifest, map from currently installed workloads to all pack IDs and versions that should be installed for the current band
-- For each pack / version combination where there is an installation record folder (ie `<DOTNET ROOT>/sdk-manifests/.installedpacks/v1/<Pack ID>/<Pack Version>/`):
-  - Delete any reference count folders that correspond to a band that is not an installed SDK
-  - If the pack ID and version is not in the list that should be installed for the current band, and there is a reference count folder for the current band, then delete that reference count folder
-  - If there are now no reference count folders under the workload pack installation record folder, then the workload pack can be garbage collected
+- For each pack / version combination where there is an installation record folder (ie `<DOTNET ROOT>/metadata/workloads/installedpacks/v1/<Pack ID>/<Pack Version>/`):
+  - Delete any reference count files that correspond to a band that is not an installed SDK
+  - If the pack ID and version is not in the list that should be installed for the current band, and there is a reference count file for the current band, then delete that reference count file
+  - If there are now no reference count files under the workload pack installation record folder, then the workload pack can be garbage collected
     - Delete the workload pack file or folder from disk
-    - Delete the workload pack installation record folder: `<DOTNET ROOT>/sdk-manifests/.installedpacks/v1/<Pack ID>/<Pack Version>/`
+    - Delete the workload pack installation record folder: `<DOTNET ROOT>/metadata/workloads/installedpacks/v1/<Pack ID>/<Pack Version>/`
     - Also delete the `<Pack ID>` folder if there are no longer any `<Pack Version>` folders under it
  
 ## Standalone Windows IAL Implementation
