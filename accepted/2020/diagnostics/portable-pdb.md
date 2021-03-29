@@ -1,5 +1,7 @@
 # Portable PDB #
 
+**Dev** [Tomáš Matoušek](https://github.com/tmat)
+
 .NET Core introduces a new symbol file (PDB) format - portable PDBs. Unlike traditional PDBs which are Windows-only, portable PDBs can be created and read on all platforms.
 
 ## What is a PDB? ##

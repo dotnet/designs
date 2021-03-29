@@ -1,5 +1,7 @@
 # Performance Profiling Controller Design #
 
+**Dev** [Brian Robbins](https://github.com/brianrob)
+
 ### Introduction ###
 
 This document describes the end-to-end scenarios and work required to build a performance profiling controller for .NET Core.  The controller is responsible for control of the profiling infrastructure and exposure of performance data produced by .NET performance diagnostics components in a simple and cross-platform way.

@@ -1,5 +1,7 @@
 # .NET 5 Minimum OS Versioning
 
+**Dev** [Mikayla Hutchinson](https://github.com/mhutch)
+
 # Introduction
 
 It is common for apps and libraries to support running on older versions of the OS than the version against which they were compiled. This pattern involves using runtime checks to guard against calling APIs that are not available, and is encouraged and widely used on the Xamarin platforms (iOS, Android, Mac etc).

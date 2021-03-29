@@ -1,4 +1,4 @@
-﻿# Readonly references in C# and IL verification. #
+# Readonly references in C# and IL verification. #
 
 The goal of this document is to specify additional IL verification rules that would allow C# code that utilizes readonly references to be formally verifiable.  
 
