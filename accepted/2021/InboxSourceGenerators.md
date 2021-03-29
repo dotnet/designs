@@ -7,7 +7,7 @@ Roslyn source generators allow for component developers to provide functionality
 
 ## Scenarios and User Experience
 
-A developer can use source generators for framework API without making any changes to their project.  Creating a new project should be sufficient.
+A developer can use source generators for framework API without making any changes to their project.  Targeting the framework which exposes the source generator should be sufficient.
 
 A developer can use source generators for components in NuGet packages by referencing the NuGet package for that component.  
 
@@ -65,7 +65,7 @@ Alternative designs are listed in the [Q & A](#Q%20&%20A) section below.
 
 Source generators and analyzers are passed to the compiler as `@(Analyzer)` items.  These items may come from NuGet packages, be built into the SDK targets, be directly defined by the user via `ProjectReference` or raw `Analyzer` items, or be provided by the new framework mechanism described in this document.  All should be considered for conflict resolution based on the same constraint.
 
-The .NET SDK already does conflict resolution for other asset types: references and copy-local runtime assets.  It should do the same for source generators, or more generally Analyzers.  Analyzers need not have "platform manifest" inputs for conflict resolution since all analyzers will be available during build, unlike runtime files which may not be available.  Comparison for the sake of conflict resolution can consider the same assembly and file version rules as reference files.  When finding two or more source generators with the same name conflict resolution will select the generator with higher assembly version, then higher file version, then that which is in the framework.  This parallels the same rules followed by reference assemblies.  The SDK may choose to optimize this comparison as it does for reference assemblies, by including a data file that includes analyzer metadata.
+The .NET SDK already does conflict resolution for other asset types: references and copy-local runtime assets.  It should do the same for source generators, or more generally analyzers.  Analyzers need not have "platform manifest" inputs for conflict resolution since all analyzers will be available during build, unlike runtime files which may not be available.  Comparison for the sake of conflict resolution can consider the same assembly and file version rules as reference files.  When finding two or more source generators with the same name conflict resolution will select the generator with higher assembly version, then higher file version, then that which is in the framework.  This parallels the same rules followed by reference assemblies.  The SDK may choose to optimize this comparison as it does for reference assemblies, by including a data file that includes analyzer metadata.
 
 Source generator conflict resolution should run before compile, but after all NuGet package assets have been evaluated.  Specific sequencing, public/private target naming, extensibility will not be specified here but should follow best practice as determined by the SDK team. 
 
