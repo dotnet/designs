@@ -81,13 +81,13 @@ Also, operating systems often offer opt-in or opt-out mechanisms to disallow run
 
 Mono and .NET Native for UWP have been shipping .NET runtimes that abide by the runtime code generation restriction. [Native AOT Form Factor](https://github.com/dotnet/runtimelab/tree/feature/NativeAOT) experiment explores this space further.
 
-IL code interpreters circumvent the environment restriction on runtime code generation and allow .NET libraries that depend on runtime code generation to work, with lower performance. From a security point of view, IL code interpreters are not desirable in environments with disallowed code generation since IL code is equivalent of executable code as described above.
+IL code interpreters circumvent the environment restriction on runtime code generation and allow .NET libraries that depend on runtime code generation to work, with lower performance. From a security point of view, IL code interpreters are not desirable in environments with disallowed code generation since IL code is equivalent of executable code as described above. This concern applies more generally to any higher level general purpose interpreters and compilers.
 
 ## Out-of-process Jit-In-Time Compiler (JIT)
 
 Moving code generation into separate process has been implemented as a security mitigation in some cases, most recently in Chakra JavaScript engine. With this mitigation, the regular process does not have privilege to generate new code and it must delegate the code generation to dedicated process instead. The dedicated process with special privileges to introduce dynamically generated code is audited and heavily scrutinized. The advantage of this solution is that no code in the original process ever needs to write executable memory, so entire attack vectors (like compromised code altering memory mappings) can be shut down entirely. [Google Project Zero analyzed the Chakra implementation](https://github.com/googleprojectzero/p0tools/blob/master/JITServer/JIT-Server-whitepaper.pdf) and pointed out some of its weaknesses.
 
-We do not see strong need for introducing out of process JIT for .NET runtime in foreseeable future. The primary reason is that .NET does not support sand-boxed execution of untrusted code anymore. The out-of-proc JIT has advantages for execution of untrusted (verifiable) code. The security benefits of out-of-proc JIT for trusted unverifiable IL code are less interesting since strong soundness validation is not feasible for unverifiable IL code. The secondary reasons include availability of more secure options that disallow runtime code generation altogether, the implementation cost and necessity of a second process to run alongside the primary process.
+We do not see strong need for introducing out of process JIT for .NET runtime in foreseeable future. The primary reason is that .NET does not support sand-boxed execution of untrusted code anymore and there are no plans to ever reintroduce it due to its complexity, cost and impact on the evolution of the platform. The out-of-proc JIT has advantages for execution of untrusted (verifiable) code. The security benefits of out-of-proc JIT for trusted code with full access to platform capabilities (security critical APIs) are less interesting since strong soundness validation is not feasible in this scenario. The secondary reasons include availability of more secure options that disallow runtime code generation altogether, the implementation cost and necessity of a second process to run alongside the primary process.
 
 # Control-flow Integrity
 
@@ -105,7 +105,7 @@ A second stack of return addresses that is mostly invisible to the program is ma
 
 Low-level techniques used by .NET runtime such as return address hijacking for GC thread suspension have to be updated for compatibility with shadow stack.
 
-We have been working closely with Windows team on ensuring that the shadow stack support in the operating system can work well together with .NET runtime. New Windows APIs designed as part of this effort are going to be introduced to make it possible. These new APIs should help other similar language runtimes to enable this mitigation as well. Our plan is complete support for shadow stack mitigation on Windows in .NET 6.
+We have been working closely with Windows team on ensuring that the shadow stack support in the operating system can work well together with .NET runtime. New Windows OS APIs designed as part of this effort are going to be introduced to make it possible. These new APIs should help other similar language runtimes to enable this mitigation as well. Our plan is complete support for shadow stack mitigation on Windows in .NET 6.
 
 Linux support for shadow stack is [still being worked on](https://lore.kernel.org/linux-mm/20210217222730.15819-1-yu-cheng.yu@intel.com/T/#t) at the time of writing. Once the shadow stack support lands in mainstream Linux kernels, we will make sure that .NET runtime is compatible with it. We expect that supporting shadow stack on Linux will be easier due to the less restrictive approach taken to implement this mitigation in Linux kernel. Unlike Windows, the shadow stack mismatches can be handled by the user code on Linux that is less secure, but also easier to work with.
 
@@ -149,7 +149,7 @@ Apple published [preview implementation](https://developer.apple.com/documentati
 
 [Stack Buffer Overflow](https://en.wikipedia.org/wiki/Stack_buffer_overflow) protection is among the older security mitigations. It has been known as &quot;GS cookie&quot; on Windows. It is designed to catch writes into stack memory outside the intended bounds.
 
-The first .NET runtime that included it was .NET Framework 2.0, and the implementation has not changed much since then. The mitigation in C/C++ compilers have seen improvements in the meantime (for example, [Enhanced GS](https://msrc-blog.microsoft.com/2009/03/20/enhanced-gs-in-visual-studio-2010/) or -[fstack-protector-strong](https://lwn.net/Articles/584225/)).
+The first .NET runtime that included stack buffer overflow protection for managed code was .NET Framework 2.0, and the implementation has not changed much since then. The mitigation in C/C++ compilers have seen improvements in the meantime (for example, [Enhanced GS](https://msrc-blog.microsoft.com/2009/03/20/enhanced-gs-in-visual-studio-2010/) or -[fstack-protector-strong](https://lwn.net/Articles/584225/)). New .NET patterns such as unsafe arithmetic on ref parameters introduced new risks that are not covered currently.
 
 We will review and update stack buffer overflow protection in .NET runtime to match state of the art.
 
@@ -161,19 +161,19 @@ Library and language design have always played a key role in mitigating security
 
 Number of newer APIs such as `Memory<T>` and friends come with security risks that are not clearly communicated.
 
-We need to adopt a more holistic approach to unsafe features and APIs that we expose for public use. Developers need feedback so that they understand that they are using constructs that are unsafe and are [informed of the specific risks that come with using those APIs](https://github.com/dotnet/runtime/issues/41418). Over time, we bias more to constructs and paradigms that are safe by default (possibly inspired by Rust).
+We need to adopt a more holistic approach to unsafe features and APIs that we expose for public use. Developers need feedback so that they understand that [they are using constructs that are unsafe](https://github.com/dotnet/runtime/issues/31354) and are [informed of the specific risks that come with using those APIs](https://github.com/dotnet/runtime/issues/41418). Over time, we bias more to constructs and paradigms that are safe by default (possibly inspired by Rust).
+
+We have been often uncomfortable publicly exposing potentially dangerous APIs we use internally, e.g. [`ValueStringBuilder`](https://github.com/dotnet/runtime/issues/25587). We will continue to examine the balance of security against utility. The security risks of similar APIs can be mitigated by introducing new C# language features, by detecting [unsafe usage patterns via analyzers](https://github.com/dotnet/runtime/issues?q=label%3Acode-analyzer+label%3Asecurity) or by concealing the APIs in inherently dangerous namespaces such as `System.Runtime.CompilerServices` and `System.Runtime.InteropServices`.
 
 ## Object and Array Pooling
 
 `ArrayPool<T>` and other similar custom object pools are equivalent of the classic C malloc. Manual lifetime management traditionally suffers from use-after-free and double-free security vulnerabilities. Many years were spent on implementing diagnostics and mitigations of these vulnerabilities for malloc.
 
-We need to implement similar diagnostic and mitigation capabilities for `ArrayPool<T>` and friends. It is [not unusual](https://github.com/dotnet/corefx/pull/37270) to find security bugs caused by incorrect `ArrayPool<T>` use even in dotnet/runtime libraries.
-
-We are continually pushed to expose potentially dangerous APIs we use internally, e.g. ValueStringBuilder. Thus far we have simply said "we're not comfortable doing that", and we will continue to examine the balance of security against utility. If an API can be safe by default or the unsafe usage patterns can be detected by analyzers, it is more likely to be included.
+We need to implement [similar diagnostic and mitigation capabilities for `ArrayPool<T>`](https://github.com/dotnet/runtime/issues/7532) and friends. It is [not unusual](https://github.com/dotnet/corefx/pull/37270) to find security bugs caused by incorrect `ArrayPool<T>` use even in dotnet/runtime libraries.
 
 ## Secrets in Presence of GC Heap Compaction
 
-GC heap compaction can create a second copy of secrets stored in managed memory. It makes it impossible for an application to reliably clear in-memory secrets stored in managed memory after they are no longer used.
+GC heap compaction can create a second copy of secrets stored in managed memory. It makes it difficult for an application to reliably clear in-memory secrets stored in managed memory after they are no longer used.
 
 We will introduce a GC feature that clears unused memory after GC heap compaction. Having the GC clear memory after compaction improves the security of applications for which heap dumps and in-memory probes are within their scope of threat. [dotnet/runtime#10480](https://github.com/dotnet/runtime/issues/10480) has more details.
 
@@ -182,6 +182,7 @@ We will introduce a GC feature that clears unused memory after GC heap compactio
 Object deserialization vulnerabilities continue to be a major issue for many type safe languages. These vulnerabilities allow the attacker to introduce unexpected object graphs into the remote process.
 
 We plan to gradually [deprecate binary formatter](https://github.com/dotnet/designs/blob/main/accepted/2020/better-obsoletion/binaryformatter-obsoletion.md) that has been the source of the worst .NET serialization vulnerabilities. We will work on raising awareness about other similar dangerous serialization patterns within .NET ecosystem.
+
 # Looking forward
 
 This roadmap involves quite a bit of work that will be spread over multiple releases. Going forward, .NET should adopt mitigations as they become available. We will look for opportunities to engage security experts and academics to help us identify new and possibly unique mitigations.
