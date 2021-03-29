@@ -47,7 +47,7 @@ Here are some examples of SDK workloads and the packs that they might include:
 
 Manifest versioning broadly tracks SDK versioning: manifests are always associated with an SDK band, and each SDK instance uses only the manifests corresponding to its own band. This association only holds at the band level; manifest versions are completely independent of SDK patch levels. An SDK uses the latest available versions of the manifests available for its band.
 
-To make this relationship more explicit, the SDK band for a manifest is encoded into the manifest’s ID e.g. `Microsoft.NET.Sdk.Android.SdkManifest-5.0.200`. The “version” of a manifest package can then be a semantic version that may or may not have a relationship to the SDK band.
+To make this relationship more explicit, the SDK band for a manifest is encoded into the manifest’s ID e.g. `Microsoft.NET.Sdk.Android.Manifest-6.0.200`. The “version” of a manifest package can then be a semantic version that may or may not have a relationship to the SDK band.
 
 > NOTE: Workloads are completely independent of SDK servicing version e.g. SDK 6.0.100 will get the exact same workload manifests as SDK 6.0.106.
 
@@ -122,9 +122,9 @@ Manifests may also provide logic to import workload packs automatically via a `W
 
 ## Packaging
 
-Manifests are packaged and distributed as NuGet packages. They will use the existing package type called `DotnetPlatform` so they cannot be accidentally used as a `PackageReference`. The manifest’s `sdk-manifest.json` and `WorkloadManifest.targets` are in the root folder of the NuGet. The ID of the NuGet is `{manifest-id}-{sdk-band}` and the version of the NuGet is the manifest version.
+Manifests are packaged and distributed as NuGet packages. The ID of the NuGet package is `{manifest-id}.Manifest-{sdk-band}` (for example, `Microsoft.NET.Sdk.Android.Manifest-6.0.200`) and the version of the NuGet package is the manifest version. They will use the existing package type called `DotnetPlatform` so they cannot be accidentally used as a `PackageReference`. The manifest’s `sdk-manifest.json`, `WorkloadManifest.targets`, and any other files are in the `data/` folder of the NuGet package. This ensures that there's not confusion about whether a file in the root is part of the workload manifest or a file owned by NuGet. 
 
-As manifests are NuGets, they use the same distribution mechanisms as packs, allowing for a consistent experience. For example:
+As manifests are NuGet packages, they use the same distribution mechanisms as packs, allowing for a consistent experience. For example:
 * a preview update for a workload could be made available as a NuGet feed containing an updated manifest for a stable SDK band
 * manifests and packs could be copied to an air-gapped machine and set up as directory feed, making the full workload experience available offline
 

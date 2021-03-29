@@ -3,8 +3,8 @@ In .NET 6, we will be delivering iOS and Android support as optional SDK workloa
 Related links:
  
 - [.NET Optional SDK Workloads](../../2020/workloads/workloads.md) - Overview
-- [MSBuild SDK Resolvers and optional workloads in .NET 5](../../2020/workloads/workload-resolvers) - Describes where workload files are laid out on disk and how they are resolved
-- [Workload Manifests](https://github.com/dotnet/designs/pull/120)
+- [MSBuild SDK Resolvers and optional workloads in .NET 5](../../2020/workloads/workload-resolvers.md) - Describes where workload files are laid out on disk and how they are resolved
+- [Workload Manifests](../../2020/workloads/workload-manifest.md)
  
 # Installer Abstraction Layer (IAL).
 
@@ -85,13 +85,11 @@ A baseline version of each manifest will be included in the .NET SDK, which will
 
 Because the manifests may be out of date (especially the baseline manifest), the workload manifests will by default be updated to the latest version when installing or updating workloads.
 
-There may be separate [advertising manifests](https://github.com/dotnet/designs/blob/main/accepted/2020/workloads/workload-manifest.md#advertising), which represent a version of the workload manifest that is available but may not have been installed.  The advertising manifests will be acquired via a NuGet package and stored in `~/.dotnet/sdk-advertising/{sdk-band}/{manifest-id}/`.  The installed manifests will be in the .NET SDK installation folder, and may be installed via the native installation technology that is in use for the SDK install (for example, there will be an MSI that installs each manifest in the Program Files folder on Windows).
+There may be separate [advertising manifests](../../2020/workloads/workload-manifest.md#advertising), which represent a version of the workload manifest that is available but may not have been installed.  The advertising manifests will be acquired via a NuGet package and stored in `~/.dotnet/sdk-advertising/{sdk-band}/{manifest-id}/`.  The installed manifests will be in the .NET SDK installation folder, and may be installed via the native installation technology that is in use for the SDK install (for example, there will be an MSI that installs each manifest in the Program Files folder on Windows).
 
 Updating the workload manifests will consist of updating the advertising manifests to the latest version, and then installing the advertised manifests into the dotnet folder.  To update the advertising manifest, the following process will be used for each workload manifest:
 
-- Each workload manifest should be delivered in a NuGet package
-  - The package ID should be the following: `<ManifestID>.Manifest-<SdkFeatureBand>`.  For example, `Microsoft.NET.Android.Manifest-6.0.100`.
-  - The manifest payload (`WorkloadManifest.json`, `WorkloadManifest.targets`, and any other files to be included with the manifest) should be in a `data/` folder in the NuGet package.  This ensures that there's not confusion about whether a file in the root is part of the workload manifest or a file owned by NuGet.
+- Each workload manifest should be delivered in a NuGet package, as described in the [workload manifest spec](../../2020/workloads/workload-manifest.md#packaging).
 - Download the latest version of the workload manifest NuGet package using NuGet
   - The package should be extracted into the `~/.dotnet/sdk-advertising/{sdk-band}/{manifest-id}/` folder.
 
@@ -99,8 +97,7 @@ Updating the workload manifests will consist of updating the advertising manifes
 
 To install updated manifests, the following process will be used (for each workload manifest):
 
-- Check if advertising manifest is newer than the currently installed version
-  - This requires a way to get the NuGet package version of the workload manifest package corresponding to the currently installed version.  Either we need to support semantic versions in the version field of the workload manifest schema, or we need to store the NuGet package version separately (ie in a text file).
+- Check if advertising manifest is newer than the currently installed version (via the `version` field in the manifest, which should match the NuGet package version)
   - If the installed version of the workload manifest is greater than or equal to the advertised version, then it is already up-to-date, and we are done with the update process for this manifest
 - Tell IAL: Install workload manifest (given ID and version)
 
