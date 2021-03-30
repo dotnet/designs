@@ -189,7 +189,7 @@ This roadmap involves quite a bit of work that will be spread over multiple rele
 
 ## Plan for .NET 6
 
-- W^X: [https://github.com/dotnet/runtime/issues/10036](https://github.com/dotnet/runtime/issues/10036)
+- W^X: [https://github.com/dotnet/runtime/issues/50391](https://github.com/dotnet/runtime/issues/50391)
 - CET (Windows): [https://github.com/dotnet/runtime/issues/40100](https://github.com/dotnet/runtime/issues/40100)
 - Dangerous Deserialization: [https://github.com/dotnet/designs/blob/main/accepted/2020/better-obsoletion/binaryformatter-obsoletion.md](https://github.com/dotnet/designs/blob/main/accepted/2020/better-obsoletion/binaryformatter-obsoletion.md)
 - Disallow Runtime Code Generation
