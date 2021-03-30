@@ -1,5 +1,5 @@
 # Overview
-March 25th, 2021.
+March 29th, 2021.
 
 This document covers the API and design for a writable DOM along with support for the [C# `dynamic` keyword](https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/dynamic-language-runtime-overview).
 
@@ -73,14 +73,13 @@ Layering on `JsonSerializer` is necessary to support `dynamic` since arbitrary C
   - A POCO property or collection element can be a `JsonNode` or a derived type.
   - The extension data property (to capture extra JSON properties that don't map to a CLR type) can now be `JsonObject` instead of `JsonElement`.
   - Ability to deserialize `System.Object` as `JsonNode` instead of `JsonElement`.
-  - Interop from `JsonElement` to `JsonNode` via `JsonElement.AsNode()`.
-  - Interop from `JsonNode` to `JsonElement` via `JsonNode.ToElement()`.
+  - Ability to obtain a `JsonNode` from a `JsonElement` via JsonNode constructors that take a `JsonElement`.
 - Debugging
   - `ToString()` returns JSON for easy inspection (same as `JsonElement.ToString()`).
   - `GetPath()` to determine where a given node is at in a tree. This is also used to provide detail in exceptions.
 - LINQ
   - `IEnumerable<JsonNode>`-based `JsonObject` and `JsonNode`.
-  - `Parent` and `Root` properties to support querying against relationships.
+  - `Parent` and `Root` properties to support querying against relationships and to support a single global `JsonNodeOptions`.
 
 ## API walkthrough
 A deserialized `JsonNode` value internally holds a `JsonElement` which knows about the JSON kind (object, array, number, string, true, false) and the raw UTF-8 value including any child nodes (for a JSON object or array).
@@ -133,13 +132,6 @@ which expands to:
 ```cs
 jObject["MyProperty"] = new JsonValue<int>(43);
 ```
-
-The `JsonValue<T>.Value` property can also have its internal value changed without having to create a new instance:
-```cs
-var jValue = JsonValue<int>(43);
-jValue.Value = 44;
-```
-although the type itself (`int` in this example) can't be changed without creating a new `JsonValue<T>` where `<T>` is `int`.
 
 A `JsonValue` supports custom converters that were added via `JsonSerializerOptions.Converters.Add()` or specified in the `JsonValue<T>()` constructor. A common use case would be to add the `JsonStringEnumConverter` which serializes `Enum` values as a string instead of an integer, but also supports user-defined custom converters:
 ```cs
@@ -391,6 +383,7 @@ namespace System.Text.Json.Node
         // are normally applied only to root nodes since a child node will use the Root node's options.
         public JsonArray(JsonNodeOptions? options = null);
         public JsonArray(int capacity, JsonNodeOptions? options = null);
+        public JsonArray(JsonElement element, JsonNodeOptions? options = null);
 
         // Param-based constructors to support constructor initializers:
         public JsonArray(params JsonNode[] items);
@@ -422,6 +415,7 @@ namespace System.Text.Json.Node
         // JsonNodeOptions in the constructors below allow for case-insensitive property names and
         // are normally applied only to root nodes since a child node will use the Root node's options.
         public JsonObject(JsonNodeOptions? options = null);
+        public JsonArray(JsonElement element, JsonNodeOptions? options = null);
 
         public bool TryGetPropertyValue(string propertyName, outJsonNode? jsonNode);
 
@@ -462,13 +456,13 @@ namespace System.Text.Json.Node
 
     public sealed class JsonValue<T> : JsonValue
     {
-        public JsonValue(T value);
+        public JsonValue(T value); // note T can be JsonElement
 
         public override TValue? GetValue<TValue>(JsonSerializerOptions? options = null);
         public override bool TryGetValue<TValue>(out TValue? value, JsonSerializerOptions? options = null);
 
-        // The internal raw value.
-        public T Value {get; set;}
+        // The internal raw value. Immutable for now; prevents issues from assigning "null".
+        public T Value {get;}
 
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null);
     }
@@ -479,28 +473,6 @@ namespace System.Text.Json.Node
 
         // Possibly add later:
         // DuplicatePropertyNameHandling { get; set; }
-    }
-}
-```
-
-## JsonElement additions
-```cs
-namespace System.Text.Json
-{
-    public partial struct JsonElement
-    {
-        // Returns the underlying JsonNode, otherwise an InvalidOperationException is thrown.
-        // The node does not have a back link to this JsonElement: the navigation is one-way from element to node.
-        public JsonNode AsNode();
-
-        // Creates a new JsonNode with the current element. Since JsonElement is immutable, the current element instance
-        // will not have a reference to the new JsonNode. Instead, a new JsonElement is created.
-        public JsonNode ToNode();
-
-        // Returns whether this element contains a reference to a node.
-        // If true, AsNode() will succeed.
-        // If false, AsNode() will throw InvalidOperationException.
-        public bool IsNode {get;}
     }
 }
 ```
@@ -645,16 +617,21 @@ MyPoco? obj = JsonSerializer.Deserialize<MyPoco>(jNode.ToJsonString());
 ```
 
 ## Interop with JsonElement
-`JsonElement.AsNode()` can be used to navigate to an editable node. This may help usability for those familiar with `JsonDocument` or `JsonElement` and perhaps help first-time usability to discover the node types. The method is also useful to navigate to a lower tree of JSON, call `AsNode()` and then modify a subsection which will not include the parent nodes.
+The `JsonNode`-derived classes have a constructor overload that take a `JsonElement`. The resulting node behavior is the same as what would occur if a `JsonNode.Parse()` method was called to create the node. This supports:
+- A node starting at an arbitrary location in the JSON
+- Allows for using `JsonDocument` and `JsonElement` obtained earlier. Of interest is `JsonDocument` with its `IDisposable` support that uses a pooled alloc for the JSON.
 
-The existing methods on `JsonElement` can be used including:
-- `ToInt32()` etc which forwards to `JsonValue<T>`
-- `EnumerateObject` that forwards to `JsonObject`.
-- `EnumerateArray` that forwards to `JsonArray`.
-- `WriteTo` that forwards to the respective node.
-- `ToString` which forwards to `JsonNode.ToString()`.
-
-`Clone()` is not supported since it is not possible to clone arbitrary types from `JsonValue<T>`.
+Note that earlier prototypes supported a reverse mode where a `JsonElement` can be obtained from a node and that subsequent element would then forward all methods to the `JsonNode` (e.g. `GetInt32()`, `EnumerateObject()`, `EnumerateArray()`, etc) including any child elements. This functionality was removed since:
+- The main driving scenario was "code that processes read-only JsonElements may want to be invoked with JsonNodes" which does not appear to be that compelling.
+- The functionality can added later if necessary.
+- There is a small perf hit for `JsonElement` since every method will not have an additional `if` statement to detect the mode (readonly normal mode, or writable mode that forwards to nodes).
+- Unresolved API and usability issues:
+  - How to do you get a `JsonElement` node that is linked to `JsonNode`?
+    - If a `JsonElement.ToNode()` method is added, that can be confusing since a new `JsonElement` will need to be created (elements are value types) and then there is not a way to easily get that element back. If we add a `JsonNode.AsElement()` method to get that element back, that also be confusing when the node was created with a `JsonElement` (through a `JsonNode.Parse()` or a node-based constructor that takes `JsonElement` since in that case the `JsonElement` is not linked to the node.
+    - If a `JsonNode.ToElement()` method is added, that will create a new `JsonElement` that references the `JsonNode`. This is likely a better experience than `JsonElement.ToNode()`. A corresponding `JsonElement.IsNode` and `JsonElement.AsNode()` will likely need to be added as well to complement the experience. `AsNode()` would throw if `IsNode` is `false`.
+  - The `JsonElement.Clone()` would throw `NotSupportedException` since it is not possible to do a deep clone on a node since a `JsonValue` can reference an arbitrary CLR object. An alternative is to support a shallow clone for those cases.
+  - `ToString()` semantics may not be the same.
+  - `JsonElement.TokenType` would always return `None` for a linked element since it can't be known for `JsonValue`.
 
 # Programming model notes
 ## Why `JsonValue` and not `JsonNumber` + `JsonString` + `JsonBoolean`?
