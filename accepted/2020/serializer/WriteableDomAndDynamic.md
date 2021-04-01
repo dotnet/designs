@@ -1,5 +1,5 @@
 # Overview
-March 29th, 2021.
+March 31st, 2021.
 
 This document covers the API and design for a writable DOM along with support for the [C# `dynamic` keyword](https://docs.microsoft.com/en-us/dotnet/framework/reflection-and-codedom/dynamic-language-runtime-overview).
 
@@ -77,6 +77,7 @@ Layering on `JsonSerializer` is necessary to support `dynamic` since arbitrary C
 - Debugging
   - `ToString()` returns JSON for easy inspection (same as `JsonElement.ToString()`).
   - `GetPath()` to determine where a given node is at in a tree. This is also used to provide detail in exceptions.
+  - The attribute `[DebuggerTypeProxy]` is used for `JsonNode`-derived classes to display the JSON, Path and property\item counts. The JSON will be a `string` property to allow usage of the JSON visualizer.
 - LINQ
   - `IEnumerable<JsonNode>`-based `JsonObject` and `JsonNode`.
   - `Parent` and `Root` properties to support querying against relationships and to support a single global `JsonNodeOptions`.
@@ -241,14 +242,11 @@ namespace System.Text.Json.Node
 
         // Return the parent and root nodes; useful for LINQ.
         public JsonNode? Parent { get; }
-        public JsonNode? Root { get; }
+        public JsonNode Root { get; }
 
         // The JSON Path; same "JsonPath" syntax we use for JsonException information.
         // Not a simple calculation since nodes can change order in JsonArray.
         public string GetPath();
-
-        // Creates a new mutable JsonElement from this node
-        public JsonElement ToJsonElement();
 
         // Not to be used as deserializable JSON.
         // - Pretty printed (JsonWriterOptions.Indented).
@@ -335,6 +333,7 @@ namespace System.Text.Json.Node
         // Implicit operators (won't throw) from known primitives.
         public static implicit operator JsonNode(bool value);
         public static implicit operator JsonNode(byte value);
+        public static implicit operator JsonNode(char value);
         public static implicit operator JsonNode(DateTime value);
         public static implicit operator JsonNode(DateTimeOffset value);
         public static implicit operator JsonNode(decimal value);
@@ -346,36 +345,36 @@ namespace System.Text.Json.Node
         [CLSCompliantAttribute(false)]
         public static implicit operator JsonNode(sbyte value);
         public static implicit operator JsonNode(float value);
-        public static implicit operator JsonNode?(char value);
         [CLSCompliantAttribute(false)]
-        public static implicit operator JsonNode?(ushort value);
+        public static implicit operator JsonNode(ushort value);
         [CLSCompliantAttribute(false)]
-        public static implicit operator JsonNode?(uint value);
+        public static implicit operator JsonNode(uint value);
         [CLSCompliantAttribute(false)]
-        public static implicit operator JsonNode?(ulong value);
+        public static implicit operator JsonNode(ulong value);
 
-        public static implicit operator JsonNode(bool? value);
-        public static implicit operator JsonNode(byte? value);
-        public static implicit operator JsonNode(DateTime? value);
-        public static implicit operator JsonNode(DateTimeOffset? value);
-        public static implicit operator JsonNode(decimal? value);
-        public static implicit operator JsonNode(double? value);
-        public static implicit operator JsonNode(Guid? value);
-        public static implicit operator JsonNode(short? value);
-        public static implicit operator JsonNode(string? value);
-        public static implicit operator JsonNode(int? value);
-        public static implicit operator JsonNode(long? value);
-        [CLSCompliantAttribute(false)]
-        public static implicit operator JsonNode(sbyte? value);
-        public static implicit operator JsonNode(float? value);
+        public static implicit operator JsonNode?(bool? value);
+        public static implicit operator JsonNode?(byte? value);
         public static implicit operator JsonNode?(char? value);
-        [CLSCompliantAttribute(false)]
+        public static implicit operator JsonNode?(DateTime? value);
+        public static implicit operator JsonNode?(DateTimeOffset? value);
+        public static implicit operator JsonNode?(decimal? value);
+        public static implicit operator JsonNode?(double? value);
+        public static implicit operator JsonNode?(Guid? value);
+        public static implicit operator JsonNode?(short? value);
+        public static implicit operator JsonNode?(int? value);
+        public static implicit operator JsonNode?(long? value);
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator JsonNode?(sbyte? value);
+        public static implicit operator JsonNode?(float? value);
+        [System.CLSCompliantAttribute(false)]
         public static implicit operator JsonNode?(ushort? value);
-        [CLSCompliantAttribute(false)]
+        [System.CLSCompliantAttribute(false)]
         public static implicit operator JsonNode?(uint? value);
-        [CLSCompliantAttribute(false)]
+        [System.CLSCompliantAttribute(false)]
         public static implicit operator JsonNode?(ulong? value);
-    }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator JsonNode?(string? value);
+        [System.CLSCompliantAttribute(false)]
 
     public sealed class JsonArray : JsonNode, IList<JsonNode?>
     {
@@ -415,7 +414,7 @@ namespace System.Text.Json.Node
         // JsonNodeOptions in the constructors below allow for case-insensitive property names and
         // are normally applied only to root nodes since a child node will use the Root node's options.
         public JsonObject(JsonNodeOptions? options = null);
-        public JsonArray(JsonElement element, JsonNodeOptions? options = null);
+        public JsonObject(JsonElement element, JsonNodeOptions? options = null);
 
         public bool TryGetPropertyValue(string propertyName, outJsonNode? jsonNode);
 
@@ -622,9 +621,10 @@ The `JsonNode`-derived classes have a constructor overload that take a `JsonElem
 - Allows for using `JsonDocument` and `JsonElement` obtained earlier. Of interest is `JsonDocument` with its `IDisposable` support that uses a pooled alloc for the JSON.
 
 Note that earlier prototypes supported a reverse mode where a `JsonElement` can be obtained from a node and that subsequent element would then forward all methods to the `JsonNode` (e.g. `GetInt32()`, `EnumerateObject()`, `EnumerateArray()`, etc) including any child elements. This functionality was removed since:
-- The main driving scenario was "code that processes read-only JsonElements may want to be invoked with JsonNodes" which does not appear to be that compelling.
+- The main driving scenario was "code that processes read-only JsonElements may want to be invoked with JsonNodes" which does not appear to be that compelling. Another scenario was for "discoverability" since the nice "JsonDocument" term was already used, and being able to navigate from document\element to a node may help with usability.
 - The functionality can added later if necessary.
 - There is a small perf hit for `JsonElement` since every method will not have an additional `if` statement to detect the mode (readonly normal mode, or writable mode that forwards to nodes).
+- The layering isn't quite right. A lower-level abstraction (element) would be wrapping and forwarding to a higher-level abstraction (node).
 - Unresolved API and usability issues:
   - How to do you get a `JsonElement` node that is linked to `JsonNode`?
     - If a `JsonElement.ToNode()` method is added, that can be confusing since a new `JsonElement` will need to be created (elements are value types) and then there is not a way to easily get that element back. If we add a `JsonNode.AsElement()` method to get that element back, that also be confusing when the node was created with a `JsonElement` (through a `JsonNode.Parse()` or a node-based constructor that takes `JsonElement` since in that case the `JsonElement` is not linked to the node.
@@ -889,7 +889,6 @@ const string Linq_Query_Json = @"
     Debug.Assert("Customer3" == (string)orders.ElementAt(1).Customer.Name);
 }
 ```
-
 # Dynamic
 The dynamic feature in C# is implemented in the CLR by both language features and in the `System.Linq.Expressions` assembly. The core interface is [IDynamicMetaObjectProvider](https://docs.microsoft.com/en-us/dotnet/api/system.dynamic.idynamicmetaobjectprovider?view=net-5.0).
 
@@ -1037,6 +1036,7 @@ These feature are reasonable, but not proposed (at least for the first round):
   - `public virtual object GetPropertyValue(Type type, string propertyName);`
   - `public abstract object GetValue(Type type);`
   - `public abstract bool TryGetValue(Type type, out object? value);`
+- More interop with JsonElement. See "Interop with JsonElement".
 
 These features will likely never be implemented:
 - Support for `System.ComponentModel.TypeConverter` in the `GetValue<TypeToReturn>()` method or another new method. Currently the serializer does not support this either.
@@ -1053,6 +1053,178 @@ Other issues to consider along with this:
   - For consistency with `JsonNode`.
 - [More extensible object and collection converters](https://github.com/dotnet/runtime/issues/36785)
   - The DOM could be used in a future feature to make object and collection custom converters easier to use.
+
+# Samples
+
+## Azure SDK sample header
+
+From [Workspaces - Create Or Update](https://docs.microsoft.com/en-us/rest/api/synapse/workspaces/createorupdate).
+
+```cs
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Node;
+using Microsoft.Azure.Management.Synapse.Models;
+
+namespace CallingAzureApi
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            var request = new JsonObject
+            {
+                ["identity"] = new JsonObject
+                {
+                    ["type"] = "SystemAssigned"
+                },
+                ["FOOOO"] = null,
+                ["properties"] = new JsonObject
+                {
+                    ["FOOOO"] = null,
+                    ["defaultDataLakeStorage"] = new JsonObject
+                    {
+                        ["accountUrl"] = "https://accountname.dfs.core.windows.net",
+                        ["filesystem"] = "default"
+                    },
+                    ["managedVirtualNetworkSettings"] = new JsonObject
+                    {
+                        ["preventDataExfiltration"] = false,
+                        ["linkedAccessCheckOnTargetResource"] = false,
+                        ["allowedAadTenantIdsForLinking"] = new JsonArray { "740239CE-A25B-485B-86A0-262F29F6EBDB" }
+                    },
+                    ["purviewConfiguration"] = new JsonObject
+                    {
+                        ["purviewResourceId"] = "/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/resourceGroup1/providers/Microsoft.ProjectPurview/accounts/accountname1"
+                    },
+                    ["sqlAdministratorLogin"] = "login",
+                    ["sqlAdministratorLoginPassword"] = "password",
+                    ["managedVirtualNetwork"] = "default",
+                    ["managedResourceGroupName"] = "workspaceManagedResourceGroupUnique",
+                    ["workspaceRepositoryConfiguration"] = new JsonObject
+                    {
+                        ["type"] = "FactoryGitHubConfiguration",
+                        ["hostName"] = string.Empty,
+                        ["accountName"] = "mygithubaccount",
+                        ["projectName"] = "myProject",
+                        ["repositoryName"] = "myRepository",
+                        ["collaborationBranch"] = "master",
+                        ["rootFolder"] = "/",
+                    },
+                    ["encryption"] = new JsonObject
+                    {
+                        ["cmk"] = new JsonObject
+                        {
+                            ["key"] = new JsonObject
+                            {
+                                ["name"] = "default",
+                                ["keyVaultUrl"] = "https://vault.azure.net/keys/key1"
+                            }
+                        }
+                    }
+                },
+                ["location"] = "East US",
+                ["tags"] = new JsonObject
+                {
+                    ["key"] = "value"
+                }
+            };
+
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            options.WriteIndented = true;
+            string json = request.ToJsonString(options);
+            Console.WriteLine(json);
+        }
+    }
+}
+```
+
+Note that collection initializers can also be used instead of indexers, although the additional braces seem to get in the way a bit:
+```cs
+var request = new JsonObject
+{
+    {"identity", new JsonObject {
+        { "type", "SystemAssigned" }
+    } },
+    { "properties", new JsonObject {
+        { "defaultDataLakeStorage", new JsonObject {
+            { "accountUrl", "https://accountname.dfs.core.windows.net" },
+            { "filesystem", "default" }
+        } }
+    } }
+    // continue this pattern
+};
+```
+
+Finally the example could be modified to use a hybrid of anonymous types and Azure named types:
+```cs
+var request = JsonValue.Create(new // an anonymous type is used to hold top-level properties
+{
+    Identity = new ManagedIdentity
+    {
+        Type = ResourceIdentityType.SystemAssigned
+    },
+    Properties = new Workspace
+    {
+        DefaultDataLakeStorage = new DataLakeStorageAccountDetails
+        {
+            AccountUrl = "https://accountname.dfs.core.windows.net",
+            Filesystem = "default"
+        },
+        ManagedVirtualNetworkSettings = new ManagedVirtualNetworkSettings
+        {
+            PreventDataExfiltration = false,
+            LinkedAccessCheckOnTargetResource = false,
+            AllowedAadTenantIdsForLinking = new List<string> { "740239CE-A25B-485B-86A0-262F29F6EBDB" }
+        },
+        PurviewConfiguration = new PurviewConfiguration("/subscriptions/00000000-1111-2222-3333-444444444444/resourceGroups/resourceGroup1/providers/Microsoft.ProjectPurview/accounts/accountname1"),
+        SqlAdministratorLogin = "login",
+        SqlAdministratorLoginPassword = "password",
+        ManagedVirtualNetwork = "default",
+        ManagedResourceGroupName = "workspaceManagedResourceGroupUnique",
+        WorkspaceRepositoryConfiguration = new WorkspaceRepositoryConfiguration
+        {
+            Type = "FactoryGitHubConfiguration",
+            HostName = string.Empty,
+            AccountName = "mygithubaccount",
+            ProjectName = "myProject",
+            RepositoryName = "myRepository",
+            CollaborationBranch = "master",
+            RootFolder = "/"
+        },
+        Encryption = new EncryptionDetails
+        {
+            Cmk = new CustomerManagedKeyDetails
+            {
+                Key = new WorkspaceKeyDetails
+                {
+                    Name = "default",
+                    KeyVaultUrl = "https://vault.azure.net/keys/key1"
+                }
+            }
+        }
+    },
+    Location = "East US",
+    Tags = new JsonObject // Use JsonObject for "Tags" (e.g. may not be possible to use anonymous types for this if values are assigned at run-time)
+    {
+        ["key"] = "value"
+    }
+});
+```
+
+Note the JSON will be ordered slightly differently due to the serializer. Also additional `JsonSerializerOptions` need to be used to support writing enum values and ignoring nulls:
+```cs
+    var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    options.WriteIndented = true;
+
+    // Support the serializer better
+    options.Converters.Add(new JsonStringEnumConverter());
+    options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+
+    string json = request.ToJsonString(options);
+    Console.WriteLine(json);
+```
 
 # Status checklist
 - [X] Review general direction of API. Primarily using the serializer methods vs. new `node.Parse()` \ `node.Write()` methods and having a sealed `JsonValue` class instead of separate number, string and boolean classes.
