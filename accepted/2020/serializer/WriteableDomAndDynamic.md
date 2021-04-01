@@ -381,7 +381,6 @@ namespace System.Text.Json.Node
         // JsonNodeOptions in the constructors below allow for case-insensitive property names and
         // are normally applied only to root nodes since a child node will use the Root node's options.
         public JsonArray(JsonNodeOptions? options = null);
-        public JsonArray(int capacity, JsonNodeOptions? options = null);
         public JsonArray(JsonElement element, JsonNodeOptions? options = null);
 
         // Param-based constructors to support constructor initializers:
