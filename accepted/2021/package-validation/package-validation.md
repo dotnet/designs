@@ -209,6 +209,28 @@ The API compat tooling is described in a separate [spec][api-compat-spec].
 ***OPEN QUESTION**: Should we introduce a new prefix, such as `APC` (ApiCompat)
 or `PKG` (packaging) or should we reuse `CA`/`SYSLIB`?*
 
+### Previous version configuration
+
+We need to be able to configure the following things:
+
+1. Should a previous version be validated?
+2. Which feeds should be scanned? Unless the user configures a different feed,
+   we'd use nuget.org.
+
+I don't believe we need to know the previous version. The previous version would
+be defined on a per-feed basis. In any feed, the previous version is the one
+that immediately precedes the version being built.
+
+***OPEN QUESTION**: Do we need a SemVer setting? Originally I thought about a
+setting for "ignore breaking changes across major version boundaries" but it
+seems even if one crosses a SemVer boundary one still wants to make intentional
+breaking changes only. The tool only knows which ones are intentional if the
+developer suppressed them, so I don't believe we need a SemVer setting. Instead
+the tool issues a diagnostic for all breaks and the developer suppresses the
+ones that are intentional. At this point it becomes a policy decision on the
+side of the developer if they are OK with breaking changes between minor or
+patch releases.*
+
 ## Q & A
 
 [api-compat-spec]: https://github.com/dotnet/designs/pull/177
