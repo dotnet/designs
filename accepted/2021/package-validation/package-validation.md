@@ -3,10 +3,10 @@
 **Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 With .NET Core & Xamarin we have made cross-platform a mainstream requirement
-for library authors. However, we lack validation to ensure that library
-developers, which can result in packages that don't work well which in turn
-hurts our ecosystem. This is especially problematic for emerging platforms where
-adoption isn't high enough to warrant special attention by library authors.
+for library authors. However, we lack validation tooling which can result in
+packages that don't work well which in turn hurts our ecosystem. This is
+especially problematic for emerging platforms where adoption isn't high enough
+to warrant special attention by library authors.
 
 The tooling we provide as part of the SDK has close to zero validation that
 multi-targeted packages are well-formed. For example, a package that
@@ -68,8 +68,8 @@ When Finley builds the project it fails with the following error:
 > 2.0 but does not exist for .NET 7.0. This prevents consumers who compiled
 > against .NET Standard 2.0 to run on .NET 7.0.
 
-Finley understands that they shouldn't exclude `DownloadArea(string)` but
-instead just provide an additional `DownloadArea(Utf8String)` method for .NET
+Finley understands that they shouldn't exclude `DownloadLogs(string)` but
+instead just provide an additional `DownloadLogs(Utf8String)` method for .NET
 7.0 and changes the code accordingly:
 
 ```C#
@@ -88,8 +88,27 @@ instead just provide an additional `DownloadArea(Utf8String)` method for .NET
 
 ### Validation against previous version
 
-Skylar is tasked with adding support for a connection timeout to their library.
-The `Connect` method looks like this right now:
+Skylar works on the `AdventureWorks.Client` NuGet package. They want to make
+sure that they don't accidentally make breaking changes so they configure their
+project to instruct the package validation tooling to run API compatibility on
+the previous version of the package:
+
+```XML
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ValidatePackageAgainstPreviousVersion>True</ValidatePackageAgainstPreviousVersion>
+  </PropertyGroup>
+
+</Project>
+```
+
+A few weeks later, Skylar is tasked with adding support for a connection timeout
+to their library. The `Connect` method looks like this right now:
 
 ```C#
 public static Client Connect(string url)
@@ -184,6 +203,11 @@ public static Client Connect(string url, TimeSpan timeout)
 ### API Compat Tooling
 
 The API compat tooling is described in a separate [spec][api-compat-spec].
+
+### Diagnostic IDs
+
+***OPEN QUESTION**: Should we introduce a new prefix, such as `APC` (ApiCompat)
+or `PKG` (packaging) or should we reuse `CA`/`SYSLIB`?*
 
 ## Q & A
 
