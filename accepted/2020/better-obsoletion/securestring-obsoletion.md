@@ -29,6 +29,16 @@ The specter of removing SecureString has been a topic of debate for some time. I
 
 We want users to be able to rely on the contracted guarantees of .NET cross-platform. This means that the framework should discourage the use of APIs which users believe may incorrectly fulfill a compliance requirement for them. `CryptProtectMemory`, which the Windows implementation of SecureString relies upon, [is even documented as inappropriate](https://docs.microsoft.com/windows/win32/api/dpapi/nf-dpapi-cryptprotectmemory) for the scenario that SecureString uses it for.
 
+## tl;dr: What this proposal does and does not do
+
+* This proposal __does__ take a wrapper-based approach to marking buffers as sensitive. It conceptualizes a type that can handle both wrapping and unwrapping these buffers.
+
+* This proposal __does__ take a defense-in-depth approach to mitigate sensitive data exposure in the face of unintentional errors in user or library code, where possible.
+
+* This proposal __does not__ see inherent value in preventing the initial or transient materialization of sensitive data in raw arrays or strings. For example, there is no proposed API to materialize a particular piece of incoming request data directly as a "sensitive" buffer without first putting the data into a standard array or string buffer. Such functionality is not seen by this proposal as inherently valuable and hence is out of scope.
+
+* This proposal __does not__ attempt to provide security in the face of active adversaries. An "active" adversary is one which is able to run code within the context of the application; or which can inspect application memory; or which has access to the application's executable, data, or memory dump files on disk.
+
 ## Today's use cases for SecureString
 
 > This list is largely drawn from the feedback at https://github.com/dotnet/runtime/issues/30612 plus our analysis of internal consumers.
@@ -88,6 +98,8 @@ namespace System.Security
 
 In this proposal, "sensitive" means that the buffer is nominally hidden from view, but it's not guaranteed to be enciphered or otherwise protected from active inspection. The actual storage mechanism utilized by `SensitiveData<T>` is an implementation detail. The backing buffer may be managed or unmanaged, in-proc or out-of-proc, enciphered or not enciphered, etc. The type should make best efforts to prevent _accidental_ misuse of data, but no effort is taken to prevent _active_ inspection by an enitity with full memory dump capabilities. The contents are copied by the ctor, and the buffer is immutable. The caller can extract the contents into a destination buffer of their own choosing.
 
+> The `SensitiveData<T>` type as proposed here is generic because it is intended to mark arbitrary buffers as sensitive. In practice, I suspect most types _T_ will really be `byte` or `char`, hence the _unmanaged_ constraint on this proposal. If we think developers will want to annotate buffers of complex types as sensitive (imagine a field `private SensitiveData<Ingredient> _secretIngredients;`), we could remove the _unmanaged_ constraint. There are some defense-in-depth features (see the section "Best practices for implementation" below) that we would not be able to provide for such buffers. It is not a breaking change to ship with the _unmanaged_ constraint now and to remove the constraint in a future version if it ends up being a hindrance.
+
 The API surface clearly delineates buffers for which the caller maintains responsibility (the `ctor` and `CopyTo` methods). If the caller wishes that the plaintext data is never copied during a GC, then the destination buffer they pass to `CopyTo` should be allocated from the pinned object heap, the stack, or the native memory pool. The API surface gives them full control over that process.
 
 ```cs
@@ -117,9 +129,13 @@ We would clearly document that this type is not intended to offer cryptographic 
 
 The type also intentionally does not give callers access to the raw backing span. This is because how the backing data is stored is strictly an implementation detail (it might not even be in-proc!), and exposing the span would leak that detail into the public API surface. The `CopyTo` method is the only way to get the raw contents. This also means that such buffers are immutable once created.
 
-__We should take care not to position this "sensitive buffer" type as a security feature for the purpose of achieving compliance.__ It's intended solely for code hygiene purposes and to avoid accidental disclosure. Scenarios like achieving PCI compliance require more fundamental runtime work, such as that under consideration at https://github.com/dotnet/runtime/issues/10480.
+__We should take care not to position this "sensitive buffer" type as a security feature for the purpose of achieving compliance.__ It's intended solely for code hygiene purposes and to avoid accidental disclosure. Scenarios like achieving PCI compliance require more fundamental runtime work and security audits, such as those mentioned at https://github.com/dotnet/runtime/issues/10480.
 
-This proposal intentionally excludes `ToString`, `ToArray`, or other methods which might unshroud the buffer. `ToString` is called frequently by library code as part of logging, and we always want unshrouding to be a _deliberate_ action. Additionally, we want the caller to maintain full control over the unshrouded buffer where the contents are written, which precludes "opinionated" APIs like `ToArray` which create such buffers themselves.
+This proposal intentionally excludes `ToString` and other methods which might unshroud the buffer. `ToString` is called frequently by library code as part of logging, and we always want unshrouding to be a _deliberate_ action. We want the caller to maintain full control over the unshrouded buffer where the contents are written.
+
+> This does not exactly preclude the introduction of an `ToArrayIMeanItReally` API. Such an API call would be clearly deliberate. The real difficulity is that the caller may be opinionated as to how the array is created (POH? normal heap but pinned? pooled?), and our opinionated `ToArray` behavior may not match the caller's opinionated behavior. Having a single `CopyTo` method allows the caller to maintain full control over how the buffer is allocated, and we simply populate the buffer. But if this ends up being a usage hurdle, we can always reconsider this decision.
+
+If auditors want to monitor "unshroud" operations, they can look for calls to `CopyTo`.
 
 ### Best practices for implementation
 
