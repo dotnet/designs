@@ -88,7 +88,7 @@ instead just provide an additional `DownloadArea(Utf8String)` method for .NET
 
 ### Validation against previous version
 
-Skylar is tasked with adding support for a connection time out to their library.
+Skylar is tasked with adding support for a connection timeout to their library.
 The `Connect` method looks like this right now:
 
 ```C#
