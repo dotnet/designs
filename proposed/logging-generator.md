@@ -296,10 +296,10 @@ described in solution 1, the usage would look like:
 
 ```csharp
 public static void LogName(this ILogger logger, string name, Exception exception) =>
-    logger.Log(LogLevel.Information, new EventId(0), $"Hello `{name}`", exception, (s, e) => s);
+    logger.Log(LogLevel.Information, new EventId(0), $"Hello `{name}`", exception, (s, e) => s.ToString());
 ```
 
-where `(s, e) => s` is the format callback.
+where `(s, e) => s.ToString()` is the format callback.
 
 But then in fact, the compiler would translate the above call to:
 
@@ -318,7 +318,7 @@ logger.Log<CustomLoggerParamsBuilder>(
     new EventId(1),
     builder, // the CustomLoggerParamsBuilder as log state
     exception,
-    (s, e) => s
+    (s, e) => s.ToString()
 );
 ```
 
@@ -339,21 +339,13 @@ public struct CustomLoggerParamsBuilder : IReadOnlyList<KeyValuePair<string, obj
         }
 
         builderIsValid = true;
-        return new CustomLoggerParamsBuilder(baseLength, formatHoleCount, logLevel);
+        return new CustomLoggerParamsBuilder(baseLength, formatHoleCount);
     }
-
-    private LogLevel _logLevelEnabled;
 
     // returns the number of holes
     public int Count => ... // depends on the type used to store key value pairs
 
-    public static readonly Func<CustomLoggerParamsBuilder, Exception?, string> FormatCallback = (builder, exception) => builder.ToString();
-
-    private CustomLoggerParamsBuilder(int baseLength, int formatHoleCount, LogLevel logLevelEnabled)
-    {
-        // Initialization logic
-        _logLevelEnabled = logLevelEnabled;
-    }
+    private CustomLoggerParamsBuilder(int baseLength, int formatHoleCount) { }
 
     public bool TryFormatBaseString(string s)
     {
@@ -363,7 +355,8 @@ public struct CustomLoggerParamsBuilder : IReadOnlyList<KeyValuePair<string, obj
 
     public bool TryFormatInterpolationHole<T>(T t)
     {
-        // Store and format part as required
+        // Store and format part as required 
+        // To store would need to box to T
         // Store name hole and value as KeyValuePair<string, object?>
         return true;
     }
@@ -395,7 +388,6 @@ public struct CustomLoggerParamsBuilder : IReadOnlyList<KeyValuePair<string, obj
 ```csharp
 public async Task Method()
 {
-    // Cannot use MyStringBuilder if it's a ref struct
     var key1 = "value1";
     var key2 = "value2";
     logger.LogInformation($"Some text: {key1}, {key2}");
@@ -404,7 +396,7 @@ public async Task Method()
 }
 ```
 
-Answer: Yes, as long as the builder is not a ref struct.
+Answer: Yes, as long as the builder is not a ref struct, we can expose a set of `TryFormatXx` methods so that it would not fall back to a `string.Format` call.
 
 - Question: Is duck typing supported for this string interpolated builder language feature?
 
