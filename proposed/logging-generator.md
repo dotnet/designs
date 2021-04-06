@@ -115,21 +115,21 @@ public partial class LoggingSample3
 Where the implementation for `LogName` would be completed by the source generator. For example, the generated code for `LoggingSample3` would look like this:
 
 ```csharp
-    partial class LoggingSample3
-    {
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
-        private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, string, global::System.Exception?> _LogNameCallback =
-            global::Microsoft.Extensions.Logging.LoggerMessage.Define<string>(global::Microsoft.Extensions.Logging.LogLevel.Information, new global::Microsoft.Extensions.Logging.EventId(0, nameof(LogName)), "Hello {name}", true);
+partial class LoggingSample3
+{
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
+    private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, string, global::System.Exception?> _LogNameCallback =
+        global::Microsoft.Extensions.Logging.LoggerMessage.Define<string>(global::Microsoft.Extensions.Logging.LogLevel.Information, new global::Microsoft.Extensions.Logging.EventId(0, nameof(LogName)), "Hello {name}", true);
 
-        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
-        public partial void LogName(string name)
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
+    public partial void LogName(string name)
+    {
+        if (_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
         {
-            if (_logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Information))
-            {
-                _LogNameCallback(_logger, name, null);
-            }
+            _LogNameCallback(_logger, name, null);
         }
     }
+}
 ```
 
 
@@ -164,24 +164,23 @@ public class LoggingSample4
 `ILogger.Log` API signature takes log level and optionally an exception per log call:
 
 ```csharp
-    public partial interface ILogger
-    {
-        void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter);
-    }
+public partial interface ILogger
+{
+    void Log<TState>(Microsoft.Extensions.Logging.LogLevel logLevel, Microsoft.Extensions.Logging.EventId eventId, TState state, System.Exception? exception, System.Func<TState, System.Exception?, string> formatter);
+}
 ```
 
 Therefore, as a general rule, the first instance of ILogger, LogLevel, and Exception are treated specially in the log method signature of the source generator. Subsequent instances are treated like normal arguments to the message template:
 
-```c#
+```csharp
 // below works
-        [LoggerMessage(110, LogLevel.Debug, "M1 {ex3} {ex2}")]
-        static partial void LogMethod(ILogger logger, System.Exception ex, System.Exception ex2, System.Exception ex3);
+[LoggerMessage(110, LogLevel.Debug, "M1 {ex3} {ex2}")]
+static partial void LogMethod(ILogger logger, System.Exception ex, System.Exception ex2, System.Exception ex3);
 
 // but this warns:
-        // warning SYSLIB0013: Don't include a template for ex in the logging message since it is implicitly taken care
-	// DiagnosticSeverity.Warning,
-        [LoggerMessage(0, LogLevel.Debug, "M1 {ex} {ex2}")]
-        static partial void LogMethod(ILogger logger, System.Exception ex, System.Exception ex2);
+// DiagnosticSeverity.Warning - SYSLIB0013: Don't include a template for ex in the logging message since it is implicitly taken care
+[LoggerMessage(0, LogLevel.Debug, "M1 {ex} {ex2}")]
+static partial void LogMethod(ILogger logger, System.Exception ex, System.Exception ex2);
 ```
 
 ### Options
@@ -222,9 +221,9 @@ This controls whether to generate a default message when none is supplied in the
 #### Other miscellaneous logging samples using the generator
 
 There is no constraint in the ordering at this point. So the user could define `ILogger` as the last argument for example:
-```c#
-        [LoggerMessage(110, LogLevel.Debug, "M1 {ex3} {ex2}")]
-        static partial void LogMethod(System.Exception ex, System.Exception ex2, System.Exception ex3, ILogger logger);
+```csharp
+[LoggerMessage(110, LogLevel.Debug, "M1 {ex3} {ex2}")]
+static partial void LogMethod(System.Exception ex, System.Exception ex2, System.Exception ex3, ILogger logger);
 ```
 
 The samples below show we could:
@@ -452,13 +451,13 @@ For example, the generator can provide an event ID uniqueness diagnostics check 
 The scope of uniqueness for the event IDs would be the class in which the log method is declared. It doesn't check up the inheritance hierarchy for conflicting IDs because it also wouldn't be possible cross-assembly boundaries. The diagnostic message for this condition would be a warning indicating the class name:
 
 ```csharp
-    static partial class LogClass
-    {
-        [LoggerMessage(32, LogLevel.Debug, "M1")]
-        static partial void M1(ILogger logger);
-        [LoggerMessage(32, LogLevel.Debug, "M2")]
-        static partial void M2(ILogger logger);
-    }
+static partial class LogClass
+{
+    [LoggerMessage(32, LogLevel.Debug, "M1")]
+    static partial void M1(ILogger logger);
+    [LoggerMessage(32, LogLevel.Debug, "M2")]
+    static partial void M2(ILogger logger);
+}
 ```
 produces diagnostic message:
 
@@ -490,7 +489,7 @@ Both approaches discussed above have clear benefits. With the interpolated strin
 
 There are a couple of open design questions that the interpolated string builder approach would still need to address: (1) how to allow alternative names for name holes, (2) how to lazily hold onto structured log data for consumers of log APIs to themselves to materialize them in customized ways. If we wanted to take advantage of the C# 10 language feature that would need to go through more design iterations. 
 
-The source generator approach is not far from how we currently write performant logging today (as initially illustrated with in `LoggingSample2`) and at the same time is improving usability and provides a proper guided experience to best practices. Due to these set of arguments it would be good to go forward with the first solution of using a source generator. This concludes there is an argument for using the source generator.
+The source generator approach is not far from how we currently write performant logging today (as initially illustrated with in `LoggingSample2`) and at the same time is improving usability, maintainability (by reducing boilerplate code) and provides a proper guided experience to best practices and would be good to include. This concludes there is an argument for using the source generator.
 
-At a high level the the builder approach and using source generators are not mutually exclusive. Logging is an important use case for the string interpolation builder language feature. Therefore it would be benefitial to continue building up a complete design for the builder as an opportunity to identify any gaps with the language feature. Once we design is complete then it can be developed and used as part of improving `Microsoft.Extensions.Logging`.
+At a high level the the builder approach and using source generators are not mutually exclusive. Logging is an important use case for the string interpolation builder language feature. Therefore it would be benefitial to continue building up a complete design for the builder as an opportunity to identify any gaps with the language feature. Once the design is complete then it can be used to improve `Microsoft.Extensions.Logging`.
 
