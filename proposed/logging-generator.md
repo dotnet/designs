@@ -304,13 +304,14 @@ where `(s, e) => s` is the format callback.
 But then in fact, the compiler would translate the above call to:
 
 ```csharp
-var temp1 = logger;
-_ = CustomLoggerParamsBuilder.GetInterpolatedStringBuilder(
-    6,
-    1,
-    temp1, LogLevel.Information, out var builder)
-    && builder.TryFormat("Hello ")
-    && builder.TryFormat(name, "name");
+var receiverTemp = logger;
+var builder = CustomLoggerParamsBuilder.Create(
+    baseLength: 6,
+    formatHoleCount: 1,
+    receiverTemp, LogLevel.Information, out var builderIsValid);
+_ = builderIsValid &&
+    && builder.TryFormatBaseString("Hello ")
+    && builder.TryFormatInterpolationHole(name, "name");
 
 logger.Log<CustomLoggerParamsBuilder>(
     LogLevel.Information,
@@ -323,22 +324,22 @@ logger.Log<CustomLoggerParamsBuilder>(
 
 
 
-On C# 10 and above. `CustomLoggerParamsBuilder` would be a custom [string interpolation builder](https://github.com/dotnet/csharplang/blob/d41fcd0377db1ecccfa8de9185b9aa07f894b342/proposals/improved-interpolated-strings.md) defined as:
+On C# 10 and above. `CustomLoggerParamsBuilder` would be a custom [string interpolation builder](https://github.com/333fred/csharplang/blob/2550a43b391e844faaa0a2023f66489328a41612/proposals/improved-interpolated-strings.md) defined as:
 
 ```csharp
 // The builder that will actually "build" the interpolated string"
 public struct CustomLoggerParamsBuilder : IReadOnlyList<KeyValuePair<string, object>>
 {
-    public static bool GetInterpolatedStringBuilder(int baseLength, int formatHoleCount, ILogger logger, LogLevel logLevel, out CustomLoggerParamsBuilder builder)
+    public static CustomLoggerParamsBuilder Create(int baseLength, int formatHoleCount, ILogger logger, LogLevel logLevel, out bool builderIsValid)
     {
         if (!logger.IsEnabled(logLevel))
         {
-            builder = default;
-            return false;
+            builderIsValid = false;
+            return default;
         }
 
-        builder = new CustomLoggerParamsBuilder(baseLength, formatHoleCount, logLevel);
-        return true;
+        builderIsValid = true;
+        return new CustomLoggerParamsBuilder(baseLength, formatHoleCount, logLevel);
     }
 
     private LogLevel _logLevelEnabled;
@@ -354,13 +355,13 @@ public struct CustomLoggerParamsBuilder : IReadOnlyList<KeyValuePair<string, obj
         _logLevelEnabled = logLevelEnabled;
     }
 
-    public bool TryFormat(string s)
+    public bool TryFormatBaseString(string s)
     {
         // Store and format part as required
         return true;
     }
 
-    public bool TryFormat<T>(T t, string s)
+    public bool TryFormatInterpolationHole<T>(T t)
     {
         // Store and format part as required
         // Store name hole and value as KeyValuePair<string, object?>
@@ -407,7 +408,7 @@ Answer: Yes, as long as the builder is not a ref struct.
 
 - Question: Is duck typing supported for this string interpolated builder language feature?
 
-Answer: Yes, as long as `TryFormat` APIs are defined on a new builder type, then this feature would be enabled. 
+Answer: Yes, as long as `TryFormatX` APIs are defined on a new builder type, then this feature would be enabled. 
 
 ### Sample-based comparison of two approaches
 
@@ -485,3 +486,4 @@ There are a couple of open design questions that the interpolated string builder
 The research investigation summarized in this document, has examined two different solutions to account for writing more declarative and strongly-typed logging methods. If we wanted to take advantage of the C# 10 language feature that would need to go through more design iterations. But the source generator approach is more developed at this point and is not far from how we currently write performant logging today (as initially illustrated with in `LoggingSample2`) and at the same time is improving usability and provides a proper guided experience to best practices. Due to these set of arguments it would be good to go forward with the first solution of using a source generator.
 
 This investigation concludes there is an argument for using the source generator and at a high level the two solutions are not mutually exclusive. Logging is an important use case for the string interpolation builder language feature. Therefore it would be benefitial to continue building up a complete design for the builder as an opportunity to identify any gaps with the language feature. Once we design is complete then it can be developed and used as part of improving `Microsoft.Extensions.Logging`.
+
