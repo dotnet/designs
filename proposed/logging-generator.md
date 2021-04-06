@@ -65,10 +65,6 @@ Today it is difficult to declare strongly-typed code paths for ILogger messages 
 
 Part of the goal is to enforce best practices on library authors, so they would be required to provide event IDs, add diagnostics to warn against reusing event IDs, and lead towards writing more efficient logs (all of which discourage against using `LoggingSample1`).
 
-### Non-Goals
-
-Also it's been raised that `LoggerMessage.Define` approach triggers boxing of data, and we wanted to understand if there are ways to improve this with a new and improved design.
-
 ## Using a logging source generator
 
 The first solution describes using a source generator to help reduce manual boilerplate code associated with writing efficient logs and makes structured logging more convenient to use. The source generator gets triggered with a `LoggerMessageAttribute` on partial logging methods, and is able to either autogenerate the implementation of these partial methods, or produces compile-time diagnostics hinting to proper usage of this logging approach.
@@ -423,7 +419,7 @@ Answer: Yes, as long as `TryFormatX` APIs are defined on a new builder type, the
 
 ### Sample-based comparison of two approaches
 
-1. (+1 for the C# 10 Language Feature) _With the interpolated string builder, callers don't need to guard the call sites if any computation is necessary to produce the arguments to the logging. Whereas with the source generator, the user call site would need to get wrapped around `IsEnabled` checks._
+1. _With the interpolated string builder, callers don't need to guard the call sites if any computation is necessary to produce the arguments to the logging. Whereas with the source generator, the user call site would need to get wrapped around `IsEnabled` checks._
 
 For example with the source generator, the user call site would need to get wrapped around `IsEnabled` check for this specific use case to skip evaluating `Describe(..)` which might be expensive to compute:
 
@@ -449,7 +445,7 @@ public static void DescribeFoundCertificates(this ILogger logger, IEnumerable<X5
 
 and allow for expensive computations to be skipped when logging is not enabled.
 
-2. (+1 for Source Generator) _The source generator provides useful error messages that don't exist using completely generic mechanisms to enforce logging best practices._
+2. _The source generator provides useful error messages that don't exist using completely generic mechanisms to enforce logging best practices._
 
 For example, the generator can provide an event ID uniqueness diagnostics check with warning severity so it can be suppressed.
 
@@ -479,7 +475,7 @@ For more clarity, the documentation in the future would need to mention that the
 
   - The above builder design is limited in its ability to get both name holes and format specifiers at once. Achieving this depends on how creative we want to get with the format string. We could use some currently-unused character to specify a _separator_ between the regular format string part and the name you want the hole to have. It would need to go through further design than presented in the proposal above to achieve this completely.
 
-- The builder will actually "build" the interpolated string", but also needs to allocate space for keeping key value pair structure that would not know types ahead of time. This cannot be done lazily because the structure we generate could ultimately get serialized in different ways decided by the different consumers of `ILogger.Log` call. The end result of using the builder this way, could end up being less efficient than what we already have in our logging APIs, even though our current approaches already do boxing.
+- The builder will actually "build" the interpolated string", but also needs to allocate space for keeping key value pair structure that would not know types ahead of time. This cannot be done lazily because the structure we generate could ultimately get serialized in different ways decided by the different consumers of `ILogger.Log` call. The end result of using the builder this way, could end up being less efficient than what we already have in our logging APIs.
 
 ### Benefits with the source generator approach:
 
