@@ -323,7 +323,7 @@ logger.Log<CustomLoggerParamsBuilder>(
 
 
 
-On C# 10 and above. `CustomLoggerParamsBuilder` would be a custom [string interpolation builder](https://github.com/333fred/csharplang/blob/2550a43b391e844faaa0a2023f66489328a41612/proposals/improved-interpolated-strings.md) defined as:
+On C# 10 and above. `CustomLoggerParamsBuilder` would be a custom [string interpolation builder](https://github.com/dotnet/csharplang/blob/d41fcd0377db1ecccfa8de9185b9aa07f894b342/proposals/improved-interpolated-strings.md) defined as:
 
 ```csharp
 // The builder that will actually "build" the interpolated string"
@@ -485,4 +485,3 @@ There are a couple of open design questions that the interpolated string builder
 The research investigation summarized in this document, has examined two different solutions to account for writing more declarative and strongly-typed logging methods. If we wanted to take advantage of the C# 10 language feature that would need to go through more design iterations. But the source generator approach is more developed at this point and is not far from how we currently write performant logging today (as initially illustrated with in `LoggingSample2`) and at the same time is improving usability and provides a proper guided experience to best practices. Due to these set of arguments it would be good to go forward with the first solution of using a source generator.
 
 This investigation concludes there is an argument for using the source generator and at a high level the two solutions are not mutually exclusive. Logging is an important use case for the string interpolation builder language feature. Therefore it would be benefitial to continue building up a complete design for the builder as an opportunity to identify any gaps with the language feature. Once we design is complete then it can be developed and used as part of improving `Microsoft.Extensions.Logging`.
-
