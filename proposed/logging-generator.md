@@ -406,21 +406,21 @@ Answer: Yes, as long as `TryFormatX` APIs are defined on a new builder type, the
 
 1. (+1 for the C# 10 Language Feature) _With the interpolated string builder, callers don't need to guard the call sites if any computation is necessary to produce the arguments to the logging. Whereas with the source generator, the user call site would need to get wrapped around `IsEnabled` checks._
 
-For example with the source generator:
+For example with the source generator, the user call site would need to get wrapped around `IsEnabled` check for this specific use case to skip evaluating `Describe(..)` which might be expensive to compute:
 
 ```csharp
-[LoggerMessage(2, LogLevel.Trace, "Certificates: `{matchingCertificates}`")]
-public static partial void DecribeFoundCertificates(this ILogger logger, IEnumerable<X509Certificate2> matchingCertificates);
-```
-
-The user call site would need to get wrapped around `IsEnabled` check for this specific use case to skip evaluating `Describe(..)` which might be expensive to compute:
-
-```csharp
-if (logger.IsEnabled(LogLevel.Trace))
+public static void DecribeFoundCertificates(this ILogger logger, IEnumerable<X509Certificate2> matchingCertificates)
 {
-    logger.DescribeFoundCertificates(Describe(matchingCertificates));
+    if (logger.IsEnabled(LogLevel.Trace)
+    {
+        DecribeFoundCertificates(logger, Describe(matchingCertificates));
+    }
 }
+
+[LoggerMessage(2, LogLevel.Trace, "Certificates: `{matchingCertificates}`")]
+private static partial void DecribeFoundCertificates(this ILogger logger, string matchingCertificates);
 ```
+
 Whereas the same sample using the string interpolation builder allows writing:
 
 ```csharp
