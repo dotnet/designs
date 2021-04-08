@@ -315,85 +315,6 @@ same console logs formatted using JsonConsole:
 }
 ```
 
-
-#### `EmitDefaultMessage` : YES/NO
-
-This controls whether to generate a default message when none is supplied in the attribute. This defaults to YES. When set to true, when message template is not specified, we auto generate log messages with logging arguments as a JSON-encoded blob.
-
-The samples below show we could:
-
-- `LogEmptyMessage`: generate a default empty message when none is supplied in the `LoggerMessage` attribute. 
-- `LogWithNoTemplate`: auto-generate a message as a JSON blob if you don't supply one to output parameters.
-
-```csharp
-    [LoggerMessage(1, LogLevel.Trace)]
-    public partial void LogEmptyMessage();
-
-    [LoggerMessage(2, LogLevel.Trace)]
-    public partial void LogWithNoTemplate(string key1, string key2);
-    
-    [LoggerMessage(110, LogLevel.Critical, "{{\u0022key1\u0022:\u0022{value}\u0022}}")]
-    public static partial void JsonTemplateWithOneParam(ILogger logger, string value);
-    
-    public void TestLogging()
-    {
-        LogEmptyMessage();
-        LogWithNoTemplate("value2", "value2");
-        Log.JsonTemplateWithOneParam(logger, "my parameter");
-    }
-```
-
-output to `TestLogging()` using SimpleConsole:
-```
-trce: LoggingExample[1]
-      {}
-trce: LoggingExample[2]
-      {"key1":"value2","key2":"value2"}
-crit: LoggingExample[110]
-      {"key1":"my parameter"}
-```
-
-same console logs formatted using JsonConsole:
-```
-{
-  "EventId": 1,
-  "LogLevel": "Trace",
-  "Category": "LoggingExample",
-  "Message": "{}",
-  "State": {
-    "Message": "{}",
-    "{OriginalFormat}": "{}"
-  }
-}
-{
-  "EventId": 2,
-  "LogLevel": "Trace",
-  "Category": "LoggingExample",
-  "Message": "{\"key1\":\"value2\",\"key2\":\"value2\"}",
-  "State": {
-    "Message": "{\"key1\":\"value2\",\"key2\":\"value2\"}",
-    "key1": "value2",
-    "key2": "value2",
-    "{OriginalFormat}": "{{\"key1\":\"{key1}\",\"key2\":\"{key2}\"}}"
-  }
-}
-{
-  "EventId": 110,
-  "LogLevel": "Critical",
-  "Category": "LoggingExample",
-  "Message": "{\"key1\":\"my parameter\"}",
-  "State": {
-    "Message": "{\"key1\":\"my parameter\"}",
-    "value": "my parameter",
-    "{OriginalFormat}": "{{\"key1\":\"{value}\"}}"
-  }
-}
-```
-
-I'm not sure if the output generated for `LogEmptyMessage()` looks expected for when we do not specify parameters or a message template. Perhaps it is better to supply an empty message and an empty message template instead in that case.
-
-Above samples illustrate how we could auto generate JSON message templates, when nothing was specified. We could be generating comma-separated message templates instead.
-
 ### Diagnostics
 
 This [gist](https://gist.github.com/maryamariyan/a1ab553bedb26b9886fbc2740ee9e954) shows 20 diagnostic messages that the generator can produce alongside use cases for each
@@ -606,7 +527,6 @@ For more clarity, the documentation in the future would need to mention that the
 - Guided developer experience - the generator gives warnings to help developers do the right thing
 - Support for an arbitrary # of logging parameters. current approach tops out at 6
 - Support for dynamic log level, current approach doesn't support this
-- `EmitDefaultMessage : YES/NO` : Optionally support for auto-generated log messages which emits all logging arguments as a JSON-encoded blob.
 - `PascalCaseArguments : YES/NO` : Optionally support for pascal casing logging arguments
 
 ### Conclusion
