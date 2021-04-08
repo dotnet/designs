@@ -203,7 +203,6 @@ public partial class LoggingSample6
         _logger = logger;
     }
 
-    // possible when PascalCaseArguments is set to true:
     [LoggerMessage(10, LogLevel.Warning, "Welcome to {City} {Province}!")]
     public partial void LogMethodSupportsPascalCasingOfNames(string city, string province);
 
@@ -254,6 +253,12 @@ public partial class LoggingSample5
 
     [LoggerMessage(2, LogLevel.Trace)]
     public partial void LogWithNoTemplate(string key1, string key2);
+    
+    [LoggerMessage(110, LogLevel.Critical, "{{\u0022key1\u0022:\u0022{value}\u0022}}")]
+    public static partial void JsonTemplateWithOneParam(ILogger logger, string value);
+
+    [LoggerMessage(20, LogLevel.Critical, "Value is {value:E}")]
+    public static partial void NoTemplateWithParam(ILogger logger, double value);
 
     public void TestLogging()
     {
@@ -262,6 +267,9 @@ public partial class LoggingSample5
         LogWithDynamicLogLevel("Vancouver", LogLevel.Warning, "BC");
         LogWithDynamicLogLevel("Vancouver", LogLevel.Information, "BC");
         LogWithNoTemplate("value2", "value2");
+        double val = 12345.6789;
+        Log.NoTemplateWithParam(logger, val);
+        Log.JsonTemplateWithOneParam(logger, "my parameter");
     }
 }
 ```
@@ -277,6 +285,92 @@ info: LoggingExample[10]
       Welcome to Vancouver BC!
 trce: LoggingExample[2]
       {"key1":"value2","key2":"value2"}
+crit: LoggingExample[20]
+      Value is 1.234568E+004
+crit: LoggingExample[110]
+      {"key1":"my parameter"}
+```
+
+same console logs formatted using JsonConsole:
+```
+{
+  "EventId": 1,
+  "LogLevel": "Trace",
+  "Category": "LoggingExample",
+  "Message": "{}",
+  "State": {
+    "Message": "{}",
+    "{OriginalFormat}": "{}"
+  }
+}
+{
+  "EventId": 9,
+  "LogLevel": "Trace",
+  "Category": "LoggingExample",
+  "Message": "Fixed message",
+  "State": {
+    "Message": "Fixed message",
+    "{OriginalFormat}": "Fixed message"
+  }
+}
+{
+  "EventId": 10,
+  "LogLevel": "Warning",
+  "Category": "LoggingExample",
+  "Message": "Welcome to Vancouver BC!",
+  "State": {
+    "Message": "Welcome to Vancouver BC!",
+    "city": "Vancouver",
+    "province": "BC",
+    "{OriginalFormat}": "Welcome to {city} {province}!"
+  }
+}
+{
+  "EventId": 10,
+  "LogLevel": "Information",
+  "Category": "LoggingExample",
+  "Message": "Welcome to Vancouver BC!",
+  "State": {
+    "Message": "Welcome to Vancouver BC!",
+    "city": "Vancouver",
+    "province": "BC",
+    "{OriginalFormat}": "Welcome to {city} {province}!"
+  }
+}
+{
+  "EventId": 2,
+  "LogLevel": "Trace",
+  "Category": "LoggingExample",
+  "Message": "{\"key1\":\"value2\",\"key2\":\"value2\"}",
+  "State": {
+    "Message": "{\"key1\":\"value2\",\"key2\":\"value2\"}",
+    "key1": "value2",
+    "key2": "value2",
+    "{OriginalFormat}": "{{\"key1\":\"{key1}\",\"key2\":\"{key2}\"}}"
+  }
+}
+{
+  "EventId": 20,
+  "LogLevel": "Critical",
+  "Category": "LoggingExample",
+  "Message": "Value is 1.234568E+004",
+  "State": {
+    "Message": "Value is 1.234568E+004",
+    "value": 12345.6789,
+    "{OriginalFormat}": "Value is {value:E}"
+  }
+}
+{
+  "EventId": 110,
+  "LogLevel": "Critical",
+  "Category": "LoggingExample",
+  "Message": "{\"key1\":\"my parameter\"}",
+  "State": {
+    "Message": "{\"key1\":\"my parameter\"}",
+    "value": "my parameter",
+    "{OriginalFormat}": "{{\"key1\":\"{value}\"}}"
+  }
+}
 ```
 
 ### Diagnostics
@@ -482,6 +576,15 @@ For more clarity, the documentation in the future would need to mention that the
 - Allows supplying alternative names for the holes (this may be achievable by C# 10 as well throgh a careful design via format specifiers)
 - Allows to pass all of original data as-is without any complication around how it's stored prior to something being done with it other than creating a string.
 - The source generator provides logging-specific diagnostics: it emits warnings for duplicate event ids, or it'll auto-generate a message if you don't supply one to output parameters as a JSON blob, etc.
+
+#### Benefits compared to using LoggerMessage.Define directly
+
+- Shorter and simpler syntax than current approach
+- Guided developer experience - the generator gives warnings to help developers do the right thing
+- Support for an arbitrary # of logging parameters. current approach tops out at 6
+- Support for dynamic log level, current approach doesn't support this
+- `EmitDefaultMessage : YES/NO` : Optionally support for auto-generated log messages which emits all logging arguments as a JSON-encoded blob.
+- `PascalCaseArguments : YES/NO` : Optionally support for pascal casing logging arguments
 
 ### Conclusion
 
