@@ -57,9 +57,7 @@ public class LoggingSample2
 
 It would be better in most end-user applications to not have to repeat the generic argument types above while declaring the strongly-typed ILogger methods. Using these Action-returning static methods via `LoggerMessage.Define<T1,T2,...,Tn>`, even though results into writing more efficient logs and is recommended as best practices, it still does not necessarily enforce event ID uniqueness for each logging method. `LoggingSample2` also involves some boilerplace code that developers would prefer to reduce maintaining.
 
-## Requirements
-
-### Goals
+## Goal
 
 Today it is difficult to declare strongly-typed code paths for ILogger messages (e.g. `LogMethod` APIs shown in both samples above) in a way that's efficient, approachable and maintainable by an entire team all at the same time. The solution we are looking for should ideally lead/guide developers into writing more declarative, less verbose, and easy to write, logging APIs with reduced boilerplate code. 
 
@@ -187,9 +185,9 @@ static partial void LogMethod(ILogger logger, System.Exception ex, System.Except
 
 The generator supports 2 global options that it recognizes:
 
-PascalCaseArguments : YES/NO
+#### `PascalCaseArguments` : YES/NO
 
-This will convert argument names to pascal case (from city to City) within the generated code such that when the ILogger enumerates the state, the argument will be in pascal case, which can make the logs nicer to consume. This defaults to NO.
+This will convert argument names to pascal case (from city to City) within the generated code such that when the ILogger enumerates the state, the argument will be in pascal case, which can make the logs nicer to consume. This defaults to YES.
 
 #### Sample with alternative names for name holes
 
@@ -213,11 +211,7 @@ public partial class LoggingSample6
 }
 ```
 
-EmitDefaultMessage : YES/NO
-
-This controls whether to generate a default message when none is supplied in the attribute. This defaults to YES.
-
-#### Other miscellaneous logging samples using the generator
+#### Miscellaneous logging samples using the generator
 
 There is no constraint in the ordering at this point. So the user could define `ILogger` as the last argument for example:
 ```csharp
@@ -227,10 +221,9 @@ static partial void LogMethod(System.Exception ex, System.Exception ex2, System.
 
 The samples below show we could:
 
-- `LogEmptyMessage`: generate a default empty message when none is supplied in the `LoggerMessage` attribute. 
 - `LogWithCustomEventName`: retrieve event name via `LoggerMessage` attribute. 
 - `LogWithDynamicLogLevel`: set log level dynamically, to allow log level to be set based on configuration input.
-- `LogWithNoTemplate`: auto-generate a message as a JSON blob if you don't supply one to output parameters.
+- `UsingFormatSpecifier`: use format specifiers to format logging parameters.
 
 ```csharp
 public partial class LoggingSample5
@@ -242,8 +235,8 @@ public partial class LoggingSample5
         _logger = logger;
     }
 
-    [LoggerMessage(1, LogLevel.Trace)]
-    public partial void LogEmptyMessage();
+    [LoggerMessage(20, LogLevel.Critical, "Value is {value:E}")]
+    public static partial void UsingFormatSpecifier(ILogger logger, double value);
 
     [LoggerMessage(9, LogLevel.Trace, "Fixed message", EventName = "CustomEventName")]
     public partial void LogWithCustomEventName();
@@ -251,58 +244,30 @@ public partial class LoggingSample5
     [LoggerMessage(10, "Welcome to {city} {province}!")]
     public partial void LogWithDynamicLogLevel(string city, LogLevel level, string province);
 
-    [LoggerMessage(2, LogLevel.Trace)]
-    public partial void LogWithNoTemplate(string key1, string key2);
-    
-    [LoggerMessage(110, LogLevel.Critical, "{{\u0022key1\u0022:\u0022{value}\u0022}}")]
-    public static partial void JsonTemplateWithOneParam(ILogger logger, string value);
-
-    [LoggerMessage(20, LogLevel.Critical, "Value is {value:E}")]
-    public static partial void NoTemplateWithParam(ILogger logger, double value);
-
     public void TestLogging()
     {
-        LogEmptyMessage();
         LogWithCustomEventName();
         LogWithDynamicLogLevel("Vancouver", LogLevel.Warning, "BC");
         LogWithDynamicLogLevel("Vancouver", LogLevel.Information, "BC");
-        LogWithNoTemplate("value2", "value2");
         double val = 12345.6789;
-        Log.NoTemplateWithParam(logger, val);
-        Log.JsonTemplateWithOneParam(logger, "my parameter");
+        Log.UsingFormatSpecifier(logger, val);
     }
 }
 ```
 output to `TestLogging()` using SimpleConsole:
 ```
-trce: LoggingExample[1]
-      {}
 trce: LoggingExample[9]
       Fixed message
 warn: LoggingExample[10]
       Welcome to Vancouver BC!
 info: LoggingExample[10]
       Welcome to Vancouver BC!
-trce: LoggingExample[2]
-      {"key1":"value2","key2":"value2"}
 crit: LoggingExample[20]
       Value is 1.234568E+004
-crit: LoggingExample[110]
-      {"key1":"my parameter"}
 ```
 
 same console logs formatted using JsonConsole:
 ```
-{
-  "EventId": 1,
-  "LogLevel": "Trace",
-  "Category": "LoggingExample",
-  "Message": "{}",
-  "State": {
-    "Message": "{}",
-    "{OriginalFormat}": "{}"
-  }
-}
 {
   "EventId": 9,
   "LogLevel": "Trace",
@@ -338,6 +303,69 @@ same console logs formatted using JsonConsole:
   }
 }
 {
+  "EventId": 20,
+  "LogLevel": "Critical",
+  "Category": "LoggingExample",
+  "Message": "Value is 1.234568E+004",
+  "State": {
+    "Message": "Value is 1.234568E+004",
+    "value": 12345.6789,
+    "{OriginalFormat}": "Value is {value:E}"
+  }
+}
+```
+
+
+#### `EmitDefaultMessage` : YES/NO
+
+This controls whether to generate a default message when none is supplied in the attribute. This defaults to YES. When set to true, when message template is not specified, we auto generate log messages with logging arguments as a JSON-encoded blob.
+
+The samples below show we could:
+
+- `LogEmptyMessage`: generate a default empty message when none is supplied in the `LoggerMessage` attribute. 
+- `LogWithNoTemplate`: auto-generate a message as a JSON blob if you don't supply one to output parameters.
+
+```csharp
+    [LoggerMessage(1, LogLevel.Trace)]
+    public partial void LogEmptyMessage();
+
+    [LoggerMessage(2, LogLevel.Trace)]
+    public partial void LogWithNoTemplate(string key1, string key2);
+    
+    [LoggerMessage(110, LogLevel.Critical, "{{\u0022key1\u0022:\u0022{value}\u0022}}")]
+    public static partial void JsonTemplateWithOneParam(ILogger logger, string value);
+    
+    public void TestLogging()
+    {
+        LogEmptyMessage();
+        LogWithNoTemplate("value2", "value2");
+        Log.JsonTemplateWithOneParam(logger, "my parameter");
+    }
+```
+
+output to `TestLogging()` using SimpleConsole:
+```
+trce: LoggingExample[1]
+      {}
+trce: LoggingExample[2]
+      {"key1":"value2","key2":"value2"}
+crit: LoggingExample[110]
+      {"key1":"my parameter"}
+```
+
+same console logs formatted using JsonConsole:
+```
+{
+  "EventId": 1,
+  "LogLevel": "Trace",
+  "Category": "LoggingExample",
+  "Message": "{}",
+  "State": {
+    "Message": "{}",
+    "{OriginalFormat}": "{}"
+  }
+}
+{
   "EventId": 2,
   "LogLevel": "Trace",
   "Category": "LoggingExample",
@@ -347,17 +375,6 @@ same console logs formatted using JsonConsole:
     "key1": "value2",
     "key2": "value2",
     "{OriginalFormat}": "{{\"key1\":\"{key1}\",\"key2\":\"{key2}\"}}"
-  }
-}
-{
-  "EventId": 20,
-  "LogLevel": "Critical",
-  "Category": "LoggingExample",
-  "Message": "Value is 1.234568E+004",
-  "State": {
-    "Message": "Value is 1.234568E+004",
-    "value": 12345.6789,
-    "{OriginalFormat}": "Value is {value:E}"
   }
 }
 {
@@ -372,6 +389,10 @@ same console logs formatted using JsonConsole:
   }
 }
 ```
+
+I'm not sure if the output generated for `LogEmptyMessage()` looks expected for when we do not specify parameters or a message template. Perhaps it is better to supply an empty message and an empty message template instead in that case.
+
+Above samples illustrate how we could auto generate JSON message templates, when nothing was specified. We could be generating comma-separated message templates instead.
 
 ### Diagnostics
 
@@ -400,7 +421,7 @@ As opposed to writing:
 public static partial void LogName(this ILogger logger, string name, Exception exception);
 ```
 
-described in the previous section, the usage would look like:
+described in the previous section, to take advantage of the string interpolation builder, the usage would look like:
 
 ```csharp
 public static void LogName(this ILogger logger, string name, Exception exception) =>
@@ -409,7 +430,9 @@ public static void LogName(this ILogger logger, string name, Exception exception
 
 where `(s, e) => s.ToString()` is the format callback.
 
-But then in fact, the compiler would translate the above call to:
+In general with C# 10, `$"Hello `{name}`"` would call the built-in string interpolation builder in the framework. But for our logging scenario, we need an overload of `Log` taking `CustomLoggerParamsBuilder` if we are aiming for compiler to be able to use our custom builder instead.
+
+Given the overload is available, the compiler would be able to translate the above call to:
 
 ```csharp
 var receiverTemp = logger;
