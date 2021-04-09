@@ -74,6 +74,7 @@ Use update-index to regenerate it:
 | 2021 | [Requirements](accepted/2021/statics-in-interfaces/requirements/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Scenarios](accepted/2021/statics-in-interfaces/scenarios/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2021 | [Package Validation](accepted/2021/package-validation/package-validation.md) | [Immo Landwerth](https://github.com/terrajobst) |
 
 # Proposed
 
