@@ -391,6 +391,13 @@ where `(s, e) => s.ToString()` is the format callback.
 
 By default with C# 10, `$"Hello `{name}`"` above would call the built-in string interpolation builder in the framework. But for our logging scenario, we need an overload of `Log` taking `CustomLoggerParamsBuilder` if we are aiming for compiler to be able to use our custom builder instead.
 
+```csharp
+public static class LogBuilderExtensions
+{ 
+    public static void Log(this ILogger logger, LogLevel logLevel, EventId eventId, CustomLoggerParamsBuilder builder, Exception? exception, Func<CustomLoggerParamsBuilder, Exception?, string> formatter);
+}
+```
+
 Given the overload is available, the compiler would be able to translate the above call to:
 
 ```csharp
@@ -469,6 +476,10 @@ public struct CustomLoggerParamsBuilder : IReadOnlyList<KeyValuePair<string, obj
 }
 ```
 
+Our existing logging APIs are capable of recognizing name holes, or even format specifiers from message templates. Therefore, through this new language feature we would also want to be able to allow this. The builder design presented above is limited in its ability to get both name holes and format specifiers at once. Achieving this depends on how creative we want to get with the format string. We could use some currently-unused character to specify a _separator_ between the regular format string part and the name we want the hole to have. It would need to go through further design than presented in the proposal above to achieve this completely.
+
+The builder will actually "build" the interpolated string", but also needs to allocate space for keeping key value pair structure that would not know types ahead of time. This cannot be done lazily because the structure we generate could ultimately get serialized in different ways decided by the different consumers of `ILogger.Log` call. The end result of using the builder this way, could end up being less efficient than what we already have in our logging APIs.
+
 ### Q & A - The builder approach:
 
 - Question: Can I use a custom string interpolation builder in an async context?
@@ -490,9 +501,13 @@ Answer: Yes, as long as the builder is not a ref struct, we can expose a set of 
 
 Answer: Yes, as long as `TryFormatXx` APIs are defined on a new builder type, then this feature would be enabled. 
 
+- Question: What happens when we use the string interpolation builder approach on older compiler versions?
+
+Answer: Using the language feature, would require the user to supply interpolated strings as TState for `ILogger.Log` messages. Such code if compiled against C# 9 or lower, not only would cause log messages to completely lose key/value pair log structures provided from within message templates, but would make the calls very inefficient. This could be mitigated with an analyzer that warns user when they use string interpolated messages on older compiler versions.
+
 ### Benefits with the string interpolation builder approach:
 
-1. _With the interpolated string builder, callers don't need to guard the call sites if any computation is necessary to produce the arguments to the logging. Whereas with the source generator, the user call site would need to get wrapped around `IsEnabled` checks._
+- _With the interpolated string builder, callers don't need to guard the call sites if any computation is necessary to produce the arguments to the logging. Whereas with the source generator, the user call site would need to get wrapped around `IsEnabled` checks._
 
 For example with the source generator, the user call site would need to get wrapped around `IsEnabled` check for this specific use case to skip evaluating `Describe(..)` which might be expensive to compute:
 
@@ -518,20 +533,17 @@ public static void DescribeFoundCertificates(this ILogger logger, IEnumerable<X5
 
 and allow for expensive computations to be skipped when logging is not enabled.
 
-### Current challenges with string interpolation builder approach:
+- _It would be nice if we could make use of a language feature to provide a declarative approach to logging._
 
-- Using the language feature, would require the user to supply interpolated strings as TState for `ILogger.Log` messages. Such code if compiled against C# 9 or lower, not only would cause log messages to completely lose key/value pair log structures provided from within message templates, but would make the calls very inefficient. This could be mitigated with an analyzer that warns user when they use string interpolated messages on older compiler versions.
-
-- Our existing logging APIs are capable of recognizing name holes, or even format specifiers from message templates. Therefore, through this new language feature we would also want to be able to allow this. The builder design presented above in this document is limited in its ability to get both name holes and format specifiers at once. Achieving this depends on how creative we want to get with the format string. We could use some currently-unused character to specify a _separator_ between the regular format string part and the name we want the hole to have. It would need to go through further design than presented in the proposal above to achieve this completely.
-
-- The builder will actually "build" the interpolated string", but also needs to allocate space for keeping key value pair structure that would not know types ahead of time. This cannot be done lazily because the structure we generate could ultimately get serialized in different ways decided by the different consumers of `ILogger.Log` call. The end result of using the builder this way, could end up being less efficient than what we already have in our logging APIs.
+Similar to using `LoggerMessageAttribute`, we showed that the builder approach also reduces boilerplate code. If we could come up with an complete design presented for `CustomLoggerParamsBuilder` which allows for usage of format specifiers, in a way that is also efficient while keeping ILogger message structure for consumers, then we could take advantage of it to write log messages. It would however need to be combined with an analyzer which warns against its usage on compilers older than C# 10, because of the reasons we established in the Q & A above.
 
 ### Benefits with the source generator approach:
 
 - Allows the logging structure to be preserved and enables the exact format syntax required by https://messagetemplates.org/
-- Allows supplying alternative names for the holes (this may be achievable by C# 10 as well throgh a careful design via format specifiers)
+- Allows supplying alternative names for the holes (this may be achievable by C# 10 as well through a careful design via format specifiers)
 - Allows to pass all of original data as-is without any complication around how it's stored prior to something being done with it other than creating a string.
-- The source generator provides logging-specific diagnostics, e.g. it emits warnings for duplicate event ids.
+- Provides logging-specific diagnostics, e.g. it emits warnings for duplicate event ids.
+- Feature is available on older compilers too.
 
 #### Benefits compared to using LoggerMessage.Define directly
 
