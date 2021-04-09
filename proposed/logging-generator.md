@@ -119,7 +119,7 @@ partial class LoggingSample3
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
     private static readonly global::System.Action<global::Microsoft.Extensions.Logging.ILogger, string, global::System.Exception?> _LogNameCallback =
-        global::Microsoft.Extensions.Logging.LoggerMessage.Define<string>(global::Microsoft.Extensions.Logging.LogLevel.Information, new global::Microsoft.Extensions.Logging.EventId(0, nameof(LogName)), "Hello {name}", true);
+        global::Microsoft.Extensions.Logging.LoggerMessage.Define<string>(global::Microsoft.Extensions.Logging.LogLevel.Information, new global::Microsoft.Extensions.Logging.EventId(0, nameof(LogName)), "Hello {name}", skipEnabledCheck: true);
 
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
     public partial void LogName(string name)
@@ -330,6 +330,171 @@ same console logs formatted using JsonConsole:
     "value": 12345.6789,
     "{OriginalFormat}": "Value is {value:E}"
   }
+}
+```
+
+### Added benefits not supported with LoggerMessage.Define
+
+- _Support for an arbitrary # of logging parameters. current approach tops out at 6_
+
+We cannot use `LoggerMessage.Define` today to take advantage of its performance benefits if the message template has more than 6 arguments. We could add more overloads for it, up to 16 to mitigate this a bit further [dotnet/runtime#50913](https://github.com/dotnet/runtime/issues/50913). But with the source generator we could auto-generate boilerplate code below to add support for arbitrary number of arguments using same usage of `LoggerMessageAttribute`:
+
+For example given sample:
+
+```csharp
+[LoggerMessage(8, LogLevel.Error, "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}")]
+public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
+```
+
+the generated code looks like:
+```csharp
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
+        public static partial void Method9(Microsoft.Extensions.Logging.ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7)
+        {
+            if (logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Error))
+            {
+                logger.Log(
+                    global::Microsoft.Extensions.Logging.LogLevel.Error,
+                    new global::Microsoft.Extensions.Logging.EventId(8, nameof(Method9)),
+                    new __Method9Struct(p1, p2, p3, p4, p5, p6, p7),
+                    null,
+                    __Method9Struct.Format);
+            }
+        }
+
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
+        private readonly struct __Method9Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
+        {
+            private readonly int _p1;
+            private readonly int _p2;
+            private readonly int _p3;
+            private readonly int _p4;
+            private readonly int _p5;
+            private readonly int _p6;
+            private readonly int _p7;
+
+
+            public __Method9Struct(int p1, int p2, int p3, int p4, int p5, int p6, int p7)
+            {
+                this._p1 = p1;
+                this._p2 = p2;
+                this._p3 = p3;
+                this._p4 = p4;
+                this._p5 = p5;
+                this._p6 = p6;
+                this._p7 = p7;
+            }
+
+
+            public override string ToString()
+            {
+                var p1 = this._p1;
+                var p2 = this._p2;
+                var p3 = this._p3;
+                var p4 = this._p4;
+                var p5 = this._p5;
+                var p6 = this._p6;
+                var p7 = this._p7;
+
+                return $"M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}";
+            }
+
+            public static string Format(__Method9Struct state, global::System.Exception? ex) => state.ToString();
+
+            public int Count => 8;
+
+            public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index]
+            {
+                get => index switch
+                {
+                    0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p1", this._p1),
+                    1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p2", this._p2),
+                    2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p3", this._p3),
+                    3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p4", this._p4),
+                    4 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p5", this._p5),
+                    5 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p6", this._p6),
+                    6 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p7", this._p7),
+                    7 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}"),
+
+                    _ => throw new global::System.IndexOutOfRangeException(nameof(index)),  // return the same exception LoggerMessage.Define returns in this case
+                };
+            }
+
+            public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
+            {
+                yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p1", this._p1);
+                yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p2", this._p2);
+                yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p3", this._p3);
+                yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p4", this._p4);
+                yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p5", this._p5);
+                yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p6", this._p6);
+                yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p7", this._p7);
+                yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}");
+            }
+
+            global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+```
+
+- _Support for dynamic log level, current approach doesn't support this_
+
+This is another scenario that `LoggerMessage.Define` does not support today. For sample:
+
+```csharp
+[LoggerMessage(8, "M8")]
+public static partial void M8(ILogger logger, LogLevel level);
+```
+
+The generated code is:
+```csharp
+[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
+public static partial void M8(Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel level)
+{
+    if (logger.IsEnabled(level))
+    {
+        logger.Log(
+            level,
+            new global::Microsoft.Extensions.Logging.EventId(8, nameof(M8)),
+            new __M8Struct(),
+            null,
+            __M8Struct.Format);
+    }
+}
+```
+where `__M8Struct` is also auto-generated, implementing `IReadOnlyList<KeyValuePair<string, object?>>`.
+
+#### Alternative to autogenerating structs for the above two cases:
+
+Rather than needing to define structs per different usage scenario which would increase the code size, an alternative would be to add a generic `LogValues` type for logging
+
+```csharp
+public sealed partial class LogValues : IEnumerable<KeyValuePair<string, object?>>, IReadOnlyCollection<KeyValuePair<string, object?>>, IReadOnlyList<KeyValuePair<string, object?>>, IEnumerable
+{
+    public LogValues(System.Func<Microsoft.Extensions.Logging.LogValues, System.Exception?, string> formatFunc) { }
+    public int Count { get { throw null; } }
+    public KeyValuePair<string, object?> this[int index] { get { throw null; } }
+    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+    IEnumerator IEnumerable.GetEnumerator() { throw null; }
+    public override string ToString() { throw null; }
+}
+public sealed partial class LogValues<T> : IEnumerable<KeyValuePair<string, object?>>, IReadOnlyCollection<KeyValuePair<string, object?>>, IReadOnlyList<KeyValuePair<string, object?>>, IEnumerable
+{
+    public LogValues(System.Func<Microsoft.Extensions.Logging.LogValues<T>, System.Exception?, string> formatFunc, string name, T value) { }
+    public int Count { get { throw null; } }
+    public KeyValuePair<string, object?> this[int index] { get { throw null; } }
+    public T Value { get { throw null; } }
+    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+    IEnumerator IEnumerable.GetEnumerator() { throw null; }
+    public override string ToString() { throw null; }
+}
+public sealed partial class LogValuesN : IEnumerable<KeyValuePair<string, object?>>, IReadOnlyCollection<KeyValuePair<string, object?>>, IReadOnlyList<KeyValuePair<string, object?>>, IEnumerable
+{
+    public LogValuesN(System.Func<Microsoft.Extensions.Logging.LogValuesN, System.Exception?, string> formatFunc, KeyValuePair<string, object>[] kvp) { }
+    public int Count { get { throw null; } }
+    public KeyValuePair<string, object?> this[int index] { get { throw null; } }
+    public IEnumerator<KeyValuePair<string, object?>> GetEnumerator() { throw null; }
+    IEnumerator IEnumerable.GetEnumerator() { throw null; }
+    public override string ToString() { throw null; }
 }
 ```
 
