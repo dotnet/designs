@@ -1,5 +1,7 @@
 # Compile-time source generation for strongly-typed logging messages
 
+**Dev** [Maryam Ariyan](https://github.com/maryamariyan)
+
 ## Background
 
 Currently there are two forms possible for doing logging, using `Microsoft.Extensions.Logging`:

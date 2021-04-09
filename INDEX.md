@@ -80,6 +80,7 @@ Use update-index to regenerate it:
 
 | Design Name | Owner |
 | ----------- | ----- |
+| [Compile-time source generation for strongly-typed logging messages](proposed/logging-generator.md) | [Maryam Ariyan](https://github.com/maryamariyan) |
 | [Flexible HTTP APIs](proposed/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
 | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
