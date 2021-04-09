@@ -38,7 +38,7 @@ Use update-index to regenerate it:
 | 2020 | [.NET Core 3.0 AppDomain Replacement Design and Guidance](accepted/2020/AssemblyLoadContext/AppDomainReplacement.md) | [Steve MacLean](https://github.com/sdmaclea) |
 | 2020 | [.NET Optional SDK Workloads](accepted/2020/workloads/workloads.md) | [Rich Lander](https://github.com/richlander) |
 | 2020 | [.NET Runtime Form Factors](accepted/2020/form-factors.md) | [Rich Lander](https://github.com/richlander), [Jan Kotas](https://github.com/jkotas) |
-| 2020 | [.NET SDK Workload Manifests](accepted/2020/workloads/workload-manifest.md) | [Rich Lander](https://github.com/richlander) |
+| 2020 | [.NET SDK Workload Manifests](accepted/2020/workloads/workload-manifest.md) | [Mikayla Hutchinson](https://github.com/mhutch) |
 | 2020 | [ASN.1 BER/CER/DER Reader & Writer](accepted/2020/asnreader/asnreader.md) | [Jeremy Barton](https://github.com/bartonjs) |
 | 2020 | [Annotating APIs as unsupported on specific platforms](accepted/2020/platform-exclusion/platform-exclusion.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Annotating platform-specific APIs and detecting its use](accepted/2020/platform-checks/platform-checks.md) | [Immo Landwerth](https://github.com/terrajobst) |
@@ -48,12 +48,12 @@ Use update-index to regenerate it:
 | 2020 | [Easy Acquisition of .NET Framework Targeting Packs](accepted/2020/targeting-packs/targeting-packs.md) | [Immo Landwerth](https://github.com/terrajobst), [Daniel Plaisted](https://github.com/dsplaisted) |
 | 2020 | [Feature switch](accepted/2020/feature-switch.md) | [Vitek Karas](https://github.com/vitek-karas) |
 | 2020 | [Globalization Support in .NET 5](accepted/2020/mono-convergence/globalization-support-in-.net5.md) | [Steve Pfister](https://github.com/steveisok) |
-| 2020 | [Improve Activity API usability and OpenTelemetry integration](accepted/2020/diagnostics/activity-improvements.md) | [Sourabh Shirhatti](https://github.com/shirhatti), [Ankit Srivastava](https://github.com/ankit-oss) [Tarek Mahmoud Sayed](https://github.com/tarekgh) |
+| 2020 | [Improve Activity API usability and OpenTelemetry integration](accepted/2020/diagnostics/activity-improvements.md) | [Sourabh Shirhatti](https://github.com/shirhatti), [Ankit Srivastava](https://github.com/ankit-oss), [Tarek Mahmoud Sayed](https://github.com/tarekgh) |
 | 2020 | [Improve Activity API usability and OpenTelemetry integration (Part 2)](accepted/2020/diagnostics/activity-improvements-2.md) | [Sourabh Shirhatti](https://github.com/shirhatti), [Tarek Mahmoud Sayed](https://github.com/tarekgh) |
 | 2020 | [Install location search for .NET Core](accepted/2020/install-locations.md) | [Vitek Karas](https://github.com/vitek-karas) |
 | 2020 | [JSON extension methods for HttpClient](accepted/2020/json-http-extensions/json-http-extensions.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Linking the .NET Libraries](accepted/2020/linking-libraries.md) | [Eric Erhardt](https://github.com/eerhardt) |
-| 2020 | [MSBuild SDK Resolvers and optional workloads in .NET 5](accepted/2020/workloads/workload-resolvers.md) | [Rich Lander](https://github.com/richlander) |
+| 2020 | [MSBuild SDK Resolvers and optional workloads in .NET 5](accepted/2020/workloads/workload-resolvers.md) | [Rich Lander](https://github.com/richlander), [Daniel Plaisted](https://github.com/dsplaisted) |
 | 2020 | [Marking APIs that are unsupported by Blazor WebAssembly](accepted/2020/blazor-unsupported-apis/blazor-unsupported-apis.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Marking Windows-only APIs](accepted/2020/windows-specific-apis/windows-specific-apis.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [OR_GREATER preprocessor symbols for TFMs](accepted/2020/or-greater-defines/or-greater-defines.md) | [Immo Landwerth](https://github.com/terrajobst) |
@@ -82,3 +82,4 @@ Use update-index to regenerate it:
 | [Flexible HTTP APIs](proposed/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
 | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
+
