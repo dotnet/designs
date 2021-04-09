@@ -1,4 +1,4 @@
-# Logging Generator for strongly-typed logging messages
+# Compile-time source generation for strongly-typed logging messages
 
 ## Background
 
@@ -59,9 +59,9 @@ It would be better in most end-user applications to not have to repeat the gener
 
 ## Goal
 
-Today it is difficult to declare strongly-typed code paths for ILogger messages (e.g. `LogMethod` APIs shown in both samples above) in a way that's efficient, approachable and maintainable by an entire team all at the same time. The solution we are looking for should ideally lead/guide developers into writing more declarative, less verbose, and easy to write, logging APIs with reduced boilerplate code. 
+Today it is difficult/verbose to declare strongly-typed code paths for ILogger messages (e.g. `LogMethod` APIs shown in both samples above) in a way that's efficient, approachable and maintainable by an entire team all at the same time. The solution we are looking for should ideally lead/guide developers into writing more declarative, less verbose, and easy to write, logging APIs with reduced boilerplate code. 
 
-Part of the goal is to enforce best practices on library authors, so they would be required to provide event IDs, add diagnostics to warn against reusing event IDs, and lead towards writing more efficient logs (all of which discourage against using `LoggingSample1`).
+Part of the goal is to also enable diagnostics, to enforce best practices on library authors, so they would be required to provide event IDs, warn them against reusing event IDs, and lead towards writing more efficient logs (all of which discourage against using `LoggingSample1`).
 
 ## Using a logging source generator
 
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Logging
 
 A log method can be a plain static method, an extension method, or an instance method (where the ILogger comes from a field on the containing type).
 
-### Sample with Log instance method
+#### Sample with Log instance method
 
 When generating instance-mode logging methods, the field that holds the logger is now determined by looking at available fields. You get an error if there isn't a field of the right type or if there is more than one such field. This also does not look up the inheritance hierarchy, but it would be possible to add this capability in the future.
 
@@ -131,7 +131,7 @@ partial class LoggingSample3
 ```
 
 
-### Sample with static class Log
+#### Sample with static class Log
 
 ```csharp
 public static partial class Log
@@ -156,10 +156,9 @@ public class LoggingSample4
 }
 ```
 
+#### Sample with exception as argument to log method
 
-### Sample with exception as argument to log method
-
-`ILogger.Log` API signature takes log level and optionally an exception per log call:
+Since the `ILogger.Log` API signature takes log level and optionally an exception per log call:
 
 ```csharp
 public partial interface ILogger
@@ -183,13 +182,12 @@ static partial void LogMethod(ILogger logger, System.Exception ex, System.Except
 
 ### Options
 
-The generator supports 2 global options that it recognizes:
+The generator supports a global option that it recognizes:
 
 #### `PascalCaseArguments` : YES/NO
 
 This will convert argument names to pascal case (from city to City) within the generated code such that when the ILogger enumerates the state, the argument will be in pascal case, which can make the logs nicer to consume. This defaults to YES.
 
-#### Sample with alternative names for name holes
 
 ```csharp
 public partial class LoggingSample6
@@ -201,7 +199,7 @@ public partial class LoggingSample6
         _logger = logger;
     }
 
-    [LoggerMessage(10, LogLevel.Warning, "Welcome to {City} {Province}!")]
+    [LoggerMessage(10, LogLevel.Infomration, "Welcome to {city} {province}!")]
     public partial void LogMethodSupportsPascalCasingOfNames(string city, string province);
 
     public void TestLogging()
@@ -211,13 +209,31 @@ public partial class LoggingSample6
 }
 ```
 
-#### Miscellaneous logging samples using the generator
+Json console output (notice the log arguments become uppercase):
+```
+{
+  "EventId": 13,
+  "LogLevel": "Information",
+  "Category": "LoggingExample",
+  "Message": "Welcome to Vancouver BC!",
+  "State": {
+    "Message": "Welcome to Vancouver BC!",
+    "City": "Vancouver",
+    "Province": "BC",
+    "{OriginalFormat}": "Welcome to {city} {province}!"
+  }
+}
+```
+
+### Order of arguments do not matter
 
 There is no constraint in the ordering at this point. So the user could define `ILogger` as the last argument for example:
 ```csharp
 [LoggerMessage(110, LogLevel.Debug, "M1 {ex3} {ex2}")]
 static partial void LogMethod(System.Exception ex, System.Exception ex2, System.Exception ex3, ILogger logger);
 ```
+
+### Miscellaneous logging samples using the generator
 
 The samples below show we could:
 
@@ -321,17 +337,39 @@ This [gist](https://gist.github.com/maryamariyan/a1ab553bedb26b9886fbc2740ee9e95
 
 Using SYSLIBXXXX format as the diagnostic IDs. The gist also shows diagnostic categories against each sample.
 
+### Event ID uniqueness checks
+
+The source generator provides useful error messages that don't exist using completely generic mechanisms to enforce logging best practices. For example, the generator can provide an event ID uniqueness diagnostics check with warning severity so it can be suppressed.
+
+The scope of uniqueness for the event IDs would be the class in which the log method is declared. It doesn't check up the inheritance hierarchy for conflicting IDs because it also wouldn't be possible cross-assembly boundaries. The diagnostic message for this condition would be a warning indicating the class name:
+
+```csharp
+static partial class LogClass
+{
+    [LoggerMessage(32, LogLevel.Debug, "M1")]
+    static partial void M1(ILogger logger);
+    [LoggerMessage(32, LogLevel.Debug, "M2")]
+    static partial void M2(ILogger logger);
+}
+```
+produces diagnostic message:
+
+```
+warning SYSLIB0005: Multiple logging methods are using event id 32 in class LogClass
+```
+For more clarity, the documentation in the future would need to mention that the scope for event ID uniqueness is checked per class itself not at base classes.
+
 ### Q & A - The source generator:
 
-- Question: Why would we want to enforce event ID uniqueness checks if existing log APIs still allow for using default event ID values? For example with `LogInformation` we have two overloads, one taking `EventId` and the other one not. But the proposal with `LoggerMessageAttribute` only requires taking an `EventId`.
+- Question: Why would we want to enforce event ID uniqueness checks if existing log APIs still allow for using default event ID values? For example with `LogInformation` we have some overloads, one taking `EventId` and the other one not. But the proposal with `LoggerMessageAttribute` only requires taking an `EventId`.
 
 Answer: The enforced restriction added via `LoggerMessage` attribute aims at providing best practices for library authors more so than it does for app developers, who in most cases do not care about event IDs.
 
-This is a great feedback. In order to make this approach less restrictive, it would make sense to also allow `LoggerMessageAttribute` skip taking event IDs in combination with an analyzer that generates an error to recommend best practices while allowing app developers to cut corners for productivity. When turned off, the event IDs would default to zero or implicit event IDs would get generated.
+This is a great feedback. In order to make this approach less restrictive, would could also be allowing `LoggerMessageAttribute` to skip taking event IDs in combination with an analyzer that generates an error to recommend best practices while allowing app developers to cut corners for productivity. When turned off, the event IDs would default to zero or implicit event IDs would get generated.
 
 ## Supporting string interpolation builder in logging
 
-This section describes using a language feature (called string interpolation builder) to solve the problem of strongly-typing code paths for ILogger messages.
+This section describes using a language feature (called string interpolation builder) to solve the problem of strongly-typing code paths for ILogger messages, without the need of the new proposed `LoggerMessageAttribute` above.
 
 ### Usage examples / API Proposal:
 
@@ -351,7 +389,7 @@ public static void LogName(this ILogger logger, string name, Exception exception
 
 where `(s, e) => s.ToString()` is the format callback.
 
-In general with C# 10, `$"Hello `{name}`"` would call the built-in string interpolation builder in the framework. But for our logging scenario, we need an overload of `Log` taking `CustomLoggerParamsBuilder` if we are aiming for compiler to be able to use our custom builder instead.
+By default with C# 10, `$"Hello `{name}`"` above would call the built-in string interpolation builder in the framework. But for our logging scenario, we need an overload of `Log` taking `CustomLoggerParamsBuilder` if we are aiming for compiler to be able to use our custom builder instead.
 
 Given the overload is available, the compiler would be able to translate the above call to:
 
@@ -373,8 +411,6 @@ logger.Log<CustomLoggerParamsBuilder>(
     (s, e) => s.ToString()
 );
 ```
-
-
 
 On C# 10 and above. `CustomLoggerParamsBuilder` would be a custom [string interpolation builder](https://github.com/333fred/csharplang/blob/2550a43b391e844faaa0a2023f66489328a41612/proposals/improved-interpolated-strings.md) defined as:
 
@@ -452,9 +488,9 @@ Answer: Yes, as long as the builder is not a ref struct, we can expose a set of 
 
 - Question: Is duck typing supported for this string interpolated builder language feature?
 
-Answer: Yes, as long as `TryFormatX` APIs are defined on a new builder type, then this feature would be enabled. 
+Answer: Yes, as long as `TryFormatXx` APIs are defined on a new builder type, then this feature would be enabled. 
 
-### Sample-based comparison of two approaches
+### Benefits with the string interpolation builder approach:
 
 1. _With the interpolated string builder, callers don't need to guard the call sites if any computation is necessary to produce the arguments to the logging. Whereas with the source generator, the user call site would need to get wrapped around `IsEnabled` checks._
 
@@ -482,44 +518,20 @@ public static void DescribeFoundCertificates(this ILogger logger, IEnumerable<X5
 
 and allow for expensive computations to be skipped when logging is not enabled.
 
-2. _The source generator provides useful error messages that don't exist using completely generic mechanisms to enforce logging best practices._
-
-For example, the generator can provide an event ID uniqueness diagnostics check with warning severity so it can be suppressed.
-
-The scope of uniqueness for the event IDs would be the class in which the log method is declared. It doesn't check up the inheritance hierarchy for conflicting IDs because it also wouldn't be possible cross-assembly boundaries. The diagnostic message for this condition would be a warning indicating the class name:
-
-```csharp
-static partial class LogClass
-{
-    [LoggerMessage(32, LogLevel.Debug, "M1")]
-    static partial void M1(ILogger logger);
-    [LoggerMessage(32, LogLevel.Debug, "M2")]
-    static partial void M2(ILogger logger);
-}
-```
-produces diagnostic message:
-
-```
-warning SYSLIB0005: Multiple logging methods are using event id 32 in class LogClass
-```
-For more clarity, the documentation in the future would need to mention that the scope for event ID uniqueness is checked per class itself not at base classes.
-
-### Challenges with string interpolation builder approach:
+### Current challenges with string interpolation builder approach:
 
 - Using the language feature, would require the user to supply interpolated strings as TState for `ILogger.Log` messages. Such code if compiled against C# 9 or lower, not only would cause log messages to completely lose key/value pair log structures provided from within message templates, but would make the calls very inefficient. This could be mitigated with an analyzer that warns user when they use string interpolated messages on older compiler versions.
 
-- Our existing logging APIs are capable of recognizing name holes, or even format specifiers from message templates. Therefore, through this new language feature we would also want to be able to allow this. 
-
-  - The above builder design is limited in its ability to get both name holes and format specifiers at once. Achieving this depends on how creative we want to get with the format string. We could use some currently-unused character to specify a _separator_ between the regular format string part and the name you want the hole to have. It would need to go through further design than presented in the proposal above to achieve this completely.
+- Our existing logging APIs are capable of recognizing name holes, or even format specifiers from message templates. Therefore, through this new language feature we would also want to be able to allow this. The builder design presented above in this document is limited in its ability to get both name holes and format specifiers at once. Achieving this depends on how creative we want to get with the format string. We could use some currently-unused character to specify a _separator_ between the regular format string part and the name we want the hole to have. It would need to go through further design than presented in the proposal above to achieve this completely.
 
 - The builder will actually "build" the interpolated string", but also needs to allocate space for keeping key value pair structure that would not know types ahead of time. This cannot be done lazily because the structure we generate could ultimately get serialized in different ways decided by the different consumers of `ILogger.Log` call. The end result of using the builder this way, could end up being less efficient than what we already have in our logging APIs.
 
 ### Benefits with the source generator approach:
 
-- Allows the logging structure to be preserves and enables the exact format syntax required by https://messagetemplates.org/
+- Allows the logging structure to be preserved and enables the exact format syntax required by https://messagetemplates.org/
 - Allows supplying alternative names for the holes (this may be achievable by C# 10 as well throgh a careful design via format specifiers)
 - Allows to pass all of original data as-is without any complication around how it's stored prior to something being done with it other than creating a string.
-- The source generator provides logging-specific diagnostics: it emits warnings for duplicate event ids, or it'll auto-generate a message if you don't supply one to output parameters as a JSON blob, etc.
+- The source generator provides logging-specific diagnostics, e.g. it emits warnings for duplicate event ids.
 
 #### Benefits compared to using LoggerMessage.Define directly
 
@@ -531,11 +543,9 @@ For more clarity, the documentation in the future would need to mention that the
 
 ### Conclusion
 
-Both approaches discussed above have clear benefits. With the interpolated string builder, callers don't need to guard the call sites if any computation is necessary to produce the arguments to the logging, whereas the callers of source generated APIs would need `IsEnabled` checks to guard against such computations. The source generator is able to provide a proper guided experience for logging using the many diagnostics messages that it is combined with.
-
-There are a couple of open design questions that the interpolated string builder approach would still need to address: (1) how to allow alternative names for name holes, (2) how to lazily hold onto structured log data for consumers of log APIs to themselves to materialize them in customized ways. If we wanted to take advantage of the C# 10 language feature that would need to go through more design iterations. 
+With the interpolated string builder, callers don't need to guard the call sites if any computation is necessary to produce the arguments to the logging, whereas the callers of source generated APIs would need `IsEnabled` checks to guard against such computations. There are a couple of open design questions that the interpolated string builder approach would still need to address: (1) how to allow alternative names for name holes, (2) how to lazily hold onto structured log data for consumers of log APIs to themselves to materialize them in customized ways. If we wanted to take advantage of the C# 10 language feature that would need to go through more design iterations.
 
 The source generator approach is not far from how we currently write performant logging today (as initially illustrated with in `LoggingSample2`) and at the same time is improving usability, maintainability (by reducing boilerplate code) and provides a proper guided experience to best practices and would be good to include. This concludes there is an argument for using the source generator.
 
-At a high level the the builder approach and using source generators are not mutually exclusive. Logging is an important use case for the string interpolation builder language feature. Therefore it would be benefitial to continue building up a complete design for the builder as an opportunity to identify any gaps with the language feature. Once the design is complete then it can be used to improve `Microsoft.Extensions.Logging`.
+The builder approach and using source generators are not mutually exclusive approaches. Logging is an important use case for the string interpolation builder language feature. Therefore it would be benefitial to continue building up a complete design for the builder as an opportunity to identify any gaps with the language feature. Once the design is complete then it can be used to improve `Microsoft.Extensions.Logging`.
 
