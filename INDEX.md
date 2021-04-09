@@ -4,7 +4,7 @@ This file is auto-generated. Direct changes to it maybe lost.
 
 Use update-index to regenerate it:
 
-    ./update-index > INDEX.md
+    python3 ./update-index > INDEX.md
 
 -->
 
