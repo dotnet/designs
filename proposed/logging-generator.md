@@ -389,12 +389,12 @@ public static void LogName(this ILogger logger, string name, Exception exception
 
 where `(s, e) => s.ToString()` is the format callback.
 
-By default with C# 10, `$"Hello `{name}`"` above would call the built-in string interpolation builder in the framework. But for our logging scenario, we need an overload of `Log` taking `CustomLoggerParamsBuilder` if we are aiming for compiler to be able to use our custom builder instead.
+By default with C# 10, `$"Hello `{name}`"` above would call the built-in string interpolation builder in the framework. But for our logging scenario, we need an overload of `Log` taking a new `LogMessageParamsBuilder` type, since we are aiming for compiler to be able to use our custom builder instead.
 
 ```csharp
 public static class LogBuilderExtensions
 { 
-    public static void Log(this ILogger logger, LogLevel logLevel, EventId eventId, CustomLoggerParamsBuilder builder, Exception? exception, Func<CustomLoggerParamsBuilder, Exception?, string> formatter);
+    public static void Log(this ILogger logger, LogLevel logLevel, EventId eventId, LogMessageParamsBuilder builder, Exception? exception, Func<LogMessageParamsBuilder, Exception?, string> formatter);
 }
 ```
 
@@ -402,7 +402,7 @@ Given the overload is available, the compiler would be able to translate the abo
 
 ```csharp
 var receiverTemp = logger;
-var builder = CustomLoggerParamsBuilder.Create(
+var builder = LogMessageParamsBuilder.Create(
     baseLength: 6,
     formatHoleCount: 1,
     receiverTemp, LogLevel.Information, out var builderIsValid);
@@ -410,22 +410,22 @@ _ = builderIsValid &&
     && builder.TryFormatBaseString("Hello ")
     && builder.TryFormatInterpolationHole(name, "name");
 
-logger.Log<CustomLoggerParamsBuilder>(
+logger.Log(
     LogLevel.Information,
     new EventId(1),
-    builder, // the CustomLoggerParamsBuilder as log state
+    builder, // the LogMessageParamsBuilder as log state
     exception,
     (s, e) => s.ToString()
 );
 ```
 
-On C# 10 and above. `CustomLoggerParamsBuilder` would be a custom [string interpolation builder](https://github.com/333fred/csharplang/blob/2550a43b391e844faaa0a2023f66489328a41612/proposals/improved-interpolated-strings.md) defined as:
+On C# 10 and above. `LogMessageParamsBuilder` would be a custom [string interpolation builder](https://github.com/333fred/csharplang/blob/2550a43b391e844faaa0a2023f66489328a41612/proposals/improved-interpolated-strings.md) defined as:
 
 ```csharp
 // The builder that will actually "build" the interpolated string"
-public struct CustomLoggerParamsBuilder : IReadOnlyList<KeyValuePair<string, object>>
+public struct LogMessageParamsBuilder : IReadOnlyList<KeyValuePair<string, object>>
 {
-    public static CustomLoggerParamsBuilder Create(int baseLength, int formatHoleCount, ILogger logger, LogLevel logLevel, out bool builderIsValid)
+    public static LogMessageParamsBuilder Create(int baseLength, int formatHoleCount, ILogger logger, LogLevel logLevel, out bool builderIsValid)
     {
         if (!logger.IsEnabled(logLevel))
         {
@@ -434,13 +434,13 @@ public struct CustomLoggerParamsBuilder : IReadOnlyList<KeyValuePair<string, obj
         }
 
         builderIsValid = true;
-        return new CustomLoggerParamsBuilder(baseLength, formatHoleCount);
+        return new LogMessageParamsBuilder(baseLength, formatHoleCount);
     }
 
     // returns the number of holes
     public int Count => ... // depends on the type used to store key value pairs
 
-    private CustomLoggerParamsBuilder(int baseLength, int formatHoleCount) { }
+    private LogMessageParamsBuilder(int baseLength, int formatHoleCount) { }
 
     public bool TryFormatBaseString(string s)
     {
@@ -535,7 +535,7 @@ and allow for expensive computations to be skipped when logging is not enabled.
 
 - _It would be nice if we could make use of a language feature to provide a declarative approach to logging._
 
-Similar to using `LoggerMessageAttribute`, we showed that the builder approach also reduces boilerplate code. If we could come up with an complete design presented for `CustomLoggerParamsBuilder` which allows for usage of format specifiers, in a way that is also efficient while keeping ILogger message structure for consumers, then we could take advantage of it to write log messages. It would however need to be combined with an analyzer which warns against its usage on compilers older than C# 10, because of the reasons we established in the Q & A above.
+Similar to using `LoggerMessageAttribute`, we showed that the builder approach also reduces boilerplate code. If we could come up with an complete design presented for `LogMessageParamsBuilder` which allows for usage of format specifiers, in a way that is also efficient while keeping ILogger message structure for consumers, then we could take advantage of it to write log messages. It would however need to be combined with an analyzer which warns against its usage on compilers older than C# 10, because of the reasons we established in the Q & A above.
 
 ### Benefits with the source generator approach:
 
