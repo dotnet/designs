@@ -79,12 +79,11 @@ namespace Microsoft.Extensions.Logging
     [AttributeUsage(AttributeTargets.Method)]
     public sealed partial class LoggerMessageAttribute : Attribute
     {
-        public LoggerMessageAttribute(int eventId, LogLevel level, string? message = null);
-        public LoggerMessageAttribute(int eventId, string? message = null);
-        public int EventId { get; }
+        public LoggerMessageAttribute();
+        public int EventId { get; set; }
         public string? EventName { get; set; }
-        public LogLevel? Level { get; }
-        public string? Message { get; }
+        public LogLevel Level { get; set; } = LogLevel.None;
+        public string Message { get; set; } = "";
     }
 }
 ```
@@ -107,7 +106,7 @@ public partial class LoggingSample3
         _logger = logger;
     }
 
-    [LoggerMessage(0, LogLevel.Information, "Hello {name}")]
+    [LoggerMessage(EventId = 0, Level = LogLevel.Information, Message = "Hello {name}")]
     public partial void LogName(string name);
 }
 ```
@@ -138,7 +137,7 @@ partial class LoggingSample3
 ```csharp
 public static partial class Log
 {
-    [LoggerMessage(0, LogLevel.Information, "Hello `{name}`")]
+    [LoggerMessage(EventId = 0, Level = LogLevel.Information, Message = "Hello `{name}`")]
     public static partial void LogName(this ILogger logger, string name);
 }
 
@@ -173,12 +172,12 @@ Therefore, as a general rule, the first instance of ILogger, LogLevel, and Excep
 
 ```csharp
 // below works
-[LoggerMessage(110, LogLevel.Debug, "M1 {ex3} {ex2}")]
+[LoggerMessage(EventId = 110, Level = LogLevel.Debug, Message = "M1 {ex3} {ex2}")]
 static partial void LogMethod(ILogger logger, System.Exception ex, System.Exception ex2, System.Exception ex3);
 
 // but this warns:
 // DiagnosticSeverity.Warning - SYSLIB0013: Don't include a template for ex in the logging message since it is implicitly taken care
-[LoggerMessage(0, LogLevel.Debug, "M1 {ex} {ex2}")]
+[LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = "M1 {ex} {ex2}")]
 static partial void LogMethod(ILogger logger, System.Exception ex, System.Exception ex2);
 ```
 
@@ -201,7 +200,7 @@ public partial class LoggingSample6
         _logger = logger;
     }
 
-    [LoggerMessage(10, LogLevel.Infomration, "Welcome to {city} {province}!")]
+    [LoggerMessage(EventId = 10, Level = LogLevel.Infomration, Message = "Welcome to {city} {province}!")]
     public partial void LogMethodSupportsPascalCasingOfNames(string city, string province);
 
     public void TestLogging()
@@ -231,7 +230,7 @@ Json console output (notice the log arguments become uppercase):
 
 There is no constraint in the ordering at this point. So the user could define `ILogger` as the last argument for example:
 ```csharp
-[LoggerMessage(110, LogLevel.Debug, "M1 {ex3} {ex2}")]
+[LoggerMessage(EventId = 110, Level = LogLevel.Debug, Message = "M1 {ex3} {ex2}")]
 static partial void LogMethod(System.Exception ex, System.Exception ex2, System.Exception ex3, ILogger logger);
 ```
 
@@ -253,20 +252,20 @@ public partial class LoggingSample5
         _logger = logger;
     }
 
-    [LoggerMessage(20, LogLevel.Critical, "Value is {value:E}")]
+    [LoggerMessage(EventId = 20, Level = LogLevel.Critical, Message = "Value is {value:E}")]
     public static partial void UsingFormatSpecifier(ILogger logger, double value);
 
-    [LoggerMessage(9, LogLevel.Trace, "Fixed message", EventName = "CustomEventName")]
+    [LoggerMessage(EventId = 9, Level = LogLevel.Trace, Message = "Fixed message", EventName = "CustomEventName")]
     public partial void LogWithCustomEventName();
 
-    [LoggerMessage(10, "Welcome to {city} {province}!")]
+    [LoggerMessage(EventId = 10, Message = "Welcome to {city} {province}!")]
     public partial void LogWithDynamicLogLevel(string city, LogLevel level, string province);
 
     public void TestLogging()
     {
         LogWithCustomEventName();
-        LogWithDynamicLogLevel("Vancouver", LogLevel.Warning, "BC");
-        LogWithDynamicLogLevel("Vancouver", LogLevel.Information, "BC");
+        LogWithDynamicLogLevel("Vancouver", Level = LogLevel.Warning, "BC");
+        LogWithDynamicLogLevel("Vancouver", Level = LogLevel.Information, "BC");
         double val = 12345.6789;
         Log.UsingFormatSpecifier(logger, val);
     }
@@ -344,7 +343,7 @@ We cannot use `LoggerMessage.Define` today to take advantage of its performance 
 For example given sample:
 
 ```csharp
-[LoggerMessage(8, LogLevel.Error, "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}")]
+[LoggerMessage(EventId = 8, Level = LogLevel.Error, Message = "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}")]
 public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
 ```
 
@@ -448,7 +447,7 @@ private readonly struct __Method9Struct : global::System.Collections.Generic.IRe
 Source generator can also support dynamically providing log levels. For example, this way they could be supplied through configuration.
 
 ```csharp
-[LoggerMessage(8, "M8")]
+[LoggerMessage(EventId = 8, Message = "M8")]
 public static partial void M8(ILogger logger, LogLevel level);
 ```
 
@@ -504,9 +503,9 @@ The scope of uniqueness for the event IDs would be the class in which the log me
 ```csharp
 static partial class LogClass
 {
-    [LoggerMessage(32, LogLevel.Debug, "M1")]
+    [LoggerMessage(EventId = 32, Level = LogLevel.Debug, Message = "M1")]
     static partial void M1(ILogger logger);
-    [LoggerMessage(32, LogLevel.Debug, "M2")]
+    [LoggerMessage(EventId = 32, Level = LogLevel.Debug, Message = "M2")]
     static partial void M2(ILogger logger);
 }
 ```
@@ -534,7 +533,7 @@ This section describes using a language feature (called string interpolation bui
 As opposed to writing:
 
 ```csharp
-[LoggerMessage(0, LogLevel.Information, "Hello `{name}`")]
+[LoggerMessage(EventId = 0, Level = LogLevel.Information, Message = "Hello `{name}`")]
 public static partial void LogName(this ILogger logger, string name, Exception exception);
 ```
 
@@ -563,7 +562,7 @@ var receiverTemp = logger;
 var builder = LogMessageParamsBuilder.Create(
     baseLength: 6,
     formatHoleCount: 1,
-    receiverTemp, LogLevel.Information, out var builderIsValid);
+    receiverTemp, Level = LogLevel.Information, out var builderIsValid);
 _ = builderIsValid &&
     && builder.TryFormatBaseString("Hello ")
     && builder.TryFormatInterpolationHole(name, "name");
@@ -678,7 +677,7 @@ public static void DescribeFoundCertificates(this ILogger logger, IEnumerable<X5
     }
 }
 
-[LoggerMessage(2, LogLevel.Trace, "Certificates: `{matchingCertificates}`")]
+[LoggerMessage(EventId = 2, Level = LogLevel.Trace, Message = "Certificates: `{matchingCertificates}`")]
 private static partial void DescribeFoundCertificates(this ILogger logger, string matchingCertificates);
 ```
 
