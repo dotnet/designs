@@ -13,9 +13,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ./update-index > INDEX.md.auto-generated
+          python3 ./update-index > INDEX.md.auto-generated
           if ! diff -u INDEX.md INDEX.md.auto-generated; then
             echo "error: INDEX.md is out of date"
-            echo "  please use './update-index > INDEX.md' to regenerate"
+            echo "  please use 'python3 ./update-index > INDEX.md' to regenerate"
             exit 1
           fi
