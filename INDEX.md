@@ -74,13 +74,13 @@ Use update-index to regenerate it:
 | 2021 | [Requirements](accepted/2021/statics-in-interfaces/requirements/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Scenarios](accepted/2021/statics-in-interfaces/scenarios/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| [Compile-time source generation for strongly-typed logging messages](proposed/logging-generator.md) | [Maryam Ariyan](https://github.com/maryamariyan) | [Martin Taillefer](https://github.com/geeknoid)
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
 
 # Proposed
 
 | Design Name | Owner |
 | ----------- | ----- |
-| [Compile-time source generation for strongly-typed logging messages](proposed/logging-generator.md) | [Maryam Ariyan](https://github.com/maryamariyan) |
 | [Flexible HTTP APIs](proposed/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
 | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
