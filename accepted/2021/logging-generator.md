@@ -88,6 +88,8 @@ namespace Microsoft.Extensions.Logging
 }
 ```
 
+When using `LoggerMessageAttribute`, the source generator would be making sure both `Level` and `Message` are provided by the user. For library authors it makes sense to have `EventId` required as well. Or, the event IDs could potentially default to zero or implicit event IDs would get generated. This way the diagnostics for `EventId` uniqueness checks still recommend best practices while allowing app developers to cut corners for productivity.
+
 ### Usage Examples: 
 
 A log method can be a plain static method, an extension method, or an instance method (where the ILogger comes from a field on the containing type).
@@ -181,14 +183,9 @@ static partial void LogMethod(ILogger logger, System.Exception ex, System.Except
 static partial void LogMethod(ILogger logger, System.Exception ex, System.Exception ex2);
 ```
 
-### Options
+### Case-insensitive parameter/template name support
 
-The generator supports a global option that it recognizes:
-
-#### `PascalCaseArguments` : YES/NO
-
-This will convert argument names to pascal case (from city to City) within the generated code such that when the ILogger enumerates the state, the argument will be in pascal case, which can make the logs nicer to consume. This defaults to YES.
-
+The generator does case-insensitive comparison between parameters in message template and log message argument names so when the ILogger enumerates the state, the argument will be picked up by message template, which can make the logs nicer to consume:
 
 ```csharp
 public partial class LoggingSample6
@@ -200,7 +197,7 @@ public partial class LoggingSample6
         _logger = logger;
     }
 
-    [LoggerMessage(EventId = 10, Level = LogLevel.Infomration, Message = "Welcome to {city} {province}!")]
+    [LoggerMessage(EventId = 10, Level = LogLevel.Infomration, Message = "Welcome to {City} {Province}!")]
     public partial void LogMethodSupportsPascalCasingOfNames(string city, string province);
 
     public void TestLogging()
@@ -520,9 +517,7 @@ For more clarity, the documentation in the future would need to mention that the
 
 - Question: Why would we want to enforce event ID uniqueness checks if existing log APIs still allow for using default event ID values? For example with `LogInformation` we have some overloads, one taking `EventId` and the other one not. But the proposal with `LoggerMessageAttribute` only requires taking an `EventId`.
 
-Answer: The enforced restriction added via `LoggerMessage` attribute aims at providing best practices for library authors more so than it does for app developers, who in most cases do not care about event IDs.
-
-This is a great feedback. In order to make this approach less restrictive, would could also be allowing `LoggerMessageAttribute` to skip taking event IDs in combination with an analyzer that generates an error to recommend best practices while allowing app developers to cut corners for productivity. When turned off, the event IDs would default to zero or implicit event IDs would get generated.
+Answer: The enforced restriction added via `LoggerMessage` attribute aims at providing best practices for library authors more so than it does for app developers, who in most cases do not care about event IDs. But it should be possible to suppress warnings regarding event ID uniqueness using the source generator.
 
 ## Supporting string interpolation builder in logging
 
@@ -708,7 +703,6 @@ Similar to using `LoggerMessageAttribute`, we showed that the builder approach a
 - Guided developer experience - the generator gives warnings to help developers do the right thing
 - Support for an arbitrary # of logging parameters. current approach tops out at 6
 - Support for dynamic log level, current approach doesn't support this
-- `PascalCaseArguments : YES/NO` : Optionally support for pascal casing logging arguments
 
 ### Conclusion
 
