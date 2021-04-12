@@ -225,7 +225,7 @@ internal sealed class Document
 
         var lines = File.ReadAllLines(path);
         var titleRegex = new Regex("^# *(?<title>.*?)#?$");
-        var ownerRegex = new Regex(@"^\*\*(?:Libraries)? *(PM|Dev) ?\*\*(?<owner>[^|]+)");
+        var ownerRegex = new Regex(@"^\*\*(?:Libraries)? *(PM|Dev) ?\*\*(?<owner>[^|]+)(\s*\|\s*(?<owner>[^|]+))*");
 
         foreach (var line in lines)
         {
@@ -238,9 +238,12 @@ internal sealed class Document
             }
             else if (ownerMatch.Success)
             {
-                var owner = ownerMatch.Groups["owner"].Value.Trim();
-                if (owner.Length > 0)
-                    owners.Add(owner);
+                foreach (Capture capture in ownerMatch.Groups["owner"].Captures)
+                {
+                    var owner =capture.Value.Trim();
+                    if (owner.Length > 0)
+                        owners.Add(owner);
+                }
             }
         }
 
