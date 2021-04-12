@@ -329,162 +329,6 @@ same console logs formatted using JsonConsole:
 }
 ```
 
-### Added benefits with source generators not supported with `LoggerMessage.Define`
-
-As a general approach, when possible the source generator uses `LoggerMessage.Define` to process the method generation. But for some of the limitations listed here, so long as validation helps us realize we need to fallback to another approach, the source generator would then make sure to support more cases when possible:
-
-- _Support for an arbitrary # of logging parameters. current approach tops out at 6_
-
-We cannot use `LoggerMessage.Define` today to take advantage of its performance benefits if the message template has more than 6 arguments. We could add more overloads for it, up to 16 to mitigate this a bit further [dotnet/runtime#50913](https://github.com/dotnet/runtime/issues/50913). But with the source generator we could auto-generate boilerplate code below to add support for arbitrary number of arguments using same usage of `LoggerMessageAttribute`:
-
-For example given sample:
-
-```csharp
-[LoggerMessage(EventId = 8, Level = LogLevel.Error, Message = "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}")]
-public static partial void Method9(ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7);
-```
-
-the generated code looks like:
-```csharp
-[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
-public static partial void Method9(Microsoft.Extensions.Logging.ILogger logger, int p1, int p2, int p3, int p4, int p5, int p6, int p7)
-{
-    if (logger.IsEnabled(global::Microsoft.Extensions.Logging.LogLevel.Error))
-    {
-        logger.Log(
-            global::Microsoft.Extensions.Logging.LogLevel.Error,
-            new global::Microsoft.Extensions.Logging.EventId(8, nameof(Method9)),
-            new __Method9Struct(p1, p2, p3, p4, p5, p6, p7),
-            null,
-            __Method9Struct.Format);
-    }
-}
-```
-where `__Method9Struct` is auto-generated, implementing `IReadOnlyList<KeyValuePair<string, object?>>`.
-
-<details>
-<summary>Implementation of `__Method9Struct`</summary>
-
-```csharp
-[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
-private readonly struct __Method9Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
-{
-    private readonly int _p1;
-    private readonly int _p2;
-    private readonly int _p3;
-    private readonly int _p4;
-    private readonly int _p5;
-    private readonly int _p6;
-    private readonly int _p7;
-
-    public __Method9Struct(int p1, int p2, int p3, int p4, int p5, int p6, int p7)
-    {
-        this._p1 = p1;
-        this._p2 = p2;
-        this._p3 = p3;
-        this._p4 = p4;
-        this._p5 = p5;
-        this._p6 = p6;
-        this._p7 = p7;
-    }
-
-    public override string ToString()
-    {
-        var p1 = this._p1;
-        var p2 = this._p2;
-        var p3 = this._p3;
-        var p4 = this._p4;
-        var p5 = this._p5;
-        var p6 = this._p6;
-        var p7 = this._p7;
-
-        return $"M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}";
-    }
-
-    public static string Format(__Method9Struct state, global::System.Exception? ex) => state.ToString();
-
-    public int Count => 8;
-
-    public global::System.Collections.Generic.KeyValuePair<string, object?> this[int index]
-    {
-        get => index switch
-        {
-            0 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p1", this._p1),
-            1 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p2", this._p2),
-            2 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p3", this._p3),
-            3 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p4", this._p4),
-            4 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p5", this._p5),
-            5 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p6", this._p6),
-            6 => new global::System.Collections.Generic.KeyValuePair<string, object?>("p7", this._p7),
-            7 => new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}"),
-
-            _ => throw new global::System.IndexOutOfRangeException(nameof(index)),  // return the same exception LoggerMessage.Define returns in this case
-        };
-    }
-
-    public global::System.Collections.Generic.IEnumerator<global::System.Collections.Generic.KeyValuePair<string, object?>> GetEnumerator()
-    {
-        yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p1", this._p1);
-        yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p2", this._p2);
-        yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p3", this._p3);
-        yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p4", this._p4);
-        yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p5", this._p5);
-        yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p6", this._p6);
-        yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("p7", this._p7);
-        yield return new global::System.Collections.Generic.KeyValuePair<string, object?>("{OriginalFormat}", "M9 {p1} {p2} {p3} {p4} {p5} {p6} {p7}");
-    }
-
-    global::System.Collections.IEnumerator global::System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
-}
-```
-</details>
-
-- _Support for dynamic log level, current approach doesn't support this_
-
-Source generator can also support dynamically providing log levels. For example, this way they could be supplied through configuration.
-
-```csharp
-[LoggerMessage(EventId = 8, Message = "M8")]
-public static partial void M8(ILogger logger, LogLevel level);
-```
-
-The generated code is:
-```csharp
-[global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Logging.Generators", "1.0.0.0")]
-public static partial void M8(Microsoft.Extensions.Logging.ILogger logger, Microsoft.Extensions.Logging.LogLevel level)
-{
-    if (logger.IsEnabled(level))
-    {
-        logger.Log(
-            level,
-            new global::Microsoft.Extensions.Logging.EventId(8, nameof(M8)),
-            new __M8Struct(),
-            null,
-            __M8Struct.Format);
-    }
-}
-```
-where `__M8Struct` is also auto-generated.
-
-- _More robust support for handling message template parameters._
-
-The code generation using `LoggerMessage.Define` doesn't handle parameters in templates not being in the same order as the logging method arguments. This could be something that the source generator supports as it evolves further.
-
-Example:
-
-```csharp
-[LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = "{x} {x}")]
-public static partial void MessageTemplateParamRepeatingShouldWork(ILogger logger, string x);
-
-[LoggerMessage(EventId = 11111, Level = LogLevel.Debug, Message = "T1{foo} {bar}")]
-public static partial void MessageTemplateParamOrderMatters(ILogger logger, string bar, string foo);
-
-```
-
-- _Support compile-time error generation as opposed to runtime failures, for malformed format strings._
-
-Malformed format strings get detected only at runtime when the `LoggerMessage.Define` method is invoked. Eventhough the first versions of the source generator would be using `LoggerMessage.Define` under the hood, it would be able to use string interpolation instead, and through that produce errors if the format string was malformed by virtue of the C# compiler doing the check. 
-
 ### Diagnostics
 
 This [gist](https://gist.github.com/maryamariyan/a1ab553bedb26b9886fbc2740ee9e954) shows 20 diagnostic messages that the generator can produce alongside use cases for each
@@ -712,3 +556,14 @@ The source generator approach is not far from how we currently write performant 
 
 The builder approach and using source generators are not mutually exclusive approaches. Logging is an important use case for the string interpolation builder language feature. Therefore it would be benefitial to continue building up a complete design for the builder as an opportunity to identify any gaps with the language feature. Once the design is complete then it can be used to improve `Microsoft.Extensions.Logging`.
 
+### Known issues/limitations
+
+The first version of the generator uses `LoggerMessage.Define` under the hood, so the issues below track potential improvements to make on `Define` to allow better support in the source generator.
+
+- _Support for an arbitrary # of logging parameters_
+
+Currently maximum number of parameters allowed via `LoggerMessage.Define` (Refer to [dotnet/runtime#50913](https://github.com/dotnet/runtime/issues/50913)) is 6. To mitigate this either the source generator would need to fallback to another approach, or we would need to add more `Define` overloads for the generator to use.
+
+- _More robust support for handling message template parameters._
+
+The code generation using `LoggerMessage.Define` does not currently handle message templates when number of parameters do not match the specified template parameters even if the parameters used in the template are the same (Refer to [dotnet/runtime#51054](https://github.com/dotnet/runtime/issues/51054])). This could be something that the source generator supports as it evolves further.
