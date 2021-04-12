@@ -1,6 +1,6 @@
 # Type for holding & converting binary data
 
-**PM** [Immo Landwerth](https://github.com/terrajobst) |
+**Owner** [Immo Landwerth](https://github.com/terrajobst) |
 [GitHub Issue](https://github.com/dotnet/runtime/issues/41686)
 
 In the BCL we have many representations for binary data such as `byte[]`,

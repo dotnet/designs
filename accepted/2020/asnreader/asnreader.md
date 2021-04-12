@@ -1,6 +1,6 @@
 #  ASN.1 BER/CER/DER Reader & Writer
 
-**Dev** [Jeremy Barton](https://github.com/bartonjs)
+**Owner** [Jeremy Barton](https://github.com/bartonjs)
 
 ASN.1 (Abstract Syntax Notation One), defined by [ITU-T X.680](https://www.itu.int/rec/dologin_pub.asp?lang=e&id=T-REC-X.680-201508-I!!PDF-E&type=items),
 is a data modelling language used to describe objects used in cryptographic key transmission, X.509 public key certificates,

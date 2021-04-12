@@ -3,7 +3,7 @@
 
 # Target Framework Names in .NET 5
 
-**PM** [Immo Landwerth](https://github.com/terrajobst) |
+**Owner** [Immo Landwerth](https://github.com/terrajobst) |
 [GitHub Issue](https://github.com/dotnet/runtime/issues/34173) |
 [Video Presentation](https://youtu.be/kKH8NzvtENQ?t=694)
 

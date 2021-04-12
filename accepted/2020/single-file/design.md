@@ -1,6 +1,6 @@
 # Single-file Publish
 
-**Dev** [Swaroop Sridhar](https://github.com/swaroop-sridhar)
+**Owner** [Swaroop Sridhar](https://github.com/swaroop-sridhar)
 
 This document describes the design single-file apps in .NET 5.0.
 The design of single-file apps in .NET Core 3.0 can be found [here](design_3_0.md)

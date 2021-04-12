@@ -1,6 +1,6 @@
 # System.Index and System.Range
 
-**PM** [Immo Landwerth](https://github.com/terrajobst)
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 The C# team is adding [language syntax for specifying ranges][csharp-range] to
 represent parts of a string, array, or span. In order to make this work, the

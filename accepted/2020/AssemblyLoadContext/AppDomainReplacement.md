@@ -1,6 +1,6 @@
 # .NET Core 3.0 AppDomain Replacement Design and Guidance
 
-**Dev** [Steve MacLean](https://github.com/sdmaclea)
+**Owner** [Steve MacLean](https://github.com/sdmaclea)
 
 .NET Core chose to not fully support the `System.AppDomain` type as
 implemented in .NET Framework

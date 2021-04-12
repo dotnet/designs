@@ -1,6 +1,6 @@
 # .NET 6.0 Target Frameworks
 
-**PM** [Immo Landwerth](https://github.com/terrajobst)
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 In [.NET 5.0][net5.0] we defined a new syntax for target frameworks (TFM) that
 makes it unnecessary for both tools and humans to use a decoder ring, such as

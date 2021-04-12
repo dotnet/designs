@@ -1,6 +1,6 @@
 # Platform Specific HttpClient Support in dotnet/runtime
 
-**Dev** [Steve Pfister](https://github.com/steveisok)
+**Owner** [Steve Pfister](https://github.com/steveisok)
 
 ## Overview
 The underlying networking libraries and capabilities in iOS, Android, and Wasm have required us to implement custom **HttpMessageHandler** classes using platform-specific APIs. Because each platform has unique API, different release pressures, and deeper infrastructure dependencies, the Mono team pushed the platform implementation into the individual SDKs. 

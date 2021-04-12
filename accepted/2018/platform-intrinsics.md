@@ -1,6 +1,6 @@
 # .NET Platform Dependent Intrinsics
 
-**Dev** [Russell Hadley](https://github.com/russellhadley)
+**Owner** [Russell Hadley](https://github.com/russellhadley)
 
 ## Introduction
 The dotnet ecosystem supports many platforms and hardware architectures, and

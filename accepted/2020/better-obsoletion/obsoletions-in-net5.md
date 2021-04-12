@@ -1,6 +1,6 @@
 # Obsoletions in .NET 5
 
-**PM** [Immo Landwerth](https://github.com/terrajobst)
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 For .NET 5, [we're making](better-obsoletion.md) it more viable to obsolete APIs.
 In this document, we're describing which APIs we intend to obsolete in .NET 5 and
