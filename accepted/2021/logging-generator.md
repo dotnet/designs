@@ -178,7 +178,7 @@ Therefore, as a general rule, the first instance of ILogger, LogLevel, and Excep
 static partial void LogMethod(ILogger logger, System.Exception ex, System.Exception ex2, System.Exception ex3);
 
 // but this warns:
-// DiagnosticSeverity.Warning - SYSLIB0013: Don't include a template for ex in the logging message since it is implicitly taken care
+// DiagnosticSeverity.Warning - SYSLIB0025: Don't include a template for ex in the logging message since it is implicitly taken care of
 [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = "M1 {ex} {ex2}")]
 static partial void LogMethod(ILogger logger, System.Exception ex, System.Exception ex2);
 ```
@@ -353,7 +353,7 @@ static partial class LogClass
 produces diagnostic message:
 
 ```
-warning SYSLIB0005: Multiple logging methods are using event id 32 in class LogClass
+warning SYSLIB0018: Multiple logging methods are using event id 32 in class LogClass
 ```
 For more clarity, the documentation in the future would need to mention that the scope for event ID uniqueness is checked per class itself not at base classes.
 
