@@ -1,0 +1,56 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<!--
+
+This file is auto-generated. Direct changes to it maybe lost.
+
+Use update-index to regenerate it:
+
+    ./update-index
+
+-->
+
+# Design Index
+
+## Meta
+
+<#
+foreach (var document in GetDocuments(DocumentKind.Meta)) { #>
+* <#= GetMarkdownLink(document) #>
+<#
+}
+#>
+
+## Accepted
+
+|Year|Title|Owners|
+|----|-----|------|
+<#
+foreach (var document in GetDocuments(DocumentKind.AcceptedDesign))
+{
+    var year = document.Year.ToString();
+    var link = GetMarkdownLink(document);
+    var owners = string.Join(", ", document.Owners);
+#>| <#= year #> | <#= link #> | <#= owners #> |
+<#
+}
+#>
+
+## Proposed
+
+|Year|Title|Owners|
+|----|-----|------|
+<#
+foreach (var document in GetDocuments(DocumentKind.ProposedDesign))
+{
+    var year = document.Year.ToString();
+    var link = GetMarkdownLink(document);
+    var owners = string.Join(", ", document.Owners);
+#>| <#= year #> | <#= link #> | <#= owners #> |
+<#
+}
+#>
+

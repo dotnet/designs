@@ -86,70 +86,17 @@ internal static class Program
 
     private static void UpdateIndex(string directoryPath, string outputPath)
     {
-        var designs = Directory.GetFiles(directoryPath, "*.md", SearchOption.AllDirectories)
-                               .Select(p => Document.Parse(p))
-                               .Where(d => d != null)
-                               .Select(d => d!)
-                               .ToArray();
+        var documents = Directory.GetFiles(directoryPath, "*.md", SearchOption.AllDirectories)
+                                 .Select(p => Document.Parse(p))
+                                 .Where(d => d != null)
+                                 .Select(d => d!);
 
-        using var outputWriter = new StreamWriter(outputPath);
+        var template = new IndexTemplate(directoryPath, documents);
+        var content = template.TransformText();
 
-        outputWriter.WriteLine("<!--");
-        outputWriter.WriteLine("");
-        outputWriter.WriteLine("This file is auto-generated. Direct changes to it maybe lost.");
-        outputWriter.WriteLine("");
-        outputWriter.WriteLine("Use update-index to regenerate it:");
-        outputWriter.WriteLine("");
-        outputWriter.WriteLine("    ./update-index");
-        outputWriter.WriteLine("");
-        outputWriter.WriteLine("-->");
-        outputWriter.WriteLine();            
-        outputWriter.WriteLine("# Design Index");
-        outputWriter.WriteLine();            
-        WriteList(DocumentKind.Meta, "Meta");
-        outputWriter.WriteLine();
-        WriteDetails(DocumentKind.AcceptedDesign, "Accepted");
-        outputWriter.WriteLine();
-        WriteDetails(DocumentKind.ProposedDesign, "Proposed");
-        outputWriter.WriteLine();
-
-        static string GetMarkdownLink(string relativeTo, string path, string title)
-        {
-            var relativePath = Path.GetRelativePath(relativeTo, path)
-                                    .Replace("\\", "/"); // In Markdown, we always want slashes
-            return $"[{title}]({relativePath})";
-        }
-
-        void WriteList(DocumentKind kind, string header)
-        {
-            outputWriter.WriteLine($"## {header}");
-            outputWriter.WriteLine();
-
-            foreach (var design in designs.Where(d => d.Kind == kind)
-                                          .OrderBy(d => d.Year)
-                                          .ThenBy(d => d.Title))
-            {
-                var link = GetMarkdownLink(directoryPath, design.Path, design.Title);
-                outputWriter.WriteLine($"* {link}");
-            }
-        }
-
-        void WriteDetails(DocumentKind kind, string header)
-        {
-            outputWriter.WriteLine($"## {header}");
-            outputWriter.WriteLine();
-            outputWriter.WriteLine($"|Year|Title|Owners|");
-            outputWriter.WriteLine($"|----|-----|------|");
-
-            foreach (var design in designs.Where(d => d.Kind == kind)
-                                          .OrderBy(d => d.Year)
-                                          .ThenBy(d => d.Title))
-            {
-                var owners = string.Join(", ", design.Owners);
-                var link = GetMarkdownLink(directoryPath, design.Path, design.Title);
-                outputWriter.WriteLine($"| {design.Year} | {link} | { owners } |");
-            }
-        }
+        // Let's get the line breaks consistent with the OS line breaks:
+        content = Regex.Replace(content, "(\r\n)|(\r(?!\n))|(\n(?<!\r))", Environment.NewLine);
+        File.WriteAllText(outputPath, content);
     }
 }
 
@@ -259,5 +206,31 @@ internal sealed class Document
         }
 
         return new Document(kind.Value, path, year, title, owners);
+    }
+}
+
+public partial class IndexTemplate
+{
+    private readonly Document[] _documents;
+    private readonly string _directoryPath;
+
+    internal IndexTemplate(string directoryPath, IEnumerable<Document> documents)
+    {
+        _directoryPath = directoryPath;
+        _documents = documents.ToArray();
+    }
+
+    private string GetMarkdownLink(Document document)
+    {
+        var relativePath = Path.GetRelativePath(_directoryPath, document.Path)
+                               .Replace("\\", "/"); // In Markdown, we always want slashes
+        return $"[{document.Title}]({relativePath})";
+    }
+
+    private IEnumerable<Document> GetDocuments(DocumentKind kind)
+    {
+        return _documents.Where(d => d.Kind == kind)
+                         .OrderBy(d => d.Year)
+                         .ThenBy(d => d.Title);
     }
 }
