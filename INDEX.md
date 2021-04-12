@@ -4,21 +4,21 @@ This file is auto-generated. Direct changes to it maybe lost.
 
 Use update-index to regenerate it:
 
-    python3 ./update-index > INDEX.md
+    ./update-index
 
 -->
 
-# Meta
+# Design Index
 
-| Design Name |
-| ----------- |
-| [Proposal Template](meta/template.md) |
-| [Proposals](meta/proposals.md) |
+## Meta
 
-# Accepted
+* [Proposal Template](meta/template.md)
+* [Proposals](meta/proposals.md)
 
-| Year | Design Name | Owner |
-| ---- | ----------- | ----- |
+## Accepted
+
+|Year|Title|Owners|
+|----|-----|------|
 | 2018 | [.NET Core SDK Versioning](accepted/2018/sdk-version-scheme.md) | [Kathleen Dollard](https://github.com/KathleenDollard) |
 | 2018 | [.NET Platform Dependent Intrinsics](accepted/2018/platform-intrinsics.md) | [Russell Hadley](https://github.com/russellhadley) |
 | 2018 | [Automatic Binding Redirection By Default](accepted/2018/automatic-redirects-by-default/automatic-redirects-by-default.md) | [Immo Landwerth](https://github.com/terrajobst), [Rainer Sigwald](https://github.com/rainersigwald) |
@@ -39,9 +39,9 @@ Use update-index to regenerate it:
 | 2020 | [.NET Optional SDK Workloads](accepted/2020/workloads/workloads.md) | [Rich Lander](https://github.com/richlander) |
 | 2020 | [.NET Runtime Form Factors](accepted/2020/form-factors.md) | [Rich Lander](https://github.com/richlander), [Jan Kotas](https://github.com/jkotas) |
 | 2020 | [.NET SDK Workload Manifests](accepted/2020/workloads/workload-manifest.md) | [Mikayla Hutchinson](https://github.com/mhutch) |
-| 2020 | [ASN.1 BER/CER/DER Reader & Writer](accepted/2020/asnreader/asnreader.md) | [Jeremy Barton](https://github.com/bartonjs) |
 | 2020 | [Annotating APIs as unsupported on specific platforms](accepted/2020/platform-exclusion/platform-exclusion.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Annotating platform-specific APIs and detecting its use](accepted/2020/platform-checks/platform-checks.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2020 | [ASN.1 BER/CER/DER Reader & Writer](accepted/2020/asnreader/asnreader.md) | [Jeremy Barton](https://github.com/bartonjs) |
 | 2020 | [Better Obsoletion](accepted/2020/better-obsoletion/better-obsoletion.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [BinaryFormatter Obsoletion Strategy](accepted/2020/better-obsoletion/binaryformatter-obsoletion.md) | [Levi Broderick](https://github.com/GrabYourPitchforks) |
 | 2020 | [CBOR Reader & Writer](accepted/2020/cbor/cbor.md) | [Eirik Tsarpalis](https://github.com/eiriktsarpalis) |
@@ -53,11 +53,11 @@ Use update-index to regenerate it:
 | 2020 | [Install location search for .NET Core](accepted/2020/install-locations.md) | [Vitek Karas](https://github.com/vitek-karas) |
 | 2020 | [JSON extension methods for HttpClient](accepted/2020/json-http-extensions/json-http-extensions.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Linking the .NET Libraries](accepted/2020/linking-libraries.md) | [Eric Erhardt](https://github.com/eerhardt) |
-| 2020 | [MSBuild SDK Resolvers and optional workloads in .NET 5](accepted/2020/workloads/workload-resolvers.md) | [Rich Lander](https://github.com/richlander), [Daniel Plaisted](https://github.com/dsplaisted) |
 | 2020 | [Marking APIs that are unsupported by Blazor WebAssembly](accepted/2020/blazor-unsupported-apis/blazor-unsupported-apis.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Marking Windows-only APIs](accepted/2020/windows-specific-apis/windows-specific-apis.md) | [Immo Landwerth](https://github.com/terrajobst) |
-| 2020 | [OR_GREATER preprocessor symbols for TFMs](accepted/2020/or-greater-defines/or-greater-defines.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2020 | [MSBuild SDK Resolvers and optional workloads in .NET 5](accepted/2020/workloads/workload-resolvers.md) | [Rich Lander](https://github.com/richlander), [Daniel Plaisted](https://github.com/dsplaisted) |
 | 2020 | [Obsoletions in .NET 5](accepted/2020/better-obsoletion/obsoletions-in-net5.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2020 | [OR_GREATER preprocessor symbols for TFMs](accepted/2020/or-greater-defines/or-greater-defines.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Overview and goals](accepted/2020/serializer/SerializerGoals5.0.md) | [Steve Harter](https://github.com/steveharter) |
 | 2020 | [Platform Specific HttpClient Support in dotnet/runtime](accepted/2020/mono-convergence/platform-specific-httpclient.md) | [Steve Pfister](https://github.com/steveisok) |
 | 2020 | [Portable PDB](accepted/2020/diagnostics/portable-pdb.md) | [Tomáš Matoušek](https://github.com/tmat) |
@@ -76,11 +76,11 @@ Use update-index to regenerate it:
 | 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
 
-# Proposed
+## Proposed
 
-| Design Name | Owner |
-| ----------- | ----- |
-| [Flexible HTTP APIs](proposed/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
-| [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
-| [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
+|Year|Title|Owners|
+|----|-----|------|
+|  | [Flexible HTTP APIs](proposed/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
+|  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
+|  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
 
