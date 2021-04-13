@@ -1,6 +1,6 @@
 # Annotating platform-specific APIs and detecting its use
 
-**PM** [Immo Landwerth](https://github.com/terrajobst)
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 With .NET Core, we've made cross-platform development a mainline experience in
 .NET. Even more so for library authors that use [.NET 5][net5-tfms]. We

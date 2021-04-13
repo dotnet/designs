@@ -1,6 +1,6 @@
 # Compile-time source generation for strongly-typed logging messages
 
-**Dev** [Maryam Ariyan](https://github.com/maryamariyan), [Martin Taillefer](https://github.com/geeknoid)
+**Owner** [Maryam Ariyan](https://github.com/maryamariyan), [Martin Taillefer](https://github.com/geeknoid)
 
 ## Background
 

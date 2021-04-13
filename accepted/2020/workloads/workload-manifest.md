@@ -1,6 +1,6 @@
 # .NET SDK Workload Manifests
 
-**Dev** [Mikayla Hutchinson](https://github.com/mhutch)
+**Owner** [Mikayla Hutchinson](https://github.com/mhutch)
 
 # Overview
 

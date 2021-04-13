@@ -1,8 +1,7 @@
 # Automatic Binding Redirection By Default
 
-**PM** [Immo Landwerth](https://github.com/terrajobst) |
-**Dev** [Rainer Sigwald](https://github.com/rainersigwald) |
-**Feature**: [#dotnet/sdk/1405](https://github.com/dotnet/sdk/issues/1405)
+**Owner** [Immo Landwerth](https://github.com/terrajobst) | [Rainer Sigwald](https://github.com/rainersigwald) |
+**Feature** [#dotnet/sdk/1405](https://github.com/dotnet/sdk/issues/1405)
 
 Four years ago, .NET Framework 4.5.1 shipped an MSBuild feature that
 [automatically generates binding redirects][abrg]. Unfortunately, it's

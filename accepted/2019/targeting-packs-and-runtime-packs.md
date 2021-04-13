@@ -1,7 +1,6 @@
 # Background
 
-**PM** [Rich Lander](https://github.com/richlander) |
-**Dev** [Nick Guerrera](https://github.com/nguerrera) |
+**Owner** [Rich Lander](https://github.com/richlander) | [Nick Guerrera](https://github.com/nguerrera)
 
 The objectives here are:
 

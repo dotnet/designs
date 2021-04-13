@@ -1,7 +1,6 @@
 # Windows Compatibility Pack
 
-**PM** [Immo Landwerth](https://github.com/terrajobst) |
-**Dev** [Wes Haggard](https://github.com/weshaggard)
+**Owner** [Immo Landwerth](https://github.com/terrajobst) | [Wes Haggard](https://github.com/weshaggard)
 
 When we shipped .NET Core 1.x as well as .NET Standard 1.x, we were hoping to be
 able to use that as an opportunity to remove legacy technologies and deprecated

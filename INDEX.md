@@ -71,10 +71,6 @@ Use update-index to regenerate it:
 | 2020 | [Type for holding & converting binary data](accepted/2020/binary-data/binary-data.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [.NET 6.0 Target Frameworks](accepted/2021/net6.0-tfms/net6.0-tfms.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Compile-time source generation for strongly-typed logging messages](accepted/2021/logging-generator.md) | [Maryam Ariyan](https://github.com/maryamariyan), [Martin Taillefer](https://github.com/geeknoid) |
-| 2021 | [Designs](accepted/2021/statics-in-interfaces/designs/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
-| 2021 | [Requirements](accepted/2021/statics-in-interfaces/requirements/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
-| 2021 | [Scenarios](accepted/2021/statics-in-interfaces/scenarios/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
-| 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
 
 ## Proposed

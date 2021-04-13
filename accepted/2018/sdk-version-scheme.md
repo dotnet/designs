@@ -1,6 +1,6 @@
 # .NET Core SDK Versioning
 
-**PM** [Kathleen Dollard](https://github.com/KathleenDollard)
+**Owner** [Kathleen Dollard](https://github.com/KathleenDollard)
 
 .NET Core runtimes and SDKs are used together. They release independently, so it has been a challenge picking sensible version numbers. Going forward, the first and second positions of the version number will match for the Runtime and SDK. The third position will not match since the Runtime and SDK release independently.
 

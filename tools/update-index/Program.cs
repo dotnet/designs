@@ -225,7 +225,7 @@ internal sealed class Document
 
         var lines = File.ReadAllLines(path);
         var titleRegex = new Regex("^# *(?<title>.*?)#?$");
-        var ownerRegex = new Regex(@"^\*\*(?:Libraries)? *(PM|Dev) ?\*\*(?<owner>[^|]+)(\s*\|\s*(?<owner>[^|]+))*");
+        var ownerRegex = new Regex(@"^\*\*Owner\*\*(?<owner>[^|]+)(\s*\|\s*(?<owner>[^|]+))*");
 
         foreach (var line in lines)
         {

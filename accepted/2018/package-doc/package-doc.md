@@ -1,7 +1,6 @@
 # Package Information in API Reference
 
-**PM** [Immo Landwerth](https://github.com/terrajobst) |
-**Dev** [Wes Haggard](https://github.com/weshaggard)
+**Owner** [Immo Landwerth](https://github.com/terrajobst) | [Wes Haggard](https://github.com/weshaggard)
 
 With .NET Core, we've blurred the line between APIs that ship as part of the
 framework and APIs that ship as NuGet packages. We need to update the
