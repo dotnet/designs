@@ -254,7 +254,7 @@ internal sealed class Document
                 {
                     foreach (Capture capture in ownerMatch.Groups["owner"].Captures)
                     {
-                        var owner =capture.Value.Trim();
+                        var owner = capture.Value.Trim();
                         if (owner.Length > 0)
                             owners.Add(owner);
                     }
