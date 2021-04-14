@@ -177,6 +177,22 @@ This means you can look at a binary and tell whether it was built using preview
 features. This can be used for auditing and for detecting transitive
 dependencies ([discussed later](#api-analyzer)).
 
+### `runtimeconfig.json`
+
+While we don't have concrete plans to use it, we should make sure that the
+application project's preview mode is written to the `runtimeconfig.json` so
+that the runtime can use this information if ever needed:
+
+```json
+{
+  "runtimeOptions": {
+    "tfm": "netcoreapp3.1",
+    "previewFeatures": true
+    // ...
+  }
+}
+```
+
 ### Compilation context
 
 When `EnablePreviewFeatures` is true, the `LangVersion` property is set to
