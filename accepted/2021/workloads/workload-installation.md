@@ -48,6 +48,10 @@ On Mac OS, we will always use the .NET SDK managed installer.  There will be pac
 
 # Installation operations
 
+## Unit of installation
+
+Workloads are made up of workload packs.  For some installers, the *unit of installation* in the underlying installation technology will map to an entire workload.  For example, there will be a checkbox in the Visual Studio installer UI corresponding to a whole .NET SDK workload.  For other installers, the *unit of installation* will be workload packs, and it will be up to the .NET SDK to manage the relationships between the installed packs and the workloads that are supposed to be installed.  This will be the case for the .NET SDK managed and Standalone Windows IAL.
+
 ## Workload pack tracking and installation cleanup
 
 Workload artifacts should not be left over after uninstalling or updating workloads.  This is complicated by the fact that the same workload pack may be used by different workloads, and even different .NET SDK feature bands.  It will be the responsibility of the installer abstraction implementation to manage this.  
@@ -190,7 +194,7 @@ To install updated manifests, the following process will be used (for each workl
     - NuGet package type should be DotnetPlatform (will this prevent projects / packages from incorrectly taking a dependency on them?)
     - NuGet package ID and version will be exactly the same as the workload pack ID and version
     - If an offline installation cache folder was specified, we'll look for the NuGet package there first before trying to download it
-    - Otherwise, we'll use the NuGet APIs to download the NuGet package to a temporary folder (`%TEMP%/dotnetsdk`)
+    - Otherwise, we'll use the NuGet APIs to download the NuGet package to a temporary folder `<DOTNET ROOT>/metadata/temp/`
   - Determine target folder for NuGet package.  This depends on the pack type, and can be determined via the workload resolver
   - For Library and Template packs, copy nupkg to target folder
   - For other pack types, copy contents of `data/` folder in .nupkg archive to target folder
