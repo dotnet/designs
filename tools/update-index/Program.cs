@@ -233,7 +233,7 @@ internal sealed class Document
         var reachedSubheading = false;
 
         var titleRegex = new Regex("^# *(?<title>.*?)#?$");
-        var ownerRegex = new Regex(@"^\*\*Owner(s)?\*\*(?<owner>[^|]+)(\s*\|\s*(?<owner>[^|]+))*", RegexOptions.IgnoreCase);
+        var ownerRegex = new Regex(@"^\*\*Owner(s)?\*\*(?<owner>[^|,]+)(\s*[\|,]\s*(?<owner>[^|,]+))*", RegexOptions.IgnoreCase);
         var draftRegex = new Regex(@"^\*\*DRAFT\*\*$", RegexOptions.IgnoreCase);
 
         foreach (var line in lines)
