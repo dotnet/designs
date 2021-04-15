@@ -14,7 +14,7 @@ The overall design has been influenced by the existing .NET Surface Area, the Sw
 
 The base interfaces each describe one or more core operations that are used to build up the core interfaces listed later. In many cases, such as for addition, subtraction, multiplication, and division, there is only a single operator per interface. This split is important in order for them to be reusable against downstream types, like `DateTime` where addition does not imply subtraction or `Matrix` where multiplication does not imply division. These interfaces are not expected to be used by many users and instead primarily by developers looking at defining their own abstractions, as such we are not concerned with adding simplifying interfaces like `IAddable<TSelf> : IAddable<TSelf, TSelf>`. Likewise, there is not a concern with exposing `IAddable<TSelf, TOther, TResult>` and instead we will require `TSelf` and `TResult` be the same. This requirement greatly simplifies implementation and consumption of the types.
 
-```
+```csharp
 namespace System
 {
     public interface IParseable<TSelf>
