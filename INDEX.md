@@ -77,6 +77,7 @@ Use update-index to regenerate it:
 
 |Year|Title|Owners|
 |----|-----|------|
+| 2021 | [Flexible HTTP APIs](accepted/2021/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
 | 2021 | [Improve UTF-8 support](accepted/2021/utf8/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Immo Landwerth](https://github.com/terrajobst), [Mads Torgersen](https://github.com/MadsTorgersen) |
 
@@ -84,7 +85,6 @@ Use update-index to regenerate it:
 
 |Year|Title|Owners|
 |----|-----|------|
-|  | [Flexible HTTP APIs](proposed/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
 
