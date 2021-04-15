@@ -73,6 +73,13 @@ Use update-index to regenerate it:
 | 2021 | [Compile-time source generation for strongly-typed logging messages](accepted/2021/logging-generator.md) | [Maryam Ariyan](https://github.com/maryamariyan), [Martin Taillefer](https://github.com/geeknoid) |
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
 
+## Drafts
+
+|Year|Title|Owners|
+|----|-----|------|
+| 2021 | [Improve UTF-8 support](accepted/2021/utf8/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Immo Landwerth](https://github.com/terrajobst), [Mads Torgersen](https://github.com/MadsTorgersen) |
+
 ## Proposals
 
 |Year|Title|Owners|
@@ -80,11 +87,4 @@ Use update-index to regenerate it:
 |  | [Flexible HTTP APIs](proposed/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
-
-## Drafts
-
-|Year|Title|Owners|
-|----|-----|------|
-| 2021 | [Improve UTF-8 support](accepted/2021/utf8/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
-| 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Immo Landwerth](https://github.com/terrajobst), [Mads Torgersen](https://github.com/MadsTorgersen) |
 

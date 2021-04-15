@@ -110,9 +110,9 @@ internal static class Program
         outputWriter.WriteLine();
         WriteDetails(DocumentKind.AcceptedDesign, "Accepted Designs");
         outputWriter.WriteLine();
-        WriteDetails(DocumentKind.ProposedDesign, "Proposals");
-        outputWriter.WriteLine();
         WriteDetails(DocumentKind.DraftDesign, "Drafts");
+        outputWriter.WriteLine();
+        WriteDetails(DocumentKind.ProposedDesign, "Proposals");
         outputWriter.WriteLine();
 
         static string GetMarkdownLink(string relativeTo, string path, string title)
@@ -159,8 +159,8 @@ internal enum DocumentKind
 {
     Meta,
     AcceptedDesign,
-    ProposedDesign,
-    DraftDesign
+    DraftDesign,
+    ProposedDesign
 }
 
 internal sealed class Document
