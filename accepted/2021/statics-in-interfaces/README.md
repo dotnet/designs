@@ -207,13 +207,13 @@ namespace System
 
         static abstract TSelf Abs(TSelf value);
 
-        static TSelf Clamp(TSelf value, TSelf min, TSelf max);
+        static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
 
-        static (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
+        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
 
-        static TSelf Max(TSelf x, TSelf y);
+        static abstract TSelf Max(TSelf x, TSelf y);
 
-        static TSelf Min(TSelf x, TSelf y);
+        static abstract TSelf Min(TSelf x, TSelf y);
 
         // Math only exposes this Sign for signed types, but it is well-defined for unsigned types
         // it can simply never return -1 and only 0 or 1 instead
@@ -360,86 +360,86 @@ namespace System
         // This, in a way, obsoletes Math/MathF and brings float/double inline with how non-primitive types support similar functionality
         // API review will need to determine if we'll want to continue adding APIs to Math/MathF in the future
 
-        static TSelf Acos(TSelf x);
+        static abstract TSelf Acos(TSelf x);
 
-        static TSelf Acosh(TSelf x);
+        static abstract TSelf Acosh(TSelf x);
 
-        static TSelf Asin(TSelf x);
+        static abstract TSelf Asin(TSelf x);
 
-        static TSelf Asinh(TSelf x);
+        static abstract TSelf Asinh(TSelf x);
 
-        static TSelf Atan(TSelf x);
+        static abstract TSelf Atan(TSelf x);
 
-        static TSelf Atan2(TSelf y, TSelf x);
+        static abstract TSelf Atan2(TSelf y, TSelf x);
 
-        static TSelf Atanh(TSelf x);
+        static abstract TSelf Atanh(TSelf x);
 
-        static TSelf BitIncrement(TSelf x);
+        static abstract TSelf BitIncrement(TSelf x);
 
-        static TSelf BitDecrement(TSelf x);
+        static abstract TSelf BitDecrement(TSelf x);
 
-        static TSelf Cbrt(TSelf x);
+        static abstract TSelf Cbrt(TSelf x);
 
-        static TSelf Ceiling(TSelf x);
+        static abstract TSelf Ceiling(TSelf x);
 
         // CopySign is likely more general purpose and may apply to any signed number type
         // It may even be applicable to unsigned numbers where it simply returns x, for convenience
 
-        static TSelf CopySign(TSelf x, TSelf y);
+        static abstract TSelf CopySign(TSelf x, TSelf y);
 
-        static TSelf Cos(TSelf x);
+        static abstract TSelf Cos(TSelf x);
 
-        static TSelf Cosh(TSelf x);
+        static abstract TSelf Cosh(TSelf x);
 
-        static TSelf Exp(TSelf x);
+        static abstract TSelf Exp(TSelf x);
 
-        static TSelf Floor(TSelf x);
+        static abstract TSelf Floor(TSelf x);
 
-        static TSelf FusedMultiplyAdd(TSelf x, TSelf y, TSelf z);
+        static abstract TSelf FusedMultiplyAdd(TSelf x, TSelf y, TSelf z);
 
-        static TSelf IEEERemainder(TSelf x, TSelf y);
+        static abstract TSelf IEEERemainder(TSelf x, TSelf y);
 
         // IEEE defines the result to be an integral type, but not the size
 
-        static int ILogB(TSelf x);
+        static abstract int ILogB(TSelf x);
 
-        static TSelf Log(TSelf x);
+        static abstract TSelf Log(TSelf x);
 
-        static TSelf Log(TSelf x, TSelf newBase);
+        static abstract TSelf Log(TSelf x, TSelf newBase);
 
-        static TSelf Log2(TSelf x);
+        static abstract TSelf Log2(TSelf x);
 
-        static TSelf Log10(TSelf x);
+        static abstract TSelf Log10(TSelf x);
 
-        static TSelf MaxMagnitude(TSelf x, TSelf y);
+        static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
 
-        static TSelf MinMagnitude(TSelf x, TSelf y);
+        static abstract TSelf MinMagnitude(TSelf x, TSelf y);
 
-        static TSelf Pow(TSelf x, TSelf y);
+        static abstract TSelf Pow(TSelf x, TSelf y);
 
-        static TSelf Round(TSelf x);
+        static abstract TSelf Round(TSelf x);
 
-        static TSelf Round(TSelf x, int digits);
+        static abstract TSelf Round(TSelf x, int digits);
 
-        static TSelf Round(TSelf x, MidpointRounding mode);
+        static abstract TSelf Round(TSelf x, MidpointRounding mode);
 
-        static TSelf Round(TSelf x, int digits, MidpointRounding mode);
+        static abstract TSelf Round(TSelf x, int digits, MidpointRounding mode);
 
         // IEEE defines n to be an integral type, but not the size
 
-        static TSelf ScaleB(TSelf x, int n);
+        static abstract TSelf ScaleB(TSelf x, int n);
 
-        static TSelf Sin(TSelf x);
+        static abstract TSelf Sin(TSelf x);
 
-        static TSelf Sinh(TSelf x);
+        static abstract TSelf Sinh(TSelf x);
 
-        static TSelf Sqrt(TSelf x);
+        static abstract TSelf Sqrt(TSelf x);
 
-        static TSelf Tan(TSelf x);
+        static abstract TSelf Tan(TSelf x);
 
-        static TSelf Tanh(TSelf x);
+        static abstract TSelf Tanh(TSelf x);
 
-        static TSelf Truncate(TSelf x);
+        static abstract TSelf Truncate(TSelf x);
 
         // The following members are exposed on the floating-point types as constants today
         // This may be of concern when implementing the interface
@@ -454,21 +454,21 @@ namespace System
 
         // The following methods are exposed on the floating-point types today
 
-        static bool IsFinite(TSelf value);
+        static abstract bool IsFinite(TSelf value);
 
-        static bool IsInfinity(TSelf value);
+        static abstract bool IsInfinity(TSelf value);
 
-        static bool IsNaN(TSelf value);
+        static abstract bool IsNaN(TSelf value);
 
-        static bool IsNegative(TSelf value);
+        static abstract bool IsNegative(TSelf value);
 
-        static bool IsNegativeInfinity(TSelf value);
+        static abstract bool IsNegativeInfinity(TSelf value);
 
-        static bool IsNormal(TSelf value);
+        static abstract bool IsNormal(TSelf value);
 
-        static bool IsPositiveInfinity(TSelf value);
+        static abstract bool IsPositiveInfinity(TSelf value);
 
-        static bool IsSubnormal(TSelf value);
+        static abstract bool IsSubnormal(TSelf value);
 
         // The following methods are approved but not yet implemented in the libraries
 
@@ -772,9 +772,11 @@ namespace System
 
 There are several types which may benefit from some interface support. These include, but aren't limited to:
 * System.Array
+* System.DateOnly
 * System.Enum
 * System.Index
 * System.Range
+* System.TimeOnly
 * System.Tuple
 * System.ValueTuple
 * System.Numerics.BigInteger
