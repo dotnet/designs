@@ -539,12 +539,12 @@ namespace System
         //  TLogBFormat LogB(TSelf x);
 
         // 5.4.1
-        //  TSeulf Addition(TSelf x, TSelf y);
-        //  TSeulf Subtraction(TSelf x, TSelf y);
-        //  TSeulf Multiplication(TSelf x, TSelf y);
-        //  TSeulf Division(TSelf x, TSelf y);
-        //  TSeulf SquareRoot(TSelf x);
-        //  TSeulf FusedMultiplyAdd(TSelf x, TSelf y, TSelf z);
+        //  TSelf Addition(TSelf x, TSelf y);
+        //  TSelf Subtraction(TSelf x, TSelf y);
+        //  TSelf Multiplication(TSelf x, TSelf y);
+        //  TSelf Division(TSelf x, TSelf y);
+        //  TSelf SquareRoot(TSelf x);
+        //  TSelf FusedMultiplyAdd(TSelf x, TSelf y, TSelf z);
         //  TSelf ConvertFromInt(TInt x);
         //  TInt ConvertToInteger(TSelf x);
         //      TiesToEven
