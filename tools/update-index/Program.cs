@@ -80,7 +80,7 @@ internal static class Program
         catch (Exception ex)
         {
             Console.Error.WriteLine(ex);
-            return 1;                
+            return 1;
         }
     }
 
@@ -103,14 +103,16 @@ internal static class Program
         outputWriter.WriteLine("    ./update-index");
         outputWriter.WriteLine("");
         outputWriter.WriteLine("-->");
-        outputWriter.WriteLine();            
+        outputWriter.WriteLine();
         outputWriter.WriteLine("# Design Index");
-        outputWriter.WriteLine();            
+        outputWriter.WriteLine();
         WriteList(DocumentKind.Meta, "Meta");
         outputWriter.WriteLine();
-        WriteDetails(DocumentKind.AcceptedDesign, "Accepted");
+        WriteDetails(DocumentKind.AcceptedDesign, "Accepted Designs");
         outputWriter.WriteLine();
-        WriteDetails(DocumentKind.ProposedDesign, "Proposed");
+        WriteDetails(DocumentKind.DraftDesign, "Drafts");
+        outputWriter.WriteLine();
+        WriteDetails(DocumentKind.ProposedDesign, "Proposals");
         outputWriter.WriteLine();
 
         static string GetMarkdownLink(string relativeTo, string path, string title)
@@ -157,6 +159,7 @@ internal enum DocumentKind
 {
     Meta,
     AcceptedDesign,
+    DraftDesign,
     ProposedDesign
 }
 
@@ -186,7 +189,7 @@ internal sealed class Document
         }
 
         var directory = fileInfo.Directory;
-        
+
         var kind = (DocumentKind?)null;
         var year = (int?)null;
         var title = (string?)null;
@@ -224,25 +227,41 @@ internal sealed class Document
         }
 
         var lines = File.ReadAllLines(path);
+
+        // Extract titles, owners, and draft status from content above any subheadings
+        var subheadingRegex = new Regex("^#{2,}");
+        var reachedSubheading = false;
+
         var titleRegex = new Regex("^# *(?<title>.*?)#?$");
-        var ownerRegex = new Regex(@"^\*\*Owner\*\*(?<owner>[^|]+)(\s*\|\s*(?<owner>[^|]+))*");
+        var ownerRegex = new Regex(@"^\*\*Owner(s)?\*\*(?<owner>[^|,]+)(\s*[\|,]\s*(?<owner>[^|,]+))*", RegexOptions.IgnoreCase);
+        var draftRegex = new Regex(@"^\*\*DRAFT\*\*$", RegexOptions.IgnoreCase);
 
         foreach (var line in lines)
         {
-            var titleMatch = titleRegex.Match(line);
-            var ownerMatch = ownerRegex.Match(line);
+            reachedSubheading = reachedSubheading || subheadingRegex.Match(line).Success;
 
-            if (titleMatch.Success && title == null)
+            if (!reachedSubheading)
             {
-                title = titleMatch.Groups["title"].Value.Trim();
-            }
-            else if (ownerMatch.Success)
-            {
-                foreach (Capture capture in ownerMatch.Groups["owner"].Captures)
+                var titleMatch = titleRegex.Match(line);
+                var ownerMatch = ownerRegex.Match(line);
+                var draftMatch = draftRegex.Match(line);
+
+                if (titleMatch.Success && title == null)
                 {
-                    var owner =capture.Value.Trim();
-                    if (owner.Length > 0)
-                        owners.Add(owner);
+                    title = titleMatch.Groups["title"].Value.Trim();
+                }
+                else if (ownerMatch.Success)
+                {
+                    foreach (Capture capture in ownerMatch.Groups["owner"].Captures)
+                    {
+                        var owner = capture.Value.Trim();
+                        if (owner.Length > 0)
+                            owners.Add(owner);
+                    }
+                }
+                else if (draftMatch.Success)
+                {
+                    kind = DocumentKind.DraftDesign;
                 }
             }
         }
