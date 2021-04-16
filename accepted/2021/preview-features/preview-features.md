@@ -24,8 +24,7 @@ almost impossible to do on .NET Framework. Examples include static linking,
 default interface members, and ref structs (such as `Span<T>`).
 
 However, it's sometimes challenging to deliver cross-cutting feature work in a
-single release, especially when it's breaking new ground in terms of
-expressiveness. A good example of such a feature is the upcoming improved
+single release. A good example of such a feature is the upcoming improved
 numeric support in generic code, with the help of static interface members. Such
 a feature requires work in the runtimes, the languages, and the libraries. The
 work at the library level isn't very high, but it's all about finding the right
