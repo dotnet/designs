@@ -353,13 +353,21 @@ For instance:
 void f(dynamic x) => x.PreviewMethod();
 ```
 
-The problem with doing that is that it's not very pay-for-play friendly (every
-single time a method is called via reflection, we need to check for the applied
-attributes, so everyone has to pay for this enforcement, whether or not they
-actually use preview APIs or not). I'd argue that whenever reflection is used,
-our ability to provide guardrails is going down (e.g. no support for analyzers,
-no warnings for using obsolete APIs etc). Calling preview APIs is really not
-much different from that.
+There are several problems with that:
+
+1. **It's not pay-for-play friendly**. That is, every single time a method is
+   called via reflection, we need to check for the applied attributes, so
+   everyone has to pay for this enforcement, whether or not they actually use
+   preview APIs or not.
+
+2. **It's hard to get right**. We've tried that before, during early days of UWP
+   to prevent users from calling out of the Window Store approved API set and it
+   turns out to be quite leaky. For example, code walking the methods and
+   properties might be able to see them but then wouldn't be able to call them.
+
+I'd argue that whenever reflection is used, our ability to provide guardrails is
+going down (e.g. no support for analyzers, no warnings for using obsolete APIs
+etc). Calling preview APIs is really not much different from that.
 
 **OPEN ISSUE** Should we block calls to preview APIs from reflection?
 
