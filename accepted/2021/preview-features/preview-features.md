@@ -70,11 +70,22 @@ copy & paste some sample code from the blog post.
 
 The code immediately produces an error message:
 
-> error: The type 'IArithmetic\<T>' is in preview. In order to use it, you need
+> error: The type 'INumber\<TSelf>' is in preview. In order to use it, you need
 > to enable preview features.
 
 After taking a quick look at the blog post, Ainsley realizes that they only
 need to set `EnablePreviewFeatures` to `true` in the project file.
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <EnablePreviewFeatures>True</EnablePreviewFeatures>
+  </PropertyGroup>
+
+</Project>
+```
 
 ### Consuming a library that uses a preview feature
 
@@ -89,6 +100,67 @@ engine type which produces the following error:
 Sahibi IMs Ainsley to ask what this is about where she learns that this feature
 isn't a supported part of .NET, therefore she should make sure to not integrate
 the library into the production instance of Fabrikam.
+
+### Building a library that offers preview features
+
+Tanner is working on `System.Runtime` that needs to offer preview features
+without forcing all consumers to enable preview mode.
+
+To do this, Tanner turns on preview features for `System.Runtime` but disables
+the automatic generation of the assembly level attribute
+`[assembly: RequiresPreviewFeatures]`:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <EnablePreviewFeatures>True</EnablePreviewFeatures>
+    <GenerateRequiresPreviewFeaturesAttribute>False</GenerateRequiresPreviewFeaturesAttribute>
+  </PropertyGroup>
+
+</Project>
+```
+
+This puts the project in expert mode and Tanner is now on the hook to ensure
+that all public APIs that rely on preview features are marked with
+`[RequiresPreviewFeatures]`. For example, the new interface that he's adding to
+represent numbers need static interface members, so he marks the interface
+accordingly:
+
+```C#
+namespace System
+{
+    [RequiresPreviewFeatures]
+    public interface INumber<TSelf>
+    {
+        // ...
+    }
+}
+```
+
+> What will the compiler do when the attribute is not applied at the assembly level?
+
+I don't think the compiler/analyzer should do anything in this case. The SDK
+will generate the assembly level attribute based on the project setting, but
+this can be turned, off which is what we will do to build the BCL. For obvious
+reasons we don't want `System.Runtime` as whole to have an assembly level
+attribute -- we only want this on specific types/members.
+
+> If assembly A has a method M marked with [RequiresPreviewFeatures], but no
+> assembly level attribute, and it references assembly B that has the assembly
+> level attribute, will the compiler warn?
+
+Yes. The assembly level attribute is meant to protect the user that just uses
+the project level setting. Advanced users (like us) can turn off the generation
+of the assembly level attribute and selectively apply this attribute to
+particular parts of the library. In this case it will only warn users that uses
+those APIs.
+
+The advanced user is responsible for making sure that they very well understand
+which parts are using preview features and ensure they get the attribution
+right. Hence, it doesn't make sense for such as user to depend on an assembly
+that didn't do that due diligence because all bets are off at that point.
 
 ## Requirements
 
