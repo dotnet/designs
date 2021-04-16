@@ -342,6 +342,27 @@ members without putting it on the assembly itself.
 ***Note:*** Since F# doesn't support analyzers, we would have to add this
 capability to the compiler itself.
 
+### Reflection usage
+
+We need to decide whether or not to block calls via reflection to APIs that are
+marked as `[RequirePreviewFeatures]`.
+
+For instance:
+
+```C#
+void f(dynamic x) => x.PreviewMethod();
+```
+
+The problem with doing that is that it's not very pay-for-play friendly (every
+single time a method is called via reflection, we need to check for the applied
+attributes, so everyone has to pay for this enforcement, whether or not they
+actually use preview APIs or not). I'd argue that whenever reflection is used,
+our ability to provide guardrails is going down (e.g. no support for analyzers,
+no warnings for using obsolete APIs etc). Calling preview APIs is really not
+much different from that.
+
+**OPEN ISSUE** Should we block calls to preview APIs from reflection?
+
 ## Q & A
 
 ### What about runtime-only preview features?
