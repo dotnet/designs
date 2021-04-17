@@ -205,7 +205,7 @@ The `framework` pack kind is used for runtime packs and targeting packs. The wor
 
 A pack definition with the optional `alias-to` key is an *alias pack*. An alias pack has a virtual pack ID that doesn't need to correspond to a real NuGet package. When querying the workload manifest, alias packs resolve to concrete pack IDs in a platform-dependent way. The `alias-to` value is a JSON object, where the keys are host platform RIDs, and the values are NuGet package IDs.
 
- An alias pack may contain aliases for any number of platform RIDs. When resolving the pack, the [RID graph](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog) is used to find the most specific match for the host platform RID, and the `any` RID may be used to alias all platforms. On host platforms where an alias pack does not resolve to anything, that pack will be a no-op. This allows workloads to include packs that install on a subset of the platforms on which the workload is available.
+ An alias pack may contain aliases for any number of platform RIDs. When resolving the pack, the [RID graph](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog) is used to find the most specific match for the host platform RID, and the `any` RID may be used to alias all platforms. On host platforms where an alias pack does not resolve to anything, that pack will be a no-op: workload installation operations omit it, and attempts to import its MSBuild targets fail silently. This allows workloads to include packs that install on a subset of the platforms on which the workload is available.
 
 For example, an SDK pack might contain a compiler that's a native executable and hence depends on the host platform:
 
