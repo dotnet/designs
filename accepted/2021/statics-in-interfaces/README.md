@@ -8,6 +8,165 @@ C# is looking at enabling static abstract members in interfaces (https://github.
 
 ## Scenarios
 
+### Allow easier maintainence for generic code
+
+Tanner is building `Vector<T>`, an important numeric helper type for SIMD acceleration. Today, this type support 10 underlying primitive types for `T` and they can use generic specialization in an internal helper to ensure the implementation is performant for each:
+
+```csharp
+private static T ScalarAdd<T>(T left, T right)
+    where T : struct
+{
+    if (typeof(T) == typeof(byte))
+    {
+        return (T)(object)(byte)((byte)(object)left + (byte)(object)right);
+    }
+    else if (typeof(T) == typeof(sbyte))
+    {
+        return (T)(object)(sbyte)((sbyte)(object)left + (sbyte)(object)right);
+    }
+    else if (typeof(T) == typeof(ushort))
+    {
+        return (T)(object)(ushort)((ushort)(object)left + (ushort)(object)right);
+    }
+    else if (typeof(T) == typeof(short))
+    {
+        return (T)(object)(short)((short)(object)left + (short)(object)right);
+    }
+    else if (typeof(T) == typeof(uint))
+    {
+        return (T)(object)(uint)((uint)(object)left + (uint)(object)right);
+    }
+    else if (typeof(T) == typeof(int))
+    {
+        return (T)(object)(int)((int)(object)left + (int)(object)right);
+    }
+    else if (typeof(T) == typeof(ulong))
+    {
+        return (T)(object)(ulong)((ulong)(object)left + (ulong)(object)right);
+    }
+    else if (typeof(T) == typeof(long))
+    {
+        return (T)(object)(long)((long)(object)left + (long)(object)right);
+    }
+    else if (typeof(T) == typeof(float))
+    {
+        return (T)(object)(float)((float)(object)left + (float)(object)right);
+    }
+    else if (typeof(T) == typeof(double))
+    {
+        return (T)(object)(double)((double)(object)left + (double)(object)right);
+    }
+    else
+    {
+        throw new NotSupportedException(SR.Arg_TypeNotSupported);
+    }
+}
+```
+
+Given the operation is the same for each type, only differing on the actual type in question, Tanner would expect this to be easier to author and maintain. Additionlly, each new type that needs to be supported adds additional branches and complexity to the code. For example, in .NET 6 support for `nint` and `nuint` support is desired.
+
+Static abstracts in interfaces will allow Tanner to define an interface such as:
+```csharp
+public interface IAddable<TSelf>
+    where TSelf : IAddable<TSelf>
+{
+    static abstract TSelf operator +(TSelf left, TSelf right);
+}
+```
+
+Such an interface now allows the implementation of `ScalarAdd` to be rewritten as:
+```csharp
+private static T ScalarAdd<T>(T left, T right)
+    where T : struct, IAddable<T>
+{
+    ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+    return left + right;
+}
+```
+
+This reduces the amount of code that must be maintained and allows new types to be easily supported by changing `ThrowForUnsupportedVectorBaseType`.
+
+### Allow easier support for a non-finite list of types
+
+Jeff is trying to compute standard deviation of a list of numbers. They are surprised to find that such a function isn't built into .NET. After searching the web, Jeff finds a blog post with the following method (https://dotnetcodr.com/2017/06/29/calculate-standard-deviation-of-integers-with-c-net-3/):
+```csharp
+public static double GetStandardDeviation(this IEnumerable<int> values)
+{
+    double standardDeviation = 0;
+    int[] enumerable = values as int[] ?? values.ToArray();
+    int count = enumerable.Count();
+    if (count > 1)
+    {
+        double avg = enumerable.Average();
+        double sum = enumerable.Sum(d => (d - avg) * (d - avg));
+        standardDeviation = Math.Sqrt(sum / count);
+    }
+    return standardDeviation;
+}
+```
+
+Jeff copies this code into his project and is now able to calculate the standard deviation for a set of integers. However, Jeff also wants to support other types such as `float`, `double`, or even user-defined inputs. Jeff has realized that creating a reusable and easily maintainable implementation would allow producing a NuGet package that other developers seeking the same could depend upon.
+
+After thinking over the possible implementations, Jeff realizes that the only reliable way to implement this in .NET 5 is to define an interface with instance methods that users must then implement on their own types or to hardcode a list of types in their own library. They do not believe this to be as reusable or maintainable as hoped.
+
+Jeff learns that a future version of .NET will offer a new feature called static abstracts in interfaces. Such a feature will have the .NET Libraries expose a set of interfaces that allow Jeff to implement the desired method without requiring users types to take a dependency on types they declared.
+
+The .NET Libraries are exposing interfaces such as:
+```csharp
+public interface IAddable<TSelf>
+    where TSelf : IAddable<TSelf>
+{
+    static abstract TSelf operator +(TSelf left, TSelf right);
+}
+
+public interface ISubtractable<TSelf>
+    where TSelf : ISubtractable<TSelf>
+{
+    static abstract TSelf operator -(TSelf left, TSelf right);
+}
+
+public interface IMultipliable<TSelf>
+    where TSelf : IMultipliable<TSelf>
+{
+    static abstract TSelf operator -(TSelf left, TSelf right);
+}
+
+public interface IDivisable<TSelf>
+    where TSelf : IDivisable<TSelf>
+{
+    static abstract TSelf operator /(TSelf left, TSelf right);
+}
+
+public interface INumber<TSelf>
+    : IAddable<TSelf>
+    : ISubtractable<TSelf>
+    : IMultipliable<TSelf>
+    : IDivisable<TSelf>
+    where TSelf : INumber<TSelf>
+{
+}
+
+// New methods on System.Linq.Enumerable for `Sum<T>` and `Average<T>`, `where T : INumber<T>`
+```
+
+Jeff can now implement their method such as:
+```csharp
+public static double GetStandardDeviation<T>(this IEnumerable<T> values)
+    where T : INumber<T>
+{
+    double standardDeviation = 0;
+    T[] enumerable = values as T[] ?? values.ToArray();
+    int count = enumerable.Count();
+    if (count > 1)
+    {
+        double avg = enumerable.Average();
+        double sum = enumerable.Sum(d => (d - avg) * (d - avg));
+        standardDeviation = Math.Sqrt(sum / count);
+    }
+    return standardDeviation;
+}
+```
+
 ## Designs
 
 The overall design has been influenced by the existing .NET surface area, the Swift numeric protocols (https://developer.apple.com/documentation/swift/swift_standard_library/numbers_and_basic_values/numeric_protocols), and the Rust op traits (https://doc.rust-lang.org/std/ops/index.html). It is broken up into a few layers describing a hierarchy of interfaces and what types implement them. The interfaces aim to be reusable by a variety of types and so do not provide guarantees around concepts like associativity, commutativity or distributivity. Instead, these concepts may become available to tooling in the future via another mechanism, such as attributes on the respective operator implementations.
