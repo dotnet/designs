@@ -18,7 +18,7 @@ An ideal solution to this problem should have two qualities.
 
 2. Developers should not be exposed to any globalization-related concepts unless they explicitly seek globalization support.
 
-The first characteristic is fairly straightforward. APIs like `string.Compare`, `string.Contains`, `string.Equals`, `string.IndexOf`, and others should all behave in an ordinal fashion. Developers shouldn't have to rely on Roslyn analyzers or MSDN to know what behavior a given API has.
+The first characteristic is fairly straightforward. APIs like `string.Compare`, `string.Contains`, `string.Equals`, `string.IndexOf`, and others should all behave in an ordinal fashion. Developers shouldn't have to rely on Roslyn analyzers or docs.microsoft.com to know what behavior a given API has.
 
 The second characteristic requires a bit more explanation. Popular programming languages like Java, JavaScript, Go, Python, C/C++, and others treat string APIs as ordinal. .NET is unique in that we build globalization concepts directly into many basic `string` APIs. Unfortunately, evidence shows that .NET's behavior in this regard is largely unexpected and confusing to our developer audience.
 
