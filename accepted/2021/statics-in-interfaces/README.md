@@ -171,9 +171,215 @@ public static double GetStandardDeviation<T>(this IEnumerable<T> values)
 
 The overall design has been influenced by the existing .NET surface area, the Swift numeric protocols (https://developer.apple.com/documentation/swift/swift_standard_library/numbers_and_basic_values/numeric_protocols), and the Rust op traits (https://doc.rust-lang.org/std/ops/index.html). It is broken up into a few layers describing a hierarchy of interfaces and what types implement them. The interfaces aim to be reusable by a variety of types and so do not provide guarantees around concepts like associativity, commutativity or distributivity. Instead, these concepts may become available to tooling in the future via another mechanism, such as attributes on the respective operator implementations.
 
+<!--
+@startuml
+interface "IAddable<TSelf, TOther, TResult>"
+interface "IBinaryFloatingPoint<TSelf>"
+interface "IBinaryInteger<TSelf>"
+interface "IBinaryNumber<TSelf>"
+interface "IComparable"
+interface "IComparable<T>"
+interface "IComparableOperators<TSelf, TOther>"
+interface "IConvertible"
+interface "IDecrementable<TSelf>"
+interface "IDeserializationCallback"
+interface "IDivisable<TSelf, TOther, TResult>"
+interface "IEquatable<T>"
+interface "IEquatableOperators<TSelf, TOther>"
+interface "IFloatingPoint<TSelf>"
+interface "IFixedWidth<TSelf>"
+interface "IIncrementable<TSelf>"
+interface "IFormattable"
+interface "IMultipliable<TSelf, TOther, TResult>"
+interface "INegatable<TSelf, TResult>"
+interface "INumber<TSelf>"
+interface "IParseable"
+interface "IRemainder<TSelf, TOther, TResult>"
+interface "ISerializable"
+interface "ISignedNumber<TSelf>"
+interface "ISpanFormattable"
+interface "ISpanParseable"
+interface "ISubtractable<TSelf, TOther, TResult>"
+interface "IUnsignedNumber<TSelf>"
+
+"IBinaryNumber<TSelf>"                  <|-- "IBinaryFloatingPoint<TSelf>"
+"IFloatingPoint<TSelf>"                 <|-- "IBinaryFloatingPoint<TSelf>"
+"IBinaryNumber<TSelf>"                  <|-- "IBinaryInteger<TSelf>"
+"INumber<TSelf>"                        <|-- "IBinaryNumber<TSelf>"
+"IComparable"                           <|-- "IComparableOperators<TSelf, TOther>"
+"IComparable<T>"                        <|-- "IComparableOperators<TSelf, TOther>"
+"IEquatableOperators<TSelf, TOther>"    <|-- "IComparableOperators<TSelf, TOther>"
+"IEquatable<T>"                         <|-- "IEquatableOperators<TSelf, TOther>"
+"ISignedNumber<TSelf>"                  <|-- "IFloatingPoint<TSelf>"
+"IAddable<TSelf, TOther, TResult>"      <|-- "INumber<TSelf>"
+"IComparableOperators<TSelf, TOther>"   <|-- "INumber<TSelf>"
+"IDecrementable<TSelf>"                 <|-- "INumber<TSelf>"
+"IDivisable<TSelf, TOther, TResult>"    <|-- "INumber<TSelf>"
+"IIncrementable<TSelf>"                 <|-- "INumber<TSelf>"
+"IMultipliable<TSelf, TOther, TResult>" <|-- "INumber<TSelf>"
+"IRemainder<TSelf, TOther, TResult>"    <|-- "INumber<TSelf>"
+"ISpanFormattable"                      <|-- "INumber<TSelf>"
+"ISpanParseable<TSelf>"                 <|-- "INumber<TSelf>"
+"ISubtractable<TSelf, TOther, TResult>" <|-- "INumber<TSelf>"
+"INegatable<TSelf, TResult>"            <|-- "ISignedNumber<TSelf>"
+"INumber<TSelf>"                        <|-- "ISignedNumber<TSelf>"
+"IFormattable"                          <|-- "ISpanFormattable"
+"IParseable"                            <|-- "ISpanParseable"
+"INumber<TSelf>"                        <|-- "IUnsignedNumber<TSelf>"
+
+class "Byte"
+class "Char"
+class "DateOnly"
+class "DateTime"
+class "DateTimeOffset"
+class "Decimal"
+class "Double"
+class "Enum"
+class "Guid"
+class "Half"
+class "Int16"
+class "Int32"
+class "Int64"
+class "IntPtr"
+class "Object"
+class "SByte"
+class "Single"
+class "TimeSpan"
+class "UInt16"
+class "UInt32"
+class "UInt64"
+class "UIntPtr"
+class "ValueType"
+
+"IBinaryInteger<TSelf>"                 <|-- "Byte"
+"IConvertible"                          <|-- "Byte"
+"IFixedWidth<TSelf>"                    <|-- "Byte"
+"IUnsignedNumber<TSelf>"                <|-- "Byte"
+"ValueType"                             <|-- "Byte"
+"IBinaryInteger<TSelf>"                 <|-- "Char"
+"IConvertible"                          <|-- "Char"
+"IFixedWidth<TSelf>"                    <|-- "Char"
+"IUnsignedNumber<TSelf>"                <|-- "Char"
+"ValueType"                             <|-- "Char"
+"IComparableOperators<TSelf, TOther>"   <|-- "DateOnly"
+"IFixedWidth<TSelf>"                    <|-- "DateOnly"
+"ISpanFormattable"                      <|-- "DateOnly"
+"ISpanParseable<DateOnly>"              <|-- "DateOnly"
+"ValueType"                             <|-- "DateOnly"
+"IAddable<TSelf, TOther, TResult>"      <|-- "DateTime"
+"IComparableOperators<TSelf, TOther>"   <|-- "DateTime"
+"IConvertible"                          <|-- "DateTime"
+"IFixedWidth<Tself>"                    <|-- "DateTime"
+"ISerializable"                         <|-- "DateTime"
+"ISpanFormattable"                      <|-- "DateTime"
+"ISpanParseable<TSelf>"                 <|-- "DateTime"
+"ISubtractable<TSelf, TOther, TResult>" <|-- "DateTime"
+"ValueType"                             <|-- "DateTime"
+"IAddable<TSelf, TOther, TResult>"      <|-- "DateTimeOffset"
+"IComparableOperators<TSelf, TOther>"   <|-- "DateTimeOffset"
+"IDeserializationCallback"              <|-- "DateTimeOffset"
+"IFixedWidth<TSelf>"                    <|-- "DateTimeOffset"
+"ISerializable"                         <|-- "DateTimeOffset"
+"ISpanFormattable"                      <|-- "DateTimeOffset"
+"ISpanParseable<TSelf>"                 <|-- "DateTimeOffset"
+"ISubtractable<TSelf, TOther, TResult>" <|-- "DateTimeOffset"
+"ValueType"                             <|-- "DateTimeOffset"
+"IConvertible"                          <|-- "Decimal"
+"IDeserializationCallback"              <|-- "Decimal"
+"IFixedWidth<decimal>"                  <|-- "Decimal"
+"ISerializable"                         <|-- "Decimal"
+"ISignedNumber<TSelf>"                  <|-- "Decimal"
+"ValueType"                             <|-- "Decimal"
+"IBinaryFloatingPoint<TSelf>"           <|-- "Double"
+"IConvertible"                          <|-- "Double"
+"IFixedWidth<TSelf>"                    <|-- "Double"
+"ValueType"                             <|-- "Double"
+"IComparable"                           <|-- "Enum"
+"IConvertible"                          <|-- "Enum"
+"IFormattable"                          <|-- "Enum"
+"ValueType"                             <|-- "Enum"
+"IComparableOperators<TSelf, TOther>"   <|-- "Guid"
+"ISpanFormattable"                      <|-- "Guid"
+"ISpanParseable<TSelf>"                 <|-- "Guid"
+"ValueType"                             <|-- "Guid"
+"IBinaryFloatingPoint<TSelf>"           <|-- "Half"
+"IFixedWidth<TSelf>"                    <|-- "Half"
+"ValueType"                             <|-- "Half"
+"IBinaryInteger<TSelf>"                 <|-- "Int16"
+"IConvertible"                          <|-- "Int16"
+"IFixedWidth<TSelf>"                    <|-- "Int16"
+"ISignedNumber<TSelf>"                  <|-- "Int16"
+"ValueType"                             <|-- "Int16"
+"IBinaryInteger<TSelf>"                 <|-- "Int32"
+"IConvertible"                          <|-- "Int32"
+"IFixedWidth<TSelf>"                    <|-- "Int32"
+"ISignedNumber<TSelf>"                  <|-- "Int32"
+"ValueType"                             <|-- "Int32"
+"IBinaryInteger<TSelf>"                 <|-- "Int64"
+"IConvertible"                          <|-- "Int64"
+"IFixedWidth<TSelf>"                    <|-- "Int64"
+"ISignedNumber<TSelf>"                  <|-- "Int64"
+"ValueType"                             <|-- "Int64"
+"IBinaryInteger<TSelf>"                 <|-- "IntPtr"
+"IFixedWidth<TSelf>"                    <|-- "IntPtr"
+"ISignedNumber<TSelf>"                  <|-- "IntPtr"
+"ISerializable"                         <|-- "IntPtr"
+"ValueType"                             <|-- "IntPtr"
+"IBinaryInteger<TSelf>"                 <|-- "SByte"
+"IConvertible"                          <|-- "SByte"
+"IFixedWidth<TSelf>"                    <|-- "SByte"
+"ISignedNumber<TSelf>"                  <|-- "SByte"
+"ValueType"                             <|-- "SByte"
+"IBinaryFloatingPoint<TSelf>"           <|-- "Single"
+"IConvertible"                          <|-- "Single"
+"IFixedWidth<TSelf>"                    <|-- "Single"
+"ValueType"                             <|-- "Single"
+"IComparableOperators<TSelf, TOther>"   <|-- "TimeOnly"
+"IFixedWidth<TSelf>"                    <|-- "TimeOnly"
+"ISpanFormattable"                      <|-- "TimeOnly"
+"ISpanParseable<TSelf>"                 <|-- "TimeOnly"
+"ISubtractable<TSelf, TOther, TResult>" <|-- "TimeOnly"
+"ValueType"                             <|-- "TimeOnly"
+"IAddable<TSelf, TOther, TResult>"      <|-- "TimeSpan"
+"IComparableOperators<TSelf, TOther>"   <|-- "TimeSpan"
+"IDivisable<TSelf, TOther, TResult>"    <|-- "TimeSpan"
+"IFixedWidth<Tself>"                    <|-- "TimeSpan"
+"IMultipliable<TSelf, TOther, TResult>" <|-- "TimeSpan"
+"INegatable<TSelf, TResult>"            <|-- "TimeSpan"
+"ISpanFormattable"                      <|-- "TimeSpan"
+"ISubtractable<TSelf, TOther, TResult>" <|-- "TimeSpan"
+"ValueType"                             <|-- "TimeSpan"
+"IBinaryInteger<TSelf>"                 <|-- "UInt16"
+"IConvertible"                          <|-- "UInt16"
+"IFixedWidth<TSelf>"                    <|-- "UInt16"
+"IUnsignedNumber<TSelf>"                <|-- "UInt16"
+"ValueType"                             <|-- "UInt16"
+"IBinaryInteger<TSelf>"                 <|-- "UInt32"
+"IConvertible"                          <|-- "UInt32"
+"IFixedWidth<TSelf>"                    <|-- "UInt32"
+"IUnsignedNumber<TSelf>"                <|-- "UInt32"
+"ValueType"                             <|-- "UInt32"
+"IBinaryInteger<TSelf>"                 <|-- "UInt64"
+"IConvertible"                          <|-- "UInt64"
+"IFixedWidth<TSelf>"                    <|-- "UInt64"
+"IUnsignedNumber<TSelf>"                <|-- "UInt64"
+"ValueType"                             <|-- "UInt64"
+"IBinaryInteger<TSelf>"                 <|-- "UIntPtr"
+"IFixedWidth<TSelf>"                    <|-- "UIntPtr"
+"ISerializable"                         <|-- "UIntPtr"
+"IUnsignedNumber<TSelf>"                <|-- "UIntPtr"
+"ValueType"                             <|-- "UIntPtr"
+"Object"                                <|-- "ValueType"
+@enduml
+-->
+
+![UML](http://www.plantuml.com/plantuml/svg/h5LDSzem4BtdLp2ScqC_9YScquQ4reS69eRslBONs5QMgRJAb4v_VCEqaP7inIeJBinA-zw-NLbFxos3OLUh2zACPWqbZiRPXwg2Gk5acQDQlnejvxn5y_J_WDOflXu7oJUamUndgW4clLaqfFali3SlqumRD2SoxbrT20dJfjw1EKYJrYTB4JBVeG5kZ0tRwkJhHpHCdHgtM1giKNCxcUiumw8XKFGBc1ez1QKAABz7IVH8DdsuTpyS_Aiex2JsDNm-C_g9rLUgUDkxdUcX_cUDgO6vUpoVdMBQAKfl-nutS5H8J9C_bGKOYrqf3rW3wGfDcexy-K0xH3bjD5Od1EGxqC54uar1OUuADb1o-h1MslQ9kUY_KAFER_BxydBW7WlVptbKwQf4rnXd8bmcYUOJs8b7Y1mfHX8xqOjG3b_qyob5aPuooMZwhuF0A7dHyBCJaCYdAGiLqOAzn_f5zB2hdq9d-lpQYUugeeSDKQuTcfnyZIIqTy4p-auqIX4jlp1nRS7i1pmebKEOdi0Hlod-dOlHCju3_hi3wPqf5LWx6j_i6SVFmNGBnWUtm3ZNQXyiBAd6pi9ylRR8xJAML8DguyOLgaNTQLVxuAEZoWUVGArza6b-VNKSlNrp75szEuuMtEgU5z-mRDNaGOSvwSsHbeFwmtZzmYeikmhhhiB2gwZo5r0Eb_iTFerNU0E5K_fJcHsaH0m4OHYzcdSGRn1twaQylmpXWmfDEhojyfZflokTgfxpEyu-zhckCci7-6XkYc9hMjo-PAUX32e-o20Z6MGWWunaaD4tNC-ShYcdftjkFTVxJvzwup2JdFODdJIUPyxgQhgv3x_F-v2xJY7mUR9_ENqlv_IDdFDzp_c-ppUCx_xKzyF-vZkdzObSjDT3sgjYrLuRQQ-GeRrEXkQdjiR3DZfstU7Z_6inRHXjRGp7hnW76jkEzmkhPOFyKzYJf6nXARiFgFU4LMMWvy_8YZ9smjK-m-cGWJCX8-l9MDqr0K3zPE2xPQm_RI2HuWdHYa9qG8GeXv05qImcGOGeY1054Q8WGXP4OwW44Q8WGXH4Y888MH1DuBQebAqgfM_Tb8IHqZJUUPeFKO8X2Z14IOJiDE-oXP98MHGfMrQAfyfNX-fJUiwdz9o-jNFQm-SipPnFzzt2wJxaz2u_fzDzJk_lStg3dTDwoUc-vtJVStfGVc1BbVAUAcNtVYdB8-LfU5-LiZHIdeQtLYbFmvkhbAMHyZIylqfv6jvXnRnPYdaWtcGDrYytMnERFxQyVVuSVzzV_m00)
+
 ### Base Interfaces
 
-The base interfaces each describe one or more core operations that are used to build up the core interfaces listed later. In many cases, such as for addition, subtraction, multiplication, and division, there is only a single operator per interface. This split is important in order for them to be reusable against downstream types, like `DateTime` where addition does not imply subtraction or `Matrix` where multiplication does not imply division. These interfaces are not expected to be used by many users and instead primarily by developers looking at defining their own abstractions, as such we are not concerned with adding simplifying interfaces like `IAddable<TSelf> : IAddable<TSelf, TSelf>`. Likewise, there is not a concern with exposing `IAddable<TSelf, TOther, TResult>` and instead we will require `TSelf` and `TResult` be the same. This requirement greatly simplifies implementation and consumption of the types.
+The base interfaces each describe one or more core operations that are used to build up the core interfaces listed later. In many cases, such as for addition, subtraction, multiplication, and division, there is only a single operator per interface. This split is important in order for them to be reusable against downstream types, like `DateTime` where addition does not imply subtraction or `Matrix` where multiplication does not imply division. These interfaces are not expected to be used by many users and instead primarily by developers looking at defining their own abstractions, as such we are not concerned with adding simplifying interfaces like `IAddable<TSelf> : IAddable<TSelf, TSelf>`. Likewise, every interface added introduces increased size and startup overhead, so we need to strike a balance between expressiveness, exxtensibility, and cost.
+
+Some of the code below assumes that https://github.com/dotnet/csharplang/issues/4665 is going to be accespted into the language. If it is not accepted or if the approved syntax differs, the declarations will need to be updated.
 
 ```csharp
 namespace System
@@ -212,7 +418,7 @@ namespace System
         static abstract bool operator !=(TSelf lhs, TOther rhs);
     }
 
-    public interface IComparableOperators<TSelf, TOther> : IComparable<TOther>, IEquatableOperators<TSelf, TOther>
+    public interface IComparableOperators<TSelf, TOther> : IComparable, IComparable<TOther>, IEquatableOperators<TSelf, TOther>
         where TSelf : IComparableOperators<TSelf, TOther>
     {
         // Given this takes two generic parameters, we could simply call it IComparable<TSelf, TOther>
@@ -229,8 +435,8 @@ namespace System
         static abstract bool operator >=(TSelf lhs, TOther rhs);
     }
 
-    public interface IAddable<TSelf, TOther>
-        where TSelf : IAddable<TSelf, TOther>
+    public interface IAddable<TSelf, TOther, TResult>
+        where TSelf : IAddable<TSelf, TOther, TResult>
     {
         // An additive identity is not exposed here as it may be problematic for cases like
         // DateTime that implements both IAddable<DateTime, DateTime> and IAddable<DateTime, TimeSpan>
@@ -240,19 +446,17 @@ namespace System
 
         // We can't expose TSelf - TOther as some types only support one of the operations
 
-        static abstract TSelf operator +(TSelf value);
+        static abstract TResult operator +(TSelf lhs, TOther rhs);
 
-        static abstract TSelf operator +(TSelf lhs, TOther rhs);
-
-        // There is an open question on if we should support "checked" versions of the operators
-        // Many algorithms, such as in LINQ, depend on checked behavior for overflow
-        // Supporting this would require well-defined ECMA-335 names and language work to ensure the right things happen
+        static abstract TResult checked operator +(TSelf lhs, TOther rhs);
     }
 
-    public interface ISubtractable<TSelf, TOther>
-        where TSelf : ISubtractable<TSelf, TOther>
+    public interface ISubtractable<TSelf, TOther, TResult>
+        where TSelf : ISubtractable<TSelf, TOther, TResult>
     {
-        static abstract TSelf operator -(TSelf lhs, TOther rhs);
+        static abstract TResult operator -(TSelf lhs, TOther rhs);
+
+        static abstract TResult checked operator -(TSelf lhs, TOther rhs);
     }
 
     public interface IIncrementable<TSelf>
@@ -264,19 +468,25 @@ namespace System
 
         // We can't expose TSelf-- as some types only support one of the operations
 
+        // We don't support TResult as C# requires TSelf to be the return type
+
         static abstract TSelf operator ++(TSelf value);
+
+        static abstract TSelf checked operator ++(TSelf value);
     }
 
     public interface IDecrementable<TSelf>
         where TSelf : IDecrementable<TSelf>
     {
         static abstract TSelf operator --(TSelf value);
+
+        static abstract TSelf checked operator --(TSelf value);
     }
 
-    public interface IMultipliable<TSelf, TOther>
-        where TSelf : IMultipliable<TSelf, TOther>
+    public interface IMultipliable<TSelf, TOther, TResult>
+        where TSelf : IMultipliable<TSelf, TOther, TResult>
     {
-        // An multiplicative identity is not exposed here for the same reasons as IAddable<TSelf, TOther>
+        // A multiplicative identity is not exposed here for the same reasons as IAddable<TSelf, TOther>
 
         // We can't assume TOther * TSelf is valid as not everything is commutative
 
@@ -284,29 +494,54 @@ namespace System
 
         // We can't inherit from IAddable<TSelf, TOther> as some types, such as matrices, support Matrix * scalar but not Matrix + scalar
 
-        static abstract TSelf operator *(TSelf lhs, TOther rhs);
+        static abstract TResult operator *(TSelf lhs, TOther rhs);
+
+        static abstract TResult checked operator *(TSelf lhs, TOther rhs);
     }
 
-    public interface IDivisable<TSelf, TOther>
-        where TSelf : IDivisable<TSelf, TOther>
+    public interface IDivisable<TSelf, TOther, TResult>
+        where TSelf : IDivisable<TSelf, TOther, TResult>
     {
-        static abstract TSelf operator /(TSelf lhs, TOther rhs);
+        static abstract TResult operator /(TSelf lhs, TOther rhs);
+
+        static abstract TResult checked operator /(TSelf lhs, TOther rhs);
     }
 
-    public interface IRemainder<TSelf, TOther>
-        where TSelf : IRemainder<TSelf, TOther>
+    public interface IRemainder<TSelf, TOther, TResult>
+        where TSelf : IRemainder<TSelf, TOther, TResult>
     {
         // The ECMA name is op_Modulus and so the behavior isn't actually "remainder" with regards to negative values
 
         // Likewise the name IRemainder doesn't fit with the other names, so a better one is needed
 
-        static abstract TSelf operator %(TSelf lhs, TOther rhs);
+        static abstract TResult operator %(TSelf lhs, TOther rhs);
+
+        static abstract TResult checked operator %(TSelf lhs, TOther rhs);
     }
 
-    public interface INegatable<TSelf>
-        where TSelf : INegatable<TSelf>
+    public interface INegatable<TSelf, TResult>
+        where TSelf : INegatable<TSelf, TResult>
     {
-        static abstract TSelf operator -(TSelf value);
+        // Should unary plus be on its own type?
+
+        static abstract TResult operator +(TSelf value);
+
+        static abstract TResult checked operator +(TSelf value);
+
+        static abstract TResult operator -(TSelf value);
+
+        static abstract TResult checked operator -(TSelf value);
+    }
+
+    public interface IFixedWidth<TSelf>
+        where TSelf : IFixedWidth<TSelf>
+    {
+        // MinValue and MaxValue are more general purpose than just "numbers", so they live on this common base type
+        // Fixed-Width isn't the best name however, so we should think of alternatives
+
+        static abstract TSelf MinValue { get; }
+
+        static abstract TSelf MaxValue { get; }
     }
 }
 ```
@@ -350,14 +585,6 @@ namespace System
         // There is an open question on whether properties like IsSigned, IsBinary, IsFixedWidth, Base/Radix, and others are beneficial
         // We could expose them for trivial checks or users could be required to check for the corresponding correct interfaces
 
-        // MinValue and MaxValue are more general purpose than just "numbers", they should probably live on some common base type
-        // Likewise, the concept is a bad fit for types like BigInteger which aren't fixed sized
-        // There may also be concern around the primitive types which already define these names as constants
-
-        static abstract TSelf MinValue { get; }
-
-        static abstract TSelf MaxValue { get; }
-
         static abstract TSelf One { get; }
 
         static abstract TSelf Zero { get; }
@@ -383,11 +610,11 @@ namespace System
     }
 
     public interface ISignedNumber<TSelf>
-        : INumber<TSelf>,
-          INegatable<TSelf>
+        : INegatable<TSelf, TResult>,
+          INumber<TSelf>
         where TSelf : ISignedNumber<TSelf>
     {
-        // There is an open question on if we actually need ISignedNumber<TSelf> or if just checking for INegatable<TSelf> is enough
+        // There is an open question on if we actually need ISignedNumber<TSelf> or if just checking for INegatable<TSelf, TResult> is enough
         // Likewise, it might be that negation on unsigned numbers is fine, its conceptually just `0 - x` which means it always overflows for unsigned
     }
 
@@ -444,20 +671,6 @@ namespace System
         bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned, bool isBigEndian);
     }
 
-    public interface ISignedBinaryNumber<TSelf>
-        : IBinaryNumber<TSelf>,
-          ISignedNumber<TSelf>
-        where TSelf : ISignedBinaryNumber<TSelf>
-    {
-    }
-
-    public interface IUnsignedBinaryNumber<TSelf>
-        : IBinaryNumber<TSelf>,
-          IUnsignedNumber<TSelf>
-        where TSelf : IUnsignedBinaryNumber<TSelf>
-    {
-    }
-
     public interface IBinaryInteger<TSelf> : IBinaryNumber<TSelf>
         where TSelf : IBinaryInteger<TSelf>
     {
@@ -478,20 +691,6 @@ namespace System
         static abstract TSelf RotateLeft(TSelf value, int rotateAmount);
 
         static abstract TSelf RotateRight(TSelf value, int rotateAmount);
-    }
-
-    public interface ISignedBinaryInteger<TSelf>
-        : IBinaryInteger<TSelf>,
-          ISignedBinaryNumber<TSelf>
-        where TSelf : ISignedBinaryInteger<TSelf>
-    {
-    }
-
-    public interface IUnsignedBinaryInteger<TSelf>
-        : IBinaryInteger<TSelf>,
-          IUnsignedBinaryNumber<TSelf>
-        where TSelf : IUnsignedBinaryInteger<TSelf>
-    {
     }
 
     public interface IFloatingPoint<TSelf>
@@ -810,8 +1009,8 @@ namespace System
     }
 
     public interface IBinaryFloatingPoint<TSelf>
-        : IFloatingPoint<TSelf>,
-          IBinaryNumber<TSelf>
+        : IBinaryNumber<TSelf>,
+          IFloatingPoint<TSelf>
         where TSelf : IBinaryFloatingPoint<TSelf>
     {
     }
@@ -849,37 +1048,63 @@ Various types in the System namespace would implement the above interfaces as fo
 ```csharp
 namespace System
 {
-    public struct Byte : IUnsignedBinaryInteger<byte> { }
+    public struct Byte
+        : IBinaryInteger<byte>,
+          IConvertible,
+          IFixedWidth<byte>,
+          IUnsignedNumber<byte>
+    {
+    }
 
-    public struct Char : IUnsignedBinaryInteger<char> { }
+    public struct Char
+        : IBinaryInteger<char>,
+          IConvertible,
+          IFixedWidth<char>,
+          IUnsignedNumber<char>
+    {
+    }
+
+    public struct DateOnly
+        : IComparableOperators<DateOnly, DateOnly>,
+          IFixedWidth<DateOnly>,
+          ISpanFormattable,
+          ISpanParseable<DateOnly>
+    {
+    }
 
     public struct DateTime
-        : IAddable<DateTime, TimeSpan>,
-          IComparableOperators<DateTime, DateTime> // implies IEquatableOperators<DateTime, DateTime>
+        : IAddable<DateTime, TimeSpan, DateTime>,
+          IComparableOperators<DateTime, DateTime>,
+          IConvertible,
+          IFixedWidth<DateTime>,
+          ISerializable,
+          ISpanFormattable,
+          ISpanParseable<DateTime>,
+          ISubtractable<DateTime, TimeSpan, DateTime>,
+          ISubtractable<DateTime, DateTime, TimeSpan>
     {
-        // MinValue and MaxValue should likely come from a base interface
-
-        static DateTime MinValue { get; }
-
-        static DateTime MaxValue { get; }
     }
 
     public struct DateTimeOffset
-        : IAddable<DateTimeOffset, DateTimeOffset>,
-          IAddable<DateTimeOffset, TimeSpan>,
-          IComparableOperators<DateTimeOffset, DateTimeOffset> // implies IEquatableOperators<DateTimeOffset, DateTimeOffset>
+        : IAddable<DateTimeOffset, TimeSpan, DateTimeOffset>,
+          IComparableOperators<DateTimeOffset, DateTimeOffset>,
+          IDeserializationCallback,
+          IFixedWidth<DateTimeOffset>,
+          ISerializable,
+          ISpanFormattable,
+          ISpanParseable<DateTimeOffset>,
+          ISubtractable<DateTimeOffset, TimeSpan, DateTimeOffset>,
+          ISubtractable<DateTimeOffset, DateTimeOffset, TimeSpan>
     {
-        // MinValue and MaxValue should likely come from a base interface
-
-        static DateTimeOffset MinValue { get; }
-
-        static DateTimeOffset MaxValue { get; }
-
         // TODO: DateTimeOffset defines an implicit conversion to DateTime, should that be modeled in the interfaces?
     }
 
     public struct Decimal
-        : ISignedNumber<decimal>
+        : IConvertible,
+          IDeserializationCallback,
+          IFixedWidth<decimal>,
+          ISerializable,
+          ISignedNumber<decimal>
     {
         // Decimal defines a few additional operations like Ceiling, Floor, Round, and Truncate
         // The rest of the IEEE operations are missing.
@@ -887,45 +1112,133 @@ namespace System
         // Decimal and some other types likewise define "friendly" names for operators, should we expose them?
     }
 
-    public struct Double : IBinaryFloatingPoint<double> { }
+    public struct Double
+        : IBinaryFloatingPoint<double>,
+          IConvertible,
+          IFixedWidth<double>
+    {
+    }
+
+    public struct Enum
+        : IComparable,
+          IConvertible,
+          IFormattable
+    {
+    }
 
     public struct Guid
-        : IComparableOperators<Guid, Guid> // implies IEquatableOperators<Guid, Guid>
+        : IComparableOperators<Guid, Guid>,
+          ISpanFormattable,
+          ISpanParseable<Guid>
     {
     }
 
-    public struct Half : IBinaryFloatingPoint<Half> { }
+    public struct Half
+        : IBinaryFloatingPoint<Half>,
+          IFixedWidth<Half>
+    {
+    }
 
-    public struct Int16 : ISignedBinaryInteger<short> { }
+    public struct Int16
+        : IBinaryInteger<short>,
+          IConvertible,
+          IFixedWidth<short>,
+          ISignedNumber<short>
+    {
+    }
 
-    public struct Int32 : ISignedBinaryInteger<int> { }
+    public struct Int32
+        : IBinaryInteger<int>,
+          IConvertible,
+          IFixedWidth<int>,
+          ISignedNumber<int>
+    {
+    }
 
-    public struct Int64 : ISignedBinaryInteger<long> { }
+    public struct Int64
+        : IBinaryInteger<long>,
+          IConvertible,
+          IFixedWidth<long>,
+          ISignedNumber<long>
+    {
+    }
 
-    public struct IntPtr : ISignedBinaryInteger<nint> { /* Size */ }
+    public struct IntPtr
+        : IBinaryInteger<nint>,
+          IFixedWidth<nint>,
+          ISerializable,
+          ISignedNumber<nint>
+    {
+    }
 
-    public struct SByte : ISignedBinaryInteger<sbyte> { }
+    public struct SByte
+        : IBinaryInteger<sbyte>,
+          IConvertible,
+          IFixedWidth<sbyte>,
+          ISignedNumber<sbyte>
+    {
+    }
 
-    public struct Single : IBinaryFloatingPoint<float> { }
+    public struct Single
+        : IBinaryFloatingPoint<float>,
+          IConvertible,
+          IFixedWidth<float>
+    {
+    }
+
+    public struct TimeOnly
+        : IComparableOperators<TimeOnly, TimeOnly>,
+          IFixedWidth<TimeOnly>,
+          ISpanFormattable,
+          ISpanParseable<TimeOnly>,
+          ISubtractable<TimeOnly, TimeOnly, TimeSpan>
+    {
+    }
 
     public struct TimeSpan
-        : IAddable<TimeSpan, TimeSpan>,
-          IComparableOperators<TimeSpan, TimeSpan>, // implies IEquatableOperators<TimeSpan, TimeSpan>
-          IDivisable<TimeSpan, TimeSpan>,
-          IDivisable<TimeSpan, double>,
-          IMultipliable<TimeSpan, TimeSpan>,
-          IMultipliable<TimeSpan, double>,
-          INegatable<TimeSpan>
+        : IAddable<TimeSpan, TimeSpan, TimeSpan>,
+          IComparableOperators<TimeSpan, TimeSpan>,
+          IDivisable<TimeSpan, double, TimeSpan>,
+          IDivisable<TimeSpan, TimeSpan, double>,
+          IFixedWidth<TimeSpan>,
+          IMultipliable<TimeSpan, double, TimeSpan>,
+          INegatable<TimeSpan, TResult>,
+          ISpanFormattable,
+          ISubtractable<TimeSpan, TimeSpan, TimeSpan>
     {
     }
 
-    public struct UInt16 : IUnsignedBinaryInteger<ushort> { }
+    public struct UInt16
+        : IBinaryInteger<ushort>,
+          IConvertible,
+          IFixedWidth<ushort>,
+          IUnsignedNumber<ushort>
+    {
+    }
 
-    public struct UInt32 : IUnsignedBinaryInteger<uint> { }
+    public struct UInt32
+        : IBinaryInteger<uint>,
+          IConvertible,
+          IFixedWidth<uint>,
+          IUnsignedNumber<uint>
+    {
+    }
 
-    public struct UInt64 : IUnsignedBinaryInteger<ulong> { }
+    public struct UInt64
+        : IBinaryInteger<ulong>,
+          IConvertible,
+          IFixedWidth<ulong>,
+          IUnsignedNumber<ulong>
+    {
+    }
 
-    public struct UIntPtr : IUnsignedBinaryInteger<nuint> { }
+    public struct UIntPtr
+        : IBinaryInteger<nuint>,
+          IFixedWidth<nuint>,
+          ISerializable,
+          IUnsignedNumber<nuint>
+    {
+    }
 }
 ```
 
