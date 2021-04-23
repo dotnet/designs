@@ -8,7 +8,7 @@ C# is looking at enabling static abstract members in interfaces (https://github.
 
 ## Scenarios
 
-### Allow easier maintainence for generic code
+### Allow easier maintenance for generic code
 
 Tanner is building `Vector<T>`, an important numeric helper type for SIMD acceleration. Today, this type supports 10 underlying primitive types for `T` and they can use generic specialization in an internal helper to ensure the implementation is performant for each:
 
