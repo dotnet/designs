@@ -63,7 +63,7 @@ private static T ScalarAdd<T>(T left, T right)
 }
 ```
 
-Given the operation is the same for each type, only differing on the actual type in question, Tanner would expect this to be easier to author and maintain. Additionlly, each new type that needs to be supported adds additional branches and complexity to the code. For example, in .NET 6 support for `nint` and `nuint` support is desired.
+Given the operation is the same for each type, only differing on the actual type in question, Tanner would expect this to be easier to author and maintain than this. Additionally, each new type that needs to be supported adds additional branches and complexity to the code. For example, in .NET 6 support for `nint` and `nuint` support is desired.
 
 Static abstracts in interfaces will allow Tanner to define an interface such as:
 ```csharp
