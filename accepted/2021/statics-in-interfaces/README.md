@@ -10,7 +10,7 @@ C# is looking at enabling static abstract members in interfaces (https://github.
 
 ### Allow easier maintainence for generic code
 
-Tanner is building `Vector<T>`, an important numeric helper type for SIMD acceleration. Today, this type support 10 underlying primitive types for `T` and they can use generic specialization in an internal helper to ensure the implementation is performant for each:
+Tanner is building `Vector<T>`, an important numeric helper type for SIMD acceleration. Today, this type supports 10 underlying primitive types for `T` and they can use generic specialization in an internal helper to ensure the implementation is performant for each:
 
 ```csharp
 private static T ScalarAdd<T>(T left, T right)
@@ -88,7 +88,7 @@ This reduces the amount of code that must be maintained and allows new types to 
 
 ### Allow easier support for a non-finite list of types
 
-Jeff is trying to compute standard deviation of a list of numbers. They are surprised to find that such a function isn't built into .NET. After searching the web, Jeff finds a blog post with the following method (https://dotnetcodr.com/2017/06/29/calculate-standard-deviation-of-integers-with-c-net-3/):
+Jeff is trying to compute the standard deviation of a list of numbers. They are surprised to find that such a function isn't built into .NET. After searching the web, Jeff finds a blog post with the following method (https://dotnetcodr.com/2017/06/29/calculate-standard-deviation-of-integers-with-c-net-3/):
 ```csharp
 public static double GetStandardDeviation(this IEnumerable<int> values)
 {
@@ -379,7 +379,7 @@ class "ValueType"
 
 The base interfaces each describe one or more core operations that are used to build up the core interfaces listed later. In many cases, such as for addition, subtraction, multiplication, and division, there is only a single operator per interface. This split is important in order for them to be reusable against downstream types, like `DateTime` where addition does not imply subtraction or `Matrix` where multiplication does not imply division. These interfaces are not expected to be used by many users and instead primarily by developers looking at defining their own abstractions, as such we are not concerned with adding simplifying interfaces like `IAddable<TSelf> : IAddable<TSelf, TSelf>`. Likewise, every interface added introduces increased size and startup overhead, so we need to strike a balance between expressiveness, exxtensibility, and cost.
 
-Some of the code below assumes that https://github.com/dotnet/csharplang/issues/4665 is going to be accespted into the language. If it is not accepted or if the approved syntax differs, the declarations will need to be updated.
+Some of the code below assumes that https://github.com/dotnet/csharplang/issues/4665 is going to be accepted into the language. If it is not accepted or if the approved syntax differs, the declarations will need to be updated.
 
 ```csharp
 namespace System
