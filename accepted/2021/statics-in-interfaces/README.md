@@ -160,7 +160,7 @@ public static double GetStandardDeviation<T>(this IEnumerable<T> values)
     if (count > 1)
     {
         double avg = enumerable.Average();
-        double sum = enumerable.Sum(d => (d - avg) * (d - avg));
+        double sum = enumerable.Sum(d => ((double)d - avg) * ((double)d - avg));
         standardDeviation = Math.Sqrt(sum / count);
     }
     return standardDeviation;
