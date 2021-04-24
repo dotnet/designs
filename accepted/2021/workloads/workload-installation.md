@@ -36,7 +36,9 @@ The same dotnet folder may have different versions of the SDK installed by both 
 
 ## Package manager installation
 
-This is a copy of the .NET SDK installed as a package from a package manager such as APT or RPM.  In this case, the workloads and / or workload packs will also be represented as packages which will be installed via the package manager.
+If the .NET SDK is installed via a package manager such as APT or RPM, we may want to use the same package manager to install workloads.  However, we are not currently sure if this is necessary.  Our initial impression is that it may be OK to use a package manager to install the core .NET SDK, but then have the SDK itself manage the workloads (ie via the .NET SDK managed IAL implementation).
+
+For .NET 6, we will simply use the .NET SDK managed IAL, and gather feedback on whether we need workloads to be more integrated with package managers in a future release.
 
 # Choosing the installer abstraction
 
