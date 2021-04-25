@@ -1,6 +1,6 @@
 # Improving the _string_ developer experience
 
-**Owners** [Tarek Mahmoud Sayed](https://github.com/tarekgh) | [Santiago Fernandez Madero](http://github.com/safern) | [Levi Broderick](https://github.com/GrabYourPitchforks)
+**Owners** [Tarek Mahmoud Sayed](https://github.com/tarekgh) | [Santiago Fernandez Madero](https://github.com/safern) | [Levi Broderick](https://github.com/GrabYourPitchforks)
 
 ## Problem summary
 
