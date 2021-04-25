@@ -1,6 +1,6 @@
 # SecureString obsoletions and SensitiveBuffer proposal
 
-Author: @GrabYourPitchforks
+**Owner** [Levi Broderick](https://github.com/GrabYourPitchforks)
 
 ## SecureString obsoletion proposal
 
