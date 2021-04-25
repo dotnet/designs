@@ -1,7 +1,6 @@
 # Inbox Source Generators
 
-**PM** [Immo Landwerth](https://github.com/terrajobst) |
-**Dev** [Eric StJohn](https://github.com/ericstj)
+**Owner** [Eric StJohn](https://github.com/ericstj)
 
 Roslyn source generators allow for component developers to provide functionality that runs in the context of compilation, analyzes a user's code, and can generate additional code to add to the compilation.  Compelling scenarios for source generators involve moving dynamic runtime code to be specialized and statically emitted by the compiler: specializing serializer code for a target type, pre-compiling regular expressions at design time, pre-computing composition graphs for DI systems, and many more.  This technique was possible before but was rather clunky and had to be done outside the compiler, so its use was minimal and not part of the default experience.  Roslyn source generators solve this and as a result we wish to develop many source generators which are part of the default experience for .NET applications.  Source generators present a new type of challenge for a design time component: they need to be part of the toolchain but are tied to specific components within a target framework, and often re-implement or share the functionality of those components.  We need to define how we ship these source generators and make them available to developers.  We need to define the lifecycle for these source generators and how it is tied to the framework component it extends.
 
