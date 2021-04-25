@@ -1,5 +1,7 @@
 # Target AVX2 in R2R images
 
+**Owner** [Richard Lander](https://github.com/richlander)
+
 [Vector instructions](https://devblogs.microsoft.com/dotnet/performance-improvements-in-net-5/#intrinsics) have become one of the key pillars of performance in the .NET libraries. Because of that, .NET apps light up a greater percentage of the transistors in a CPU/SOC than they previously did. That's progress. However, we've left performance opportunities on the table that we should consider picking up to make .NET apps run faster and more cheaply (in hosted environments).
 
 Related: [Initial JIT support for SIMD](https://devblogs.microsoft.com/dotnet/the-jit-finally-proposed-jit-and-simd-are-getting-married/)
