@@ -460,7 +460,7 @@ Property                              | Meaning                         | Exampl
 --------------------------------------|---------------------------------|---------------------------------
 `TargetFramework` (TFM)               | The friendly name               | `net4`, `netcoreapp3.0`
 `TargetFrameworkIdentifier` (TFI)     | The long name                   | `.NETFramework` or `.NETCoreApp`
-`TargetFrameworkVersion` (TFV)        | The version number              | `2`, `3.0`, `3.1`
+`TargetFrameworkVersion` (TFV)        | The version number              | `v2`, `v3.0`, `v3.1`
 `TargetFrameworkProfile` (TFP)        | The profile                     | `Client` or `Profile124`
 `TargetPlatformIdentifier` (TPI)      | The OS platform                 | `iOS`, `Android`, `Windows`
 `TargetPlatformVersion` (TPV)         | The OS platform version         | `12.0` or `13.0`
@@ -468,13 +468,13 @@ Property                              | Meaning                         | Exampl
 
 We're going to map the TFMs as follows:
 
-TF                 | TFI           | TFV     | TFP | TPI     | TPV | SOPV
--------------------|---------------|---------|-----|---------|-----|----------------
-net4.X             | .NETFramework | 4.X     |     |         |     |
-net5.0             | .NETCoreApp   | 5.0     |     |         |     |
-net5.0-androidX.Y  | .NETCoreApp   | 5.0     |     | Android | X.Y | X.Y (defaulted)
-net5.0-iosX.Y      | .NETCoreApp   | 5.0     |     | iOS     | X.Y | X.Y (defaulted)
-net5.0-windowsX.Y  | .NETCoreApp   | 5.0     |     | Windows | X.Y | X.Y (defaulted)
+TF                 | TFI           | TFV      | TFP | TPI     | TPV | SOPV
+-------------------|---------------|----------|-----|---------|-----|----------------
+net4.X             | .NETFramework | v4.X     |     |         |     |
+net5.0             | .NETCoreApp   | v5.0     |     |         |     |
+net5.0-androidX.Y  | .NETCoreApp   | v5.0     |     | Android | X.Y | X.Y (defaulted)
+net5.0-iosX.Y      | .NETCoreApp   | v5.0     |     | iOS     | X.Y | X.Y (defaulted)
+net5.0-windowsX.Y  | .NETCoreApp   | v5.0     |     | Windows | X.Y | X.Y (defaulted)
 
 Specifically:
 
@@ -706,12 +706,12 @@ Framework 1.0), we need to keep it that way. To avoid surprises, we'll by defaul
 use dotted version numbers in project templates to push developers towards being
 explicit.
 
-Framework      | Identifier    | Version| Comment
----------------|---------------|--------|----------------------------------
-net5           | .NETCoreApp   | 5.0    | Will work, but shouldn't be used.
-net5.0         | .NETCoreApp   | 5.0    |
-net10          | .NETFramework | 1.0    |
-net10.0        | .NETCoreApp   | 10.0   |
+Framework      | Identifier    | Version | Comment
+---------------|---------------|---------|----------------------------------
+net5           | .NETCoreApp   | 5.0     | Will work, but shouldn't be used.
+net5.0         | .NETCoreApp   | 5.0     |
+net10          | .NETFramework | 1.0     |
+net10.0        | .NETCoreApp   | 10.0    |
 
 ### Preprocessor Symbols
 
@@ -1020,12 +1020,23 @@ In MSBuild you can't easily do comparisons like:
 <ItemGroup Condition="'$(TargetFramework)' >= 'net5.0'`">
 ```
 
-because that would be a string comparison. Rather, you need to do comparisons
+because that would be a string comparison. Rather, you need to do a comparison
 like this:
 
 ```xml
-<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(TargetFrameworkVersion)' >= '3.0'">
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '3.0'))">
 ```
+
+And to check for things before a specific version do a comparison like this:
+
+```xml
+<ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND $([MSBuild]::VersionLessThan($(TargetFrameworkVersion), '3.0'))">
+```
+
+If we had used ``TargetFrameworkVersion`` instead of using the ``VersionLessThan`` and the ``VersionGreaterThanOrEquals`` msbuild functions we would see this error for both conditions:
+
+``error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(TargetFrameworkVersion)' >= '3.0'".``
+``error MSB4086: A numeric comparison was attempted on "$(TargetFrameworkVersion)" that evaluates to "v3.0" instead of a number, in condition "'$(TargetFrameworkIdentifier)' == '.NETCoreApp' AND '$(TargetFrameworkVersion)' &lt; '3.0'".``
 
 By us mapping `net5.0` we break less of that code because existing code will
 treat it correctly (i.e. as a future version of .NET Core) and also avoid
