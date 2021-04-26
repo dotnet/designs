@@ -174,7 +174,7 @@ Workload definitions take the following form:
 |--|--|--|--|
 | `abstract` | bool | If `true`, this workload can only be extended, and is never exposed directly as an installable workload. Default is `false`. | No |
 | `kind` | string | Either `build` or `dev`. Default is `dev`. | No |
-| `description` | int | User-visible description for the workload. | Yes if dev and non-abstract |
+| `description` | string | User-visible description for the workload. | Yes if dev and non-abstract |
 | `packs` | string array | IDs of the packs that are included in the workload. | No |
 | `extends` | string array | IDs of workloads whose packs should be included in this workload. | No |
 | `platforms` | string array | Limits the workload and workloads that extend it to only be shown and installed on these host platforms. The strings are RIDs. | False |
