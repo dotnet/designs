@@ -1,6 +1,7 @@
 # TFM for .NET nanoFramework
 
-**Owners** [Immo Landwerth](https://github.com/terrajobst) | [Laurent Ellerbach](https://github.com/Ellerbach) | [José Simões](https://github.com/josesimoes)
+**Owners** [Immo Landwerth](https://github.com/terrajobst) | [Laurent Ellerbach](https://github.com/Ellerbach) | [José Simões](https://github.com/josesimoes)  
+**Work Item** [NuGet](https://github.com/NuGet/Home/issues/10800)
 
 While .NET has been optimized to be a general purpose application development
 framework, we also created a flavor of .NET that can be used in the context of
