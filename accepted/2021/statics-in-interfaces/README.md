@@ -131,7 +131,7 @@ public interface IMultipliable<TSelf>
     static abstract TSelf operator -(TSelf left, TSelf right);
 }
 
-public interface IDivisable<TSelf>
+public interface IDivisible<TSelf>
     where TSelf : IDivisable<TSelf>
 {
     static abstract TSelf operator /(TSelf left, TSelf right);
