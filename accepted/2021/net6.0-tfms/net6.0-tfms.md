@@ -160,7 +160,7 @@ This reasoning results in these precedence rules:
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
-1. `net4.x` – `1.0` (warning)
+1. `net4.x` – `1.0` ([NU1701] warning)
 
 The currently supported `monoandroid` TFMs are:
 
