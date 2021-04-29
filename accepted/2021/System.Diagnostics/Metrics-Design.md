@@ -34,7 +34,7 @@ Meter is the factory type responsible for creating Instruments. Meter will have 
 
 ### Listener
 
-The listener is the type that allows listening to the recorded measurements occurred by both the non-observable instrument and the observable instrument. The listener is an important class that will be used by OpenTelemetry to implement the Metrics SDK.
+The listener is the type that allows listening to the measurements recorded by instruments. The listener is an important class that will be used by OpenTelemetry to implement the Metrics SDK.
 
 ### Tags
 
