@@ -14,7 +14,7 @@ The proposed APIs are intended to be supported on Full Framework 4.6 and up, .NE
 
 ```MD040
 Naming in this proposal is picked up from the OpenTelemetry specification to avoid having .NET APIs
-deviating from the standard even if the standard names are not the best to use.
+deviating from the standard even if the standard names are not the best option for the .NET ecosystem.
 ```
 
 ## Metric Terminologies
