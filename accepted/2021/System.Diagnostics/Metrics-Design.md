@@ -39,7 +39,7 @@ The listener is the type that allows listening to the measurements reported by i
 ### Tags
 
 Tag is the term used to refer to a key-value attribute associated with a metric event. Each tag categorizes the metric event, allowing events to be filtered and grouped for analysis.
-Current OpenTelemetry specs call it Labels but this is going to change to Attributes. We have used the tags name in the tracing APIs and we'll stick with this name for the sake of consistency with tracing.
+Current OpenTelemetry specs call it Attributes. We have used the tags name in the tracing APIs and we'll stick with this name for the sake of consistency with tracing.
 
 ## APIs Proposal
 
@@ -278,7 +278,7 @@ namespace System.Diagnostics.Metrics
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// A helper class used by the Observable instruments Observe method to repro the measurement values
+    /// A helper class used by the Observable instruments Observe method to report the measurement values
     /// with the associated tags.
     /// </summary>
     public struct Measurement<T> where T : unmanaged
