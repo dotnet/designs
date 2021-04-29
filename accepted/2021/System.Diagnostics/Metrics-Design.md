@@ -32,7 +32,7 @@ There are two types of instruments:
 
 Meter is the factory type responsible for creating Instruments. Meter will have a name and optional version strings.
 
-### Listener
+### MeterListener
 
 The listener is the type that allows listening to the measurements reported by instruments (e.g. Counter, ObservableCounter, etc.). The listener is an important class that will be used by OpenTelemetry to implement the Metrics SDK.
 
