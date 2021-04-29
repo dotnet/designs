@@ -10,7 +10,7 @@ The OpenTelemetry architecture is splitting the measurement reporting part to a 
 
 The proposed APIs will be used by the application or library authors to record metrics measurements. The APIs also include a listener which will allow listening to the recorded measurements events which can be used by the OpenTelemetry SDK (or other potential consumers) to aggregate the measurements and export them.
 
-The proposed APIs are intended to be supported on Full Framework 4.6 and up, .NET Core all versions, and .NET 5.0 and up.
+The proposed APIs are intended to be supported on Full Framework 4.6 and up, .NET Core supported versions, and .NET 5.0 and up. The proposed APIs will be part of the System.Diagnostics.DiagnosticSource package.
 
 ```MD040
 Naming in this proposal is picked up from the OpenTelemetry specification to avoid having .NET APIs
@@ -34,7 +34,7 @@ Meter is the factory type responsible for creating Instruments. Meter will have 
 
 ### Listener
 
-The listener is the type that allows listening to the measurements recorded by instruments. The listener is an important class that will be used by OpenTelemetry to implement the Metrics SDK.
+The listener is the type that allows listening to the measurements reported by instruments (e.g. Counter, ObservableCounter, etc.). The listener is an important class that will be used by OpenTelemetry to implement the Metrics SDK.
 
 ### Tags
 
@@ -221,22 +221,22 @@ namespace System.Diagnostics.Metrics
 
         protected void RecordMeasurement(
                             T val,
-                            KeyValuePair<string, object> tag1) { throw null; }
+                            KeyValuePair<string, object?> tag1) { throw null; }
 
         protected void RecordMeasurement(
                             T val,
-                            KeyValuePair<string, object> tag1,
-                            KeyValuePair<string, object> tag2) { throw null; }
+                            KeyValuePair<string, object?> tag1,
+                            KeyValuePair<string, object?> tag2) { throw null; }
 
         protected void RecordMeasurement(
                             T val,
-                            KeyValuePair<string, object> tag1,
-                            KeyValuePair<string, object> tag2,
-                            KeyValuePair<string, object> tag3) { throw null; }
+                            KeyValuePair<string, object?> tag1,
+                            KeyValuePair<string, object?> tag2,
+                            KeyValuePair<string, object?> tag3) { throw null; }
 
         protected void RecordMeasurement(
                             T val,
-                            ReadOnlySpan<KeyValuePair<string, object>> tags) { throw null; }
+                            ReadOnlySpan<KeyValuePair<string, object?>> tags) { throw null; }
     }
 }
 ```
@@ -265,6 +265,8 @@ namespace System.Diagnostics.Metrics
         /// Observe will report the non-additive values of the measurements.
         /// </summary>
         protected abstract IEnumerable<Measurement<T>> Observe();
+
+        public override bool IsObservable => throw null;
     }
 }
 ```
@@ -285,8 +287,9 @@ namespace System.Diagnostics.Metrics
         /// Construct the Measurement using the value and the list of tags.
         /// We'll always copy the input list as this is not perf hot path.
         /// </summary>
-        public Measurement(T value, IEnumerable<KeyValuePair<string, object>> tags) { throw null; }
+        public Measurement(T value, IEnumerable<KeyValuePair<string, object?>> tags) { throw null; }
         public Measurement(T value, params KeyValuePair<string, object?>[] tags) { throw null; }
+        public Measurement(T value, ReadOnlySpan<KeyValuePair<string, object?>> tags) { throw null; }
 
         public ReadOnlySpan<KeyValuePair<string, object?>> Tags { get { throw null;  } }
         public T Value { get; }
@@ -307,16 +310,18 @@ namespace System.Diagnostics.Metrics
     {
         public void Add(T measurement) { throw null; }
         public void Add(T measurement,
-                            KeyValuePair<string, object> tag1) { throw null; }
+                            KeyValuePair<string, object?> tag1) { throw null; }
         public void Add(T measurement,
-                            KeyValuePair<string, object> tag1,
-                            KeyValuePair<string, object> tag2) { throw null; }
+                            KeyValuePair<string, object?> tag1,
+                            KeyValuePair<string, object?> tag2) { throw null; }
         public void Add(T measurement,
-                            KeyValuePair<string, object> tag1,
-                            KeyValuePair<string, object> tag2,
-                            KeyValuePair<string, object> tag3) { throw null; }
+                            KeyValuePair<string, object?> tag1,
+                            KeyValuePair<string, object?> tag2,
+                            KeyValuePair<string, object?> tag3) { throw null; }
         public void Add(T measurement,
-                            params KeyValuePair<string, object>[] tags) { throw null; }
+                            ReadOnlySpan<<string, object?>> tags) { throw null; }
+        public void Add(T measurement,
+                            params KeyValuePair<string, object?>[] tags) { throw null; }
     }
 
     /// <summary>
@@ -327,16 +332,18 @@ namespace System.Diagnostics.Metrics
     {
         public void Add(T measurement) { throw null; }
         public void Add(T measurement,
-                            KeyValuePair<string, object> tag1) { throw null; }
+                            KeyValuePair<string, object?> tag1) { throw null; }
         public void Add(T measurement,
-                            KeyValuePair<string, object> tag1,
-                            KeyValuePair<string, object> tag2) { throw null; }
+                            KeyValuePair<string, object?> tag1,
+                            KeyValuePair<string, object?> tag2) { throw null; }
         public void Add(T measurement,
-                            KeyValuePair<string, object> tag1,
-                            KeyValuePair<string, object> tag2,
-                            KeyValuePair<string, object> tag3) { throw null; }
+                            KeyValuePair<string, object?> tag1,
+                            KeyValuePair<string, object?> tag2,
+                            KeyValuePair<string, object?> tag3) { throw null; }
         public void Add(T measurement,
-                            params KeyValuePair<string, object>[] tags) { throw null; }
+                            ReadOnlySpan<<string, object?>> tags) { throw null; }
+        public void Add(T measurement,
+                            params KeyValuePair<string, object?>[] tags) { throw null; }
     }
 
     /// <summary>
@@ -349,19 +356,21 @@ namespace System.Diagnostics.Metrics
         public void Record(T measurement) { throw null; }
         public void Record(
                         T measurement,
-                        KeyValuePair<string, object> tag1) { throw null; }
+                        KeyValuePair<string, object?> tag1) { throw null; }
         public void Record(
                         T measurement,
-                        KeyValuePair<string, object> tag1,
-                        KeyValuePair<string, object> tag2) { throw null; }
+                        KeyValuePair<string, object?> tag1,
+                        KeyValuePair<string, object?> tag2) { throw null; }
         public void Record(
                         T measurement,
-                        KeyValuePair<string, object> tag1,
-                        KeyValuePair<string, object> tag2,
-                        KeyValuePair<string, object> tag3) { throw null; }
+                        KeyValuePair<string, object?> tag1,
+                        KeyValuePair<string, object?> tag2,
+                        KeyValuePair<string, object?> tag3) { throw null; }
+        public void Record(T measurement,
+                            ReadOnlySpan<<string, object?>> tags) { throw null; }
         public void Record(
                         T measurement,
-                        params KeyValuePair<string, object>[] tags) { throw null; }
+                        params KeyValuePair<string, object?>[] tags) { throw null; }
     }
 }
 
@@ -415,7 +424,7 @@ namespace System.Diagnostics.Metrics
     public delegate void MeasurementCallback<T>(
                             Instrument instrument,
                             T measurement,
-                            ReadOnlySpan<(string TagName, object TagValue)> tags,
+                            ReadOnlySpan<KeyValuePair<string, object?>> tags,
                             object? cookie);
 
 
