@@ -503,7 +503,7 @@ namespace System.Diagnostics.Metrics
             listener.EnableMeasurementEvents(instrument, null);
         }
     };
-    listener.SetMeasurementEventCallback<int>((instrument, measurement, labels, cookie) =>
+    listener.SetMeasurementEventCallback<int>((instrument, measurement, tags, cookie) =>
     {
         Console.WriteLine($"Instrument: {instrument.Name} has recorded the measurement {measurement}");
     });
