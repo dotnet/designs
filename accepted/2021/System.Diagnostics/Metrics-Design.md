@@ -248,7 +248,7 @@ namespace System.Diagnostics.Metrics
 {
     /// <summary>
     /// ObservableInstrument<T> is the base class from which all observable instruments will inherit from.
-    /// Mainly It'll support the CLS compliant numerical types
+    /// It will only support the CLS compliant numerical types
     /// </summary>
     public abstract class ObservableInstrument<T> : Instrument where T : unmanaged
     {
@@ -262,7 +262,7 @@ namespace System.Diagnostics.Metrics
                     string? unit) : base(meter, name, description, unit) { throw null; }
 
         /// <summary>
-        /// Observe will report the non-additive values of the measurements.
+        /// Observe() fetches the current measurements being tracked by this instrument.
         /// </summary>
         protected abstract IEnumerable<Measurement<T>> Observe();
 
@@ -278,7 +278,7 @@ namespace System.Diagnostics.Metrics
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// A helper class used by the Observable instruments Observe method to report the measurement values
+    /// A measurement stores one observed value and its associated tags. This type is used by Observable instruments' Observe() method when reporting current measurements. 
     /// with the associated tags.
     /// </summary>
     public struct Measurement<T> where T : unmanaged
@@ -465,7 +465,7 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Set a callback for a specific numeric type to get the measurement recording notification
         /// from all instruments which enabled listened to and was created with the same specified
-        /// numeric type.
+        /// numeric type. If a measurement of type T is recorded and a callback of type T is registered, that callback is used. If there is no callback for type T but there is a callback for type object, the measured value is boxed and reported via the object typed callback. If there is neither type T callback nor object callback then the measurement will not be reported.
         /// </summary>
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) { throw null; }
 
