@@ -51,7 +51,7 @@ app.
 |--------------------|------------------------------------------|
 | net6.0             | (subsequent version of net5.0)           |
 | net6.0-windows     | (subsequent version of net5.0-windows)   |
-| net6.0-android     | xamarin.android                          |
+| net6.0-android     | monoandroid                              |
 |                    | (+everything else inherited from net6.0) |
 | net6.0-ios         | xamarin.ios                              |
 |                    | (+everything else inherited from net6.0) |
@@ -107,7 +107,10 @@ follows:
       use `net6.0` or multi-target for `net6.0-ios` and `net6.0-maccatalyst`
 
 We want the same rules for `net6.0-ios` except that using `xamarin.ios` should
-not generate a warning. This reasoning results in these precedence rules:
+not generate a warning. `net6.0-android` will behave in the same way as `net6.0-ios`,
+except that the Xamarin.Android TFM is `monoandroid` (1.0 - 12.0).
+
+This reasoning results in these precedence rules:
 
 **net6.0-ios**
 
@@ -148,6 +151,33 @@ not generate a warning. This reasoning results in these precedence rules:
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
 1. `net4.x` – `1.0` ([NU1701] warning)
+
+**net6.0-android**
+
+1. `net6.0-android`
+1. `net6.0`
+1. `monoandroid12.0` - `1.0` (no warning)
+1. `net5.0`
+1. `netcoreapp3.1` – `1.0`
+1. `netstandard2.1` – `1.0`
+1. `net4.x` – `1.0` ([NU1701] warning)
+
+The currently supported `monoandroid` TFMs are:
+
+* `monoandroid1.0`
+* `monoandroid4.4`
+* `monoandroid4.4.87`
+* `monoandroid5.0`
+* `monoandroid5.1`
+* `monoandroid6.0`
+* `monoandroid7.0`
+* `monoandroid7.1`
+* `monoandroid8.0`
+* `monoandroid8.1`
+* `monoandroid9.0`
+* `monoandroid10.0`
+* `monoandroid11.0`
+* `monoandroid12.0`
 
 ## APIs
 
