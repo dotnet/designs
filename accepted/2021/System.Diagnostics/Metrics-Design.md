@@ -220,22 +220,22 @@ namespace System.Diagnostics.Metrics
         protected void RecordMeasurement(T val) { throw null; }
 
         protected void RecordMeasurement(
-                            T val,
+                            T measurement,
                             KeyValuePair<string, object?> tag1) { throw null; }
 
         protected void RecordMeasurement(
-                            T val,
+                            T measurement,
                             KeyValuePair<string, object?> tag1,
                             KeyValuePair<string, object?> tag2) { throw null; }
 
         protected void RecordMeasurement(
-                            T val,
+                            T measurement,
                             KeyValuePair<string, object?> tag1,
                             KeyValuePair<string, object?> tag2,
                             KeyValuePair<string, object?> tag3) { throw null; }
 
         protected void RecordMeasurement(
-                            T val,
+                            T measurement,
                             ReadOnlySpan<KeyValuePair<string, object?>> tags) { throw null; }
     }
 }
@@ -278,7 +278,7 @@ namespace System.Diagnostics.Metrics
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// A measurement stores one observed value and its associated tags. This type is used by Observable instruments' Observe() method when reporting current measurements. 
+    /// A measurement stores one observed value and its associated tags. This type is used by Observable instruments' Observe() method when reporting current measurements.
     /// with the associated tags.
     /// </summary>
     public struct Measurement<T> where T : unmanaged
@@ -306,7 +306,7 @@ namespace System.Diagnostics.Metrics
     /// The counter is a non-observable Instrument that supports non-negative increments.
     /// e.g. Number of completed requests.
     /// </summary>
-    public class Counter<T> : Instrument<T> where T : unmanaged
+    public sealed class Counter<T> : Instrument<T> where T : unmanaged
     {
         public void Add(T measurement) { throw null; }
         public void Add(T measurement,
@@ -328,7 +328,7 @@ namespace System.Diagnostics.Metrics
     /// UpDownCounter is a non-observable Instrument that supports increments and decrements.
     /// e.g. Number of items in a queue.
     /// </summary>
-    public class UpDownCounter<T> : Instrument<T> where T : unmanaged
+    public sealed class UpDownCounter<T> : Instrument<T> where T : unmanaged
     {
         public void Add(T measurement) { throw null; }
         public void Add(T measurement,
@@ -351,7 +351,7 @@ namespace System.Diagnostics.Metrics
     /// that are likely to be statistically meaningful. It is intended for statistics such
     /// e.g. the request duration.
     /// </summary>
-    public class Histogram<T> : Instrument<T> where T : unmanaged
+    public sealed class Histogram<T> : Instrument<T> where T : unmanaged
     {
         public void Record(T measurement) { throw null; }
         public void Record(
@@ -386,7 +386,7 @@ namespace System.Diagnostics.Metrics
     /// when the instrument is being observed.
     /// e.g. CPU time (for different processes, threads, user mode or kernel mode).
     /// </summary>
-    public class ObservableCounter<T> : ObservableInstrument<T> where T : unmanaged
+    public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : unmanaged
     {
         protected override IEnumerable<Measurement<T>> Observe() { throw null; }
     }
@@ -396,7 +396,7 @@ namespace System.Diagnostics.Metrics
     /// when the instrument is being observed.
     /// e.g. the process heap size
     /// </summary>
-    public class ObservableUpDownCounter<T> : ObservableInstrument<T> where T : unmanaged
+    public sealed class ObservableUpDownCounter<T> : ObservableInstrument<T> where T : unmanaged
     {
         protected override IEnumerable<Measurement<T>> Observe() { throw null; }
     }
@@ -406,7 +406,7 @@ namespace System.Diagnostics.Metrics
     /// when the instrument is being observed.
     /// e.g. the current room temperature
     /// </summary>
-    public class ObservableGauge<T> : ObservableInstrument<T> where T : unmanaged
+    public sealed class ObservableGauge<T> : ObservableInstrument<T> where T : unmanaged
     {
         protected override IEnumerable<Measurement<T>> Observe() { throw null; }
     }
