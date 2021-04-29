@@ -6,9 +6,9 @@ This document is discussing the .NET Metrics APIs design which implements the [O
 
 The OpenTelemetry Metrics APIs support reporting measurements about the execution of a computer program at run time. The Metrics APIs are designed explicitly for processing raw measurements, generally with the intent to produce continuous summaries of those measurements, efficiently and simultaneously.
 
-The OpenTelemetry architecture is splitting the measurement reporting part to a component called `APIs` and that is the part we are discussing here and proposing APIs for it. The other part is called `SDK` which will monitor, aggregate the Metrics measurements, and export the aggregated measurement to some backend. The SDK part will be implemented in the OpenTelemetry [dotnet repo](https://github.com/open-telemetry/opentelemetry-dotnet) and will not part of the .NET. The `SDK` will depend on the APIs we are going to expose in .NET.
+The OpenTelemetry architecture is splitting the measurement reporting part to a component called `APIs` and that is the part we are discussing here and proposing APIs for it. The other part is called `SDK` which will monitor, aggregate the Metrics measurements, and export the aggregated measurement to some backend. The SDK part will be implemented in the [OpenTelemetry .NET repo](https://github.com/open-telemetry/opentelemetry-dotnet) and will not be part of the .NET. The `SDK` will depend on the APIs we are going to expose in .NET.
 
-The proposed APIs will be used by the application or Library authors to record metrics measurements. The APIs also include a listener which will allow listening to the recorded measurements events which can be used by the OpenTelemetry SDK to aggregate the measurements and export them.
+The proposed APIs will be used by the application or library authors to record metrics measurements. The APIs also include a listener which will allow listening to the recorded measurements events which can be used by the OpenTelemetry SDK (or other potential consumers) to aggregate the measurements and export them.
 
 The proposed APIs are intended to be supported on Full Framework 4.6 and up, .NET Core all versions, and .NET 5.0 and up.
 
