@@ -425,7 +425,7 @@ namespace System.Diagnostics.Metrics
                             Instrument instrument,
                             T measurement,
                             ReadOnlySpan<KeyValuePair<string, object?>> tags,
-                            object? cookie);
+                            object? state);
 
 
     /// <summary>
@@ -455,7 +455,7 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Start listening to a specific instrument measurement recording.
         /// </summary>
-        public void EnableMeasurementEvents(Instrument instrument, object? cookie = null) { throw null; }
+        public void EnableMeasurementEvents(Instrument instrument, object? state = null) { throw null; }
 
         /// <summary>
         /// Stop listening to a specific instrument measurement recording.
@@ -503,7 +503,7 @@ namespace System.Diagnostics.Metrics
             listener.EnableMeasurementEvents(instrument, null);
         }
     };
-    listener.SetMeasurementEventCallback<int>((instrument, measurement, tags, cookie) =>
+    listener.SetMeasurementEventCallback<int>((instrument, measurement, tags, state) =>
     {
         Console.WriteLine($"Instrument: {instrument.Name} has recorded the measurement {measurement}");
     });
