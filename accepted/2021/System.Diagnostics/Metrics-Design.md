@@ -212,7 +212,7 @@ namespace System.Diagnostics.Metrics
         /// Record measurement overloads allowing passing different numbers of tags.
         /// </summary>
 
-        protected void RecordMeasurement(T val) { throw null; }
+        protected void RecordMeasurement(T measurement) { throw null; }
 
         protected void RecordMeasurement(
                             T measurement,
@@ -314,7 +314,7 @@ namespace System.Diagnostics.Metrics
                             KeyValuePair<string, object?> tag2,
                             KeyValuePair<string, object?> tag3) { throw null; }
         public void Add(T measurement,
-                            ReadOnlySpan<<string, object?>> tags) { throw null; }
+                            ReadOnlySpan<KeyValuePair<string, object?>> tags) { throw null; }
         public void Add(T measurement,
                             params KeyValuePair<string, object?>[] tags) { throw null; }
     }
@@ -340,7 +340,7 @@ namespace System.Diagnostics.Metrics
                         KeyValuePair<string, object?> tag2,
                         KeyValuePair<string, object?> tag3) { throw null; }
         public void Record(T measurement,
-                            ReadOnlySpan<<string, object?>> tags) { throw null; }
+                            ReadOnlySpan<KeyValuePair<string, object?>> tags) { throw null; }
         public void Record(
                         T measurement,
                         params KeyValuePair<string, object?>[] tags) { throw null; }
@@ -405,7 +405,7 @@ namespace System.Diagnostics.Metrics
     /// The listener class can be used to listen to observable and non-observable instrument
     /// recorded measurements.
     /// </summary>
-    public class MeterListener : IDisposable
+    public sealed class MeterListener : IDisposable
     {
         /// <summary>
         /// Simple constructor
@@ -432,8 +432,9 @@ namespace System.Diagnostics.Metrics
 
         /// <summary>
         /// Stop listening to a specific instrument measurement recording.
+        /// returns the associated state.
         /// </summary>
-        public void DisableMeasurementEvents(Instrument instrument) { throw null; }
+        public object? DisableMeasurementEvents(Instrument instrument) { throw null; }
 
         /// <summary>
         /// Set a callback for a specific numeric type to get the measurement recording notification
