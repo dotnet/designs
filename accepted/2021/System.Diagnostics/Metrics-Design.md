@@ -415,7 +415,7 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Callbacks to get notification when an instrument is published
         /// </summary>
-        public Action<Instrument>? InstrumentPublished { get; set; }
+        public Action<Instrument, MeterListener>? InstrumentPublished { get; set; }
 
         /// <summary>
         /// Callbacks to get notification when stopping the measurement on some instrument
@@ -469,11 +469,11 @@ namespace System.Diagnostics.Metrics
 
 ```csharp
     InstrumentListener listener = new InstrumentListener();
-    listener.InstrumentPublished = (instrument) =>
+    listener.InstrumentPublished = (instrument, meterListener) =>
     {
         if (instrument.Name == "Requests" && instrument.Meter.Name == "io.opentelemetry.contrib.mongodb")
         {
-            listener.EnableMeasurementEvents(instrument, null);
+            meterListener.EnableMeasurementEvents(instrument, null);
         }
     };
     listener.SetMeasurementEventCallback<int>((instrument, measurement, tags, state) =>
