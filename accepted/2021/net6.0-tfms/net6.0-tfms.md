@@ -61,6 +61,9 @@ app.
 |                    | (+everything else inherited from net6.0) |
 | net6.0-tvos        | xamarin.tvos                             |
 |                    | (+everything else inherited from net6.0) |
+| net6.0-tizen       | tizen                                    |
+|                    | (+everything else inherited from net6.0) |
+
 
 ### Compatibility rules
 
@@ -108,7 +111,8 @@ follows:
 
 We want the same rules for `net6.0-ios` except that using `xamarin.ios` should
 not generate a warning. `net6.0-android` will behave in the same way as `net6.0-ios`,
-except that the Xamarin.Android TFM is `monoandroid` (1.0 - 12.0).
+except that the Xamarin.Android TFM is `monoandroid` (1.0 - 12.0). `net6.0-tizen` is
+also the same as `net6.0-ios` except the TFM is `tizen`.
 
 This reasoning results in these precedence rules:
 
@@ -178,6 +182,16 @@ The currently supported `monoandroid` TFMs are:
 * `monoandroid10.0`
 * `monoandroid11.0`
 * `monoandroid12.0`
+
+**net6.0-tizen**
+
+1. `net6.0-tizen`
+1. `net6.0`
+1. `tizen` (no warning)
+1. `net5.0`
+1. `netcoreapp3.1` – `1.0`
+1. `netstandard2.1` – `1.0`
+1. `net4.x` – `1.0` ([NU1701] warning)
 
 ## APIs
 
@@ -376,6 +390,31 @@ We need to add RIDs for all these platforms:
     - `tvos.14`
     - `tvos.14-arm64`
     - `tvos.14-x64`
+* `net6.0-tizen`
+    - `tizen`
+    - `tizen-armel`
+    - `tizen-arm64`
+    - `tizen-x86`
+    - `tizen.4.0.0`
+    - `tizen.4.0.0-armel`
+    - `tizen.4.0.0-arm64`
+    - `tizen.4.0.0-x86`
+    - `tizen.5.0.0`
+    - `tizen.5.0.0-armel`
+    - `tizen.5.0.0-arm64`
+    - `tizen.5.0.0-x86`
+    - `tizen.5.5.0`
+    - `tizen.5.5.0-armel`
+    - `tizen.5.5.0-arm64`
+    - `tizen.5.5.0-x86`
+    - `tizen.6.0.0`
+    - `tizen.6.0.0-armel`
+    - `tizen.6.0.0-arm64`
+    - `tizen.6.0.0-x86`
+    - `tizen.6.5.0`
+    - `tizen.6.5.0-armel`
+    - `tizen.6.5.0-arm64`
+    - `tizen.6.5.0-x86`
 
 ## Q & A
 
