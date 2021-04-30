@@ -463,7 +463,7 @@ namespace System.Diagnostics.Metrics
     Meter meter = new Meter("io.opentelemetry.contrib.mongodb", "v1.0");
     Counter<int> counter = meter.CreateCounter<int>("Requests");
     counter.Add(1);
-    counter.Add(1, KeyValuePair<string, object>("request", "read"));
+    counter.Add(1, KeyValuePair.Create<string, object>("request", "read"));
 ```
 
 ### Listening Example
