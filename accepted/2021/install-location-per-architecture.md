@@ -11,11 +11,10 @@ multiple architectures on a single machine.
 The current state is in detailed described in the last change proposal in
 [install-locations](https://github.com/dotnet/designs/blob/main/accepted/2020/install-locations.md).
 
-.NET can be installed globally into a "global install location". Typically this is
-the default install location (program files on Windows, `/usr/share` on Linux,
-`/usr/local/share` on macOS), but it can be changed via global install location registration
-mechanism.
-
+.NET is typically installed into a "global install location". Usually this is
+the default install location (`C:\Program Files\dotnet` on Windows,
+`/usr/share` on Linux, `/usr/local/share` on macOS),
+but it can be changed via global install location registration mechanism.
 The registration mechanism uses registry on Windows and configuration file
 `/etc/dotnet/install_location` on Linux and macOS.
 
@@ -26,12 +25,11 @@ a value, the host goes to the default install location.
 The global install location is used for looking up frameworks in framework
 dependent applications, and for looking up SDKs when invoking CLI commands.
 
-When the `dotnet` executable is used (also called the "muxer") the install location
+* When the `dotnet` executable is used (also called the "muxer") the install location
 is specified via the location of the muxer being used. This is typically done
 implicitly by invoking the muxer on the `PATH`, but can be done explicitly
 by calling the muxer using a fully specified file path.
-
-When an application is executed and it uses an application executable
+* When an application is executed and it uses an application executable
 (also called the "apphost") the user can specify install location via `DOTNET_ROOT`,
 otherwise the apphost will use the global install location lookup.
 
@@ -39,20 +37,19 @@ otherwise the apphost will use the global install location lookup.
 
 On Windows the multi-arch situation already exists with x86 and x64 architectures.
 Each installs into a different location and is registered accordingly.
-The registration mechanism in registry includes the architecture, since the registry
-key path which is looked up is `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation`.
+The registration mechanism in registry includes the architecture,
+the key path is `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation`.
 
 This means that x86 apphost looks only for x86 install location and similarly
-x64 apphost looks only for x64 install location.
-
-Adding another architecture is very simple and will continue to work the same way.
+x64 apphost looks only for x64 install location. Adding another architecture
+is very simple and will continue to work the same way.
 
 ### Current state on Linux and macOS
 
 On Linux and macOS there's no existing multi-arch support. There's also no
 default global location which is architecture specific. Part of the discussion
 in [dotnet/sdk#16896](https://github.com/dotnet/sdk/issues/16896) is about
-where should eah architecture install to.
+where should each architecture install to.
 For the purposes of this document we'll just assume that each architecture has
 its own unique location (it doesn't matter exactly what it will be).
 
@@ -60,12 +57,7 @@ The registration mechanism currently doesn't allow for multi-arch configurations
 The configuration file in `/etc/dotnet/install_location` only contains a single
 line, which is the registered location path. There's nothing else in this file.
 
-If there's no registered location apphost can be updated to know about the
-new default global location which architecture specific. But if there is a need
-to register the location, there's currently no way to register different
-location per architecture.
-
-Also existing apphost (.NET Core 3.1 and .NET 5) only know about one install location
+Already shipped apphost (.NET Core 3.1 and .NET 5) only knows about one install location
 and only about one registration mechanism. The current proposal is to use
 the existing default install location for the native architecture (that is Arm64)
 and have a new location for the non-native architecture (x64). Existing apphost
@@ -118,7 +110,9 @@ omit the architecture prefix.
 by the absolute path of the install location for that architecture.
 
 Each architecture should be specified no more than once (apphost will
-use only the first occurrence).
+use only the first occurrence). Installers should write architecture
+specific lines (with arch prefix) even on systems with only one architecture.
+The un-prefixed first line should only be added to support downlevel apphost.
 
 This will mean adding more complex parsing logic into the host, but there
 has to be some addition to support multi-arch on non-Windows platforms.
@@ -145,7 +139,7 @@ to do so on Linux and macOS.
 
 In order to support running downlevel apphost apps on multi-arch non-Windows
 architectures (currently only applies to macOS), the installer of .NET 6 and above
-should write the configuration file in a specific shape, for example:
+should write the configuration file in a specific shape, for example (on macOS arm64):
 
 ```console
 /usr/local/share/dotnet/x64
@@ -172,4 +166,5 @@ one doesn't exist.
 
 The effect of this is almost identical to the proposed solution.
 The only downside is that this doesn't follow to "native first" approach
-where the native architecture gets the existing "nice" names.
+where the native architecture gets the existing "nice" names. It also adds more
+files into `/etc/dotnet` which doesn't feel necessary.
