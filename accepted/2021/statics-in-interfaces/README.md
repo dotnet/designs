@@ -205,6 +205,7 @@ interface "ISpanFormattable"
 interface "ISpanParseable"
 interface "ISubtractable<TSelf, TOther, TResult>"
 interface "IUnsignedNumber<TSelf>"
+interface "IVector<TSelf, TScalar>"
 
 "IBinaryNumber<TSelf>"                      <|-- "IBinaryFloatingPoint<TSelf>"
 "IFloatingPoint<TSelf>"                     <|-- "IBinaryFloatingPoint<TSelf>"
@@ -245,6 +246,17 @@ interface "IUnsignedNumber<TSelf>"
 
 "INumber<TSelf>"                            <|-- "IUnsignedNumber<TSelf>"
 
+"IAddable<TSelf, TOther, TResult>"          <|-- "IVector<TSelf, TScalar>"
+"IAdditiveIdentity<TSelf, TResult>"         <|-- "IVector<TSelf, TScalar>"
+"IBitwiseOperators<TSelf, TResult>"         <|-- "IVector<TSelf, TScalar>"
+"IComparableOperators<TSelf, TOther>"       <|-- "IVector<TSelf, TScalar>"
+"IDivisible<TSelf, TOther, TResult>"        <|-- "IVector<TSelf, TScalar>"
+"IMultipliable<TSelf, TOther, TResult>"     <|-- "IVector<TSelf, TScalar>"
+"IMultiplicativeIdentity<TSelf, TResult>"   <|-- "IVector<TSelf, TScalar>"
+"INegatable<TSelf>"                         <|-- "IVector<TSelf, TScalar>"
+"ISpanFormattable"                          <|-- "IVector<TSelf, TScalar>"
+"ISubtractable<TSelf, TOther, TResult>"     <|-- "IVector<TSelf, TScalar>"
+
 class "Byte"
 class "Char"
 class "DateOnly"
@@ -268,6 +280,13 @@ class "UInt32"
 class "UInt64"
 class "UIntPtr"
 class "ValueType"
+class "Vector<T>"
+class "Vector64<T>"
+class "Vector128<T>"
+class "Vector256<T>"
+class "Vector2"
+class "Vector3"
+class "Vector4"
 
 "IBinaryInteger<TSelf>"                   <|-- "Byte"
 "IConvertible"                            <|-- "Byte"
@@ -414,10 +433,20 @@ class "ValueType"
 "ValueType"                               <|-- "UIntPtr"
 
 "Object"                                  <|-- "ValueType"
+
+"IVector<TSelf, TScalar>"                 <|-- "Vector<T>"
+
+"IVector<TSelf, TScalar>"                 <|-- "Vector64<T>"
+"IVector<TSelf, TScalar>"                 <|-- "Vector128<T>"
+"IVector<TSelf, TScalar>"                 <|-- "Vector256<T>"
+
+"IVector<TSelf, TScalar>"                 <|-- "Vector2"
+"IVector<TSelf, TScalar>"                 <|-- "Vector3"
+"IVector<TSelf, TScalar>"                 <|-- "Vector4"
 @enduml
 -->
 
-![UML](http://www.plantuml.com/plantuml/svg/h5PDSzem4BtxLp2ScqC_9YScquOahGy49eRUr_OQjfLbAgzfwVJ7jvI93PB5AcvpoQnOlNtxuNrwNpCORaeLaMOq1MGu6iSVyXnIXPDbWgfuDLhEUOFcp_ydh1l5DsFRcPXs6EUecNZVtkhrlYKDPl-WAc3IwqL5ceyNUlrYpRX6Sy7ZiIbJhmD_fnhdMpJ0bQd3qfbMvHRC8NtV-MJflUA9vVZh7Hec9yOTPWPBrDnL_yRsgD4GAFe9J9MUWb8fP5yj9zfHJS4DlF_M05k9MR-4vILtDTPIWW-LAO7PhV-Cz0n-V0RLz5-SDOffgqWUNFj61k7Z-uZhOqK4D_zKBi3KwARtX2MGpj64SK-Ufy01IZPKS7WH4bfhp2_mJRQW-vhI_kX9A6bIDf2zWCfArtraelvFVTJxD_brTILi6S-S3eKRJizURY6z2mAANh3xMYGxXoCZEQbUHcuBkntfehX0WKlLtih_3LPUV0DW8slLobK8si2Hyn7B0-WPPLdv7IHxOkJdW80GL4i1mTLHfo02WYoX4aAi_vL3aAB92BB2UH5aMPBhOEk7cx-4q8hCm4fAMYHNChea_7qa764Tlb0JZoRADRM1R26FsiT82o61s88_826lp6SAwdeqljqpZf-DwGPCQzm1uroh_Td1aafq3kP5KIDtnvXH2QgpgoPLtQrxtPIjyR6Xl3K-WIfQ8zRy-lhKUllcrBf-TsejkECzJxzWrh59pZ9CIAzFk1pO7shS7gpEmwxEuwxE0w-io7zVoylzzjYftiU2jqz7bhyhisESHcCe2gDzLZLx6CqECXtG8FPFyUalBY6EJWiwIdpzOZ_RUrXvFRkfNxlrb-fPQRnGro2FNs-Knr4bQXmfZIFbSQGqZXJikh7hjqY36obxmwFSFU7wJnzyb1BFI6YEejTY94tHIcc6LcgbZjm9_JnFwCWzbj9dSYaaeJrOAMt1IYoYaLv4kwDvAJruBwZrJswWDec3zzLYlPVOUY-qzLnkuxterdlfhVTreTx9PdxXJFczFnVP4S9SBuG3yK1AT-7jU4VqA6j1VPdEGOUrpaUOWnkSO4qr3oy5XvjHDhIKTZuT47GTIUdgaTA1fRWaE-nuOQNqAwQq2Uy8nbKLuw75U3M9SIGnpwI3A6SIuqnYd4cCCubv9Xt7EPCOPnBpJ6AUISmpwMh0HvVpuULu5yz9BkiucBzyqx7CuenncZ4E9UPxGRTI7ahEKydv-7AyYtVFvlSNAx47M0bzm4euFwo4Q5VoeVMwnDJZwagUq2Gytgoacu-Ly5Yp4XvfVafuarZ9XRkIooyfvRUI5_H_tYRci4zSvnUsEObcdGVZlU8w3oRdmM2xkCw3yOPndGUJys2mPrpdmNZNkD3QluMUZJQE2s_NIzrPNNAUr_xy_xX_lRzz0m00)
+![UML](http://www.plantuml.com/plantuml/svg/h5RBSjiw3DthApnUtopok9ukCfasZxHU9Cv4TlQG13beASgbeBJkzEDRJneg8aM3IkkDvq3W8G221tpVC1XkAvMGPZGbv3YPpZyK1MGAJvSfglA_oNB1ZsX-_zzZqoe-cxhEnFI4ym8r4s_jga7lSz9WjjUg1YQzlgj9y_E2GR-vPboZsUDnsrPPq86_KOEB3HhWsZHnwLpKrGRCBlsG_NGPMXBQo_FNJsYOl3qkCJTOeUQk-cUkHuE6GD4FOAhr1IYLGVx5SQ8dQYZw0A--jl1dny2NoBpaKvrhAS7hsbJ0xDV_XlGDV7y0rGull6aLqqQHtBZkYXpYs_SMryyL4Tp2NNa7fa4_lNkiW7I19YxszAKBFABqaKgEBq9AQut5ddZJ3UYXGx4V0mcbRSO6yX6Xh7GZ1VE0ETTTYT8S5EowC1cMWydWx_JdmO6WH85UVYlTwF220XXplb54oGXzj4n3Ykis-oJysykJzAGtp6698eNNLUv_HYkBunje4qUEvIf4gNJYNNIv0OEjBBqEF2QtO-GdWyWGKKk1mPkrVa441ddCIWnp_RSnH4qzcK6UWa46UNJ9TN1dZ9-_p607qPigASqhkPB9liT180ZdJig2Al2u0SarTOdSOP_O1uj8OKcSHy7uX89FWV7Y4tuonAkGJ1KUfUEfufLDf8eNA8bglCx8LBBWY5Jsmecj9LB94XHF5Qqa0bMIAsYQoVHyopXz0HUFO2ou1CQ5LjkUOKaLUeP5MJR8dHbpga1rk6upXHPUwRQou6DBXGMVG9KMp3KVpbwZuwFNQ7Ro6jsniN2HVSQSBKnx6QQarwg3k-XtfsCDg_wsg_w-g_x6AsVd1r0jBhURZl-b-cUEPNRYsmwFtld6e_zd0qO77pluv5TdTd2RDH15ONHFEpH03uWEmWxO8Fe7wHEwCXDZdNyBENBc-cNyvaqj-7kz-MtDbTBc1sUTtgjt3z3FwcOdVb0B-VYvUyLnz9UWSQGqZfJ6aT8uKl0fY6qliCLDmZvu8zU2_VsV7dmlDPv9Q0T6smpbwtzAVIr9hTJ9uuN-t0jzbDT94JpJIo4ftVXLmhVpa5v4IIwYuukAfNHuBwZ3tmo5ZoJklEyMyrvYfpyBpRsNsxmNtJoNtk5zNwXtupS_U7tbR_rpaJr0UjU3C7-wGartyCD_HxAdh0NsRJg77TQShp070zDWJRqlBxLP0YXUMWftn0ueke-aTFT8wS9IN98TjhomKlehfhG9xmZ8LHNZfSLyDubn937Ff0EfPnBpJ6ASIKmpYMacZGCuanXd4lDCOfv9p3DfDE6ho_doSlOLd_DSSXxCPvvqZ76SCKupvg74_5lGLCn3oNagELzVZh_YpVbyVZ7fyuj9xmCcxVmmYT5E-kHZGrG_haxw2qt2LSGXRV8nANSMLobN5Fz8k08yf1TkqijlqiilwHlw5syJvx1FdFE1RKwZcVDWj5Syd0UJys2yNPppOBHXF9m7a_DWl6USys2yQnpqzczGindqSDOvTbCOUvPxq1zxUx5wOtSHoFPwPUXuTukkhvUGh_9Nd_kHuIv0FttzyVRh-xVV)
 
 ### Base Interfaces
 
@@ -1103,6 +1132,71 @@ namespace System
         //  bool SameQuantum(TSelf x, TSelf y);
     }
 }
+
+namespace System.Numerics
+{
+    public interface IVector<TSelf, TScalar>
+        : IAddable<TSelf, TSelf, TSelf>,
+          IAdditiveIdentity<TSelf, TSelf>,
+          IBitwiseOperators<TSelf, TSelf, TSelf>,
+          IComparableOperators<TSelf, TSelf>,   // implies IEquatableOperators<TSelf, TSelf>
+          IDivisible<TSelf, TSelf, TSelf>,
+          IDivisible<TSelf, TScalar, TSelf>,
+          IMultipliable<TSelf, TSelf, TSelf>,
+          IMultipliable<TSelf, TScalar, TSelf>,
+          IMultiplicativeIdentity<TSelf, TSelf>,
+          IMultiplicativeIdentity<TSelf, TScalar>
+          INegatable<TSelf, TSelf>,
+          ISpanFormattable,                     // implies IFormattable
+          ISubtractable<TSelf, TSelf, TSelf>
+        where TSelf : IVector<TSelf, TScalar>
+    {
+        static abstract TSelf Create(TScalar value);
+        static abstract TSelf Create(TScalar[] values);
+        static abstract TSelf Create(TScalar[] values, int startIndex);
+        static abstract TSelf Create(ReadOnlySpan<TScalar> values);
+
+        static abstract int Count { get; }
+
+        static abstract TSelf One { get; }
+
+        static abstract TSelf Zero { get; }
+
+        TScalar this[int index] { get; }
+
+        static abstract TSelf Abs(TSelf value);
+        static abstract TSelf AndNot(TSelf left, TSelf right);
+        static abstract TSelf ConditionalSelect(TSelf condition, TSelf left, TSelf right);
+        static abstract TSelf Dot(TSelf left, TSelf right);
+        static abstract TSelf Max(TSelf left, TSelf right);
+        static abstract TSelf Min(TSelf left, TSelf right);
+        static abstract TSelf SquareRoot(TSelf value);
+
+        static abstract TSelf Equals(TSelf left, TSelf right);
+        static abstract TSelf GreaterThan(TSelf left, TSelf right);
+        static abstract TSelf GreaterThanOrEqual(TSelf left, TSelf right);
+        static abstract TSelf LessThan(TSelf left, TSelf right);
+        static abstract TSelf LessThanOrEqual(TSelf left, TSelf right);
+
+        static abstract bool EqualsAll(TSelf left, TSelf right);
+        static abstract bool GreaterThanAll(TSelf left, TSelf right);
+        static abstract bool GreaterThanOrEqualAll(TSelf left, TSelf right);
+        static abstract bool LessThanAll(TSelf left, TSelf right);
+        static abstract bool LessThanOrEqualAll(TSelf left, TSelf right);
+
+        static abstract bool EqualsAny(TSelf left, TSelf right);
+        static abstract bool GreaterThanAny(TSelf left, TSelf right);
+        static abstract bool GreaterThanOrEqualAny(TSelf left, TSelf right);
+        static abstract bool LessThanAny(TSelf left, TSelf right);
+        static abstract bool LessThanOrEqualAny(TSelf left, TSelf right);
+
+        void CopyTo(TScalar[] destination);
+        void CopyTo(TScalar[] destination, int startIndex);
+        void CopyTo(Span<TScalar> destination);
+
+        bool TryCopyTo(Span<TScalar> destination);
+    }
+}
 ```
 
 ### Interface Implementors
@@ -1308,6 +1402,40 @@ namespace System
     {
     }
 }
+
+namespace System.Numerics
+{
+    public struct Vector<T> : IVector<Vector<T>, T>
+    {
+    }
+
+    public struct Vector2 : IVector<Vector2, float>
+    {
+    }
+
+    public struct Vector3 : IVector<Vector3, float>
+    {
+    }
+
+    public struct Vector4 : IVector<Vector4, float>
+    {
+    }
+}
+
+namespace System.Runtime.Intrinsics
+{
+    public struct Vector64<T> : IVector<Vector64<T>, T>
+    {
+    }
+
+    public struct Vector128<T> : IVector<Vector128<T>, T>
+    {
+    }
+
+    public struct Vector256<T> : IVector<Vector256<T>, T>
+    {
+    }
+}
 ```
 
 ### Pending Concepts
@@ -1325,18 +1453,13 @@ There are several types which may benefit from some interface support. These inc
 * System.Numerics.Matrix4x4
 * System.Numerics.Plane
 * System.Numerics.Quaternion
-* System.Numerics.Vector<T>
-* System.Numerics.Vector2
-* System.Numerics.Vector3
-* System.Numerics.Vector4
-* System.Runtime.Intrinsics.Vector64<T>
-* System.Runtime.Intrinsics.Vector128<T>
-* System.Runtime.Intrinsics.Vector256<T>
 
 Likewise, there are many comments within the defined interfaces above that call out key points that need additional modeling/consideration. Several of these concepts will be determined via user research and outreach while others will be determined via API review and feedback from other area experts. Others may be determined by language or runtime limitations in what is feasible for them to support.
 
 Do we want a way to denote "primitives"? If we have it, should this be language primitives, runtime primitives, or ABI primitives?
 
 Do we want an explicit `IConvertible<TSelf, TOther>` (or `IConvertibleFrom`/`IConvertibleTo`)?
+
+Do we want a way to track "scalars" for vectors and matrices?
 
 ## Requirements
