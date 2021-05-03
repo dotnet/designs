@@ -132,7 +132,7 @@ public interface IMultipliable<TSelf>
 }
 
 public interface IDivisible<TSelf>
-    where TSelf : IDivisable<TSelf>
+    where TSelf : IDivisible<TSelf>
 {
     static abstract TSelf operator /(TSelf left, TSelf right);
 }
@@ -141,7 +141,7 @@ public interface INumber<TSelf>
     : IAddable<TSelf>
     : ISubtractable<TSelf>
     : IMultipliable<TSelf>
-    : IDivisable<TSelf>
+    : IDivisible<TSelf>
     where TSelf : INumber<TSelf>
 {
 }
@@ -183,13 +183,13 @@ interface "IComparableOperators<TSelf, TOther>"
 interface "IConvertible"
 interface "IDecrementable<TSelf>"
 interface "IDeserializationCallback"
-interface "IDivisable<TSelf, TOther, TResult>"
+interface "IDivisible<TSelf, TOther, TResult>"
 interface "IEquatable<T>"
 interface "IEquatableOperators<TSelf, TOther>"
 interface "IFloatingPoint<TSelf>"
-interface "IFixedWidth<TSelf>"
 interface "IIncrementable<TSelf>"
 interface "IFormattable"
+interface "IMinMaxValue<TSelf>"
 interface "IMultipliable<TSelf, TOther, TResult>"
 interface "INegatable<TSelf, TResult>"
 interface "INumber<TSelf>"
@@ -214,7 +214,7 @@ interface "IUnsignedNumber<TSelf>"
 "IAddable<TSelf, TOther, TResult>"      <|-- "INumber<TSelf>"
 "IComparableOperators<TSelf, TOther>"   <|-- "INumber<TSelf>"
 "IDecrementable<TSelf>"                 <|-- "INumber<TSelf>"
-"IDivisable<TSelf, TOther, TResult>"    <|-- "INumber<TSelf>"
+"IDivisible<TSelf, TOther, TResult>"    <|-- "INumber<TSelf>"
 "IIncrementable<TSelf>"                 <|-- "INumber<TSelf>"
 "IMultipliable<TSelf, TOther, TResult>" <|-- "INumber<TSelf>"
 "IRemainder<TSelf, TOther, TResult>"    <|-- "INumber<TSelf>"
@@ -253,23 +253,23 @@ class "ValueType"
 
 "IBinaryInteger<TSelf>"                 <|-- "Byte"
 "IConvertible"                          <|-- "Byte"
-"IFixedWidth<TSelf>"                    <|-- "Byte"
+"IMinMaxValue<TSelf>"                   <|-- "Byte"
 "IUnsignedNumber<TSelf>"                <|-- "Byte"
 "ValueType"                             <|-- "Byte"
 "IBinaryInteger<TSelf>"                 <|-- "Char"
 "IConvertible"                          <|-- "Char"
-"IFixedWidth<TSelf>"                    <|-- "Char"
+"IMinMaxValue<TSelf>"                   <|-- "Char"
 "IUnsignedNumber<TSelf>"                <|-- "Char"
 "ValueType"                             <|-- "Char"
 "IComparableOperators<TSelf, TOther>"   <|-- "DateOnly"
-"IFixedWidth<TSelf>"                    <|-- "DateOnly"
+"IMinMaxValue<TSelf>"                   <|-- "DateOnly"
 "ISpanFormattable"                      <|-- "DateOnly"
 "ISpanParseable<DateOnly>"              <|-- "DateOnly"
 "ValueType"                             <|-- "DateOnly"
 "IAddable<TSelf, TOther, TResult>"      <|-- "DateTime"
 "IComparableOperators<TSelf, TOther>"   <|-- "DateTime"
 "IConvertible"                          <|-- "DateTime"
-"IFixedWidth<Tself>"                    <|-- "DateTime"
+"IMinMaxValue<Tself>"                   <|-- "DateTime"
 "ISerializable"                         <|-- "DateTime"
 "ISpanFormattable"                      <|-- "DateTime"
 "ISpanParseable<TSelf>"                 <|-- "DateTime"
@@ -278,7 +278,7 @@ class "ValueType"
 "IAddable<TSelf, TOther, TResult>"      <|-- "DateTimeOffset"
 "IComparableOperators<TSelf, TOther>"   <|-- "DateTimeOffset"
 "IDeserializationCallback"              <|-- "DateTimeOffset"
-"IFixedWidth<TSelf>"                    <|-- "DateTimeOffset"
+"IMinMaxValue<TSelf>"                   <|-- "DateTimeOffset"
 "ISerializable"                         <|-- "DateTimeOffset"
 "ISpanFormattable"                      <|-- "DateTimeOffset"
 "ISpanParseable<TSelf>"                 <|-- "DateTimeOffset"
@@ -286,13 +286,13 @@ class "ValueType"
 "ValueType"                             <|-- "DateTimeOffset"
 "IConvertible"                          <|-- "Decimal"
 "IDeserializationCallback"              <|-- "Decimal"
-"IFixedWidth<decimal>"                  <|-- "Decimal"
+"IMinMaxValue<decimal>"                 <|-- "Decimal"
 "ISerializable"                         <|-- "Decimal"
 "ISignedNumber<TSelf>"                  <|-- "Decimal"
 "ValueType"                             <|-- "Decimal"
 "IBinaryFloatingPoint<TSelf>"           <|-- "Double"
 "IConvertible"                          <|-- "Double"
-"IFixedWidth<TSelf>"                    <|-- "Double"
+"IMinMaxValue<TSelf>"                   <|-- "Double"
 "ValueType"                             <|-- "Double"
 "IComparable"                           <|-- "Enum"
 "IConvertible"                          <|-- "Enum"
@@ -303,47 +303,47 @@ class "ValueType"
 "ISpanParseable<TSelf>"                 <|-- "Guid"
 "ValueType"                             <|-- "Guid"
 "IBinaryFloatingPoint<TSelf>"           <|-- "Half"
-"IFixedWidth<TSelf>"                    <|-- "Half"
+"IMinMaxValue<TSelf>"                   <|-- "Half"
 "ValueType"                             <|-- "Half"
 "IBinaryInteger<TSelf>"                 <|-- "Int16"
 "IConvertible"                          <|-- "Int16"
-"IFixedWidth<TSelf>"                    <|-- "Int16"
+"IMinMaxValue<TSelf>"                   <|-- "Int16"
 "ISignedNumber<TSelf>"                  <|-- "Int16"
 "ValueType"                             <|-- "Int16"
 "IBinaryInteger<TSelf>"                 <|-- "Int32"
 "IConvertible"                          <|-- "Int32"
-"IFixedWidth<TSelf>"                    <|-- "Int32"
+"IMinMaxValue<TSelf>"                   <|-- "Int32"
 "ISignedNumber<TSelf>"                  <|-- "Int32"
 "ValueType"                             <|-- "Int32"
 "IBinaryInteger<TSelf>"                 <|-- "Int64"
 "IConvertible"                          <|-- "Int64"
-"IFixedWidth<TSelf>"                    <|-- "Int64"
+"IMinMaxValue<TSelf>"                   <|-- "Int64"
 "ISignedNumber<TSelf>"                  <|-- "Int64"
 "ValueType"                             <|-- "Int64"
 "IBinaryInteger<TSelf>"                 <|-- "IntPtr"
-"IFixedWidth<TSelf>"                    <|-- "IntPtr"
+"IMinMaxValue<TSelf>"                   <|-- "IntPtr"
 "ISignedNumber<TSelf>"                  <|-- "IntPtr"
 "ISerializable"                         <|-- "IntPtr"
 "ValueType"                             <|-- "IntPtr"
 "IBinaryInteger<TSelf>"                 <|-- "SByte"
 "IConvertible"                          <|-- "SByte"
-"IFixedWidth<TSelf>"                    <|-- "SByte"
+"IMinMaxValue<TSelf>"                   <|-- "SByte"
 "ISignedNumber<TSelf>"                  <|-- "SByte"
 "ValueType"                             <|-- "SByte"
 "IBinaryFloatingPoint<TSelf>"           <|-- "Single"
 "IConvertible"                          <|-- "Single"
-"IFixedWidth<TSelf>"                    <|-- "Single"
+"IMinMaxValue<TSelf>"                   <|-- "Single"
 "ValueType"                             <|-- "Single"
 "IComparableOperators<TSelf, TOther>"   <|-- "TimeOnly"
-"IFixedWidth<TSelf>"                    <|-- "TimeOnly"
+"IMinMaxValue<TSelf>"                   <|-- "TimeOnly"
 "ISpanFormattable"                      <|-- "TimeOnly"
 "ISpanParseable<TSelf>"                 <|-- "TimeOnly"
 "ISubtractable<TSelf, TOther, TResult>" <|-- "TimeOnly"
 "ValueType"                             <|-- "TimeOnly"
 "IAddable<TSelf, TOther, TResult>"      <|-- "TimeSpan"
 "IComparableOperators<TSelf, TOther>"   <|-- "TimeSpan"
-"IDivisable<TSelf, TOther, TResult>"    <|-- "TimeSpan"
-"IFixedWidth<Tself>"                    <|-- "TimeSpan"
+"IDivisible<TSelf, TOther, TResult>"    <|-- "TimeSpan"
+"IMinMaxValue<Tself>"                   <|-- "TimeSpan"
 "IMultipliable<TSelf, TOther, TResult>" <|-- "TimeSpan"
 "INegatable<TSelf, TResult>"            <|-- "TimeSpan"
 "ISpanFormattable"                      <|-- "TimeSpan"
@@ -351,21 +351,21 @@ class "ValueType"
 "ValueType"                             <|-- "TimeSpan"
 "IBinaryInteger<TSelf>"                 <|-- "UInt16"
 "IConvertible"                          <|-- "UInt16"
-"IFixedWidth<TSelf>"                    <|-- "UInt16"
+"IMinMaxValue<TSelf>"                   <|-- "UInt16"
 "IUnsignedNumber<TSelf>"                <|-- "UInt16"
 "ValueType"                             <|-- "UInt16"
 "IBinaryInteger<TSelf>"                 <|-- "UInt32"
 "IConvertible"                          <|-- "UInt32"
-"IFixedWidth<TSelf>"                    <|-- "UInt32"
+"IMinMaxValue<TSelf>"                   <|-- "UInt32"
 "IUnsignedNumber<TSelf>"                <|-- "UInt32"
 "ValueType"                             <|-- "UInt32"
 "IBinaryInteger<TSelf>"                 <|-- "UInt64"
 "IConvertible"                          <|-- "UInt64"
-"IFixedWidth<TSelf>"                    <|-- "UInt64"
+"IMinMaxValue<TSelf>"                   <|-- "UInt64"
 "IUnsignedNumber<TSelf>"                <|-- "UInt64"
 "ValueType"                             <|-- "UInt64"
 "IBinaryInteger<TSelf>"                 <|-- "UIntPtr"
-"IFixedWidth<TSelf>"                    <|-- "UIntPtr"
+"IMinMaxValue<TSelf>"                   <|-- "UIntPtr"
 "ISerializable"                         <|-- "UIntPtr"
 "IUnsignedNumber<TSelf>"                <|-- "UIntPtr"
 "ValueType"                             <|-- "UIntPtr"
@@ -373,7 +373,7 @@ class "ValueType"
 @enduml
 -->
 
-![UML](http://www.plantuml.com/plantuml/svg/h5LDSzem4BtdLp2ScqC_9YScquQ4reS69eRslBONs5QMgRJAb4v_VCEqaP7inIeJBinA-zw-NLbFxos3OLUh2zACPWqbZiRPXwg2Gk5acQDQlnejvxn5y_J_WDOflXu7oJUamUndgW4clLaqfFali3SlqumRD2SoxbrT20dJfjw1EKYJrYTB4JBVeG5kZ0tRwkJhHpHCdHgtM1giKNCxcUiumw8XKFGBc1ez1QKAABz7IVH8DdsuTpyS_Aiex2JsDNm-C_g9rLUgUDkxdUcX_cUDgO6vUpoVdMBQAKfl-nutS5H8J9C_bGKOYrqf3rW3wGfDcexy-K0xH3bjD5Od1EGxqC54uar1OUuADb1o-h1MslQ9kUY_KAFER_BxydBW7WlVptbKwQf4rnXd8bmcYUOJs8b7Y1mfHX8xqOjG3b_qyob5aPuooMZwhuF0A7dHyBCJaCYdAGiLqOAzn_f5zB2hdq9d-lpQYUugeeSDKQuTcfnyZIIqTy4p-auqIX4jlp1nRS7i1pmebKEOdi0Hlod-dOlHCju3_hi3wPqf5LWx6j_i6SVFmNGBnWUtm3ZNQXyiBAd6pi9ylRR8xJAML8DguyOLgaNTQLVxuAEZoWUVGArza6b-VNKSlNrp75szEuuMtEgU5z-mRDNaGOSvwSsHbeFwmtZzmYeikmhhhiB2gwZo5r0Eb_iTFerNU0E5K_fJcHsaH0m4OHYzcdSGRn1twaQylmpXWmfDEhojyfZflokTgfxpEyu-zhckCci7-6XkYc9hMjo-PAUX32e-o20Z6MGWWunaaD4tNC-ShYcdftjkFTVxJvzwup2JdFODdJIUPyxgQhgv3x_F-v2xJY7mUR9_ENqlv_IDdFDzp_c-ppUCx_xKzyF-vZkdzObSjDT3sgjYrLuRQQ-GeRrEXkQdjiR3DZfstU7Z_6inRHXjRGp7hnW76jkEzmkhPOFyKzYJf6nXARiFgFU4LMMWvy_8YZ9smjK-m-cGWJCX8-l9MDqr0K3zPE2xPQm_RI2HuWdHYa9qG8GeXv05qImcGOGeY1054Q8WGXP4OwW44Q8WGXH4Y888MH1DuBQebAqgfM_Tb8IHqZJUUPeFKO8X2Z14IOJiDE-oXP98MHGfMrQAfyfNX-fJUiwdz9o-jNFQm-SipPnFzzt2wJxaz2u_fzDzJk_lStg3dTDwoUc-vtJVStfGVc1BbVAUAcNtVYdB8-LfU5-LiZHIdeQtLYbFmvkhbAMHyZIylqfv6jvXnRnPYdaWtcGDrYytMnERFxQyVVuSVzzV_m00)
+![UML](http://www.plantuml.com/plantuml/svg/h5LDSzD03BttLtXyfWS-fgTE1vgsu4FgJ1suoxRi2jPosDLs2CEF1mPgnn-AbmovPBJMU_katNrwwmIi-CQS4GlQ2WgCukHTMK9ky7AReQbUHDjK7j7--dz0vurSnOFaQsAm-plJWX3NcvPO_W1dyn8MhD4UoRZtJQuahDfc1_QtD6tzSgj2qXrQaDQwOLcJV7v2ApJPumOBYmsoz9sv6cSuj0I6leDGooim9eVYooY9diXHS7DllthukwFo9R2kvVD9UAd0kzOs83Bj_vfu3Ty-WV7pmBKtGZj3uPVg7ciu4AAcwNTb0zRXLEe3Da1SeWtJaJsVw8GeevgnF28Wsm7FTQpxg2ZCV2uM2WblraTsSsBEvbzKDFbT_ZW_NtZ8oWKwZIfSbMeRSQB3LP9HVmP-ek0xZZ0d6LlHVw5SVkadK-eYEyeWfvb_3XgZOaRBSsT0ef-cBbH5A_u-rg-Z5stz63hXq_SET5SLhHlYilAfoKNJduxkNV24kWEDKaNh4sQyjsBsGHwqpA5qJ-4OpvHkpetHEhu3_6C5-fmf33WNnTTxmVWvM3s2xO8R44pPx0SBMsfmif1MbKFfbx6W1amVjputFUgMVTC5xpsLNV01JDK52SlBYyFezQl3wEBDORIHNdUQVyQYLvCDAio8wv-LsK5AnJ0KXj6jkGVj3jwRgGZYmDrBbIDUQbE-eSgXpPyqkJV-UPVzxVTuVt-nUQmVntCt3_RZVF9tBVNq-NPtZ8ypyFmxCGkZaBrOLyo_TTo5ELiKIsDmgnUR9cLWyOKCc9G14p9WGWPCFU5yStLCNDtTkUE-xYyUUkfI9boj6-mqFK-khIlkC0_lr_F0ZIuaFA_C7rVFPQwUo5oVTwxE-pnX-knFVTRjhzwPxb_ar7qzq7rLJDtNnjHzXT1zdKmTlrg5HvneRCxmxUVNvpbXSMgnr7vXEL1isTuVc98jv4_5ceHg0wFQVO3QCuoA2JK_4qV4X1rE-Hns1oRi2KmP3zFMdGuWh1-clHiJwbCDILayK1mH53O8AEK0jI3qOYK8A0K1fI2W50JKWj26bY2W50IKWe1I450BGWVU1aNbKL7XrALQ65HDup5tyr1A44e1GZK9AEpcBbjI4bIBWkh3ejAfkrUelKldUfVErLERgpKyLzFaQfVd5gxE0rVlyhdQtNFr_fwhDzXSNozSddUkpZkNDigjbrHKhAceTkz7rJoedaQjgwYQ1jNJwAKLrTEenHLLqw1w6hs-edeQlSB2Oh64nK2md0ZcFpShWer_jZpSNsyVByzV)
 
 ### Base Interfaces
 
@@ -499,8 +499,8 @@ namespace System
         static abstract TResult checked operator *(TSelf lhs, TOther rhs);
     }
 
-    public interface IDivisable<TSelf, TOther, TResult>
-        where TSelf : IDivisable<TSelf, TOther, TResult>
+    public interface IDivisible<TSelf, TOther, TResult>
+        where TSelf : IDivisible<TSelf, TOther, TResult>
     {
         static abstract TResult operator /(TSelf lhs, TOther rhs);
 
@@ -533,11 +533,10 @@ namespace System
         static abstract TResult checked operator -(TSelf value);
     }
 
-    public interface IFixedWidth<TSelf>
-        where TSelf : IFixedWidth<TSelf>
+    public interface IMinMaxValue<TSelf>
+        where TSelf : IMinMaxValue<TSelf>
     {
         // MinValue and MaxValue are more general purpose than just "numbers", so they live on this common base type
-        // Fixed-Width isn't the best name however, so we should think of alternatives
 
         static abstract TSelf MinValue { get; }
 
@@ -557,7 +556,7 @@ namespace System
         : IAddable<TSelf, TSelf>,
           IComparableOperators<TSelf, TSelf>,   // implies IEquatableOperators<TSelf, TSelf>
           IDecrementable<TSelf>,
-          IDivisable<TSelf, TSelf>,
+          IDivisible<TSelf, TSelf>,
           IIncrementable<TSelf>,
           IMultipliable<TSelf, TSelf>,
           IRemainder<TSelf, TSelf>,
@@ -1051,7 +1050,7 @@ namespace System
     public struct Byte
         : IBinaryInteger<byte>,
           IConvertible,
-          IFixedWidth<byte>,
+          IMinMaxValue<byte>,
           IUnsignedNumber<byte>
     {
     }
@@ -1059,14 +1058,14 @@ namespace System
     public struct Char
         : IBinaryInteger<char>,
           IConvertible,
-          IFixedWidth<char>,
+          IMinMaxValue<char>,
           IUnsignedNumber<char>
     {
     }
 
     public struct DateOnly
         : IComparableOperators<DateOnly, DateOnly>,
-          IFixedWidth<DateOnly>,
+          IMinMaxValue<DateOnly>,
           ISpanFormattable,
           ISpanParseable<DateOnly>
     {
@@ -1076,7 +1075,7 @@ namespace System
         : IAddable<DateTime, TimeSpan, DateTime>,
           IComparableOperators<DateTime, DateTime>,
           IConvertible,
-          IFixedWidth<DateTime>,
+          IMinMaxValue<DateTime>,
           ISerializable,
           ISpanFormattable,
           ISpanParseable<DateTime>,
@@ -1089,7 +1088,7 @@ namespace System
         : IAddable<DateTimeOffset, TimeSpan, DateTimeOffset>,
           IComparableOperators<DateTimeOffset, DateTimeOffset>,
           IDeserializationCallback,
-          IFixedWidth<DateTimeOffset>,
+          IMinMaxValue<DateTimeOffset>,
           ISerializable,
           ISpanFormattable,
           ISpanParseable<DateTimeOffset>,
@@ -1102,7 +1101,7 @@ namespace System
     public struct Decimal
         : IConvertible,
           IDeserializationCallback,
-          IFixedWidth<decimal>,
+          IMinMaxValue<decimal>,
           ISerializable,
           ISignedNumber<decimal>
     {
@@ -1115,7 +1114,7 @@ namespace System
     public struct Double
         : IBinaryFloatingPoint<double>,
           IConvertible,
-          IFixedWidth<double>
+          IMinMaxValue<double>
     {
     }
 
@@ -1135,14 +1134,14 @@ namespace System
 
     public struct Half
         : IBinaryFloatingPoint<Half>,
-          IFixedWidth<Half>
+          IMinMaxValue<Half>
     {
     }
 
     public struct Int16
         : IBinaryInteger<short>,
           IConvertible,
-          IFixedWidth<short>,
+          IMinMaxValue<short>,
           ISignedNumber<short>
     {
     }
@@ -1150,7 +1149,7 @@ namespace System
     public struct Int32
         : IBinaryInteger<int>,
           IConvertible,
-          IFixedWidth<int>,
+          IMinMaxValue<int>,
           ISignedNumber<int>
     {
     }
@@ -1158,14 +1157,14 @@ namespace System
     public struct Int64
         : IBinaryInteger<long>,
           IConvertible,
-          IFixedWidth<long>,
+          IMinMaxValue<long>,
           ISignedNumber<long>
     {
     }
 
     public struct IntPtr
         : IBinaryInteger<nint>,
-          IFixedWidth<nint>,
+          IMinMaxValue<nint>,
           ISerializable,
           ISignedNumber<nint>
     {
@@ -1174,7 +1173,7 @@ namespace System
     public struct SByte
         : IBinaryInteger<sbyte>,
           IConvertible,
-          IFixedWidth<sbyte>,
+          IMinMaxValue<sbyte>,
           ISignedNumber<sbyte>
     {
     }
@@ -1182,13 +1181,13 @@ namespace System
     public struct Single
         : IBinaryFloatingPoint<float>,
           IConvertible,
-          IFixedWidth<float>
+          IMinMaxValue<float>
     {
     }
 
     public struct TimeOnly
         : IComparableOperators<TimeOnly, TimeOnly>,
-          IFixedWidth<TimeOnly>,
+          IMinMaxValue<TimeOnly>,
           ISpanFormattable,
           ISpanParseable<TimeOnly>,
           ISubtractable<TimeOnly, TimeOnly, TimeSpan>
@@ -1198,9 +1197,9 @@ namespace System
     public struct TimeSpan
         : IAddable<TimeSpan, TimeSpan, TimeSpan>,
           IComparableOperators<TimeSpan, TimeSpan>,
-          IDivisable<TimeSpan, double, TimeSpan>,
-          IDivisable<TimeSpan, TimeSpan, double>,
-          IFixedWidth<TimeSpan>,
+          IDivisible<TimeSpan, double, TimeSpan>,
+          IDivisible<TimeSpan, TimeSpan, double>,
+          IMinMaxValue<TimeSpan>,
           IMultipliable<TimeSpan, double, TimeSpan>,
           INegatable<TimeSpan, TResult>,
           ISpanFormattable,
@@ -1211,7 +1210,7 @@ namespace System
     public struct UInt16
         : IBinaryInteger<ushort>,
           IConvertible,
-          IFixedWidth<ushort>,
+          IMinMaxValue<ushort>,
           IUnsignedNumber<ushort>
     {
     }
@@ -1219,7 +1218,7 @@ namespace System
     public struct UInt32
         : IBinaryInteger<uint>,
           IConvertible,
-          IFixedWidth<uint>,
+          IMinMaxValue<uint>,
           IUnsignedNumber<uint>
     {
     }
@@ -1227,14 +1226,14 @@ namespace System
     public struct UInt64
         : IBinaryInteger<ulong>,
           IConvertible,
-          IFixedWidth<ulong>,
+          IMinMaxValue<ulong>,
           IUnsignedNumber<ulong>
     {
     }
 
     public struct UIntPtr
         : IBinaryInteger<nuint>,
-          IFixedWidth<nuint>,
+          IMinMaxValue<nuint>,
           ISerializable,
           IUnsignedNumber<nuint>
     {
