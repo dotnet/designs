@@ -110,7 +110,7 @@ dotnet bot
 Or via a shebang,
 
 ```csharp
-#r! /usr/bin/shared/dotnet
+#! /usr/bin/shared/dotnet
 #r "nuget: Newtonsoft.Json"
 
 record Person(string Name);
