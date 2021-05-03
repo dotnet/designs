@@ -1,7 +1,6 @@
 # Resource limits
 
 **Owner** [John Luo](https://github.com/juntaoluo) | [Sourabh Shirhatti Doe](https://github.com/shirhatti)
-
 ## Scenarios and User Experience
 
 Excerpt from https://microsoft.sharepoint.com/:w:/r/teams/NETRateLimitingInterface/_layouts/15/Doc.aspx?sourcedoc=%7B557C73D8-F2A2-4799-82D0-6A5C13F58E4F%7D&file=Rate%20Limiting%20interface_CBB%20Perspective.docx&nav=eyJjIjo2MDMwNjMzMzZ9&action=default&mobileredirect=true&cid=fb8aa981-06d2-4c69-9bbd-ddfb278e2eb7
@@ -137,8 +136,6 @@ endpoints.MapGet("/", async context =>
     }
 }
 ```
-
-
 ### Reference Designs
 
 Reference designs are redacted but can be found in https://github.com/aspnet/specs/tree/main/design-notes/ratelimit.
