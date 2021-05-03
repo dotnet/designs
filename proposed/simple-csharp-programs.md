@@ -160,6 +160,17 @@ The syntax for coding against a framework/sdk could also be more similar to the 
 
 Only `dotnet run` and `dotnet build` are supported with Simple C# Programs. All other `dotnet` commands will error out, indicating that you need a project.
 
+## Tooling support in VSCode
+
+One of the most popular editors for people learning C# and .NET, or people who are just doing some lightweight work, is VSCode. There would have to be work in the tooling for C# and VSCode to support loading a loose file and have full support for:
+
+* IntelliSense, navigation, etc.
+* Debugging when you have an appropriate `launch.json`
+
+After all, one of the benefits of C# and .NET is great tooling. We'd need to make sure that stays true for VSCode.
+
+Visual Studio tooling experiences are much more difficult to consider. For now, Visual Studio is out of scope.
+
 ## Grow-up story
 
 There is eventually a need for a grow-up story. What's interesting is that this can, in theory, go one of two ways:
@@ -187,6 +198,45 @@ Shebangs wouldn't technically need to be removed. You should still be able to ru
 The second option has potentially wild implications across our entire build tools and IDE tooling stack. It would require us to fundamentally rethink how .NET applications can be built.
 
 For the purposes of this design, we will require that users create a project-based codebase if they wish to be grown up.
+
+## Proposed order of implementation
+
+A way to approach this is to break it up into phases. Only phase 1 has to be implemented first. The rest could come afterwards. Some could never be implemented at all. This is merely a proposed ordering.
+
+### Phase 1 - basic scenario only
+
+A first phase of implementation would be to support everything up until `#r "nuget:...` and coding against a framework/sdk. That would mean:
+
+* Core C# language changes (global `using`s and `#!` directive support)
+* Build tooling additions to support global `using`s
+* Build tooling additions to erect the right guardrails (e.g., not using `dotnet publish` here).
+* `dotnet add project` command support
+
+This would mean that you could write anything that you'd be able to write in today's console app project. You can also "graduate" to a project file to get access to the full range of `dotnet` commands, packages, etc.
+
+### Phase 2 - tooling support in VSCode
+
+One of the most popular tools for people learning C# and .NET, or just doing lightweight work, is VSCode. It would have to support Simple C# Programs with the full range of tooling support:
+
+* IntelliSense, navigation, etc.
+* Debugging (assuming you have the right `launch.json` set up)
+
+To support this, the C# experience in VSCode would have to know what to load/run at design-time to power these tools. Since there's no project file to evaluate, it would have to take a different approach.
+
+### Phase 2 - package and framework support
+
+This phase would bring in support for referencing packages and coding against a framewor/sdk:
+
+* `#r "nuget:..."` or similar directive that resolves packages. Also works in tooling, so you get IntelliSense for the package
+* `#!/usr/bin/share/dotnet-aspnet` or `#r "framework:..."` support, allowing you to run against ASP.NET Core (`server.cs`)
+
+This would require some design work to arrive at the best syntax and semantics. It is also expected that tooling works when these are incorporated.
+
+### Phase 3 - multiple files
+
+This phase would bring in support for pulling in multiple files for a single program. Imagine a `server.cs` with a `network-utils.cs` file, where `network-utils.cs` is used by `server.cs`.
+
+Some guardrails would have to be built into place. More considerations are listed under 
 
 ## Design points / pivots
 
@@ -226,6 +276,26 @@ This leads to some questions:
 * Are multiple file supported? That is, can I define a `server.cs` file that is my web service, and a `data.cs` that handles some data manipulation that is called from code inside of `server.cs`?
 * If multiple files are supported, what are the guardrails? How can people know if they made a mistake and fix it?
 
+It's also quite likely that some developers will have several programs all as single C# files in the same directory. That means that `dotnet run` would have to understand this and give an appropriate error message about specifying a specific C# file. However, this means inspecting the files to see if they are being used via `#load` directive (or something similar).
+
+Consider the folowing two subfolders.
+
+Directory One:
+
+```
+reboot-server.cs
+check-server-status.cs
+```
+
+Directory Two:
+
+```
+reboot-server.cs
+utils.cs
+```
+
+In Directory Two, the `utils.cs` file is used by `reboot-server.cs`. A developer may expect to be able to just run `dotnet run` in that directory and have the program execute. But if they are in Directory One, they would have to be explicit about which file they are running.
+
 ### Coding against a framework alternative syntax
 
 The walkthrough proposes the shebang `#!/usr/bin/share/dotnet-aspnet`, but the .NET CLI doesn't have a command to "pull in the ASP.NET Core references", so it wouldn't map to something like that.
@@ -247,9 +317,9 @@ app.MapGet("/", () => "Hello World");
 await app.RunAsync();
 ```
 
-### Shebangs and their semantics
+### `#!` and its semantics
 
-The shebangs in the walkthrough all point at `/usr/bin/share/dotnet`. Substitute a path for your appropriate installation of .NET on your operating system of choice.
+The `#!` directives in the walkthrough all point at `/usr/bin/share/dotnet`. This path may be different depending on your development OS (e.g., Fedora).
 
 What this means is that it identifies the .NET environment and implies a default set of references available in the file. However, it does not bring in other things like ASP.NET or other frameworkreferences. It is a contextual, "this is how I run" sort of directive.
 
@@ -262,13 +332,23 @@ In effect, the shebang's semantics could span a spectrum of "I need the path and
 
 We'll need to decide if they can affect the set of references available in the file or not.
 
+### Using `#!` to point to `dotnet` or point to `env`
+
+An alternative to `#!/path/to/dotnet` is `#!/usr/bin/env dotnet`. That would mean that any UNIX program could run this file:
+
+```csharp
+#!/usr/bin/env dotnet
+WriteLine("Hello, world!");
+```
+
+However, the downside is that you can't pass any more arguments to the `dotnet` process. It's a matter of portability vs. utility.
+
 ### Build output
 
 The walkthrough states that the build output is a single executable file in the current working directory. This is based on the hypothesis that this is the least surprising place to put the executable.
 
 * Is this hypothesis based on reality?
 * Is this still true if you pull in a package?
-* Is this still true if you pull in a framework? (e.g., ASP.NET Core is hundreds of assemblies, where do they go?)
 
 ### Nuget reference syntax and naming
 
@@ -309,3 +389,25 @@ Hello, World!
 ```
 
 However, the model is based on FSX and F# Interactive, which is not a realistic approach for C# to do. The CSX and C# dialects are subtly different, there is legacy behavior to reconcile, and more.
+
+A "Simple F# Programs" proposal could also be implemented. However, it would require the F# language to support `#!` in non-scripts and global `open`s.
+
+### A note on `dotnet-script`
+
+This proposal is very similar to [`dotnet-script`](https://github.com/filipw/dotnet-script). Some of these similarities are:
+
+* Support for `#!` to make executing scripts easier
+* Support for `#r "nuget:..."` in C# scripts
+
+ However, there are some notable differences:
+
+* `dotnet-script` is based on the C# scripting model (CSX) which has subtle differences from C# proper
+* `dotnet-script` evaluates code with the C# scripting model (`Microsoft.CodeAnalysis.CSharp.Scripting`)
+* `dotnet-script` is a global tool, not an evolution of `dotnet run` and `dotnet build itself`
+* `dotnet-script` also comes with its own (awesome) scaffolding
+* `dotnet-script` supports specifying the target framework
+* `dotnet-script` is also a REPL
+
+Of these differences, the first and second are the most prominent. "Simple C# Programs" are not C# script programs. The C# scripting dialect lets you do several things that C# proper cannot, such as shadowing and method bodies being declarable outside class declarations. C# scripts also cannot declare namespaces.
+
+This proposal does not aim to bring the C# scripting model into `dotnet build`/`dotnet run`. Hence, we can't "just use `dotnet-script`".
