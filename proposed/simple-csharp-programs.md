@@ -53,7 +53,7 @@ $ dotnet run
 Hello World
 ```
 
-Or with a shebang,
+Or with a `#!` directive,
 
 ```csharp
 #!/usr/bin/shared/dotnet
@@ -67,9 +67,11 @@ $ ./hello.cs
 Hello World
 ```
 
+When running via `dotnet run` or the `#!` directive, artifacts may be created on disk in the temp folder. They could also be generated in memory.
+
 The `using`s that are normally in a C# project template are implicitly available at design-time. This is accomplished with [Global Using Directives](https://github.com/dotnet/csharplang/blob/main/proposals/GlobalUsingDirective.md) that the build tooling will have available.
 
-The shebang is covered in [Shebang (#!) support](https://github.com/dotnet/csharplang/issues/3507).
+The `#!` directive is covered in [Shebang (#!) support](https://github.com/dotnet/csharplang/issues/3507).
 
 ### Building instead of running
 
@@ -107,7 +109,7 @@ $ dotnet run
 dotnet bot
 ```
 
-Or via a shebang,
+Or via a `#!` directive,
 
 ```csharp
 #! /usr/bin/shared/dotnet
@@ -132,7 +134,7 @@ The `#r "nuget:..."` syntax is already supported by C# today in .NET Interactive
 
 ### Coding against a framework/sdk like ASP.NET Core
 
-You can also reference a framework/sdk (nomenclature up for debate) via a shebang:
+You can also reference a framework/sdk (nomenclature up for debate) via a `#!` directive:
 
 ```csharp
 #!/usr/bin/share/dotnet-aspnet
@@ -154,7 +156,7 @@ $ dotnet run
 Listening on localhost://12345
 ```
 
-The syntax for coding against a framework/sdk could also be more similar to the `#r "nuget:"` syntax shown earlier instead of being a shebang.
+The syntax for coding against a framework/sdk could also be more similar to the `#r "nuget:"` syntax shown earlier instead of being a `#!` directive.
 
 ## `dotnet` command support
 
@@ -188,12 +190,12 @@ $ dotnet add project
 This lets you "grow up" into a project by:
 
 * Creating a project file and placing it in the current directory, with a name that matches
-* Potentially removing shebangs / special directives and converting things to an appropriate SDK attribute or `PackageReference`
+* Potentially removing `#!` directives / special directives and converting things to an appropriate SDK attribute or `PackageReference`
 * Provides a nice message saying what it did
 
 After this, you need to run your program with `dotnet run` and friends, but by virtue of being a project, you now have the full `dotnet` toolset at your disposal.
 
-Shebangs wouldn't technically need to be removed. You should still be able to run a single file the same was as before. Having a project file in the current directory shouldn't change that.
+`#!` directives wouldn't technically need to be removed. You should still be able to run a single file the same was as before. Having a project file in the current directory shouldn't change that.
 
 The second option has potentially wild implications across our entire build tools and IDE tooling stack. It would require us to fundamentally rethink how .NET applications can be built.
 
@@ -236,11 +238,24 @@ This would require some design work to arrive at the best syntax and semantics. 
 
 This phase would bring in support for pulling in multiple files for a single program. Imagine a `server.cs` with a `network-utils.cs` file, where `network-utils.cs` is used by `server.cs`.
 
-Some guardrails would have to be built into place. More considerations are listed under 
+Some guardrails would have to be built into place.
+
+### Phase 4 - support in Visual Studio
+
+This is not designed, but eventually support for Simple C# Programs would have to make its way into Visual Studio. This would perhaps be a complicated task though, since .NET tooling in Visual Studio more or less assumes you are in a project/solution-based workspace. It could be that we never support Simple C# Programs in Visual Studio.
 
 ## Design points / pivots
 
 The following is a non-exhuastive list of user experience considerations that go beyond the basic walkthrough above.
+
+### Where do the artifacts go when running?
+
+When using `dotnet run` or a `#!` directive in a Simple C# Program, there's a question of where build artifacts go, because it has to compile the program. There are two primary options:
+
+1. Compile and execute in memory
+2. Place artifacts in the temp directory on your machine
+
+There is precedent for (2) in Golang, which means it's probably a viable option. But there is a concern about cleaning the temp folder as well, lest it get too large. If everything is compile and ran in memory, this isn't a problem.
 
 ### Multiple files
 
@@ -298,7 +313,7 @@ In Directory Two, the `utils.cs` file is used by `reboot-server.cs`. A developer
 
 ### Coding against a framework alternative syntax
 
-The walkthrough proposes the shebang `#!/usr/bin/share/dotnet-aspnet`, but the .NET CLI doesn't have a command to "pull in the ASP.NET Core references", so it wouldn't map to something like that.
+The walkthrough proposes the `#!` directive `#!/usr/bin/share/dotnet-aspnet`, but the .NET CLI doesn't have a command to "pull in the ASP.NET Core references", so it wouldn't map to something like that.
 
 An alternative could be to extend `#r` like so:
 
@@ -328,7 +343,7 @@ It could be extended/changed in a few ways:
 * `/usr/bin/share/dotnet run` makes it explicit that the command is to run the file
 * `/usr/bin/share/dotnet-aspnet` is an alternative to `#!aspnet` that brings ASP.NET Core into scope for the file (substitute a different framework/sdk here)
 
-In effect, the shebang's semantics could span a spectrum of "I need the path and command to literally execute this file" towards "I add context that affects the references available to this file".
+In effect, the `#!` directive's semantics could span a spectrum of "I need the path and command to literally execute this file" towards "I add context that affects the references available to this file".
 
 We'll need to decide if they can affect the set of references available in the file or not.
 
@@ -356,7 +371,7 @@ The current walkthrough proposed `"#r "nuget:..."` for packages.
 
 Syntax could change:
 
-* Use a `#!r` shebang-style syntax
+* Use a `#!r`-style syntax, similar to the `#!` directive
 * Use a custom directive like `#nuget`
 
 Naming could change:
