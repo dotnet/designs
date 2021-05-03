@@ -1246,11 +1246,9 @@ namespace System
 
 There are several types which may benefit from some interface support. These include, but aren't limited to:
 * System.Array
-* System.DateOnly
 * System.Enum
 * System.Index
 * System.Range
-* System.TimeOnly
 * System.Tuple
 * System.ValueTuple
 * System.Numerics.BigInteger
