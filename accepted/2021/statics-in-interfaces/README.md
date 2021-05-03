@@ -178,6 +178,7 @@ interface "IAdditiveIdentity<TSelf, TResult>"
 interface "IBinaryFloatingPoint<TSelf>"
 interface "IBinaryInteger<TSelf>"
 interface "IBinaryNumber<TSelf>"
+interface "IBitwiseOperators<TSelf, TOther, TResult>"
 interface "IComparable"
 interface "IComparable<T>"
 interface "IComparableOperators<TSelf, TOther>"
@@ -198,48 +199,51 @@ interface "INumber<TSelf>"
 interface "IParseable"
 interface "IRemainder<TSelf, TOther, TResult>"
 interface "ISerializable"
+interface "IShiftable<TSelf, TOther, TResult>"
 interface "ISignedNumber<TSelf>"
 interface "ISpanFormattable"
 interface "ISpanParseable"
 interface "ISubtractable<TSelf, TOther, TResult>"
 interface "IUnsignedNumber<TSelf>"
 
-"IBinaryNumber<TSelf>"                    <|-- "IBinaryFloatingPoint<TSelf>"
-"IFloatingPoint<TSelf>"                   <|-- "IBinaryFloatingPoint<TSelf>"
+"IBinaryNumber<TSelf>"                      <|-- "IBinaryFloatingPoint<TSelf>"
+"IFloatingPoint<TSelf>"                     <|-- "IBinaryFloatingPoint<TSelf>"
 
-"IBinaryNumber<TSelf>"                    <|-- "IBinaryInteger<TSelf>"
+"IBinaryNumber<TSelf>"                      <|-- "IBinaryInteger<TSelf>"
+"IShiftable<TSelf, TOther, TResult>"        <|-- "IBinaryInteger<TSelf>"
 
-"INumber<TSelf>"                          <|-- "IBinaryNumber<TSelf>"
+"IBitwiseOperators<TSelf, TOther, TResult>" <|-- "IBinaryNumber<TSelf>"
+"INumber<TSelf>"                            <|-- "IBinaryNumber<TSelf>"
 
-"IComparable"                             <|-- "IComparableOperators<TSelf, TOther>"
-"IComparable<T>"                          <|-- "IComparableOperators<TSelf, TOther>"
-"IEquatableOperators<TSelf, TOther>"      <|-- "IComparableOperators<TSelf, TOther>"
+"IComparable"                               <|-- "IComparableOperators<TSelf, TOther>"
+"IComparable<T>"                            <|-- "IComparableOperators<TSelf, TOther>"
+"IEquatableOperators<TSelf, TOther>"        <|-- "IComparableOperators<TSelf, TOther>"
 
-"IEquatable<T>"                           <|-- "IEquatableOperators<TSelf, TOther>"
+"IEquatable<T>"                             <|-- "IEquatableOperators<TSelf, TOther>"
 
-"ISignedNumber<TSelf>"                    <|-- "IFloatingPoint<TSelf>"
+"ISignedNumber<TSelf>"                      <|-- "IFloatingPoint<TSelf>"
 
-"IAddable<TSelf, TOther, TResult>"        <|-- "INumber<TSelf>"
-"IAdditiveIdentity<TSelf, TResult>"       <|-- "INumber<TSelf>"
-"IComparableOperators<TSelf, TOther>"     <|-- "INumber<TSelf>"
-"IDecrementable<TSelf>"                   <|-- "INumber<TSelf>"
-"IDivisible<TSelf, TOther, TResult>"      <|-- "INumber<TSelf>"
-"IIncrementable<TSelf>"                   <|-- "INumber<TSelf>"
-"IMultipliable<TSelf, TOther, TResult>"   <|-- "INumber<TSelf>"
-"IMultiplicativeIdentity<TSelf, TResult>" <|-- "INumber<TSelf>"
-"IRemainder<TSelf, TOther, TResult>"      <|-- "INumber<TSelf>"
-"ISpanFormattable"                        <|-- "INumber<TSelf>"
-"ISpanParseable<TSelf>"                   <|-- "INumber<TSelf>"
-"ISubtractable<TSelf, TOther, TResult>"   <|-- "INumber<TSelf>"
+"IAddable<TSelf, TOther, TResult>"          <|-- "INumber<TSelf>"
+"IAdditiveIdentity<TSelf, TResult>"         <|-- "INumber<TSelf>"
+"IComparableOperators<TSelf, TOther>"       <|-- "INumber<TSelf>"
+"IDecrementable<TSelf>"                     <|-- "INumber<TSelf>"
+"IDivisible<TSelf, TOther, TResult>"        <|-- "INumber<TSelf>"
+"IIncrementable<TSelf>"                     <|-- "INumber<TSelf>"
+"IMultipliable<TSelf, TOther, TResult>"     <|-- "INumber<TSelf>"
+"IMultiplicativeIdentity<TSelf, TResult>"   <|-- "INumber<TSelf>"
+"IRemainder<TSelf, TOther, TResult>"        <|-- "INumber<TSelf>"
+"ISpanFormattable"                          <|-- "INumber<TSelf>"
+"ISpanParseable<TSelf>"                     <|-- "INumber<TSelf>"
+"ISubtractable<TSelf, TOther, TResult>"     <|-- "INumber<TSelf>"
 
-"INegatable<TSelf, TResult>"              <|-- "ISignedNumber<TSelf>"
-"INumber<TSelf>"                          <|-- "ISignedNumber<TSelf>"
+"INegatable<TSelf, TResult>"                <|-- "ISignedNumber<TSelf>"
+"INumber<TSelf>"                            <|-- "ISignedNumber<TSelf>"
 
-"IFormattable"                            <|-- "ISpanFormattable"
+"IFormattable"                              <|-- "ISpanFormattable"
 
-"IParseable"                              <|-- "ISpanParseable"
+"IParseable"                                <|-- "ISpanParseable"
 
-"INumber<TSelf>"                          <|-- "IUnsignedNumber<TSelf>"
+"INumber<TSelf>"                            <|-- "IUnsignedNumber<TSelf>"
 
 class "Byte"
 class "Char"
@@ -413,7 +417,7 @@ class "ValueType"
 @enduml
 -->
 
-![UML](http://www.plantuml.com/plantuml/svg/h5PDSzCm4BtxLtXofWS-fgTC1vgsu4EQJ9rmNzkRT46MWxpA48OV3w6j7CkIfG2zT5RUjn-hrNjvtp8erhL8I3Ag3PIOJh8FLGM5mEagHx5vbQuM_8Zgz_y7RBNWgudjJ4nxp2gKJ7mmAAVtDKbGXplH09FSBXkI_0Hm-cMISOjgnEDUruN7OTRKEr37HdpdqvKNijYX0cvKsn_2m5_kKJ4DSjnWgR16oTqShsoF5XM1e1_0rCWP2550-TLoeZsr57qLjzyqF6TqVudjAtm_cGmrUDUe6fY7yv-JdCFtpo2q6pZNWcadABo2DgA4-4Myn-tBh4RT_Fkr1DNYiBq7h85aXIgkzlnv2uQ1SjfAh4OAo7SWNLCs7pqLvhfW1IN73tWjMrSnYViLfew_wS-BYy3pzwpTtmKxlpIRSKoSS0H777jIFJeo45-OI2gokUm_1GsJnTb14ukS0lt7CLRYVYCZGJsx4bOyAuvrkn4Y6C17p70KR-kDUn1-V5Xenl6P_9VyaPmVmeSLm8CFaNQuVvkAXvq7yOQjpvzV9ALxyScO70uBy6ZJ-LIPUqGbE4ahZAs3oQaufsba20Cvd_Nz2baAQDjqSdrWdBmOiqTGnhW1neKKXzx1YceS72mscnQvEyQIQX2TtUX2TAXRgMjZVDHK6UCJY8qnCiclBq-jjszEhSjtfzQIkxeNnHSikshoNeSvoUr9BSVgZnCs1-j-sdK_xxgVU6rb_lFBSNNO7U_98zlUUtggybTdTemJIGo4OJIVKt47n0s634WGzoSeeISOsjRdT5TFi_vTQvUhDUxx2gF-xLptwg8qrieYD_LBzJYc4aiSL8c3Ad5GBGugtwl-BxR5aUqk84ctmC_V-E5B6UCXS-lZTAfD3zctXIoLIZviwASDtSjVJxJqcxqKoD8GaBKL86iHaOT5v4OxBIN-fA3uwsdCUkbyFotuynBZUw7nv-N6zwBZJqkFZ-U2tgdjFFXto-_pnul8mBJNO7liWZbTyBOSiJn8BMZO3YvsM5nR8PUdCjDKf-LHuLb3bQLHkVEP1q8vHwXoUb1bOLGkoNdibCAYoZ-HwatuFC5ILM5fQLWwJR0K2TOpcOTeoWHBcM0f4onbWlLCvZcUCi5I9bZA14kPO3aJGucwEYujZmktE1TpuNemptdIWQKuiPGc5aF1ubrWAXL2uNegN5eV5s_ncRFr-GNPvnTaxmF8zduWUxHaVhGQOjRdAjatb6oVQCWw-I3hPncoVf0XwvS8iXSk6SkFZEL7vWFzfRU9NEyJkJ2mvLeqt64mjLVaUZ1S3wQsYznXCBLXv7emN0-czunS3wPtZM1l_y2Q3TZ3qJdEbxeD8_tGxUdru_xr_lOD)
+![UML](http://www.plantuml.com/plantuml/svg/h5PDSzem4BtxLp2ScqC_9YScquOahGy49eRUr_OQjfLbAgzfwVJ7jvI93PB5AcvpoQnOlNtxuNrwNpCORaeLaMOq1MGu6iSVyXnIXPDbWgfuDLhEUOFcp_ydh1l5DsFRcPXs6EUecNZVtkhrlYKDPl-WAc3IwqL5ceyNUlrYpRX6Sy7ZiIbJhmD_fnhdMpJ0bQd3qfbMvHRC8NtV-MJflUA9vVZh7Hec9yOTPWPBrDnL_yRsgD4GAFe9J9MUWb8fP5yj9zfHJS4DlF_M05k9MR-4vILtDTPIWW-LAO7PhV-Cz0n-V0RLz5-SDOffgqWUNFj61k7Z-uZhOqK4D_zKBi3KwARtX2MGpj64SK-Ufy01IZPKS7WH4bfhp2_mJRQW-vhI_kX9A6bIDf2zWCfArtraelvFVTJxD_brTILi6S-S3eKRJizURY6z2mAANh3xMYGxXoCZEQbUHcuBkntfehX0WKlLtih_3LPUV0DW8slLobK8si2Hyn7B0-WPPLdv7IHxOkJdW80GL4i1mTLHfo02WYoX4aAi_vL3aAB92BB2UH5aMPBhOEk7cx-4q8hCm4fAMYHNChea_7qa764Tlb0JZoRADRM1R26FsiT82o61s88_826lp6SAwdeqljqpZf-DwGPCQzm1uroh_Td1aafq3kP5KIDtnvXH2QgpgoPLtQrxtPIjyR6Xl3K-WIfQ8zRy-lhKUllcrBf-TsejkECzJxzWrh59pZ9CIAzFk1pO7shS7gpEmwxEuwxE0w-io7zVoylzzjYftiU2jqz7bhyhisESHcCe2gDzLZLx6CqECXtG8FPFyUalBY6EJWiwIdpzOZ_RUrXvFRkfNxlrb-fPQRnGro2FNs-Knr4bQXmfZIFbSQGqZXJikh7hjqY36obxmwFSFU7wJnzyb1BFI6YEejTY94tHIcc6LcgbZjm9_JnFwCWzbj9dSYaaeJrOAMt1IYoYaLv4kwDvAJruBwZrJswWDec3zzLYlPVOUY-qzLnkuxterdlfhVTreTx9PdxXJFczFnVP4S9SBuG3yK1AT-7jU4VqA6j1VPdEGOUrpaUOWnkSO4qr3oy5XvjHDhIKTZuT47GTIUdgaTA1fRWaE-nuOQNqAwQq2Uy8nbKLuw75U3M9SIGnpwI3A6SIuqnYd4cCCubv9Xt7EPCOPnBpJ6AUISmpwMh0HvVpuULu5yz9BkiucBzyqx7CuenncZ4E9UPxGRTI7ahEKydv-7AyYtVFvlSNAx47M0bzm4euFwo4Q5VoeVMwnDJZwagUq2Gytgoacu-Ly5Yp4XvfVafuarZ9XRkIooyfvRUI5_H_tYRci4zSvnUsEObcdGVZlU8w3oRdmM2xkCw3yOPndGUJys2mPrpdmNZNkD3QluMUZJQE2s_NIzrPNNAUr_xy_xX_lRzz0m00)
 
 ### Base Interfaces
 
@@ -585,6 +589,27 @@ namespace System
         static abstract TResult checked operator -(TSelf value);
     }
 
+    public interface IBitwiseOperators<TSelf, TOther, TResult>
+    {
+        static abstract TResult operator &(TSelf lhs, TOther rhs);
+
+        static abstract TResult operator |(TSelf lhs, TOther rhs);
+
+        static abstract TResult operator ^(TSelf lhs, TOther rhs);
+
+        static abstract TResult operator ~(TSelf value);
+    }
+
+    public interface IShiftable<TSelf, TOther, TResult>
+    {
+        static abstract TResult operator <<(TSelf value, TOther shiftAmount);
+
+        static abstract TResult operator >>(TSelf value, TOther shiftAmount);
+
+        // Logical right shift
+        static abstract TResult operator >>>(TSelf value, TOther shiftAmount);
+    }
+
     public interface IMinMaxValue<TSelf>
         where TSelf : IMinMaxValue<TSelf>
     {
@@ -681,32 +706,13 @@ namespace System
     }
 
     public interface IBinaryNumber<TSelf>
-        : INumber<TSelf>
+        : IBitwiseOperators<TSelf, TSelf, TSelf>,
+          INumber<TSelf>
         where TSelf : IBinaryNumber<TSelf>
     {
-        // The bitwise operators should probably be defined on some common base interface, like IBitwiseOperators
-        // Likewise, having these on IBinaryNumber<TSelf> means they will be available to floating-point types
+        // Having the bitwise operators on IBinaryNumber<TSelf> means they will be available to floating-point types
         // The operations are well-defined [for floats] but many languages don't directly expose them, we already support
         // them in SIMD contexts today, as do most languages with SIMD support, so there is not great concern here.
-
-        static abstract TSelf operator &(TSelf lhs, TSelf rhs);
-
-        static abstract TSelf operator |(TSelf lhs, TSelf rhs);
-
-        static abstract TSelf operator ^(TSelf lhs, TSelf rhs);
-
-        static abstract TSelf operator ~(TSelf value);
-
-        // The shifting operators should probably be defined on some common base interface, like IShiftable
-        // There is an open question on if we need language support for "arithmetic" vs "logical" right shift"
-        // ECMA 335 already defines `op_SignedRightShift` and `op_UnsignedRightShift`
-
-        // Likewise, forcing int here is inconvenient from the perspective of generic code where the amount will
-        // be "in range" (e.g. 0-63 for int64) but where it may be the result of other logic and not be an int32
-
-        static abstract TSelf operator <<(TSelf value, int shiftAmount);
-
-        static abstract TSelf operator >>(TSelf value, int shiftAmount);
 
         static abstract bool IsPow2();
 
@@ -726,7 +732,10 @@ namespace System
         bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned, bool isBigEndian);
     }
 
-    public interface IBinaryInteger<TSelf> : IBinaryNumber<TSelf>
+    public interface IBinaryInteger<TSelf>
+        : IBinaryNumber<TSelf>,
+          IShiftable<TSelf, int, TSelf>,
+          IShiftable<TSelf, TSelf, TSelf>
         where TSelf : IBinaryInteger<TSelf>
     {
         // We might want to support "big multiplication" for fixed width types
@@ -1325,5 +1334,9 @@ There are several types which may benefit from some interface support. These inc
 * System.Runtime.Intrinsics.Vector256<T>
 
 Likewise, there are many comments within the defined interfaces above that call out key points that need additional modeling/consideration. Several of these concepts will be determined via user research and outreach while others will be determined via API review and feedback from other area experts. Others may be determined by language or runtime limitations in what is feasible for them to support.
+
+Do we want a way to denote "primitives"? If we have it, should this be language primitives, runtime primitives, or ABI primitives?
+
+Do we want an explicit `IConvertible<TSelf, TOther>` (or `IConvertibleFrom`/`IConvertibleTo`)?
 
 ## Requirements
