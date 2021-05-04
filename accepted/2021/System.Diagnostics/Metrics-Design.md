@@ -216,7 +216,7 @@ namespace System.Diagnostics.Metrics
 
         protected void RecordMeasurement(
                             T measurement,
-                            KeyValuePair<string, object?> tag1) { throw null; }
+                            KeyValuePair<string, object?> tag) { throw null; }
 
         protected void RecordMeasurement(
                             T measurement,
@@ -305,7 +305,7 @@ namespace System.Diagnostics.Metrics
     {
         public void Add(T measurement) { throw null; }
         public void Add(T measurement,
-                            KeyValuePair<string, object?> tag1) { throw null; }
+                            KeyValuePair<string, object?> tag) { throw null; }
         public void Add(T measurement,
                             KeyValuePair<string, object?> tag1,
                             KeyValuePair<string, object?> tag2) { throw null; }
@@ -329,7 +329,7 @@ namespace System.Diagnostics.Metrics
         public void Record(T measurement) { throw null; }
         public void Record(
                         T measurement,
-                        KeyValuePair<string, object?> tag1) { throw null; }
+                        KeyValuePair<string, object?> tag) { throw null; }
         public void Record(
                         T measurement,
                         KeyValuePair<string, object?> tag1,
