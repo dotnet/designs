@@ -259,7 +259,7 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Observe() fetches the current measurements being tracked by this instrument.
         /// </summary>
-        protected abstract IEnumerable<Measurement<T>> Observe();
+        public abstract IEnumerable<Measurement<T>> Observe();
 
         public override bool IsObservable => throw null;
     }
@@ -361,7 +361,7 @@ namespace System.Diagnostics.Metrics
     /// </summary>
     public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : unmanaged
     {
-        protected override IEnumerable<Measurement<T>> Observe() { throw null; }
+        public override IEnumerable<Measurement<T>> Observe() { throw null; }
     }
 
     /// <summary>
@@ -371,7 +371,7 @@ namespace System.Diagnostics.Metrics
     /// </summary>
     public sealed class ObservableUpDownCounter<T> : ObservableInstrument<T> where T : unmanaged
     {
-        protected override IEnumerable<Measurement<T>> Observe() { throw null; }
+        public override IEnumerable<Measurement<T>> Observe() { throw null; }
     }
 
     /// <summary>
@@ -381,7 +381,7 @@ namespace System.Diagnostics.Metrics
     /// </summary>
     public sealed class ObservableGauge<T> : ObservableInstrument<T> where T : unmanaged
     {
-        protected override IEnumerable<Measurement<T>> Observe() { throw null; }
+        public override IEnumerable<Measurement<T>> Observe() { throw null; }
     }
 }
 ```
