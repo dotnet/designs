@@ -71,7 +71,7 @@ When running via `dotnet run` or the `#!` directive, artifacts may be created on
 
 The `using`s that are normally in a C# project template are implicitly available at design-time. This is accomplished with [Global Using Directives](https://github.com/dotnet/csharplang/blob/main/proposals/GlobalUsingDirective.md) that the build tooling will have available.
 
-The `#!` directive is covered in [Shebang (#!) support](https://github.com/dotnet/csharplang/issues/3507).
+The `#!` directive is covered in [Hashbang (#!) support](https://github.com/dotnet/csharplang/issues/3507).
 
 ### Building instead of running
 
