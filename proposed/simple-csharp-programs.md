@@ -40,7 +40,7 @@ Simple C# Programs are not a dialect of the C# language, like the interactive di
 
 ## User experience walkthrough
 
-Given the following code in `Hello.cs`:
+Given the following code in a singular `Hello.cs` in a directory:
 
 ```csharp
 WriteLine("Hello World");
@@ -56,7 +56,7 @@ Hello World
 Or with a `#!` directive,
 
 ```csharp
-#!/usr/bin/shared/dotnet
+#!/path/to/dotnet
 WriteLine("Hello World");
 ```
 
@@ -112,7 +112,7 @@ dotnet bot
 Or via a `#!` directive,
 
 ```csharp
-#! /usr/bin/shared/dotnet
+#!/path/to/dotnet
 #r "nuget: Newtonsoft.Json"
 
 record Person(string Name);
@@ -137,7 +137,7 @@ The `#r "nuget:..."` syntax is already supported by C# today in .NET Interactive
 You can also reference a framework/sdk (nomenclature up for debate) via a `#!` directive:
 
 ```csharp
-#!/usr/bin/share/dotnet-aspnet
+#!/path/to/dotnet-aspnet
 
 var app = WebApplication.CreateBuilder(args);
 app.MapGet("/", () => "Hello World");
@@ -157,6 +157,15 @@ Listening on localhost://12345
 ```
 
 The syntax for coding against a framework/sdk could also be more similar to the `#r "nuget:"` syntax shown earlier instead of being a `#!` directive.
+
+### Running a specific file
+
+If you have multiple files in the same directory, `dotnet run` won't work by default. You'll need to specify the file you wish to run:
+
+```bash
+$ dotnet run hello.cs
+Hello World
+```
 
 ## `dotnet` command support
 
@@ -255,7 +264,7 @@ When using `dotnet run` or a `#!` directive in a Simple C# Program, there's a qu
 1. Compile and execute in memory
 2. Place artifacts in the temp directory on your machine
 
-There is precedent for (2) in Golang, which means it's probably a viable option. But there is a concern about cleaning the temp folder as well, lest it get too large. If everything is compile and ran in memory, this isn't a problem.
+There is precedent for (2) in Golang, which means it's probably a viable option. But there is a concern about cleaning the temp folder as well, lest it get too large. If everything is compile and ran in memory, then this isn't a problem. However, given that `#r "nuget"` in F# and .NET Interactive today works by restoring against a project file in the temp folder, the temp folder approach may be the route taken. Other build-time artifacts could be placed there too.
 
 ### Multiple files
 
@@ -313,7 +322,7 @@ In Directory Two, the `utils.cs` file is used by `reboot-server.cs`. A developer
 
 ### Coding against a framework alternative syntax
 
-The walkthrough proposes the `#!` directive `#!/usr/bin/share/dotnet-aspnet`, but the .NET CLI doesn't have a command to "pull in the ASP.NET Core references", so it wouldn't map to something like that.
+The walkthrough proposes the `#!` directive `#!/path/to/dotnet-aspnet`, but the .NET CLI doesn't have a command to "pull in the ASP.NET Core references", so it wouldn't map to something like that.
 
 An alternative could be to extend `#r` like so:
 
@@ -324,7 +333,7 @@ An alternative could be to extend `#r` like so:
 This could cleanly separate the "tell the compiler which references to pull in" world from the "short-cut having to use `dotnet`" world like so:
 
 ```csharp
-#!/usr/bin/share/dotnet
+#!/path/to/dotnet
 #r "framework:aspnet"
 
 var app = WebApplication.CreateBuilder(args);
@@ -334,14 +343,14 @@ await app.RunAsync();
 
 ### `#!` and its semantics
 
-The `#!` directives in the walkthrough all point at `/usr/bin/share/dotnet`. This path may be different depending on your development OS (e.g., Fedora).
+The `#!` directives in the walkthrough all point at `/path/to/dotnet`. This path may be different depending on your development OS (e.g., Fedora).
 
 What this means is that it identifies the .NET environment and implies a default set of references available in the file. However, it does not bring in other things like ASP.NET or other frameworkreferences. It is a contextual, "this is how I run" sort of directive.
 
 It could be extended/changed in a few ways:
 
-* `/usr/bin/share/dotnet run` makes it explicit that the command is to run the file
-* `/usr/bin/share/dotnet-aspnet` is an alternative to `#!aspnet` that brings ASP.NET Core into scope for the file (substitute a different framework/sdk here)
+* `/path/to/dotnet run` makes it explicit that the command is to run the file
+* `/path/to/dotnet-aspnet` is an alternative to `#!aspnet` that brings ASP.NET Core into scope for the file (substitute a different framework/sdk here)
 
 In effect, the `#!` directive's semantics could span a spectrum of "I need the path and command to literally execute this file" towards "I add context that affects the references available to this file".
 
@@ -379,6 +388,30 @@ Naming could change:
 * `package` instead of `nuget`
 
 However, that seems unlikely given that the current syntax is already shipping in .NET Interactive.
+
+### Should there be support for a user-specified TFM?
+
+So far, the assumption is that a Simple C# Program will simply execute against the TFM in the SDK it's built from. If you run from a .NET 7 SDK, it targets .NET 7. There's no way to configure that unless you use a project file.
+
+Another alternative is to use a hashbang like `dotnet-script` to support a specific TFM, like so:
+
+```csharp
+#!net5
+using System;
+
+Console.WriteLine("Hello, world!");
+```
+
+This might get tricky though, as it raises some questions:
+
+* Does the directive refer to a target runtime only?
+* Can you use features that aren't shipped with the SDK that matches a lower target runtime?
+
+This is, frankly, too complex and probably shouldn't be done. But it's worth listing.
+
+## Prior art
+
+This isn't the first proposal that deals with trying to cut down the number of concepts involved in writing a small C# program. There's some prior art to consider in this space.
 
 ### A note on .NET Interactive
 
