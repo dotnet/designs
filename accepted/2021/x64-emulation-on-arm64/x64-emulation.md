@@ -1,6 +1,6 @@
 # x64 emulation model
 
-We're working on a [plan to support .NET for x64 emulation on Arm64](https://github.com/dotnet/sdk/issues/17463), on macOS and Windows. There are multiple decision points that we are needing to navigate to make a decision. This document is intended to explore those.
+We're working on a plan to support .NET for x64 emulation on Arm64, on macOS and Windows. There are multiple decision points that we are needing to navigate to make a decision. This document is intended to explore those.
 
 The following issues are the fundamental decision points. The choices we make for each will have significant downstream and user observable impact.
 
@@ -8,6 +8,11 @@ The following issues are the fundamental decision points. The choices we make fo
 - Model for targeting architecture
 - Which .NET versions are supported (for x64 emulation)?
 - Quality of the experience (how polished is it?)
+
+Previous documents:
+
+- [Supporting .NET with x64 emulation on Arm64](https://github.com/dotnet/sdk/issues/17463)
+- [RFC: dotnet [Arm64 | x64] coexistence](https://github.com/dotnet/sdk/issues/16896)
 
 ## Install location
 
