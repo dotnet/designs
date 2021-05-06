@@ -422,7 +422,6 @@ namespace System.Diagnostics.Metrics
         /// this can happen when the Meter or the Listener is disposed of. Or calling Stop()
         /// on the listener.
         /// </summary>
-        // This need some clarification
         public Action<Instrument, object?>? MeasurementsCompleted { get; set; }
 
         /// <summary>
