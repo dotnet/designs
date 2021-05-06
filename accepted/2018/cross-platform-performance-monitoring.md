@@ -1,6 +1,6 @@
 # Cross-Platform Performance Monitoring Design
 
-**Dev** [Brian Robbins](https://github.com/brianrob)
+**Owner** [Brian Robbins](https://github.com/brianrob)
 
 ### Introduction ###
 

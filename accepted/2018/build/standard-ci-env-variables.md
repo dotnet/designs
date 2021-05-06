@@ -1,6 +1,6 @@
 # Standardized Environment Variables for CI Services
 
-**Dev** [Tomáš Matoušek](https://github.com/tmat)
+**Owner** [Tomáš Matoušek](https://github.com/tmat)
 
 The .NET Core SDK is implementing new scenarios that require source control manager information. We want to make it very easy to embed repo-specific information in built assets as a means of creating a strong relationship between binary and source.
 

@@ -1,6 +1,6 @@
 # Overview and goals
 
-**Dev** [Steve Harter](https://github.com/steveharter)
+**Owner** [Steve Harter](https://github.com/steveharter)
 
 April 28th, 2020.
 

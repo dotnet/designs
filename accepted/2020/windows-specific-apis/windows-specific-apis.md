@@ -1,6 +1,6 @@
 # Marking Windows-only APIs
 
-**PM** [Immo Landwerth](https://github.com/terrajobst)
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 As discussed in [dotnet/runtime#33331] we're adding an analyzer to detect usage
 of platform-specific APIs. This analyzer requires a custom attribute applied to

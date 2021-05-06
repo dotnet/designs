@@ -1,6 +1,6 @@
 # CLI Syntax Guidelines
 
-**PM** [Kathleen Dollard](https://github.com/KathleenDollard)
+**Owner** [Kathleen Dollard](https://github.com/KathleenDollard)
 
 Many tools have a CLI (command-line interface) which allows users to type English words to describe commands. This post describes how we build the syntax for commands in the .NET Core CLI. This articulates the guidelines that are similar to behavior of other CLIs, including Git (git), Angular (ng) and Azure (az).
 

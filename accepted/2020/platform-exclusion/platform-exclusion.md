@@ -1,6 +1,6 @@
 # Annotating APIs as unsupported on specific platforms
 
-**PM** [Immo Landwerth](https://github.com/terrajobst)
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 For .NET 5, we're building a feature which [annotates platform-specific
 APIs][platform-checks]. The goal is to provide warnings when developers

@@ -1,6 +1,6 @@
 # Tracking Platform Dependencies
 
-**Dev**: [Matt Thalman](https://github.com/mthalman)
+**Owner** [Matt Thalman](https://github.com/mthalman)
 
 There are a set of .NET-related customer workflows that require the use of platform libraries contained within the operating system. These are divided into two categories:
 

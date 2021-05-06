@@ -1,11 +1,6 @@
 # .NET Optional SDK Workloads
 
-**PM** [Rich Lander](https://github.com/richlander)
-
-// FIXME: do these count as PMs/Devs?
-Co-authored-by: Kathleen Dollard
-Co-authored-by: Steve Kirbach
-Co-authored-by: Stephen Toub
+**Owner** [Rich Lander](https://github.com/richlander)
 
 In .NET 5.0, we will add support for iOS, Android, and Web assembly projects. Up until .NET 5.0, we’ve delivered all supported workloads via a monolithic SDK. As the supported workloads of the .NET SDK grow (and we want them to), it is no longer tenable to deliver an "all-in-one / one-size-fits-all" SDK distribution. There are many challenges to a large monolithic SDK, with product build time and distribution size being the most significant. Instead, all new workloads will be built and delivered separately from the SDK, and will be acquirable via your favorite installation tool (like the Visual Studio Installer, a Linux package manager, or the .NET CLI). In the fullness of time, we intend for all .NET workloads to follow this pattern, resulting in a very small and focused SDK.
 

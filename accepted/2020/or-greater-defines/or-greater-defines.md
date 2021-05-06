@@ -1,6 +1,6 @@
 # OR_GREATER preprocessor symbols for TFMs
 
-**PM** [Immo Landwerth](https://github.com/terrajobst)
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 Today, projects automatically define `#if` symbols based on the friendly TFM
 representation. This includes both versionless- as well as version-specific

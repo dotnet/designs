@@ -1,11 +1,6 @@
 # MSBuild SDK Resolvers and optional workloads in .NET 5
 
-**PM** [Rich Lander](https://github.com/richlander)
-
-// FIXME: do these count as PMs/Devs?
-Co-authored-by: Kathleen Dollard
-Co-authored-by: Steve Kirbach
-Co-authored-by: Stephen Toub
+**Owner** [Rich Lander](https://github.com/richlander) | [Daniel Plaisted](https://github.com/dsplaisted)
 
 In .NET 5, we will add support for iOS and Android.  The .NET SDK (formerly known as the .NET Core SDK) will be able to build projects targeting iOS and Android.  However, the .NET SDK will not be a monolithic SDK with support for all possible project types.  Rather, the iOS and Android support (and eventually more pieces) will be delivered as optional SDK workloads which may or may not be installed.  This proposal covers how we will use MSBuild SDK resolvers to hook up the build logic from workloads at build time, and to handle scenarios where a workload required to build a project is not installed.
 

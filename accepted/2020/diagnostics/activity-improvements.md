@@ -2,9 +2,7 @@
 
 [Github issue](https://github.com/dotnet/runtime/issues/31373) has past discussion.
 
-**PM** @shirhatti, anksr
-
-**Dev** @tarekgh
+**Owner** [Sourabh Shirhatti](https://github.com/shirhatti) | [Ankit Srivastava](https://github.com/ankit-oss) | [Tarek Mahmoud Sayed](https://github.com/tarekgh)
 
 .NET has long had [System.Diagnostics.Activity](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activity?view=netcore-3.1) and [System.Diagnostics.DiagnosticListener](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.diagnosticlistener?view=netcore-3.1) to support [distributed tracing](https://docs.microsoft.com/en-us/azure/azure-monitor/app/distributed-tracing) scenarios. Code that receives, processes, and transmits requests creates Activity objects which have correlation ids. These Activities are published via DiagnosticListener to telemetry monitoring agents such as Application Insights running in the same process. The telemetry agent can then log the information to a remote store where it can be aggregated and visualized to help developers understand the overall flow of work in a distributed system.
 

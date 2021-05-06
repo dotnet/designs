@@ -1,11 +1,6 @@
 # .NET SDK Workload Manifests
 
-**PM** [Rich Lander](https://github.com/richlander)
-
-// FIXME: do these count as PMs/Devs?
-Co-authored-by: Kathleen Dollard
-Co-authored-by: Steve Kirbach
-Co-authored-by: Stephen Toub
+**Owner** [Mikayla Hutchinson](https://github.com/mhutch)
 
 # Overview
 
@@ -179,7 +174,7 @@ Workload definitions take the following form:
 |--|--|--|--|
 | `abstract` | bool | If `true`, this workload can only be extended, and is never exposed directly as an installable workload. Default is `false`. | No |
 | `kind` | string | Either `build` or `dev`. Default is `dev`. | No |
-| `description` | int | User-visible description for the workload. | Yes if dev and non-abstract |
+| `description` | string | User-visible description for the workload. | Yes if dev and non-abstract |
 | `packs` | string array | IDs of the packs that are included in the workload. | No |
 | `extends` | string array | IDs of workloads whose packs should be included in this workload. | No |
 | `platforms` | string array | Limits the workload and workloads that extend it to only be shown and installed on these host platforms. The strings are RIDs. | False |
@@ -208,7 +203,9 @@ Pack definitions take the following form:
 
 The `framework` pack kind is used for runtime packs and targeting packs. The workload system does not make a distinction between them at this time.
 
-The NuGet package ID for a pack may be overridden in a platform-dependent way using *aliasing*. The optional `alias-to` value is a JSON object, where the keys are host platform RIDs, and the values are NuGet package IDs. The `"any"` RID may be used to alias a pack on all platforms.
+A pack definition with the optional `alias-to` key is an *alias pack*. An alias pack has a virtual pack ID that doesn't need to correspond to a real NuGet package. When querying the workload manifest, alias packs resolve to concrete pack IDs in a platform-dependent way. The `alias-to` value is a JSON object, where the keys are host platform RIDs, and the values are NuGet package IDs.
+
+ An alias pack may contain aliases for any number of platform RIDs. When resolving the pack, the [RID graph](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog) is used to find the most specific match for the host platform RID, and the `any` RID may be used to alias all platforms. On host platforms where an alias pack does not resolve to anything, that pack will be a no-op: workload installation operations omit it, and attempts to import its MSBuild targets fail silently. This allows workloads to include packs that install on a subset of the platforms on which the workload is available.
 
 For example, an SDK pack might contain a compiler that's a native executable and hence depends on the host platform:
 
@@ -223,17 +220,19 @@ For example, an SDK pack might contain a compiler that's a native executable and
 }
 ```
 
-Workload definitions and SDK imports would refer to this as `"foo.sdk.compiler"`, but on Windows the pack that gets installed and resolved would be `"foo.sdk.compiler.windows"`. The `"foo.sdk.compiler.windows"` pack would be present on disk and its ID would be visible in resolved paths, but otherwise transparent and not able to be used directly.
+Workload definitions and SDK imports would refer to this as `foo.sdk.compiler`, but on Windows the pack that gets installed and resolved would be `foo.sdk.compiler.windows`. The `foo.sdk.compiler.windows` pack would be present on disk and its ID would be visible in resolved paths, but otherwise transparent and not able to be used directly. On x64 Macs it would similarly resolve to the concrete `foo.sdk.compiler.mac` pack.
 
-Note that this is the _host_ architecture. If this compiler were a cross-compiler and thus had  a _target_ architecture, that would be expected to be the pack ID:
+On all other platforms this pack would be a no-op. If workloads that contained this pack were not functional without it, the workload author should restrict the workload itself using `"platforms": [ "osx-x64", "win-x64" ]`.
+
+Note that this RID is the _host_ architecture. If this compiler were a cross-compiler and thus had  a _target_ architecture, the target architecture would be expected to be part of the unaliased pack ID:
 
 ```json
 "foo.sdk.compiler.ios-arm64": {
     "version": "1.0",
     "kind": "sdk",
     "alias-to": {
-        "osx-x64": "foo.sdk.compiler.ios-arm64.mac-host",
-        "win-x64": "foo.sdk.compiler.ios-arm64.windows-host"
+        "osx-x64": "foo.sdk.compiler.ios-arm64.host-osx-x64",
+        "win-x64": "foo.sdk.compiler.ios-arm64.host-win-x64"
     }
 }
 ```
@@ -381,8 +380,8 @@ Here is a *hypothetical* example manifest. It's not prescriptive but demonstrate
             "version" : "8.4.7",
             "kind": "sdk",
             "alias-to": {
-                "osx-x64": "Xamarin.Android.BuildTools.MacHost",
-                "win-x64": "Xamarin.Android.BuildTools.Win64Host"
+                "osx-x64": "Xamarin.Android.BuildTools.host-osx-x64",
+                "win-x64": "Xamarin.Android.BuildTools.host-win-x64"
             }
         },
         // this is also has host specific binaries. although it is an
@@ -393,8 +392,8 @@ Here is a *hypothetical* example manifest. It's not prescriptive but demonstrate
             "version" : "8.4.7",
             "kind": "sdk",
             "alias-to": {
-                "osx-x64": "Mono.Android.LLVM.Aot.armv7a.MacHost",
-                "win-x64": "Mono.Android.LLVM.Aot.armv7a.Win64Host"
+                "osx-x64": "Mono.Android.LLVM.Aot.armv7a.host-osx-x64",
+                "win-x64": "Mono.Android.LLVM.Aot.armv7a.host-win-x64"
             }
         }
     }
