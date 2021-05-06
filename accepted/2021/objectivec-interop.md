@@ -62,6 +62,10 @@ The Objective-C implementation of exceptions is able to be correctly simulated t
 
 An Objective-C Block is conceptually a closure. The [Block ABI][blocks_abi] described by the clang compiler is used to inform interoperability with the .NET Platform. The Objective-C signature of a Block has an implied first argument for the Block itself. For example, a Block that takes an integer and returns an integer would have the following C function signature: `int (*)(id, int)`.
 
+**Threading**
+
+Objective-C has a reference tracking approach to managing object lifetime. Full details of how this work in practice are subtle and best left to [official documentation](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/MemoryMgmt/Articles/MemoryMgmt.html#//apple_ref/doc/uid/10000011i), but a threading contract for Cocoa applications exists that warrants understanding. The [`NSAutoreleasePool`](https://developer.apple.com/documentation/foundation/nsautoreleasepool) is used to help handle reference counting and in a Cocoa application at least one `NSAutoreleasePool` instance is expected to be associated with each thread. When the thread terminates the `NSAutoreleasePool` instance will be cleaned up and thus avoid leaking memory.
+
 ### Interaction between Objective-C and .NET types
 
 Creating an acceptable interaction model between Objective-C and .NET type instances hinges on addressing several issues.
@@ -79,6 +83,8 @@ Objective-C lifetime semantics are handled through [manual or automatic referenc
 - Creation of a toggleable referenced `GCHandle`.
 - A callback that will indicate if a `GCHandle` and associated object are referenced or not.
 - A callback to indicate when an object involved in Objective-C interop has entered the Finalizer queue.
+
+A .NET runtime will also provide a guarantee that each thread running managed code will have an `NSAutoreleasePool` allocated during creation. This `NSAutoreleasePool` instance will be explicitly drained when the managed `Thread` is destroyed. For `ThreadPool` threads the runtime will allocate a new `NSAutoreleasePool` instance for each work item and explicitly drain that instance when the work item completes. Unmanaged threads entering the runtime but not created by the runtime, the main thread is the exception, will not be allocated a `NSAutoreleasePool` instance. The onus is on the application to allocate an `NSAutoreleasePool` if Objective-C types are used. This decision was made since it would impose a policy decision on the Objective-C interop consumer and implicitly add undesirable overhead with no recourse.
 
 **Delegates and Blocks**
 
