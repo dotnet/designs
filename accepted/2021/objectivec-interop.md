@@ -1,5 +1,7 @@
 # Objective-C interoperability
 
+**Owner** [Aaron Robinson](https://github.com/AaronRobinsonMSFT)
+
 This design document describes a singular .NET Platform support scenario for an Objective-C runtime. This design is heavily influenced by existing [Xamarin-macios][xamarin_repo] support which is built on top of Mono's [Embedding API](https://www.mono-project.com/docs/advanced/embedding/).
 
 ## Scenarios and User Experience
@@ -25,7 +27,7 @@ There are concepts in Objective-C that require attention for interoperability.
 Method dispatch in Objective-C is typically done through message passing. A suite of functions make up the message passing system.
 
 - [`objc_msgSend`](https://developer.apple.com/documentation/objectivec/1456712-objc_msgsend) &ndash; Canonical message passing.
-- [`objc_msgsend_fpret`](https://developer.apple.com/documentation/objectivec/1456697-objc_msgsend_fpret) &ndash; Message returns a floating point value.
+- [`objc_msgSend_fpret`](https://developer.apple.com/documentation/objectivec/1456697-objc_msgsend_fpret) &ndash; Message returns a floating point value.
 - [`objc_msgSend_stret`](https://developer.apple.com/documentation/objectivec/1456730-objc_msgsend_stret) &ndash; Message returns a structure.
 - [`objc_msgSendSuper`](https://developer.apple.com/documentation/objectivec/1456716-objc_msgsendsuper) &ndash; Send message to the super class.
 - [`objc_msgSendSuper_stret`](https://developer.apple.com/documentation/objectivec/1456722-objc_msgsendsuper_stret) &ndash; Send message that returns a structure to the super class.
