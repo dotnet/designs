@@ -443,7 +443,6 @@ namespace System.Diagnostics.Metrics
         public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) { throw null; }
 
         public void Start() { throw null; }
-        public void Stop() { throw null; }
 
         /// <summary>
         /// Call all Observable instruments to get the recorded measurements reported to the
