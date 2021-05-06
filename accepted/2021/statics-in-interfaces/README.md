@@ -128,7 +128,7 @@ public interface ISubtractionOperators<TSelf>
 public interface IMultiplyOperators<TSelf>
     where TSelf : IMultiplyOperators<TSelf>
 {
-    static abstract TSelf operator -(TSelf left, TSelf right);
+    static abstract TSelf operator *(TSelf left, TSelf right);
 }
 
 public interface IDivisionOperators<TSelf>
