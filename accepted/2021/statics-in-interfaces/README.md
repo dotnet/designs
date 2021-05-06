@@ -489,9 +489,9 @@ namespace System
         // This should not be `IEqualityOperators<TSelf>` as there are types like `Complex` where
         // TOther can be `double` and represent an optimization, both in size and perf
 
-        static abstract bool operator ==(TSelf lhs, TOther rhs);
+        static abstract bool operator ==(TSelf left, TOther right);
 
-        static abstract bool operator !=(TSelf lhs, TOther rhs);
+        static abstract bool operator !=(TSelf left, TOther right);
     }
 
     public interface IComparisonOperators<TSelf, TOther> : IComparable, IComparable<TOther>, IEqualityOperators<TSelf, TOther>
@@ -502,13 +502,13 @@ namespace System
         // This inherits from IEqualityOperators<TSelf, TOther> as even though IComparable<T> does not
         // inherit from IEquatable<T>, the <= and >= operators as well as CompareTo iTSelf imply equality
 
-        static abstract bool operator <(TSelf lhs, TOther rhs);
+        static abstract bool operator <(TSelf left, TOther right);
 
-        static abstract bool operator <=(TSelf lhs, TOther rhs);
+        static abstract bool operator <=(TSelf left, TOther right);
 
-        static abstract bool operator >(TSelf lhs, TOther rhs);
+        static abstract bool operator >(TSelf left, TOther right);
 
-        static abstract bool operator >=(TSelf lhs, TOther rhs);
+        static abstract bool operator >=(TSelf left, TOther right);
     }
 
     public interface IAdditiveIdentity<TSelf, TResult>
@@ -528,17 +528,17 @@ namespace System
 
         // We can't expose TSelf - TOther as some types only support one of the operations
 
-        static abstract TResult operator +(TSelf lhs, TOther rhs);
+        static abstract TResult operator +(TSelf left, TOther right);
 
-        static abstract TResult checked operator +(TSelf lhs, TOther rhs);
+        static abstract TResult checked operator +(TSelf left, TOther right);
     }
 
     public interface ISubtractionOperators<TSelf, TOther, TResult>
         where TSelf : ISubtractionOperators<TSelf, TOther, TResult>
     {
-        static abstract TResult operator -(TSelf lhs, TOther rhs);
+        static abstract TResult operator -(TSelf left, TOther right);
 
-        static abstract TResult checked operator -(TSelf lhs, TOther rhs);
+        static abstract TResult checked operator -(TSelf left, TOther right);
     }
 
     public interface IIncrementOperators<TSelf>
@@ -582,17 +582,17 @@ namespace System
 
         // We can't inherit from IAdditionOperators<TSelf, TOther> as some types, such as matrices, support Matrix * scalar but not Matrix + scalar
 
-        static abstract TResult operator *(TSelf lhs, TOther rhs);
+        static abstract TResult operator *(TSelf left, TOther right);
 
-        static abstract TResult checked operator *(TSelf lhs, TOther rhs);
+        static abstract TResult checked operator *(TSelf left, TOther right);
     }
 
     public interface IDivisionOperators<TSelf, TOther, TResult>
         where TSelf : IDivisionOperators<TSelf, TOther, TResult>
     {
-        static abstract TResult operator /(TSelf lhs, TOther rhs);
+        static abstract TResult operator /(TSelf left, TOther right);
 
-        static abstract TResult checked operator /(TSelf lhs, TOther rhs);
+        static abstract TResult checked operator /(TSelf left, TOther right);
     }
 
     public interface IModulusOperators<TSelf, TOther, TResult>
@@ -602,9 +602,9 @@ namespace System
 
         // Likewise the name IModulusOperators doesn't fit with the other names, so a better one is needed
 
-        static abstract TResult operator %(TSelf lhs, TOther rhs);
+        static abstract TResult operator %(TSelf left, TOther right);
 
-        static abstract TResult checked operator %(TSelf lhs, TOther rhs);
+        static abstract TResult checked operator %(TSelf left, TOther right);
     }
 
     public interface IUnaryNegationOperators<TSelf, TResult>
@@ -623,11 +623,11 @@ namespace System
 
     public interface IBitwiseOperators<TSelf, TOther, TResult>
     {
-        static abstract TResult operator &(TSelf lhs, TOther rhs);
+        static abstract TResult operator &(TSelf left, TOther right);
 
-        static abstract TResult operator |(TSelf lhs, TOther rhs);
+        static abstract TResult operator |(TSelf left, TOther right);
 
-        static abstract TResult operator ^(TSelf lhs, TOther rhs);
+        static abstract TResult operator ^(TSelf left, TOther right);
 
         static abstract TResult operator ~(TSelf value);
     }
