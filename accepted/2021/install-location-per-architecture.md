@@ -1,6 +1,6 @@
 # Add ability to register different install location for each architecture
 
-With [dotnet/sdk#16896](https://github.com/dotnet/sdk/issues/16896) there are plans
+With [dotnet/designs#217](https://github.com/dotnet/designs/pull/217) there are plans
 to support multiple architectures on the same machine. For example
 the Arm64 and x64 architectures on Windows and macOS. This document describes proposed
 changes to the configuration and how host components use it to allow for
@@ -48,7 +48,7 @@ is very simple and will continue to work the same way.
 
 On Linux and macOS there's no existing multi-arch support. There's also no
 default global location which is architecture specific. Part of the discussion
-in [dotnet/sdk#16896](https://github.com/dotnet/sdk/issues/16896) is about
+in [dotnet/designs#217](https://github.com/dotnet/designs/pull/217) is about
 where should each architecture install to.
 For the purposes of this document we'll just assume that each architecture has
 its own unique location (it doesn't matter exactly what it will be).
