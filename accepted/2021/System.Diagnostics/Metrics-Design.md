@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document is discussing the .NET Metrics APIs design which implements the [OpenTelemetry specification](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/new_api.md).
+This document is discussing the .NET Metrics APIs design which implements the [OpenTelemetry specification](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/api.md).
 
 The OpenTelemetry Metrics APIs support reporting measurements about the execution of a computer program at run time. The Metrics APIs are designed explicitly for processing raw measurements, generally with the intent to produce continuous summaries of those measurements, efficiently and simultaneously.
 
@@ -21,12 +21,12 @@ deviating from the standard even if the standard names are not the best option f
 
 ### Instrument
 
-The Instrument is the type that will be used by the app and library authors to report measurements (e.g. Counter, Gauge...etc.). The instrument will have a name that should be validated as described in the OpenTelemetry specs. The Instrument can optionally have a description and unit of measurements. Instruments will be created with a numerical type parameter (e.g. `Counter<int>`). The Instrument is going to support all CLS-compliant numerical types which are supported on the Full Framework (Byte, Int16, Int32, Int64, Single, Double, and Decimal).
+The Instrument is the type that will be used by the app and library authors to report measurements (e.g. Counter, ObservableGauge...etc.). The instrument will have a name that should be validated as described in the OpenTelemetry specs. The Instrument can optionally have a description and unit of measurements. Instruments will be created with a numerical type parameter (e.g. `Counter<int>`). The Instrument is going to support all CLS-compliant numerical types which are supported on the Full Framework (Byte, Int16, Int32, Int64, Single, Double, and Decimal).
 
 There are two types of instruments:
 
 - The first type we'll call it just `Instrument` for simplicity. These instruments are called inside a request, meaning they have an associated distributed Context (with Span, Baggage, etc.). OpenTelemetry specs call this type of instrument a synchronous Instrument but we are trying to avoid confusion with the async feature of the .NET. The proposal here proposes two instrument classes of that type: `Counter` and `Histogram`.
-- The second type is called `ObservableInstrument` which reports measurements by a callback, once per collection interval, and lacks Context. OpenTelemetry specs call this type of instrument an asynchronous Instrument but we are trying to avoid confusion with the async feature of the .NET. The proposal here is proposing three instrument classes of that type: `ObservableCounter`, `ObservableGauge`, and `ObservableUpDownCounter`.
+- The second type is called `ObservableInstrument` which reports measurements by a callback, and lacks Context. OpenTelemetry specs call this type of instrument an asynchronous Instrument but we are trying to avoid confusion with the async feature of the .NET. The proposal here is proposing three instrument classes of that type: `ObservableCounter`, `ObservableGauge`, and `ObservableUpDownCounter`.
 
 ### Meter
 
@@ -65,7 +65,7 @@ namespace System.Diagnostics.Metrics
         public string? Version { get; }
 
         /// <summary>
-        /// Factory Methods to create Counter and Histogram instruments.
+        /// Factory methods to create Counter and Histogram instruments.
         /// </summary>
         public Counter<T> CreateCounter<T>(
                             string name,
@@ -78,7 +78,7 @@ namespace System.Diagnostics.Metrics
                             string? unit = null) where T : unmanaged { throw null; }
 
         /// <summary>
-        /// Factory Methods to create an observable Counter instrument.
+        /// Factory methods to create an ObservableCounter instrument.
         /// </summary>
 
         public ObservableCounter<T> CreateObservableCounter<T>(
@@ -100,7 +100,7 @@ namespace System.Diagnostics.Metrics
                             string? unit = null) where T : unmanaged { throw null; }
 
         /// <summary>
-        /// Factory Methods to create observable gauge instrument.
+        /// Factory methods to create ObservableGauge instrument.
         /// </summary>
         public ObservableGauge<T> CreateObservableGauge<T>(
                             string name,
@@ -121,7 +121,7 @@ namespace System.Diagnostics.Metrics
                             string? unit = null) where T : unmanaged { throw null; }
 
         /// <summary>
-        /// Factory Methods to create observable UpDownCounter instrument.
+        /// Factory methods to create ObservableUpDownCounter instrument.
         /// </summary>
         public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
                             string name,
@@ -198,7 +198,7 @@ namespace System.Diagnostics.Metrics
 {
     /// <summary>
     /// Instrument<T> is the base class from which all non-observable instruments will inherit from.
-    /// Mainly It'll support the CLS compliant numerical types
+    /// Mainly it will support the CLS compliant numerical types.
     /// </summary>
     public abstract class Instrument<T> : Instrument where T : unmanaged
     {
@@ -273,7 +273,7 @@ namespace System.Diagnostics.Metrics
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// A measurement stores one observed value and its associated tags. This type is used by Observable instruments' Observe() method when reporting current measurements.
+    /// A measurement stores one observed value and its associated tags. This type is used by Observable instruments' Observe() method when reporting current measurements with associated tags.
     /// with the associated tags.
     /// </summary>
     public struct Measurement<T> where T : unmanaged
@@ -321,7 +321,7 @@ namespace System.Diagnostics.Metrics
 
     /// <summary>
     /// The histogram is a non-observable Instrument that can be used to report arbitrary values
-    /// that are likely to be statistically meaningful. It is intended for statistics such
+    /// that are likely to be statistically meaningful. It is intended for statistics such as the request duration.
     /// e.g. the request duration.
     /// </summary>
     public sealed class Histogram<T> : Instrument<T> where T : unmanaged
