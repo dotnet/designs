@@ -2,7 +2,7 @@
 
 We're working on a plan to support .NET for x64 emulation on Arm64, on macOS and Windows. There are multiple decision points that we are needing to navigate to make a decision. This document is intended to explore those.
 
-The following issues are the fundamental decision points. The choices we make for each will have significant downstream and user observable impact.
+The following issues are the fundamental decision points. The choices we make for each will have significant downstream and user observable impact. They are also co-dependent.
 
 - Install location
 - Model for targeting architecture
@@ -37,7 +37,7 @@ We could install .NET x64 to another location, but the implications would be the
 
 Goal: Enable developers to produce architecture-specific assets correctly and with confidence.
 
-The .NET application model is oriented around rid-specific apps. In particular, the apphost is rid-specific, and the apphost ia a core part of the experience. In some scenarios, you don't have to pay much attention to the rid of the apphost. For example, if you exclusively develop on *and* target Windows x64, then rid-targeting isn't really important, even though it is present. If your development and target environment differ, then you need to directly participate in rid-targeting.
+The .NET application model is oriented around rid-specific apps. In particular, the apphost is rid-specific, and the apphost is a core part of the experience. In some scenarios, you don't have to pay much attention to the rid of the apphost. For example, if you exclusively develop on *and* target Windows x64, then rid-targeting isn't really important, even though it is present. If your development and target environment differ, then you need to directly participate in rid-targeting.
 
 In the typical scenario, you can develop on your machine, for example Windows x64, and then not need to consider rid-targeting until you are ready to test on or deploy to Linux x64, for example. x64 emulation places new requirements on developers to participate in RID-targeting during inner loop development. That's new.
 
@@ -45,11 +45,13 @@ The core issue is that some .NET versions are available for one rid and not the 
 
 ### Rely on the implicit rid of the SDK
 
-In theory, the easiest approach is to simply use the matching SDK for the rid you want to target. That's the model used in the "developing and targeting on Windows x64" example discussed earlier.
+In theory, the easiest approach is to simply use the matching SDK for the rid you want to target.
+
+Note: Arm64 and x64 .NET builds will not be installed together. If you need Arm64 .NET, install it. If you need x64 .NET, install it. If you install both, they need to be updated separately.
 
 There are problems with this model:
 
-- Using the x64 SDK will be a substandard experience, primarily due to it not being in the `PATH`. On macOS, you can either type `/usr/local/share/dotnet/x64/dotnet`, prepend that directory to the `PATH`, create a shell alias, or create a symbolic link (in `/usr/local/bin`). Some of those same options exist on Windows.
+- Using the x64 SDK will be a substandard experience, primarily due to it not being in the `PATH`. On macOS, you can either type `/usr/local/share/dotnet/x64/dotnet`, prepend that directory to the `PATH`, create a shell alias, or create a symbolic link (for example, in `/usr/local/bin`). Some of those same options exist on Windows.
 - Users will find it confusing and unpleasant to need to pivot between the x64 and Arm64 SDKs as a means of targeting a .NET version (short-term problem) or RID (long-term problem).
 - This form of targeting will be untenable for many open source projects. Our GitHub repos don't have this problem because we always download the correct SDK via our build and test scripts. Assumption: Many other projects don't.
 
@@ -84,7 +86,7 @@ The `UseAppHost` property isn't strictly needed, but is a topic we need to resol
 The upside of this plan is that this model is supported today and doesn't require any work (beyond resolving the apphost challenges on macOS). The downside is that is regression in experience. It has the following problems:
 
 - Projects files get longer and more complicated, for users that need (or are required) to use x64 emulation.
-- Project files are no longer portable across machines. This would be a deal killer for teams (or open source projects) that has users with multiple machine types. For example, dotnet org repos would never be able to implement this technique.
+- Project files are no longer portable across machines. This would be a deal killer for teams (or open source projects) that have users (or CI test legs) with multiple machine types. For example, dotnet org repos would never be able to implement this technique.
 
 ### Rely on implicit RID defaults
 
@@ -115,7 +117,7 @@ There are multiple problems with RID-targeting today that make it inconvenient a
 - You can specify a RID for `dotnet build` but you cannot specify that you want to maintain the framework-dependent nature of the app with another (native) CLI argument. You can use an MSBuild property for this case `/p:SelfContained=false`. That's really terrible UX.
 - RIDs are these special codes that are hard to remember (particularly `osx`). In the case of x64 emulation, you only want to pivot on architecture, not operating system. We should provide an easy mode to enables specifying an architecture without an OS.
 - An explicit RID and an implicit one are not symmetric. They are the same as it relates to apphost generation, however, the implict RID defaults to portable apps and the explicit RID defaults to architecture-specific apps. This behavior will become increasingly obvious.
-- `dotnet publish` of a RID-specific app produces two copies of the final app, and it isn't clear which one to use.
+- [Unrelated] `dotnet publish` of a RID-specific app produces two copies of the final app, and it isn't clear which one to use.
 
 We haven't defined a new model. In short, it would need to resolve the problems with RID targeting that we have today.
 
@@ -127,13 +129,13 @@ Assuming we had a new model, it would have these general characteristics:
 - Incremental build works.
 - Roll forward participates in RID selection. It is easy to coerce apps to roll forward (to enable using the native architecture), particularly for `dotnet tool install`.
 
-Note: these changes may or not be breaking. There are both breaking and non-breaking options to satisfy these characteristics.
+Note: these changes will likely be breaking.
 
 ## Which .NET Versions are supported with x64 emulation
 
 Goal: Support the .NET versions that developers expect to use on Arm64, particularly if an Apple Silicon Mac or Surface Pro X is their only development device.
 
-We've just spent a lot of effort getting .NET Core 3.1 and .NET Core 3.1 to work on Apple Silicon, with Apple. Of course they are supported! Also, it would be a major regression to remove .NET Core 3.1 and .NET 5 targeting from Visual Studio for Mac users on Apple Silicon.
+We've just spent a lot of effort getting .NET Core 3.1 and .NET 5 to work on Apple Silicon, with Apple. Of course they are supported! Also, it would be a major regression to remove .NET Core 3.1 and .NET 5 targeting from Visual Studio for Mac users on Apple Silicon.
 
 On the other hand, the change to install location for .NET x64 builds is very disruptive, and we'd prefer not to pay it for all versions.
 
@@ -147,13 +149,15 @@ We can put some stakes in the ground (some hard, some soft):
 
 - We need x64 runtime installers.
 - We need x64 .NET Core 3.1 runtime installers for sure.
-- We can likely get away without updating/supporting x64 .NET 5 runtime installers given the proximity of .NET EOL to .NET 6 RTM.
+- We may be able to away without updating/supporting x64 .NET 5 runtime installers given the proximity of .NET EOL to .NET 6 RTM.
 - ASP.NET Core does not have a macOS runtime installer. We may need one, dependent on our plan for the x64 .NET SDK.
 - We may not need to update/support x64 SDK installers, dependent on whether decisions on RID targeting mean the SDK must match the architecture or the native SDK can target either Arm64 or x64.
 
 ## Proposals
 
-As suggested, multiple of the options are co-dependent. The following section describes three options with varying UX and cost. There is some opportunity for mix and match between these options.
+As suggested, multiple of the options are co-dependent. The following section describes options with varying UX and cost. There is some opportunity for mix and match between these options, but that is left as an exercise for the reader.
+
+The "RID UX" titles are back references to section titles earlier in the doc.
 
 ### Option 0: Do nothing
 
