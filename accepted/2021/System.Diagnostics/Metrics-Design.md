@@ -25,7 +25,7 @@ The Instrument is the type that will be used by the app and library authors to r
 
 There are two types of instruments:
 
-- The first type we'll call it just `Instrument` for simplicity. These instruments are called inside a request, meaning they have an associated distributed Context (with Span, Baggage, etc.). OpenTelemetry specs call this type of instrument a synchronous Instrument but we are trying to avoid confusion with the async feature of the .NET. The proposal here proposes three instrument classes of that type: `Counter` and `Histogram`.
+- The first type we'll call it just `Instrument` for simplicity. These instruments are called inside a request, meaning they have an associated distributed Context (with Span, Baggage, etc.). OpenTelemetry specs call this type of instrument a synchronous Instrument but we are trying to avoid confusion with the async feature of the .NET. The proposal here proposes two instrument classes of that type: `Counter` and `Histogram`.
 - The second type is called `ObservableInstrument` which reports measurements by a callback, once per collection interval, and lacks Context. OpenTelemetry specs call this type of instrument an asynchronous Instrument but we are trying to avoid confusion with the async feature of the .NET. The proposal here is proposing three instrument classes of that type: `ObservableCounter`, `ObservableGauge`, and `ObservableUpDownCounter`.
 
 ### Meter
