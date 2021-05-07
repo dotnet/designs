@@ -191,13 +191,13 @@ namespace System.Diagnostics.Metrics
 }
 ```
 
-### Non-observable Instrument Base Class
+### Instrument Base Class
 
 ```csharp
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// Instrument<T> is the base class from which all non-observable instruments will inherit from.
+    /// Instrument<T> is the base class from which all instruments that report measurements in the context of the request will inherit from.
     /// Mainly it will support the CLS compliant numerical types.
     /// </summary>
     public abstract class Instrument<T> : Instrument where T : unmanaged
@@ -243,7 +243,7 @@ namespace System.Diagnostics.Metrics
 {
     /// <summary>
     /// ObservableInstrument<T> is the base class from which all observable instruments will inherit from.
-    /// It will only support the CLS compliant numerical types
+    /// It will only support the CLS compliant numerical types.
     /// </summary>
     public abstract class ObservableInstrument<T> : Instrument where T : unmanaged
     {
@@ -261,7 +261,7 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         protected abstract IEnumerable<Measurement<T>> Observe();
 
-        public override bool IsObservable => throw null;
+        public override bool IsObservable => true;
     }
 }
 ```
@@ -292,13 +292,13 @@ namespace System.Diagnostics.Metrics
 }
 ```
 
-### Non-observable Instruments
+### Instruments Concrete Classes
 
 ```csharp
 namespace System.Diagnostics.Metrics
 {
     /// <summary>
-    /// The counter is a non-observable Instrument that supports non-negative increments.
+    /// The counter is an Instrument that supports non-negative increments.
     /// e.g. Number of completed requests.
     /// </summary>
     public sealed class Counter<T> : Instrument<T> where T : unmanaged
@@ -320,7 +320,7 @@ namespace System.Diagnostics.Metrics
     }
 
     /// <summary>
-    /// The histogram is a non-observable Instrument that can be used to report arbitrary values
+    /// The histogram is an Instrument that can be used to report arbitrary values
     /// that are likely to be statistically meaningful. It is intended for statistics such as the request duration.
     /// e.g. the request duration.
     /// </summary>
@@ -402,7 +402,7 @@ namespace System.Diagnostics.Metrics
 
 
     /// <summary>
-    /// The listener class can be used to listen to observable and non-observable instrument
+    /// The listener class can be used to listen to kinds of instruments.
     /// recorded measurements.
     /// </summary>
     public sealed class MeterListener : IDisposable
