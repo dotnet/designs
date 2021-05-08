@@ -69,13 +69,13 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public Counter<T> CreateCounter<T>(
                             string name,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
 
         public Histogram<T> CreateHistogram<T>(
                             string name,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
 
         /// <summary>
         /// Factory methods to create an ObservableCounter instrument.
@@ -84,20 +84,20 @@ namespace System.Diagnostics.Metrics
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
                             Func<T> observeValue,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
 
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
                             Func<Measurement<T>> observeValue,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null,) where T : struct { throw null; }
 
         public ObservableCounter<T> CreateObservableCounter<T>(
                             string name,
                             Func<IEnumerable<Measurement<T>>> observeValues,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
 
         /// <summary>
         /// Factory methods to create ObservableGauge instrument.
@@ -105,20 +105,20 @@ namespace System.Diagnostics.Metrics
         public ObservableGauge<T> CreateObservableGauge<T>(
                             string name,
                             Func<T> observeValue,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null,) where T : struct { throw null; }
 
         public ObservableGauge<T> CreateObservableGauge<T>(
                             string name,
                             Func<Measurement<T>> observeValue,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
 
         public ObservableGauge<T> CreateObservableGauge<T>(
                             string name,
                             Func<IEnumerable<Measurement<T>>> observeValues,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
 
         /// <summary>
         /// Factory methods to create ObservableUpDownCounter instrument.
@@ -126,20 +126,20 @@ namespace System.Diagnostics.Metrics
         public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
                             string name,
                             Func<T> observeValue,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null,) where T : struct { throw null; }
 
         public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
                             string name,
                             Func<Measurement<T>> observeValue,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null,) where T : struct { throw null; }
 
         public ObservableUpDownCounter<T> CreateObservableUpDownCounter<T>(
                             string name,
                             Func<IEnumerable<Measurement<T>>> observeValues,
-                            string? description = null,
-                            string? unit = null) where T : unmanaged { throw null; }
+                            string? unit = null,
+                            string? description = null) where T : struct { throw null; }
 
         public void Dispose() { throw null; }
     }
@@ -162,7 +162,7 @@ namespace System.Diagnostics.Metrics
         /// <summary>
         /// Protected constructor to initialize the common instrument properties.
         /// </summary>
-        protected Instrument(Meter meter, string name, string? description, string? unit) { throw null; }
+        protected Instrument(Meter meter, string name, string? unit, string? description) { throw null; }
 
         /// <summary>
         /// Publish is to allow activating the instrument to start recording measurements and to allow
@@ -175,8 +175,8 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public Meter Meter { get; }
         public string Name { get; }
-        public string? Description { get; }
         public string? Unit { get; }
+        public string? Description { get; }
 
         /// <summary>
         /// A property tells if a listener is listening to this instrument measurement recording.
@@ -200,13 +200,13 @@ namespace System.Diagnostics.Metrics
     /// Instrument<T> is the base class from which all instruments that report measurements in the context of the request will inherit from.
     /// Mainly it will support the CLS compliant numerical types.
     /// </summary>
-    public abstract class Instrument<T> : Instrument where T : unmanaged
+    public abstract class Instrument<T> : Instrument where T : struct
     {
         /// <summary>
         /// Protected constructor to create the instrument with the common properties.
         /// </summary>
-        protected Instrument(Meter meter, string name, string? description, string? unit) :
-                        base(meter, name, description, unit) { throw null; }
+        protected Instrument(Meter meter, string name, string? unit, string? description) :
+                        base(meter, name, unit, description) { throw null; }
 
         /// <summary>
         /// Record measurement overloads allowing passing different numbers of tags.
@@ -245,7 +245,7 @@ namespace System.Diagnostics.Metrics
     /// ObservableInstrument<T> is the base class from which all observable instruments will inherit from.
     /// It will only support the CLS compliant numerical types.
     /// </summary>
-    public abstract class ObservableInstrument<T> : Instrument where T : unmanaged
+    public abstract class ObservableInstrument<T> : Instrument where T : struct
     {
         /// <summary>
         /// Protected constructor to create the instrument with the common properties.
@@ -253,8 +253,8 @@ namespace System.Diagnostics.Metrics
         protected ObservableInstrument(
                     Meter meter,
                     string name,
-                    string? description,
-                    string? unit) : base(meter, name, description, unit) { throw null; }
+                    string? unit,
+                    string? description) : base(meter, name, unit, description) { throw null; }
 
         /// <summary>
         /// Observe() fetches the current measurements being tracked by this instrument.
@@ -276,12 +276,13 @@ namespace System.Diagnostics.Metrics
     /// A measurement stores one observed value and its associated tags. This type is used by Observable instruments' Observe() method when reporting current measurements with associated tags.
     /// with the associated tags.
     /// </summary>
-    public struct Measurement<T> where T : unmanaged
+    public readonly struct Measurement<T> where T : struct
     {
         /// <summary>
         /// Construct the Measurement using the value and the list of tags.
         /// We'll always copy the input list as this is not perf hot path.
         /// </summary>
+        public Measurement(T value) { throw null; }
         public Measurement(T value, IEnumerable<KeyValuePair<string, object?>> tags) { throw null; }
         public Measurement(T value, params KeyValuePair<string, object?>[] tags) { throw null; }
         public Measurement(T value, ReadOnlySpan<KeyValuePair<string, object?>> tags) { throw null; }
@@ -301,22 +302,22 @@ namespace System.Diagnostics.Metrics
     /// The counter is an Instrument that supports non-negative increments.
     /// e.g. Number of completed requests.
     /// </summary>
-    public sealed class Counter<T> : Instrument<T> where T : unmanaged
+    public sealed class Counter<T> : Instrument<T> where T : struct
     {
-        public void Add(T measurement) { throw null; }
-        public void Add(T measurement,
-                            KeyValuePair<string, object?> tag) { throw null; }
-        public void Add(T measurement,
-                            KeyValuePair<string, object?> tag1,
-                            KeyValuePair<string, object?> tag2) { throw null; }
-        public void Add(T measurement,
-                            KeyValuePair<string, object?> tag1,
-                            KeyValuePair<string, object?> tag2,
-                            KeyValuePair<string, object?> tag3) { throw null; }
-        public void Add(T measurement,
-                            ReadOnlySpan<KeyValuePair<string, object?>> tags) { throw null; }
-        public void Add(T measurement,
-                            params KeyValuePair<string, object?>[] tags) { throw null; }
+        public void Add(T delta) { throw null; }
+        public void Add(T delta,
+                        KeyValuePair<string, object?> tag) { throw null; }
+        public void Add(T delta,
+                        KeyValuePair<string, object?> tag1,
+                        KeyValuePair<string, object?> tag2) { throw null; }
+        public void Add(T delta,
+                        KeyValuePair<string, object?> tag1,
+                        KeyValuePair<string, object?> tag2,
+                        KeyValuePair<string, object?> tag3) { throw null; }
+        public void Add(T delta,
+                        ReadOnlySpan<KeyValuePair<string, object?>> tags) { throw null; }
+        public void Add(T delta,
+                        params KeyValuePair<string, object?>[] tags) { throw null; }
     }
 
     /// <summary>
@@ -324,25 +325,25 @@ namespace System.Diagnostics.Metrics
     /// that are likely to be statistically meaningful. It is intended for statistics such as the request duration.
     /// e.g. the request duration.
     /// </summary>
-    public sealed class Histogram<T> : Instrument<T> where T : unmanaged
+    public sealed class Histogram<T> : Instrument<T> where T : struct
     {
-        public void Record(T measurement) { throw null; }
+        public void Record(T value) { throw null; }
         public void Record(
-                        T measurement,
+                        T value,
                         KeyValuePair<string, object?> tag) { throw null; }
         public void Record(
-                        T measurement,
+                        T value,
                         KeyValuePair<string, object?> tag1,
                         KeyValuePair<string, object?> tag2) { throw null; }
         public void Record(
-                        T measurement,
+                        T value,
                         KeyValuePair<string, object?> tag1,
                         KeyValuePair<string, object?> tag2,
                         KeyValuePair<string, object?> tag3) { throw null; }
-        public void Record(T measurement,
+        public void Record(T value,
                             ReadOnlySpan<KeyValuePair<string, object?>> tags) { throw null; }
         public void Record(
-                        T measurement,
+                        T value,
                         params KeyValuePair<string, object?>[] tags) { throw null; }
     }
 }
@@ -359,7 +360,7 @@ namespace System.Diagnostics.Metrics
     /// when the instrument is being observed.
     /// e.g. CPU time (for different processes, threads, user mode or kernel mode).
     /// </summary>
-    public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : unmanaged
+    public sealed class ObservableCounter<T> : ObservableInstrument<T> where T : struct
     {
         protected override IEnumerable<Measurement<T>> Observe() { throw null; }
     }
@@ -369,7 +370,7 @@ namespace System.Diagnostics.Metrics
     /// when the instrument is being observed.
     /// e.g. the process heap size
     /// </summary>
-    public sealed class ObservableUpDownCounter<T> : ObservableInstrument<T> where T : unmanaged
+    public sealed class ObservableUpDownCounter<T> : ObservableInstrument<T> where T : struct
     {
         protected override IEnumerable<Measurement<T>> Observe() { throw null; }
     }
@@ -379,7 +380,7 @@ namespace System.Diagnostics.Metrics
     /// when the instrument is being observed.
     /// e.g. the current room temperature
     /// </summary>
-    public sealed class ObservableGauge<T> : ObservableInstrument<T> where T : unmanaged
+    public sealed class ObservableGauge<T> : ObservableInstrument<T> where T : struct
     {
         protected override IEnumerable<Measurement<T>> Observe() { throw null; }
     }
@@ -398,7 +399,7 @@ namespace System.Diagnostics.Metrics
                             Instrument instrument,
                             T measurement,
                             ReadOnlySpan<KeyValuePair<string, object?>> tags,
-                            object? state);
+                            object? state) where T : struct;
 
 
     /// <summary>
@@ -440,7 +441,7 @@ namespace System.Diagnostics.Metrics
         /// from all instruments which enabled listened to and was created with the same specified
         /// numeric type. If a measurement of type T is recorded and a callback of type T is registered, that callback is used. If there is no callback for type T but there is a callback for type object, the measured value is boxed and reported via the object typed callback. If there is neither type T callback nor object callback then the measurement will not be reported.
         /// </summary>
-        public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) { throw null; }
+        public void SetMeasurementEventCallback<T>(MeasurementCallback<T>? measurementCallback) where T : struct { throw null; }
 
         public void Start() { throw null; }
 
