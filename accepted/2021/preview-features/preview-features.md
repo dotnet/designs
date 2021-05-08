@@ -313,6 +313,8 @@ namespace System.Runtime.Versioning
     [AttributeUsage(AttributeTargets.Assembly |
                     AttributeTargets.Module |
                     AttributeTargets.Class |
+                    AttributeTargets.Interface |
+                    AttributeTargets.Delegate |
                     AttributeTargets.Struct |
                     AttributeTargets.Enum |
                     AttributeTargets.Constructor |
