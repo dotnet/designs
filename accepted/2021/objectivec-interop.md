@@ -46,7 +46,7 @@ Will be converted by the compiler to the C style invocation:
 int b = ((int(*)(id,SEL,int))&objc_msgSend)(obj, doubleNumberSel, a);
 ```
 
-The Objective-C runtime adheres to the [`cdecl`](https://en.wikipedia.org/wiki/X86_calling_conventions#cdecl) calling convention for all function calls. Note that method signatures with variadic arguments are supported in Objective-C.
+The Objective-C runtime adheres to the standard platform C calling convention for all function calls. Note that method signatures with variadic arguments are supported in Objective-C.
 
 The dispatching of messages to the target method can be impacted by the concept of "method swizzling". This is a mechanism in Objective-C where one can change the implementation of a type's method. This changing of the target method implementation is typically done in the type's `+load` or `+initialize` methods but could conceivably be done at any time. The usefulness of this feature for interoperability is presently unknown, but the technique should be kept in mind during investigations into unexpected behavior.
 
