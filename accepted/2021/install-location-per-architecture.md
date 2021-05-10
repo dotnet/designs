@@ -44,6 +44,12 @@ This means that x86 apphost looks only for x86 install location and similarly
 x64 apphost looks only for x64 install location. Adding another architecture
 is very simple and will continue to work the same way.
 
+On Windows the native apphost (so x64 on x64, x86 on x86, ...) reads the `DOTNET_ROOT`
+environment variable. And non-native x86 apphost on x64 OS reads the `DOTNET_ROOT(x86)`
+environment variable. If the inspected environment variable is set its value
+is used effectively overriding any other mechanism of finding the install
+location.
+
 ### Current state on Linux and macOS
 
 On Linux and macOS there's no existing multi-arch support. There's also no
@@ -63,6 +69,8 @@ the existing default install location for the native architecture (that is Arm64
 and have a new location for the non-native architecture (x64). Existing apphost
 is always x64 (.NET hasn't yet shipped Arm64 release with this) and as such
 will not work when using just the default install location knowledge.
+
+On Linux and macOS the apphost only reads the `DOTNET_ROOT`, in all cases.
 
 ## Proposal for .NET 6
 
@@ -135,6 +143,10 @@ register that installation. But it would be cleaner if it did so anyway.
 Currently we always register the installation on Windows, but we don't seem
 to do so on Linux and macOS.
 
+*Note: If installers write the file, they should also read it and validate
+that they don't overwrite it with different information. It's unclear yet
+if this is necessary and in which situations.*
+
 #### Support for downlevel apphost
 
 In order to support running downlevel apphost apps on multi-arch non-Windows
@@ -155,6 +167,44 @@ Since 3.1 and 5 are only supported on x64 on macOS, that is the right location.
 * arm64 6 apphost would react to the `arm64` location
 * x64 6 apphost would react to the `x64` location
 
+### Evolve environment variable overrides
+
+Similarly to the registration mechanism, the environment variable mechanism
+doesn't support multi-arch on Linux and macOS at all. And the existing support
+on Windows only works for x86 and x64.
+
+#### Proposed architecture specific environment variables
+
+Apphost should first recognize architecture specific environment variable
+in the format `DOTNET_ROOT_ARCH`. So for example `DOTNET_ROOT_x64` or `DOTNET_ROOT_ARM64`.
+The same mechanism would be used on all OSes, this means that x86 apphost
+on Windows would recognize `DOTNET_ROOT_X86` (it would also recognize
+`DOTNET_ROOT(x86)` as it does today for backward compat reasons).
+
+If the architecture specific environment variable is not set all apphosts
+should fallback to the default `DOTNET_ROOT` environment variable.
+
+By far the most common use case for environment variable overrides
+is usage of private install locations. In that case it's almost always
+the case that only one architecture is needed. For these cases the existing
+`DOTNET_ROOT` can be used. Going forward we may recommend to switch
+to architecture specific environment variables, but it may not be necessary.
+
+In cases where multiple architectures are potentially supported (like our SDK)
+the architecture specific environment variables should be used.
+
+For example on arm64 macOS, the setup could be:
+
+```console
+DOTNET_ROOT_ARM64=/usr/local/share/dotnet
+DOTNET_ROOT_X64=/usr/local/share/dotnet/x64
+DOTNET_ROOT=/usr/local/share/dotnet/x64
+```
+
+Similarly to the configuration file above this guarantees correct behavior
+for both .NET 6 (which will read the architecture specific variables) as well
+for .NET 3.1 (which will read the non-architecture-specific variable only).
+
 ## Alternative designs
 
 ### Configuration file per architecture
@@ -168,3 +218,12 @@ The effect of this is almost identical to the proposed solution.
 The only downside is that this doesn't follow to "native first" approach
 where the native architecture gets the existing "nice" names. It also adds more
 files into `/etc/dotnet` which doesn't feel necessary.
+
+### Use existing format for architecture specific environment variables
+
+Since there's already support for `DOTNET_ROOT(x86)` on Windows extend the same
+pattern to all architectures and OSes. So for example `DOTNET_ROOT(arm64)`
+and so on.
+
+We don't like this pattern as it feels too Windows-centric and would look
+weird on non-Windows platforms.
