@@ -14,7 +14,7 @@ The Objective-C interop experience is defined by Xamarin. How users can extend t
 
 ## Stakeholders and Reviewers
 
-Existing Xamarin customers.
+.NET CoreCLR and Mono runtime interop and Xamarin Objective-C interop teams.
 
 ## Design
 
