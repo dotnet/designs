@@ -82,13 +82,12 @@ TDB
     }
 ```
 
-The `Resource` struct is designed to handle the releasing of the resource. This way, the user won't be able to release more resources than was obtained, unlike Semaphores.
+The `Resource` struct is designed to handle the releasing of the resource. This way, the user won't be able to release more resources than was obtained, unlike Semaphores. We've also identified scenarios where additional information need to be returned by the limiter, such as reason phrases, response codes, percentage of rate saturation, retry after etc. For these cases, the object `Resource.State` can be used to store the additional metadata.
 
 The reason there are separate abstraction for simple and complex resources is to support different use scenarios:
 
 1. For complex resources such as rate limit by IP, we don't want to have a rate limit per bucket (i.e. one rate limiter per remote IP). As such, we need an API where you can pass in a resourceID.
 2. For simpler scenarios where a key is not necessary, such as a n requests/second limit, requiring a default key to be passed in becomes awkward. Hence a simpler API is preferred.
-3. There are scenarios where additional metadata on the result is desired, such as reason phrases, response codes, percentage of rate saturation, etc. In these cases, use the generic interface and specify the `TResult`.
 
 We plan on adding extension methods:
 
