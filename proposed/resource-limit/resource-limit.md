@@ -29,36 +29,36 @@ TDB
 ## Design
 
 ```c#
-    public interface IResourceLimiter
+    public abstract class ResourceLimiter
     {
         // an inaccurate view of resources
-        long EstimatedCount { get; }
+        abstract long EstimatedCount { get; }
 
         // Fast synchronous attempt to acquire resources
         // Set requestedCount to 0 to get whether resource limit has been reached
-        bool TryAcquire(long requestedCount, out Resource resource);
+        abstract bool TryAcquire(long requestedCount, out Resource resource);
 
         // Wait until the requested resources are available
         // Set requestedCount to 0 to wait until resource is replenished
         // If unsuccessful, throw
-        ValueTask<Resource> AcquireAsync(long requestedCount, CancellationToken cancellationToken = default);
+        abstract ValueTask<Resource> AcquireAsync(long requestedCount, CancellationToken cancellationToken = default);
     }
 
     // Represent an aggregated resource (e.g. a resource limiter aggregated by IP), no identified use within dotnet/runtime yet
     // Abstraction likely to be part of ASP.NET Core
-    public interface IAggregatedResourceLimiter<TKey>
+    public abstract class AggregatedResourceLimiter<TKey>
     {
         // an inaccurate view of resources
-        long EstimatedCount(TKey resourceID);
+        abstract long EstimatedCount(TKey resourceID);
 
         // Fast synchronous attempt to acquire resources
         // Set requestedCount to 0 to get whether resource limit has been reached
-        bool TryAcquire(TKey resourceID, long requestedCount, out Resource resource);
+        abstract bool TryAcquire(TKey resourceID, long requestedCount, out Resource resource);
 
         // Wait until the requested resources are available
         // Set requestedCount to 0 to wait until resource is replenished
         // If unsuccessful, throw
-        ValueTask<Resource> AcquireAsync(TKey resourceID, long requestedCount, CancellationToken cancellationToken = default);
+        abstract ValueTask<Resource> AcquireAsync(TKey resourceID, long requestedCount, CancellationToken cancellationToken = default);
     }
 
     public struct Resource : IDisposable
@@ -124,21 +124,21 @@ We plan on adding extension methods:
 
     public static class ResourceLimiterExtensions
     {
-        public static bool TryAcquire(this IResourceLimiter limiter, out Resource resource)
+        public static bool TryAcquire(this ResourceLimiter limiter, out Resource resource)
         {
             return limiter.TryAcquire(1, out resource);
         }
 
-        public static ValueTask<Resource> AcquireAsync(this IResourceLimiter limiter, CancellationToken cancellationToken = default)
+        public static ValueTask<Resource> AcquireAsync(this ResourceLimiter limiter, CancellationToken cancellationToken = default)
         {
             return limiter.AcquireAsync(1, cancellationToken);
         }
-        public static bool TryAcquire<TKey>(this IAggregatedResourceLimiter<TKey> limiter, TKey resourceId, out Resource resource)
+        public static bool TryAcquire<TKey>(this AggregatedResourceLimiter<TKey> limiter, TKey resourceId, out Resource resource)
         {
             return limiter.TryAcquire(resourceId, 1, out resource);
         }
 
-        public static ValueTask<Resource> AcquireAsync<TKey>(this IAggregatedResourceLimiter<TKey> limiter, TKey resourceId, CancellationToken cancellationToken = default)
+        public static ValueTask<Resource> AcquireAsync<TKey>(this AggregatedResourceLimiter<TKey> limiter, TKey resourceId, CancellationToken cancellationToken = default)
         {
             return limiter.AcquireAsync(resourceId, 1, cancellationToken);
         }
@@ -148,7 +148,7 @@ We plan on adding extension methods:
 Usage may look like:
 
 ```c#
-endpoints.MapGet("/", async context =>
+endpoints.MapGet("/tryAcquire", async context =>
 {
     if (_limiter.TryAcquire(out var resource))
     {
@@ -158,6 +158,22 @@ endpoints.MapGet("/", async context =>
         }
     }
     else
+    {
+        context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        return;
+    }
+}
+
+endpoints.MapGet("/acquireAsync", async context =>
+{
+    try
+    {
+        using (await _limiter.AcquireAsync())
+        {
+            await context.Response.WriteAsync("Hello World!");
+        }
+    }
+    catch (ResourceExhaustedException)
     {
         context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         return;
