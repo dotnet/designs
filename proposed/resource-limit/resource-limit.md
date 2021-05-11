@@ -84,6 +84,35 @@ TDB
 
 The `Resource` struct is designed to handle the releasing of the resource. This way, the user won't be able to release more resources than was obtained, unlike Semaphores. We've also identified scenarios where additional information need to be returned by the limiter, such as reason phrases, response codes, percentage of rate saturation, retry after etc. For these cases, the object `Resource.State` can be used to store the additional metadata.
 
+The motivation behind the `TryAcquire` and `AcquireAsync` distinction is that there are use cases where a fast synchronous check is required and there are other cases where waiting until a resource is available is better suited. There are parallels for this in System.Threading.Channels with ChannelWriter.TryWrite vs ChannelWriter.WriteAsync. We envision `AcquireAsync` to also allow for waiting for pending acquisition requests (FIFO or LIFO) when resources are exhausted. In these cases, the behaviour is controlled with two limits:
+
+1. Resource limit: this represents how many resource are available to be acquired immediately
+2. Queue/Stack limit: this represents how many requests can be queued
+
+This gives 3 scenarios :
+
+1. Count + RequestedCount <= Resource limit: In this case `TryAcquire` will return `true` and `AcquireAsync` will return immediately
+2. Resource limit < Count + RequestedCount <= Resource limit + Queue/Stack limit: In this case `TryAcquire` will return `false` and `AcquireAsync` will wait in a queue.
+3. Count + RequestedCount > Resource limit + Queue/Stack limit: In this case `TryAcquire` will return `false` and `AcquireAsync` will throw an exception immediately.
+
+In case we want to reduce the allocation of an `Exception` type in scenario 3, we can return a `bool` either as a tuple for `AcquireAsync`, i.e. `ValueTask<(bool, Resource)> AcquireAsync(long requestedCount, CancellationToken cancellationToken = default)`, or add a `bool` to the `Resource` struct.
+
+The usage pattern in the former could be construed as more verbose:
+```c#
+(bool successful, Resource resource) = await AcquireAsync(1);
+if (successful)
+{
+    using resource;
+    // continue processing
+}
+else
+{
+    // limit reached
+}
+```
+
+In the latter case, the `TryAcquire` method would probably be changed to `Resource TryAcquire(long requestedCount)` which doesn't match with the general pattern of `Try...` methods returning a bool.
+
 The reason there are separate abstraction for simple and complex resources is to support different use scenarios:
 
 1. For complex resources such as rate limit by IP, we don't want to have a rate limit per bucket (i.e. one rate limiter per remote IP). As such, we need an API where you can pass in a resourceID.
@@ -139,11 +168,11 @@ endpoints.MapGet("/", async context =>
 
 Reference designs are redacted but can be found in https://github.com/aspnet/specs/tree/main/design-notes/ratelimit.
 
-## Q & A
+## Open questions
 
 - Currently trying to keep the API as simple as possible.
   - Current design does not allow for partial acquisition, either all of the request count is acquired or nothing. The intent is to examine the estimated count if an appropriate amount to be passed to TryAcquire or Acquire async is desired.
-- If there's a need to check the rate limit state, for example, if a softcap has been reached and waiting is likely to occur, call TryAcquire(0).
+- If there's a need to check the rate limit state, for example, if a softcap has been reached and waiting is likely to occur, call TryAcquire(0). Alternatively, await AcquireAsync(0) to wait until resource has been refreshed/released.
 - There are many parallels with the API surface of Sempahore/Semphore slim. Is the overlap problematic?
 - Naming seems to be highly controversial
 
