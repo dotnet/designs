@@ -44,11 +44,11 @@ This means that x86 apphost looks only for x86 install location and similarly
 x64 apphost looks only for x64 install location. Adding another architecture
 is very simple and will continue to work the same way.
 
-On Windows the native apphost (so x64 on x64, x86 on x86, ...) reads the `DOTNET_ROOT`
-environment variable. And non-native x86 apphost on x64 OS reads the `DOTNET_ROOT(x86)`
-environment variable. If the inspected environment variable is set its value
-is used effectively overriding any other mechanism of finding the install
-location.
+On Windows the apphost for the native architecture (so x64 on x64, x86 on x86, ...)
+reads the `DOTNET_ROOT` environment variable. And non-native x86 apphost on x64
+OS reads the `DOTNET_ROOT(x86)` environment variable. If the inspected
+environment variable is set its value is used effectively overriding
+any other mechanism of finding the install location.
 
 ### Current state on Linux and macOS
 
@@ -187,11 +187,8 @@ should fallback to the default `DOTNET_ROOT` environment variable.
 By far the most common use case for environment variable overrides
 is usage of private install locations. In that case it's almost always
 the case that only one architecture is needed. For these cases the existing
-`DOTNET_ROOT` can be used. Going forward we may recommend to switch
-to architecture specific environment variables, but it may not be necessary.
-
-In cases where multiple architectures are potentially supported (like our SDK)
-the architecture specific environment variables should be used.
+`DOTNET_ROOT` can be used. We will keep recommending to use `DOTNET_ROOT`
+unless the specific scenario requires multiple architecture support (like our SDK).
 
 For example on arm64 macOS, the setup could be:
 
