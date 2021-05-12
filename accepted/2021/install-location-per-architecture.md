@@ -201,8 +201,8 @@ DOTNET_ROOT_X64=/usr/local/share/dotnet/x64
 DOTNET_ROOT=/usr/local/share/dotnet/x64
 ```
 
-Similarly to the configuration file above this guarantees correct behavior
-for both .NET 6 (which will read the architecture specific variables) as well
+Similarly to the configuration file above, this guarantees correct behavior
+for both .NET 6 (which will read the architecture specific variables) as well as
 for .NET 3.1 (which will read the non-architecture-specific variable only).
 
 ## Alternative designs
