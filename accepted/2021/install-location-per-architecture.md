@@ -45,9 +45,9 @@ x64 apphost looks only for x64 install location. Adding another architecture
 is very simple and will continue to work the same way.
 
 On Windows the apphost for the native architecture (so x64 on x64, x86 on x86, ...)
-reads the `DOTNET_ROOT` environment variable. And non-native x86 apphost on x64
+reads the `DOTNET_ROOT` environment variable. The non-native x86 apphost on x64
 OS reads the `DOTNET_ROOT(x86)` environment variable. If the inspected
-environment variable is set its value is used effectively overriding
+environment variable is set, its value is used, effectively overriding
 any other mechanism of finding the install location.
 
 ### Current state on Linux and macOS
