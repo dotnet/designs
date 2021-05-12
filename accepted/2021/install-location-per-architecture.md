@@ -176,8 +176,8 @@ on Windows only works for x86 and x64.
 #### Proposed architecture specific environment variables
 
 Apphost should first recognize architecture specific environment variable
-in the format `DOTNET_ROOT_ARCH`. So for example `DOTNET_ROOT_x64` or `DOTNET_ROOT_ARM64`.
-The same mechanism would be used on all OSes, this means that x86 apphost
+in the format `DOTNET_ROOT_ARCH` - for example, `DOTNET_ROOT_X64` or `DOTNET_ROOT_ARM64`.
+The same mechanism would be used on all OSes. This means that x86 apphost
 on Windows would recognize `DOTNET_ROOT_X86` (it would also recognize
 `DOTNET_ROOT(x86)` as it does today for backward compat reasons).
 
@@ -198,8 +198,8 @@ DOTNET_ROOT_X64=/usr/local/share/dotnet/x64
 DOTNET_ROOT=/usr/local/share/dotnet/x64
 ```
 
-Similarly to the configuration file above this guarantees correct behavior
-for both .NET 6 (which will read the architecture specific variables) as well
+Similarly to the configuration file above, this guarantees correct behavior
+for both .NET 6 (which will read the architecture specific variables) as well as
 for .NET 3.1 (which will read the non-architecture-specific variable only).
 
 ## Alternative designs
