@@ -40,7 +40,7 @@ Simple C# Programs are not a dialect of the C# language, like the interactive di
 
 ## User experience walkthrough
 
-Given the following code in a singular `Hello.cs` in a directory:
+Given the following code in a singular `hello.cs` in a directory:
 
 ```csharp
 WriteLine("Hello World");
@@ -69,6 +69,8 @@ Hello World
 
 When running via `dotnet run` or the `#!` directive, artifacts may be created on disk in the temp folder. They could also be generated in memory.
 
+When running via powershell or CMD on Windows, the invocation may be different, since marking files as executable is different. An alternative on Windows is to also create a file association that allows them to be run when double-clicked.
+
 The `using`s that are normally in a C# project template are implicitly available at design-time. This is accomplished with [Global Using Directives](https://github.com/dotnet/csharplang/blob/main/proposals/GlobalUsingDirective.md) that the build tooling will have available.
 
 The `#!` directive is covered in [Hashbang (#!) support](https://github.com/dotnet/csharplang/issues/3507).
@@ -80,8 +82,9 @@ You can also build it with `dotnet build`:
 ```bash
 $ dotnet build
 $ ls
-Hello.exe
-$ ./Hello.exe
+hello.exe
+hello.cs
+$ ./hello.exe
 Hello World
 ```
 
@@ -158,18 +161,60 @@ Listening on localhost://12345
 
 The syntax for coding against a framework/sdk could also be more similar to the `#r "nuget:"` syntax shown earlier instead of being a `#!` directive.
 
-### Running a specific file
+### Arguments also work
 
-If you have multiple files in the same directory, `dotnet run` won't work by default. You'll need to specify the file you wish to run:
+The following should be possible:
+
+```bash
+$ dotnet run arg1 arg2
+```
+
+or
+
+```bash
+$ ./hello.cs arg1 arg2`
+```
+
+### Running or building a specific file
+
+If you have multiple C# files in the same directory, `dotnet run` and `dotnet build` won't work by default. You'll need to specify the file you wish to run:
 
 ```bash
 $ dotnet run hello.cs
 Hello World
 ```
 
+or
+
+```bash
+$ dotnet build hello.cs
+```
+
+`dotnet build` could in theory work here, as it could just build an executable for each file. But symmetry with `dotnet run` is probably preferred.
+
+Multiple arguments should also work, but you'll still have to pass the file name:
+
+```bash
+$ dotnet run hello.cs arg1 arg2
+```
+
+### TFM chosen at build time
+
+For both `dotnet run` and `dotnet build`, a TFM to build against must be selected.
+
+It will be the latest TFM available in the installed SDK. So if you have the .NET 7 SDK, it will be built and run against `net7`.
+
+There is no ability to select a different TFM.
+
 ## `dotnet` command support
 
 Only `dotnet run` and `dotnet build` are supported with Simple C# Programs. All other `dotnet` commands will error out, indicating that you need a project.
+
+## Synthesized project file
+
+Behind the scenes, a likely implementation will involved a synethesized project file. This would then have all of the information to make the `dotnet` commands work, and open us up to allowing more `dotnet` commands in the future.
+
+A synthezized project file could live either in memory or in the temp folder.
 
 ## Tooling support in VSCode
 
@@ -184,12 +229,9 @@ Visual Studio tooling experiences are much more difficult to consider. For now, 
 
 ## Grow-up story
 
-There is eventually a need for a grow-up story. What's interesting is that this can, in theory, go one of two ways:
+There is eventually a need for a grow-up story. This will involve dropping a project file in the user's current directory.
 
-1. You "graduate" to using projects, like every other .NET developer
-2. You continue to create loose files, but you instead organize them in meaningful folders
-
-The first option is well-understood today, but could involve a special `dotnet` command that _adds_ a project rather than wipes out your existing directory, and converts special directives in your file:
+This could involve a special `dotnet` command that simply drops a new project file (or the one synthesized in a temp folder, if a temp folder is picked). It would be named based on the current directory.
 
 ```bash
 $ dotnet add project
@@ -205,10 +247,6 @@ This lets you "grow up" into a project by:
 After this, you need to run your program with `dotnet run` and friends, but by virtue of being a project, you now have the full `dotnet` toolset at your disposal.
 
 `#!` directives wouldn't technically need to be removed. You should still be able to run a single file the same was as before. Having a project file in the current directory shouldn't change that.
-
-The second option has potentially wild implications across our entire build tools and IDE tooling stack. It would require us to fundamentally rethink how .NET applications can be built.
-
-For the purposes of this design, we will require that users create a project-based codebase if they wish to be grown up.
 
 ## Proposed order of implementation
 
@@ -257,14 +295,14 @@ This is not designed, but eventually support for Simple C# Programs would have t
 
 The following is a non-exhuastive list of user experience considerations that go beyond the basic walkthrough above.
 
-### Where do the artifacts go when running?
+### Where do the artifacts go when building and running?
 
 When using `dotnet run` or a `#!` directive in a Simple C# Program, there's a question of where build artifacts go, because it has to compile the program. There are two primary options:
 
 1. Compile and execute in memory
 2. Place artifacts in the temp directory on your machine
 
-There is precedent for (2) in Golang, which means it's probably a viable option. But there is a concern about cleaning the temp folder as well, lest it get too large. If everything is compile and ran in memory, then this isn't a problem. However, given that `#r "nuget"` in F# and .NET Interactive today works by restoring against a project file in the temp folder, the temp folder approach may be the route taken. Other build-time artifacts could be placed there too.
+There is precedent for (2) in Golang, which means it's probably a viable option. But there is a concern about cleaning the temp folder as well, lest it get too large. If everything is compiled and ran in memory, then this isn't a problem. However, given that `#r "nuget"` in F# and .NET Interactive today works by restoring against a project file in the temp folder, the temp folder approach may be the route taken. Other build-time artifacts could be placed there too.
 
 ### Multiple files
 
