@@ -214,7 +214,7 @@ Only `dotnet run` and `dotnet build` are supported with Simple C# Programs. All 
 
 Behind the scenes, a likely implementation will involved a synethesized project file. This would then have all of the information to make the `dotnet` commands work, and open us up to allowing more `dotnet` commands in the future.
 
-A synthezized project file could live either in memory or in the temp folder.
+A synthesized project file could live either in memory or in the temp folder.
 
 ## Tooling support in VSCode
 
