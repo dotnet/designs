@@ -18,7 +18,7 @@ This simple implementation also lends itself to limiting resources among differe
 
 ### Use cases for non self-replenishing resources, akak **Concurrency Limits**
 
-A different strategy to trottle operations is to specify a concurrency-based limit that describes underlying physical resources. An example would be to specify only X number of requests can be processed at a time based where X may be calculated based on the number of cores.
+A different strategy to throttle operations is to specify a concurrency-based limit that describes underlying physical resources. An example would be to specify only X number of requests can be processed at a time based where X may be calculated based on the number of cores.
 
 These types of limits may enable more efficient use of underlying resources. For example, to ensure that ASP.NET Core stops accepting requests that would otherwise lead to thread-pool starvation, a concurrency limit can be specified. This is better than a rate limit since it can be possible to process a higher number of short-running requests as long as the concurrency limit is not exceeded at any particular time.
 
