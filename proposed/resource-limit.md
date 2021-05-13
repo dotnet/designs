@@ -16,7 +16,7 @@ The benefit of a conceptually simple limit is that they can provide protection w
 
 This simple implementation also lends itself to limiting resources among different services or machines. A use case that was requested was querying a Redis store to determine whether a rate limit is satisfied or exceeded.
 
-### Use cases for non self-replenishing resources, akak **Concurrency Limits**
+### Use cases for non self-replenishing resources, aka **Concurrency Limits**
 
 A different strategy to throttle operations is to specify a concurrency-based limit that describes underlying physical resources. An example would be to specify only X number of requests can be processed at a time based where X may be calculated based on the number of cores.
 
@@ -122,6 +122,10 @@ Two BCL types where adoption of the resource limiters are beneficial and relativ
 - System.Threading.Channels
 - System.IO.Pipelines
 
+#### Adoption in ASP.NET Core and others
+
+We are committed to using these primitives in ASP.NET Core to ship a concurrency and rate limit middleware as well as improving our existing server limits in Kestrel HTTP Server. We will likely also ship an extensions package that provides support for a redis based rate limiter. Finally, there is likely to be further adoption of these types in YARP and there has been interest in these primitives from Azure teams such as ATS and ACR.
+
 ### Non-Goals
 
 #### HttpClient, Streams, Sockets
@@ -136,7 +140,7 @@ Current design does not allow for partial acquisition or release of resources. I
 
 A separate abstraction different from the one proposed here is required to support scenarios where aggregated resources are needed.
 
-For complex resources such as rate limit by IP, we don't want to have a rate limit per bucket (i.e. one rate limiter per IP Address). As such, we need an API where you can pass in a resourceID. This is in contrast to simpler resources where a key is not necessary, such as a n requests/second limit, where requiring a default key to be passed in becomes awkward. Hence the simpler API proposed here is preferred.
+For high cardinality resources such as rate limit by IP, we don't want to have a rate limit per bucket (i.e. one rate limiter per IP Address). As such, we need an API where you can pass in a resourceID. This is in contrast to simpler resources where a key is not necessary, such as a n requests/second limit, where requiring a default key to be passed in becomes awkward. Hence the simpler API proposed here is preferred.
 
 However, we have not yet found any use cases for aggregated limiters in dotnet/runtime and hence it's not part of this proposal. If we eventually deem that such aggregated limiters are needed in the BCL as well, it can be added independently from the APIs proposed here.
 
@@ -469,7 +473,7 @@ namespace System.Threading.Channels
         public ResourceLimiter WriteLimiter { get; set; }
     }
 
-    public sealed class ResourceLimitedChannel<T> : Channel<T> { }
+    internal sealed class ResourceLimitedChannel<T> : Channel<T> { }
 
     public static class Channel
     {
