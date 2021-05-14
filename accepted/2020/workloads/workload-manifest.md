@@ -47,7 +47,7 @@ Here are some examples of SDK workloads and the packs that they might include:
 
 Manifest versioning broadly tracks SDK versioning: manifests are always associated with an SDK band, and each SDK instance uses only the manifests corresponding to its own band. This association only holds at the band level; manifest versions are completely independent of SDK patch levels. An SDK uses the latest available versions of the manifests available for its band.
 
-To make this relationship more explicit, the SDK band for a manifest is encoded into the manifest’s ID e.g. `Microsoft.NET.Workload.Android.Manifest-6.0.200`. The “version” of a manifest package can then be a semantic version that may or may not have a relationship to the SDK band.
+To make this relationship more explicit, the SDK band for a manifest is encoded into the manifest’s package ID e.g. `Microsoft.NET.Workload.Android.Manifest-6.0.200`. The “version” of a manifest package can then be a semantic version that may or may not have a relationship to the SDK band.
 
 > NOTE: Workloads are completely independent of SDK servicing version e.g. SDK 6.0.100 will get the exact same workload manifests as SDK 6.0.106.
 
