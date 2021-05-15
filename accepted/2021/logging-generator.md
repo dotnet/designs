@@ -566,4 +566,4 @@ Currently maximum number of parameters allowed via `LoggerMessage.Define` (Refer
 
 - _More robust support for handling message template parameters._
 
-The code generation using `LoggerMessage.Define` does not currently handle message templates when number of parameters do not match the specified template parameters even if the parameters used in the template are the same (Refer to [dotnet/runtime#51054](https://github.com/dotnet/runtime/issues/51054])). This could be something that the source generator supports as it evolves further.
+The code generation using `LoggerMessage.Define` does not currently handle message templates when number of parameters do not match the specified template parameters even if the parameters used in the template are the same (Refer to [dotnet/runtime#51054](https://github.com/dotnet/runtime/issues/51054)). This could be something that the source generator supports as it evolves further.
