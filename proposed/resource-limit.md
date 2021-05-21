@@ -80,7 +80,7 @@ These are the goals we would like to achieve in .NET 6.0.
 
 #### Resource limit abstractions
 
-Users will interact with this component in order to obtain decisions for rate or concurrency limits. This abstraction require explicit release sematics to accommodate non self-replenishing resources. This component encompasses the Acquire/AcquireAsync mechanics (i.e. check vs wait behaviours) and default implementations will be provided for select accounting method (fixed window, sliding window, token bucket, concurrency). The return type is a `Resource` which manages the lifecycle of the aquired resources.
+Users will interact with this component in order to obtain decisions for rate or concurrency limits. This abstraction require explicit release sematics to accommodate non self-replenishing resources. This component encompasses the Acquire/AcquireAsync mechanics (i.e. check vs wait behaviours) and default implementations will be provided for select accounting method (fixed window, sliding window, token bucket, concurrency). The return type is a `Resource` which indicates whether the acquisition is successful and manages the lifecycle of the aquired resources.
 
 #### Resource limit implementations
 
@@ -140,6 +140,36 @@ Although we anticipate that there will be applications in many .NET areas and co
 
 Current design does not allow for partial acquisition or release of resources. In other words, either all of the request count is acquired or nothing is acquired. Likewise, when the operation is complete, all resources acquired via the limiter is released together. Though there are theoretically potential use cases for partial acquisitions and releases, no concrete examples has been identified in ASP.NET Core or .NET. In case these functionalities are needed, additional APIs can be added indepently from the APIs proposed here.
 
+For example, this will likely involve a modified `Resource`:
+
+```c#
+public struct Resource : IDisposable
+{
+    // This represents whether resource acquisition was successful
+    public bool IsAcquired{ get; }
+
+    // number of acquired resources. Alternatively this can be stored on `State`
+    public long ResourceCount { get; }
+
+    // This represents additional metadata that can be returned as part of a call to Acquire/AcquireAsync
+    // Potential uses could include a RetryAfter value or an error code.
+    public object? State { get; }
+
+    // `state` is the additional metadata, onDispose takes `state` as its argument.
+    public Resource(long count, bool isAcquired, object? state, Action<Resource>? onDispose);
+
+    // Release a specific amount of resources, if possible
+    public void Release(long releaseCount);
+
+    // Release remaining resources
+    public void Dispose();
+
+    // This static `Resource` is used by rate limiters or in cases where `Acquire` returns false.
+    public static Resource SuccessNoopResource = new Resource(true, null, null);
+    public static Resource FailNoopResource = new Resource(false, null, null);
+}
+```
+
 #### Aggregated limiters
 
 A separate abstraction different from the one proposed here is required to support scenarios where aggregated resources are needed.
@@ -166,7 +196,7 @@ public abstract class AggregatedResourceLimiter<TKey>
 }
 ```
 
-See a [proof of concept implementation](#ip-address-aggregated-resource-limiter).
+See a [proof of concept implementation](#ip-address-aggregated-resource-limiter-using-a-local-concurrentdictionary-as-a-storage-mechanism).
 
 ## Stakeholders and Reviewers
 
@@ -180,7 +210,7 @@ See a [proof of concept implementation](#ip-address-aggregated-resource-limiter)
 
 ### Abstractions
 
-The main abstraction API will consist of the `ResourceLimiter` and the associated `Resource`. The main responsibility of the `ResourceLimiter` is to allow the user to determine whether it's possible to proceed with an operation. The `Resource` struct is returned by the `ResourceLimiter` to represent resources that were obtained, if applicable.
+The main abstraction API will consist of the `ResourceLimiter` and the associated `Resource`. The main responsibility of the `ResourceLimiter` is to allow the user to determine whether it's possible to proceed with an operation. The `Resource` struct is returned by the `ResourceLimiter` to represent if the acquisition was successful and the resources that were obtained, if successful.
 
 ```c#
     // Represents a limiter type that users interact with to determine if an operation can proceed
@@ -255,7 +285,7 @@ We also plan on adding extension methods to simplify the common scenario where a
 
 #### Common usage patterns
 
-In an ASP.NET Core endpoint, usage of specific `ResourceLimiter`s will look like the following. Note that in these cases, the resource limiter is not know to be a rate or concurrency limiter and therefore the release mechanics must be followed.
+In an ASP.NET Core endpoint, usage of specific `ResourceLimiter`s will look like the following. Note that in these cases, the resource limiter is not known to be a rate or concurrency limiter and therefore the release mechanics must be followed.
 
 ```c#
 ResourceLimiter limiter = new SomeResourceLimiter(options => ...)
@@ -264,20 +294,18 @@ ResourceLimiter limiter = new SomeResourceLimiter(options => ...)
 endpoints.MapGet("/acquire", async context =>
 {
     // Check limiter using `Acquire` that should complete immediately
-    using (var resource = limiter.Acquire())
+    using var resource = limiter.Acquire();
+    // Resource was successfully obtained, the using block ensures
+    // that the resource is released upon processing completion.
+    if (resource.IsAcquired)
     {
-        // Resource was successfully obtained, the using block ensures
-        // that the resource is released upon processing completion.
-        if (resource.IsAcquired)
-        {
-            await context.Response.WriteAsync("Hello World!");
-        }
-        else
-        {
-            // Resource could not be obtained, send 429 response
-            context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-            return;
-        }
+        await context.Response.WriteAsync("Hello World!");
+    }
+    else
+    {
+        // Resource could not be obtained, send 429 response
+        context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        return;
     }
 }
 
@@ -287,18 +315,16 @@ endpoints.MapGet("/acquireAsync", async context =>
     // Check limiter using `AcquireAsync` which may complete immediately
     // or wait until resources are available. Using block ensures that
     // the resource is released upon processing completion.
-    using (var resource = await limiter.AcquireAsync())
+    using var resource = await limiter.AcquireAsync();
+    if (resource.IsAcquired)
     {
-        if (resource.IsAcquired)
-        {
-            await context.Response.WriteAsync("Hello World!");
-        }
-        else
-        {
-            // This exception may be thrown when hard cap is reached
-            context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-            return;
-        }
+        await context.Response.WriteAsync("Hello World!");
+    }
+    else
+    {
+        // This exception may be thrown when hard cap is reached
+        context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        return;
     }
 }
 ```
@@ -470,7 +496,7 @@ This specifies how often replenishment occurs.
 
 This specifies how many tokens are restored each time replenishment occurs.
 
-1. `ConcurrencyLimiterOptions`
+4. `ConcurrencyLimiterOptions`
 
 - `ResourceLimit` - see `FixedWindowRateLimiterOptions`
 - `ResourceDepletedMode` - see `FixedWindowRateLimiterOptions`
@@ -591,7 +617,7 @@ public class BookingController : ControllerBase
         ...
     }
 
-    [RequestLimit(new ResourceLimiterWrapperReasonPhrase("Too many car rental requests", new RateLimiter(requestPerSecond: 5)))]
+    [RequestLimit(new ResourceLimiterWrapperReasonPhrase("Too many car rental booking requests", new RateLimiter(requestPerSecond: 5)))]
     public IActionResult BookCarRental()
     {
         ...
@@ -642,7 +668,7 @@ Proof of concept at: https://github.com/dotnet/aspnetcore/blob/41d5bb475a89b91bf
 
 Proof of concept at: https://github.com/dotnet/aspnetcore/blob/52e0b9cb7e44109fecef90bbdaa2bd5193ebc6e7/src/ResourceLimits/src/ConcurrencyLimiter.cs
 
-### IP Address aggregated resource limiter
+### IP Address aggregated resource limiter using a local ConcurrentDictionary as a storage mechanism
 
 Proof of concept at: https://github.com/dotnet/aspnetcore/blob/9d02c467d85c54675fa71735f7c3f7f01637557f/src/Middleware/RequestLimiter/src/IPAggregatedRateLimiter.cs
 
@@ -653,20 +679,18 @@ var limiter = new IPAggregatedRateLimiter(resourceCount: 5, newResourcesPerSecon
 endpoints.MapGet("/acquire", async context =>
 {
     // Check limiter using `Acquire` that should complete immediately
-    using (var resource = limiter.Acquire(context, 1))
+    using var resource = limiter.Acquire(context, 1);
+    if (resource.IsAcquired)
     {
-        if (resource.IsAcquired)
-        {
-            // Resource was successfully obtained, the using block ensures
-            // that the resource is released upon processing completion.
-            await context.Response.WriteAsync("Hello World!");
-        }
-        else
-        {
-            // Resource could not be obtained, send 429 response
-            context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-            return;
-        }
+        // Resource was successfully obtained, the using block ensures
+        // that the resource is released upon processing completion.
+        await context.Response.WriteAsync("Hello World!");
+    }
+    else
+    {
+        // Resource could not be obtained, send 429 response
+        context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        return;
     }
 }
 ```
