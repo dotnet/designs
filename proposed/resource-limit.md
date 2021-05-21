@@ -111,9 +111,13 @@ In the above example, resource is exhaused in Window 1 since the total count is 
 
 This rate limiter uses the [token bucket algorithm](https://en.wikipedia.org/wiki/Token_bucket). The functionality will be similar to the two implementation described above but will be configured differently.
 
+See a [proof of concept implementation](#token-bucket-limiter-with-queue-poc).
+
 4. Concurrency limiter
 
 This limiter keeps track of the number of concurrent resources in use. Conceptually, it will function in a similar way to a Semaphore/SemaphoreSlim but adapted to the proposed API. Like the rate limits above, it will also keep a queue of pending acquisition requests if configured to do so.
+
+See a [proof of concept implementation](#concurrency-limiter-with-random-queue-poc).
 
 #### Resource limit adoption
 
@@ -143,6 +147,26 @@ A separate abstraction different from the one proposed here is required to suppo
 For high cardinality resources such as rate limit by IP, we don't want to have a rate limit per bucket (i.e. one rate limiter per IP Address). As such, we need an API where you can pass in a resourceID. This is in contrast to simpler resources where a key is not necessary, such as a n requests/second limit, where requiring a default key to be passed in becomes awkward. Hence the simpler API proposed here is preferred.
 
 However, we have not yet found any use cases for aggregated limiters in dotnet/runtime and hence it's not part of this proposal. If we eventually deem that such aggregated limiters are needed in the BCL as well, it can be added independently from the APIs proposed here.
+
+Sample API:
+
+```c#
+// Represent an aggregated resource (e.g. a resource limiter aggregated by IP)
+public abstract class AggregatedResourceLimiter<TKey>
+{
+    // an inaccurate view of resources
+    public abstract long EstimatedCount(TKey resourceID);
+
+    // Fast synchronous attempt to acquire resources
+    public abstract bool TryAcquire(TKey resourceID, long requestedCount, [NotNullWhen(true)] out Resource? resource);
+
+    // Wait until the requested resources are available
+    // If unsuccessful, throw
+    public abstract ValueTask<Resource> AcquireAsync(TKey resourceID, long requestedCount, CancellationToken cancellationToken = default);
+}
+```
+
+See a [proof of concept implementation](#ip-address-aggregated-resource-limiter).
 
 ## Stakeholders and Reviewers
 
@@ -210,7 +234,7 @@ Note that the `AcquireAsync` call is not opinionated on how to order the incomin
 
 The `Resource` struct is designed to handle the owndership and release mechanics for concurrency resource limiters. The user is expected to dispose the `Resource` when operations are completed. This way, the user can only release resources obtained from the limiter. The limiter is expected to use the `onDispose` argument when constructing the `Resource` class to indicate how resources should be released.
 
-We've also identified scenarios where the limiter may want to return additional information to the caller, such as reason phrases, response codes, percentage of rate saturation, retry after etc. For these cases, the object `Resource.State` can be used to store the additional metadata. Note that the user will need to downcast the `State` in order to access it and therefore needs to know about the specific implementation of the `ResourceLimiter` in order to know the type of the `State`.
+We've also identified scenarios where the limiter may want to return additional information to the caller, such as reason phrases, response codes, percentage of rate saturation, retry after etc. For these cases, the object `Resource.State` can be used to store the additional metadata. Note that the user will need to downcast the `State` in order to access it and therefore needs to know about the specific implementation of the `ResourceLimiter` in order to know the type of the `State`. For a sample limiter implemenation that uses state, see this [proof of concept](#resource-limiter-wrapper-with-reason-phrases).
 
 We also plan on adding extension methods to simplify the common scenario where a count of 1 is used to represent 1 request.
 
@@ -490,7 +514,171 @@ TBD
 
 ## Proof-of-concepts
 
-For ongoing sample of what implemenations and usage looks like, feel free to consult the following concepts:
+### Customized resource limiter based on ambient state that won't ship in box
+
+e.g. The limiter fails when CPU usage is above 90%
+
+```c#
+class CPUUsageLimiter : ResourceLimiter
+{
+    private PerformanceCounter _cpuUsageCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+    private float _threshold;
+
+    public CPUUsageLimiter(float threshold)
+    {
+        _threshold = threshold;
+    }
+
+    public long EstimatedCount { get; } => (long)_cpuUsageCounter.NextValue();
+
+    public bool TryAcquire(long requestedCount, out Resource resource)
+    {
+        resource = Resource.NoopResource;
+        if (cpuCounter.NextValue() > _threshold)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    public ValueTask<Resource> AcquireAsync(long requestedCount, CancellationToken cancellationToken = default)
+    {
+        while(true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (cpuCounter.NextValue() <= _threshold)
+            {
+                return Resource.NoopResource;
+            }
+            Thread.Sleep(1000); // Wait 1s before rechecking.
+        }
+    }
+}
+```
+
+### Resource limiter wrapper with reason phrases
+
+```c#
+class ResourceLimiterWrapperReasonPhrase : ResourceLimiter
+{
+    private string _failureReasonPhrase;
+    private ResourceLimiter _innerLimiter;
+
+    public ResourceLimiterWrapperReasonPhrase(string reasonPhrase, ResourceLimiter innerLimiter)
+    {
+        _failureReasonPhrase = reasonPhrase;
+        _innerLimiter = innerLimiter; // wrapping to reduce verbosity in this sample.
+    }
+
+    public long EstimatedCount { get; } => _innerLimiter.EstimatedCount;
+
+    public bool TryAcquire(long requestedCount, out Resource resource)
+    {
+        if (_inner.TryAcquire(requestedCount, out var innerResource))
+        {
+            resource = innerResource;
+            return true;
+        }
+
+        resource = new Resource(_failureReasonPhrase, _ => innerResource.Dispose());
+        return false;
+    }
+
+    public ValueTask<Resource> AcquireAsync(long requestedCount, CancellationToken cancellationToken = default)
+        => _inner.AcquireAsync(requestedCount, cancellationToken);
+}
+
+// Usage scenario
+
+// API Controller:
+[ApiController]
+[RequestLimit(new ResourceLimiterWrapperReasonPhrase("Too many booking requests", new RateLimiter(requestPerSecond: 100)))]
+public class BookingController : ControllerBase
+{
+    [RequestLimit(new ResourceLimiterWrapperReasonPhrase("Too many hotel booking requests", new RateLimiter(requestPerSecond: 5)))]
+    public IActionResult BookHotel()
+    {
+        ...
+    }
+
+    [RequestLimit(new ResourceLimiterWrapperReasonPhrase("Too many car rental requests", new RateLimiter(requestPerSecond: 5)))]
+    public IActionResult BookCarRental()
+    {
+        ...
+    }
+}
+
+// Middleware that handles the limiters
+public async Task Invoke(HttpContext context)
+{
+    var endpoint = context.GetEndpoint();
+    var limiters = endpoint?.Metadata.GetOrderedMetadata<ResourceLimiter>();
+
+    var resources = new Stack<Resource>();
+    try
+    {
+        foreach (var limiter in limiters)
+        {
+            if (!limiter.TryAcquire(out var resource))
+            {
+                context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                if (resource.State is string reasonPhrase)
+                {
+                    await context.Response.WriteAsync(reasonPhrase);
+                }
+                return;
+            }
+            resources.push(resource);
+        }
+
+        await _next.Invoke(context);
+    }
+    finally
+    {
+        while (resources.TryPop(out var resource))
+        {
+            resource.Dispose();
+        }
+    };
+}
+```
+
+### Token bucket limiter with queue PoC
+
+Proof of concept at: https://github.com/dotnet/aspnetcore/blob/41d5bb475a89b91bf097aefd232258dee4c8839b/src/Middleware/RequestLimiter/src/RateLimiter.cs
+
+### Concurrency limiter with random queue PoC
+
+Proof of concept at: https://github.com/dotnet/aspnetcore/blob/52e0b9cb7e44109fecef90bbdaa2bd5193ebc6e7/src/ResourceLimits/src/ConcurrencyLimiter.cs
+
+### IP Address aggregated resource limiter
+
+Proof of concept at: https://github.com/dotnet/aspnetcore/blob/9d02c467d85c54675fa71735f7c3f7f01637557f/src/Middleware/RequestLimiter/src/IPAggregatedRateLimiter.cs
+
+Usage pattern:
+
+```c#
+var limiter = new IPAggregatedRateLimiter(resourceCount: 5, newResourcesPerSecond: 5);
+endpoints.MapGet("/tryAcquire", async context =>
+{
+    // Check limiter using `TryAcquire` that should complete immediately
+    if (limiter.TryAcquire(context, 1, out var resource))
+    {
+        // Resource was successfully obtained, the using block ensures
+        // that the resource is released upon processing completion.
+        using (resource)
+        {
+            await context.Response.WriteAsync("Hello World!");
+        }
+    }
+    else
+    {
+        // Resource could not be obtained, send 429 response
+        context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        return;
+    }
+}
+```
 
 ### dotnet/runtime PoCs
 
@@ -498,11 +686,51 @@ For ongoing sample of what implemenations and usage looks like, feel free to con
 
 This branch contains sample implementations of `ResourceLimiter` APIs described in this proposal in dotnet/runtime and application in `System.Threading.Channels`
 
+Usage Highlights:
+
+```c#
+var limitedChannel = Channel.CreateLimited<string>(new LimitedChannelOptions { WriteLimiter = RateLimiter(500 /*bytes per second*/ ) });
+```
+
 ### dotnet/aspnetcore PoCs
 
 - https://github.com/dotnet/aspnetcore/compare/johluo/rate-limits
 
 THis branch contains sample usages of the `ResourceLimiter` in ASP.NET Core consisting of applications in Kestrel HTTP Server and a limiter middleware.
+
+Usage Highlights:
+
+```c#
+// Controller
+[RequestLimit(requestPerSecond: 10)]
+public class HomeController : Controller
+{
+    public IActionResult Index()
+    {
+        return View();
+    }
+}
+
+// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
+{
+    // This middleware handles the enforcement of limiters
+    app.UseRateLimiter();
+
+    app.UseEndpoints(endpoints =>
+    {
+        endpoints.MapGet("/instance", async context =>
+        {
+            await Task.Delay(5000);
+            await context.Response.WriteAsync("Hello World!");
+        }).EnforceLimit(new RateLimiter(2, 2));
+
+        endpoints.MapControllerRoute(
+            name: "default",
+            pattern: "{controller=Home}/{action=Index}/{id?}");
+    }
+}
+```
 
 ## Alternative designs
 
