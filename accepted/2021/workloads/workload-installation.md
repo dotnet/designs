@@ -248,7 +248,8 @@ Thus, the garbage collection process will be as follows:
     - Extract MSI from .nupkg to the MSI package cache
     - Install MSI
   - Add reference count for workload pack in registry.  Create `Dependents\Microsoft.NET.Sdk,<SdkFeatureBand>` under MSI reference counting key
-    - If we don't have a direct way to get the DependencyProviderKey which is part of the MSI reference counting key, we can look it up as it is stored as a value under the workload pack installation record key
+    - If we don't have a direct way to get the DependencyProviderKey which is part of the MSI reference counting key, we can look it up as it is stored as a value under the workload pack installation record key (`HKLM\SOFTWARE\Microsoft\dotnet\InstalledPacks\<Pack ID>\<Pack Version>`)
+  - If MSI NuGet package was downloaded, then delete it from the temporary folder
   - Rollback:
     - Delete registry key for reference count
     - If MSI was installed as part of this operation
@@ -272,8 +273,7 @@ Thus, the garbage collection process will be as follows:
     - Delete MSI from MSI package cache
     - If MSI NuGet package was downloaded, then delete it from the temporary folder
 - Read / write workload installation record
-  - Workload installation records will be stored as a key in the registry: `HKLM\SOFTWARE\Microsoft\dotnet\InstalledWorkloads\<SdkFeatureBand>\<WorkloadID>`
-  - These records will be shared with Visual Studio (installing a workload from Visual Studio should write the same key)
+  - Workload installation records will be stored as a key in the registry: `HKLM\SOFTWARE\Microsoft\dotnet\InstalledWorkloads\Standalone\<SdkFeatureBand>\<WorkloadID>`
   - Read: List keys under `SdkFeatureBand` key
   - Write: Create key
   - Delete: Delete key
