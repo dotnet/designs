@@ -18,17 +18,17 @@ The IAL is an abstraction that is internal to the .NET SDK.  It is not intended 
 
 We plan to (eventually) support the following installation types.  Some of them may not be supported in .NET 6 if we don't have workloads in .NET 6 that are supported on the corresponding platforms.
 
-## .NET SDK managed installation
+## File based installation
 
-In this implementation of the IAL, the .NET SDK itself manages workload installations directly by writing files to the dotnet folder.  This is generally for copies of the .NET SDK which were not installed via an OS installer, for example those that are installed via the dotnet-install scripts, or via unzipping archives of the .NET SDK.
+In this implementation of the IAL, the .NET SDK itself manages workload installations directly by writing files to the dotnet folder.  No package management or external installation technology is used. This is generally for copies of the .NET SDK which were not installed via an OS installer, for example those that are installed via the dotnet-install scripts, or via unzipping archives of the .NET SDK.
 
-Other terms we have at times used for this installation type: xcopy, universal installer, files on disk, NuGet installer
+Other terms we have at times used for this installation type: .NET SDK managed, xcopy, universal installer, files on disk, NuGet installer
 
-## Visual Studio managed installation
+## Visual Studio based installation
 
 This is an installation of the .NET SDK installed and managed by the Visual Studio installer.  The .NET SDK workloads will have corresponding Visual Studio workloads or components, which will install workload packs via Windows MSIs.  Note that the Visual Studio workloads or components should also include the necessary Visual Studio components (designers, project system, etc) to support the workload, in addition to the .NET SDK workload packs.
 
-## Standalone Windows installation
+## MSI based installation
 
 This is an installation of the .NET SDK installed on Windows via the .NET SDK installer bundle, which is the .exe which can be downloaded on the .NET SDK download pages.  The bundle installs the same MSIs for the .NET SDK as Visual Studio does, and the workload installer will likewise install the same MSIs for workload packs as the Visual Studio installer.
 
@@ -36,23 +36,34 @@ The same dotnet folder may have different versions of the SDK installed by both 
 
 ## Package manager installation
 
-If the .NET SDK is installed via a package manager such as APT or RPM, we may want to use the same package manager to install workloads.  However, we are not currently sure if this is necessary.  Our initial impression is that it may be OK to use a package manager to install the core .NET SDK, but then have the SDK itself manage the workloads (ie via the .NET SDK managed IAL implementation).  If the .NET SDK is installed in a location with restricted write permissions, then the workload install command would need to be run with elevated permissions (ie with `sudo`).
+We have not yet settled on how workload installation will work when the .NET SDK is installed via a Linux package manager such as APT or RPM.
 
-For .NET 6, we will simply use the .NET SDK managed IAL, and gather feedback on whether we need workloads to be more integrated with package managers in a future release.
+## For .NET 6
+
+The only workload that will be supported on Linux in .NET 6 will be Blazor AoT.  For .NET 6, we will recommend that developers using a .NET SDK installed via a package manager run `dotnet workload install` under `sudo`.  This will use the file based installation mechanism, ie it will download the workload packs and copy them to the .NET SDK folder.
+
+For source-built .NET, we should not be copying non source-built files into the source-built .NET SDK folder.  For that case, we will provide instructions for how to use workloads outside of the .NET SDK folder.  This will involve downloading and extracting various workload NuGet packages to a user folder, and setting some environment variables (`DOTNETSDK_WORKLOAD_MANIFEST_ROOTS` and `DOTNETSDK_WORKLOAD_PACK_ROOTS`) so that the .NET SDK knows where to find them.
+
+## For .NET 7
+
+For .NET 7, we will need a better solution for source-built .NET, and may also want a better solution for package managers in general.  This will likely be one of the following options:
+
+- Create workload packages for each package manager we support.  The workloads could be installed via the package managers, and `dotnet workload install` would either shell out to the appropriate package manager to install or print a message instructing the user to install the workloads via the package manager.
+- Install workloads to a user-writable folder outside of the .NET SDK installation folder.
 
 # Choosing the installer abstraction
 
-Before any installation operation is started, the .NET SDK will need to choose which installer abstraction will be used and instantiate it.  To do so, it will look for marker files in the `<DOTNET ROOT>/metadata/workloads/<SdkFeatureBand>/installertype/` folder.  If a `visualstudio` file is present in that folder, the Visual Studio installer abtraction will be used.  Otherwise, if an `msi` file is present, the standalone Windows installation abstraction will be used.  Otherwise, the .NET SDK managed installer abstraction will be used.
+Before any installation operation is started, the .NET SDK will need to choose which installer abstraction will be used and instantiate it.  To do so, it will look for marker files in the `<DOTNET ROOT>/metadata/workloads/<SdkFeatureBand>/installertype/` folder.  If an `msi` file is present, the msi based installer will be used.  Otherwise, the file based installer will be used.
 
 This means that the installer packages that we create for the .NET SDK will need to include these files.  For Windows, we will include the `visualstudio` file in the placeholder MSI which we create for Visual Studio, and the `msi` file will go in the main SDK MSI.
 
-On Mac OS, we will always use the .NET SDK managed installer.  There will be packages for the initial installation of the .NET SDK, but whenever the SDK is installing or updating workloads it will simply do so by copying files around on disk.
+On Mac OS, we will always use the file based installer.  There will be packages for the initial installation of the .NET SDK, but whenever the SDK is installing or updating workloads it will simply do so by copying files around on disk.
 
 # Installation operations
 
 ## Unit of installation
 
-Workloads are made up of workload packs.  For some installers, the *unit of installation* in the underlying installation technology will map to an entire workload.  For example, there will be a checkbox in the Visual Studio installer UI corresponding to a whole .NET SDK workload.  For other installers, the *unit of installation* will be workload packs, and it will be up to the .NET SDK to manage the relationships between the installed packs and the workloads that are supposed to be installed.  This will be the case for the .NET SDK managed and Standalone Windows IAL.
+Workloads are made up of workload packs.  For some installers, the *unit of installation* in the underlying installation technology will map to an entire workload.  For example, there will be a checkbox in the Visual Studio installer UI corresponding to a whole .NET SDK workload.  For other installers, the *unit of installation* will be workload packs, and it will be up to the .NET SDK to manage the relationships between the installed packs and the workloads that are supposed to be installed.  This will be the case for the file based and MSI based installers.
 
 ## Workload pack tracking and installation cleanup
 
@@ -184,7 +195,7 @@ To install updated manifests, the following process will be used (for each workl
 
 # Installer implementations
 
-## .NET SDK managed IAL Implementation
+## File based IAL Implementation
  
 - Unit of installation: Workload packs
 - Install workload pack
@@ -236,7 +247,7 @@ Thus, the garbage collection process will be as follows:
     - Delete the workload pack installation record folder: `<DOTNET ROOT>/metadata/workloads/installedpacks/v1/<Pack ID>/<Pack Version>/`
     - Also delete the `<Pack ID>` folder if there are no longer any `<Pack Version>` folders under it
  
-## Standalone Windows IAL Implementation
+## MSI based IAL Implementation
 
 - Unit of installation: Workload packs
 - Install workload pack
@@ -282,7 +293,7 @@ Thus, the garbage collection process will be as follows:
 
 Installing MSIs requires Administrator permissions.  If a workload installation command is run from a non-admin command prompt, then a UAC prompt should be displayed to elevate to Administrator permissions.
 
-To show the UAC prompt, a separate process must be launched.  So if an operation requires admin permissions, the Standalone Windows IAL implementation should elevate and show the UAC prompt by launching a new dotnet process with admin permissions.  The elevated process should establish a connection with the non-elevated process (likely using connection information passed via a command line argument) which allows the IAL implementation to send commands that require elevation to the elevated process.  The elevated process should remain active until the top-level workload operation is complete, in order to avoid having to elevate multiple times for a single user workload action.
+To show the UAC prompt, a separate process must be launched.  So if an operation requires admin permissions, the MSI based IAL implementation should elevate and show the UAC prompt by launching a new dotnet process with admin permissions.  The elevated process should establish a connection with the non-elevated process (likely using connection information passed via a command line argument) which allows the IAL implementation to send commands that require elevation to the elevated process.  The elevated process should remain active until the top-level workload operation is complete, in order to avoid having to elevate multiple times for a single user workload action.
 
 ### Workload pack and manifest MSIs and NuGet packages
 There will be MSIs for both workload packs and workload manifests.  Both of these will also be wrapped up in NuGet packages to allow them to be downloaded via NuGet.  The MSIs and NuGet packages for workload packs and workload manifests will share the following properties:
@@ -316,14 +327,14 @@ There will be MSIs for both workload packs and workload manifests.  Both of thes
 Reference counting for the workload manifest MSIs will work as follows:
 
 - The baseline workload manifest MSI will be included in the standalone bundle.  Thus, when the bundle is installed, a reference from the bundle will be written under the Dependencies key
-- When an updated manifest is installed by the Standalone IAL implementation, it will write another reference under the Dependencies key (of the form `Microsoft.NET.Sdk,<SdkFeatureBand>`)
+- When an updated manifest is installed by the MSI based IAL implementation, it will write another reference under the Dependencies key (of the form `Microsoft.NET.Sdk,<SdkFeatureBand>`)
 - If an updated manifest is installed by VS, it will also write a different reference under the dependencies key (of the form `VS.{GUID}`)
 - When the standalone bundle is uninstalled, it will remove its reference count key, and then uninstall the MSI if a newer MSI hasn't been installed and there are no other reference counts
-- The custom bundle finalizer will remove the reference created by the Standalone IAL implementation, and uninstall the MSI if there are no other references
+- The custom bundle finalizer will remove the reference created by the MSI based IAL implementation, and uninstall the MSI if there are no other references
 
 ### Garbage collection
 
-The garbage collection process for the Standalone Windows IAL will be similar to the .NET SDK managed IAL implementation, just with a different method of storing the workload and workload pack installation records.
+The garbage collection process for the MSI based IAL will be similar to the file based IAL implementation, just with a different method of storing the workload and workload pack installation records.
 
 - Get installed SDK versions and map them to SDK feature bands (ie 6.0.200-preview6 or 6.0.205 would map to 6.0.200)
 - Get installed workloads for current SDK feature band
