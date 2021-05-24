@@ -424,8 +424,8 @@ document which of these switches are supported and which ones are in preview.
 
 ### Are preview features supported?
 
-No. The entire point of preview feature is to gather feedback, and make changes
-based on it. This means we can't support them:
+No. The entire point of preview features is to gather feedback, and make changes
+based on that. This means we can't support them:
 
 * We will generally not service preview features even if they are included in LTS
   releases. The compiler has done this successfully already. If we can't hold
@@ -440,7 +440,7 @@ based on it. This means we can't support them:
 
 ### What is the quality bar for preview features?
 
-Since preview features ship with an GA build, there will still be a quality bar.
+Since preview features ship with a GA build, there will still be a quality bar.
 For instance, we don't want preview features to adversely affect the performance
 or stability of Visual Studio or unrelated areas in the .NET runtime itself. The
 reason being that developers frequently forgot that they turned preview features
@@ -533,8 +533,7 @@ generate an error unless the consuming project has preview features turned on.
 
 ### Can 3rd parties introduce their own preview APIs?
 
-In this design the system has no way to prevent this and it will in fact just
-work.
+In this design the system has no way to prevent this and it will just work.
 
 ### Why did we use the term *preview*?
 
