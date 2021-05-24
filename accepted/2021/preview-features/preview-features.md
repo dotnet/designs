@@ -139,29 +139,6 @@ namespace System
 }
 ```
 
-> What will the compiler do when the attribute is not applied at the assembly level?
-
-I don't think the compiler/analyzer should do anything in this case. The SDK
-will generate the assembly level attribute based on the project setting, but
-this can be turned, off which is what we will do to build the BCL. For obvious
-reasons we don't want `System.Runtime` as whole to have an assembly level
-attribute -- we only want this on specific types/members.
-
-> If assembly A has a method M marked with [RequiresPreviewFeatures], but no
-> assembly level attribute, and it references assembly B that has the assembly
-> level attribute, will the compiler warn?
-
-Yes. The assembly level attribute is meant to protect the user that just uses
-the project level setting. Advanced users (like us) can turn off the generation
-of the assembly level attribute and selectively apply this attribute to
-particular parts of the library. In this case it will only warn users that uses
-those APIs.
-
-The advanced user is responsible for making sure that they very well understand
-which parts are using preview features and ensure they get the attribution
-right. Hence, it doesn't make sense for such as user to depend on an assembly
-that didn't do that due diligence because all bets are off at that point.
-
 ## Requirements
 
 ### Goals
@@ -264,48 +241,59 @@ that the runtime can use this information if ever needed:
 }
 ```
 
-### Compilation context
+### Compiler tracking
+
+*We propose that the compiler does no tracking of preview features at this
+point.*
 
 When `EnablePreviewFeatures` is true, the `LangVersion` property is set to
 `Preview` (unless the customer has explicitly set `LangVersion` in their project
 file already). This avoids customers having to turn on preview features for the
 language separately.
 
-In addition, the property `EnablePreviewFeatures` should be passed to the
-compilation context (akin to how `TargetFramework` is passed in today). An
-analyzer will use that to block use of APIs that are marked as preview as basing
-this off the language preview mode is nonsensical.
-
 The way the compiler knows which features a targeted runtime supports is by
 looking at the `RuntimeFeature` type. Each runtime feature corresponds to a
 specific field on that type. If the type doesn't have the field, the runtime is
-considered as not-supporting the feature. To indicate that a feature is there
-but requires turning on preview mode, we'll simply mark the field with the
-`[RequiresPreviewFeatures]` attribute, just like any other preview API.
+considered as not-supporting the feature.
 
-This solves two problems:
+We discussed extending the compiler to treat `RuntimeFeature` fields marked with
+`[RequiresPreviewFeatures]` differently, but this has the complication that this
+effectively means that the compiler needs to track the use of runtime preview
+features. We considered having a split where an analyzer would handle the use of
+preview APIs with the compiler tracking the use of language features that
+require preview runtime features.
 
-* The customer is using a future version of C# where a given language feature is
-  no longer considered "preview" and thus doesn't require `LangVersion` to be
-  set to preview but in the targeted runtime the feature is still preview. When
-  a language feature is used that requires the given runtime feature, the
-  compiler should check if the field is marked as preview and fail unless the
-  customer has turned preview mode on.
+The challenge is that this means we need to formalize how the compiler should
+enforce it. At this point, it's not clear to us that we actually want a sound
+analysis in this space because we likely need to allow the developer "to cheat",
+that is, the author of an API needs to be able to say "I want to ship an RTM
+version of my API that doesn't require consumers to opt-into preview" while
+still being able to use preview feature in other parts of the code.
 
-* The customer has manually set `LangVersion` to `Preview` but
-  `EnablePreviewFeatures` is not configured (thus defaulting to `False`).
-  Similar case as above, the customer can use any language feature that doesn't
-  require runtime changes but as soon as a feature is used that requires a
-  preview runtime feature, the compiler will report an error, demanding that
-  preview mode needs to be turned on.
+The trick is to ensure that parts depending on preview features are annotated
+while ensuring that the parts that don't aren't, especially when those already
+exist. However, with the upcoming statics in interfaces feature we run into
+challenges where we want to be able to do the following things:
 
-***Note:*** F# doesn't have the capability to use analyzers today. We can
-decided to make this a compiler feature for F#.
+1. Define new interfaces that have statics on them. Those interfaces will be marked
+   with `[RequiresPreviewFeatures]`.
+2. Implement those interfaces on existing types, such as `Int32` and `Single`. Those
+   types cannot be marked with `[RequiresPreviewFeatures]`.
+3. We will implement many of the interface methods explicitly but not all of
+   them will or even can. For cases where the static member already exists (for
+   example, some of `Decimal`'s operators) those can't be required to be marked
+   with `[RequiresPreviewFeatures]`.
 
-### API Analyzer
+At this point, it seems to us that its better to keep the logic in an analyzer,
+potentially special-casing certain relationships of language features, runtime
+support, and core APIs in order to deliver a good customer experience. Once we
+understand the desired rules more, we can potentially formalize them and make
+them a proper compiler feature.
 
-We'll need an attribute to record whether or not the project was
-built with preview features turned on:
+### Analyzer
+
+We'll need an attribute to record whether or not the a given assembly or API
+requires preview features:
 
 ```C#
 namespace System.Runtime.Versioning
@@ -329,20 +317,68 @@ namespace System.Runtime.Versioning
 }
 ```
 
-We'll ship a built-in analyzer that will report diagnostics when an API is being
-used that is marked `[RequiresPreviewFeatures]` but the consumer (member, type,
-module, assembly) isn't marked. The default severity is `error`.
+We'll ship a built-in analyzer that will report diagnostics when code depends on
+preview features without having opted-into preview features. The default
+severity is `error`.
 
-This analyzer will also validate that if any referenced assembly has applied
-`[RequiresPreviewFeatures]`, that the consuming assembly must also have this
-attribute applied.
+Opting into preview features is done by marking the consuming member, type,
+module, or assembly with `[RequiresPreviewFeatures]`.
 
-User code will typically only have this attribute applied at the assembly-level.
-However, the framework will typically only use this attribute on types and
-members without putting it on the assembly itself.
+***Note:** The analyzer doesn't track the `<EnablePreviewFeatures>` property
+itself, it tracks the attribute `[RequiresPreviewFeatures]`. By default, setting
+`<EnablePreviewFeatures>` to `True` will mark the entire assembly with
+`[RequiresPreviewFeatures]`, but developers can turn this off which means that
+they now need to manually annotate parts of their code with
+`[RequiresPreviewFeatures]`.*
 
-***Note:*** Since F# doesn't support analyzers, we would have to add this
-capability to the compiler itself.
+An API is considered marked as `[RequiresPreviewFeatures]` if it is directly
+marked with `[RequiresPreviewFeatures]` or if the containing type, module or
+assembly is marked with `[RequiresPreviewFeatures]`.
+
+The following operations are considered use of preview features:
+
+* Defining a static member in an interface, if, and only if, the
+  `RuntimeFeature.VirtualStaticsInInterfaces` field is marked with
+  `[RequiresPreviewFeatures]`
+* Referencing an assembly that is marked as `[RequiresPreviewFeatures]`
+* Deriving from a type marked as `[RequiresPreviewFeatures]`
+* Implementing an interface marked as `[RequiresPreviewFeatures]`
+* Overriding a member marked as `[RequiresPreviewFeatures]`
+* Calling a method marked as `[RequiresPreviewFeatures]`
+* Reading or writing a field or property marked as `[RequiresPreviewFeatures]`
+* Subscribing or unsubscribing from an event marked as
+  `[RequiresPreviewFeatures]`
+
+This design ensures that using a future version of C# where statics in
+interfaces are no longer a language preview will still enforce marking the
+calling code as preview when building for a runtime where the corresponding
+runtime feature is still considered in preview.
+
+We plan to use this analyzer when building the BCL itself. Given the rules
+above, we'll get a diagnostic when implementing the new interfaces on existing
+types, such as `Int32`. That is intentional. The idea is that we suppress those
+to indicate that we're OK with that:
+
+```C#
+namespace System
+{
+    public struct Int32 : // ...
+#pragma warning disable CAXXXX // Use of preview features
+        INumber<Int32>
+#pragma warning restore CAXXXX // Use of preview features
+    {
+        // ...
+    }
+}
+```
+
+However, since this analyzer will also be used by 3rd parties, we believe it's
+generally good if the analyzer is conservative with telling the developer when
+they use preview features from non-preview code and leave it up to the developer
+to suppress it when it's considered acceptable.
+
+***Note:** Since F# doesn't support analyzers, we need to consider how preview
+feature enforcement affects F# users.*
 
 ### Reflection usage
 
@@ -370,8 +406,6 @@ There are several problems with that:
 I'd argue that whenever reflection is used, our ability to provide guardrails is
 going down (e.g. no support for analyzers, no warnings for using obsolete APIs
 etc). Calling preview APIs is really not much different from that.
-
-**OPEN ISSUE** Should we block calls to preview APIs from reflection?
 
 ## Q & A
 
