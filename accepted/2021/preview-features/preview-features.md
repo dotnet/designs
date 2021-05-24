@@ -507,17 +507,6 @@ The downsides were:
    language work, and compiler work. Said differently, having a single preview
    mode forces us to jointly coordinate preview features across all layers.
 
-### Why are we recording whether an assembly used preview features?
-
-For two reasons:
-
-1. It can be used for auditing
-2. It is used to enforce transitivity. An assembly that doesn't use preview
-   features shouldn't depend on assemblies that do. It doesn't matter whether
-   this binary was a project-to-project reference, a NuGet package, or a raw
-   reference to some checked in file -- we only have to look at the assembly
-   level attribute.
-
 ### What happens when a preview feature is released?
 
 Several things will happen:
