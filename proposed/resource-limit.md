@@ -142,13 +142,15 @@ Although we anticipate that there will be applications in many .NET areas and co
 
 Current design does not allow for partial acquisition or release of resources. In other words, either all of the request count is acquired or nothing is acquired. Likewise, when the operation is complete, all resources acquired via the limiter is released together. Though there are theoretically potential use cases for partial acquisitions and releases, no concrete examples has been identified in ASP.NET Core or .NET. In case these functionalities are needed, additional APIs can be added indepently from the APIs proposed here.
 
-For example, this will likely involve a modified `ResourceLease`:
+For example, this will likely involve a modified `ResourceLease` (expand details for API)
+
+<details>
 
 ```c#
 public struct ResourceLease : IDisposable
 {
     // This represents whether resource lease acquisition was successful
-    public bool IsAcquired{ get; }
+    public bool IsAcquired { get; }
 
     // Number of acquired resources in the lease. Alternatively this can be stored on `State`
     public long ResourceCount { get; }
@@ -171,6 +173,9 @@ public struct ResourceLease : IDisposable
     public static ResourceLease FailedAcquisition = new ResourceLease(false, null, null);
 }
 ```
+
+</details>
+
 
 #### Aggregated limiters
 
@@ -234,7 +239,7 @@ The main abstraction API will consist of the `ResourceLimiter` and the associate
     public struct ResourceLease : IDisposable
     {
         // This represents whether resource lease acquisition was successful
-        public bool IsAcquired{ get; }
+        public bool IsAcquired { get; }
 
         // This represents additional metadata that can be returned as part of a call to Acquire/AcquireAsync
         // Potential uses could include a RetryAfter value or an error code.
@@ -559,7 +564,7 @@ class CPUUsageLimiter : ResourceLimiter
         return ResourceLease.SuccessfulAcquisition;
     }
 
-    public ValueTask<ResourceLease> AcquireAsync(long requestedCount, CancellationToken cancellationToken = default)
+    public async ValueTask<ResourceLease> AcquireAsync(long requestedCount, CancellationToken cancellationToken = default)
     {
         while(true)
         {
@@ -568,7 +573,7 @@ class CPUUsageLimiter : ResourceLimiter
             {
                 return ResourceLease.SuccessfulAcquisition;
             }
-            Thread.Sleep(1000); // Wait 1s before rechecking.
+            await Task.Delay(1000); // Wait 1s before rechecking.
         }
     }
 }
@@ -582,10 +587,10 @@ class ResourceLimiterWrapperReasonPhrase : ResourceLimiter
     private string _failureReasonPhrase;
     private ResourceLimiter _innerLimiter;
 
-    public ResourceLimiterWrapperReasonPhrase(string reasonPhrase, ResourceLimiter innerLimiter)
+    public ResourceLimiterWrapperReasonPhrase(string reasonPhrase, long requestPerSecond)
     {
         _failureReasonPhrase = reasonPhrase;
-        _innerLimiter = innerLimiter; // wrapping to reduce verbosity in this sample.
+        _innerLimiter = new RateLimiter(requestPerSecond: requestPerSecond); // wrapping to reduce verbosity in this sample.
     }
 
     public long EstimatedCount { get; } => _innerLimiter.EstimatedCount;
@@ -610,16 +615,16 @@ class ResourceLimiterWrapperReasonPhrase : ResourceLimiter
 
 // API Controller:
 [ApiController]
-[RequestLimit(new ResourceLimiterWrapperReasonPhrase("Too many booking requests", new RateLimiter(requestPerSecond: 100)))]
+[RequestLimit(new ResourceLimiterWrapperReasonPhrase(reasonPhrase: "Too many booking requests", requestPerSecond: 100))]
 public class BookingController : ControllerBase
 {
-    [RequestLimit(new ResourceLimiterWrapperReasonPhrase("Too many hotel booking requests", new RateLimiter(requestPerSecond: 5)))]
+    [RequestLimit(new ResourceLimiterWrapperReasonPhrase(reasonPhrase: "Too many hotel booking requests", requestPerSecond: 5))]
     public IActionResult BookHotel()
     {
         ...
     }
 
-    [RequestLimit(new ResourceLimiterWrapperReasonPhrase("Too many car rental booking requests", new RateLimiter(requestPerSecond: 5)))]
+    [RequestLimit(new ResourceLimiterWrapperReasonPhrase(reasonPhrase: "Too many car rental booking requests", requestPerSecond: 5))]
     public IActionResult BookCarRental()
     {
         ...
@@ -647,7 +652,7 @@ public async Task Invoke(HttpContext context)
                 }
                 return;
             }
-            resources.push(resourceLease);
+            resources.Push(resourceLease);
         }
 
         await _next.Invoke(context);
