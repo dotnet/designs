@@ -114,13 +114,20 @@ not generate a warning. `net6.0-android` will behave in the same way as `net6.0-
 except that the Xamarin.Android TFM is `monoandroid` (1.0 - 12.0). `net6.0-tizen` is
 also the same as `net6.0-ios` except the TFM is `tizen`.
 
+A special case are packages which have a Xamarin TFM asset that points to `_._` which normally
+means that the asset should be picked from the framework/GAC instead of the package.
+However we have cases like `System.ComponentModel.Composition` where in "legacy" Xamarin this
+assembly shipped as part of the framework (hence e.g. `xamarin.ios` in the package points to `_._`)
+but in .NET Core the assembly is _not_ in the shared framework. We need to skip picking the
+Xamarin TFM asset in this case to avoid a build break due to missing references.
+
 This reasoning results in these precedence rules:
 
 **net6.0-ios**
 
 1. `net6.0-ios`
 1. `net6.0`
-1. `xamarin.ios` (no warning)
+1. `xamarin.ios` (no warning, skip if it points to `_._`)
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
@@ -130,7 +137,7 @@ This reasoning results in these precedence rules:
 
 1. `net6.0-maccatalyst`
 1. `net6.0`
-1. `xamarin.ios` ([NU1701] warning)
+1. `xamarin.ios` ([NU1701] warning, skip if it points to `_._`)
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
@@ -140,7 +147,7 @@ This reasoning results in these precedence rules:
 
 1. `net6.0-macos`
 1. `net6.0`
-1. `xamarin.macos` (no warning)
+1. `xamarin.macos` (no warning, skip if it points to `_._`)
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
@@ -150,7 +157,7 @@ This reasoning results in these precedence rules:
 
 1. `net6.0-tvos`
 1. `net6.0`
-1. `xamarin.tvos` (no warning)
+1. `xamarin.tvos` (no warning, skip if it points to `_._`)
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
@@ -160,7 +167,7 @@ This reasoning results in these precedence rules:
 
 1. `net6.0-android`
 1. `net6.0`
-1. `monoandroid12.0` - `1.0` (no warning)
+1. `monoandroid12.0` - `1.0` (no warning, skip if it points to `_._`)
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
