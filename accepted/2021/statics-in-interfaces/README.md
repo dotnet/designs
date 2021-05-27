@@ -2,7 +2,12 @@
 
 **DRAFT**
 
-**Owners** [Immo Landwerth](https://github.com/terrajobst) | [Mads Torgersen](https://github.com/MadsTorgersen)
+**Owners**
+[Tanner Gooding](https://github.com/tannergooding) is driving the library side support
+[David Wrighton](https://github.com/davidwrighton) is driving the runtime side support
+[Mads Torgersen](https://github.com/MadsTorgersen) is driving the language side support
+[Immo Landwerth](https://github.com/terrajobst) is driving the [RequiresPreviewFeatures] feature
+
 
 C# is looking at enabling static abstract members in interfaces (https://github.com/dotnet/csharplang/issues/4436). From the libraries perspective, this is an opportunity to enable "generic math" which could define a new baseline for how developers write algorithms in .NET.
 
@@ -205,6 +210,7 @@ interface "ISpanParseable<TSelf>"
 interface "ISubtractionOperators<TSelf, TOther, TResult>"
 interface "IUnsignedNumber<TSelf>"
 interface "IUnaryNegationOperators<TSelf, TResult>"
+interface "IUnaryPlusOperators<TSelf, TResult>"
 interface "IVector<TSelf, TScalar>"
 
 "IBinaryNumber<TSelf>"                          <|-- "IBinaryFloatingPoint<TSelf>"
@@ -237,6 +243,7 @@ interface "IVector<TSelf, TScalar>"
 "ISpanParseable<TSelf>"                         <|-- "INumber<TSelf>"
 "ISubtractionOperators<TSelf, TOther, TResult>" <|-- "INumber<TSelf>"
 "IUnaryNegationOperators<TSelf, TResult>"       <|-- "INumber<TSelf>"
+"IUnaryPlusOperators<TSelf, TResult>"           <|-- "INumber<TSelf>"
 
 "INumber<TSelf>"                                <|-- "ISignedNumber<TSelf>"
 
@@ -449,7 +456,7 @@ class "Vector4"
 @enduml
 -->
 
-![UML](http://www.plantuml.com/plantuml/svg/r9VDSjCm4CVlVefCplJG3p8SEXteHo67a0vEUbyxcrGWoq5Q5ypmyBXbgiIMDfO5CmovT7Qx-zEkfFnNUMi8D5M5J8GYr6l8SJIUlbkj18bIpRUeWKfjpXSfolMhqM9E3wYRlv_GL98knfwqHvokK96WscPveo-50btVoX98gCrTAHJzJl36JHlF1lM1Y8zLaR41z4qO7DZELLbiGKCcaVEVBxmfmh1RvyIhHzGad3MkCTTOeA8Evw8RPb0BaE87F9tN5KYPGVwb4oGUXHb-cZTVgmPCDPFcYIRldlIVy5G5DNjRwWA8t0EP2JM3x_SWA_GcpifL9IipiFzPun9RAN9WxZIVKmzSwi3LlGDj43BfxonzENrdJz87iQQ1PQHYet1re9Xq2yft2lQVFTLM6Md88vHbgKnVRSjd3S0D-F0CzXxp9iZ6f3b8q4rCujUK4Viv_tbqr2Dfp1SX7XbT9gEemNSc19OC45s7rkcdOOKsEEfb9IrTPm0EB4pPkwFXRwBxvJWMdNJ4EtH7-kT3ufUKNZ9xsyFV9PRcY6l0CyNMmrE2jZQ0mizvcnf22PxmXoXJzUUr31YsXobXmxUlbk1np5FSgJVYFoo56O_3AKD6A4lXPsNuxiQfibK41yRlC0zp7oI9vyKK2d8Ietjqdoln2iOzK-AbZCT5Z6m65okH3EuVQYLVr7ylcdnhiUh9u69bbC75AY63YvT43fVa4emPZIzhml6BSVK0sXhNG3XNicuv5g90np5VhmtIpesvA43kxBBAv2xhHbM5DTvNOcMD3o3NrfWgEfxiMwSd-zRaRD-w8stDUVOPSx9cskem5MeZT-PJzK-7RXtBzhBBzhhBziBBpihFF-yNzNR7VzdzYuvdSkRwZa_UkCwJrnEFisEVTkocmeJvrVEhL3l6QI06eZ3Sxt48ekOEA3U03kYuFmKQ_KBAhgpFFV_4VddOppEvDFEueQRFwaqN-x3LiSm-lfLMsCJlprVNJ6BDVmk85GjYnO9Omu9OmzAbsMbYcuwtOpfUSswyYHTF4Ql3rZ9LlAMUU7Dyl1iW_bzF4JuV31HF1egtO11l1epVD62tlTkmAhjchChPc25oPIrkpAguFQkoQzAgk5MhueQjofvjgsAdJvaKdH9E5WadRuHBip8Sle7mOjB2b21-uZzyST4eV3JiF9eQylFGWMqF2osdOM7BiPRnvZ4d9zUmS5uD2nkE9MlFWnMiEImiEfQUBVEm1by6mvQ3uHGB5i62NR7R4oWM38e5WsB1f5YmA_RoJ8e5WsB1e5WmA1PCYjN4Wbr7mxQZCPr4WshHADiRTgo2GV9WK3mO90l6EwiEA4WM3Pf5oxwZCPtyzNgz0nLl2IVUKawylSVYGVvuxs3LRCVMGJmP8Dv6RF5ce7YRWyNRu2lU31nl1eotMLQy6JYUBvixH-TeCK-qjltldfwZNJRFpz4cMxJ9vX4wscNp41rDiaMRR9wZerKsJjBX7eR3MJaFq-77JC5NsFW-z3XEVpfmNQ61jrTeGEubcgTxZSRlUqNsrd13l1y3l7vyl_zyVVu2)
+![UML](http://www.plantuml.com/plantuml/svg/r9ZDRjim3CVlVeeWv_NGZmKx5CNMZsuvP0dcf7VQOL9kifn9T3SFU_Yb7QecbXpAHZ5WlHHao9z8IVbJo7lBOBWgL4AQqQmWny5m_66v9APIJpTeW4jZp-SfgjMRmNpAzsYs_x-WhHHV30Df3pXUecRYscK5eoz9WwblLGbCUZqhIVFVX63SUEjPepaGyRagijO0_a4MExPpLHORC90fRFEVpuCfP5ktpelN3sYOl3MkCJTOeEO6vw8PPj4GAFe5Z-Tr1Kfba7zh1D43sUwdUVEz0aLSYvsuQ0xkYNp2OntLx6rf2c3s3sH2UW8_xq1L64oSbCjALRPZ_vEjYpQASl3lj91JTrpgmDMTWR48cGftbZwVlhSdwJsjk6CPAQqrBWyKasv0Xqx1VIXKMsLi8E-XB0jjfTeMJng0QmZYVQpBcQdAHiRVORuDSZ5f3WhCDYO9Qz2WzU_yzz6H884jNvp-oFvbXXKu-ex5m98E8ktHN3-kijW61o8hsTLxWUHWaPEWEKfU4otBTrzqqX3xs1sHvqaIbY2Ht7hRuzynZkQ9SSIpngl9fqHjhKmvy2vmgH6K-1V18SfOlq8jySFv02LwM0krn8_lTihUb9H4Gw1uuxGxfSl8RQ54prQXbeXfAtRKJzizNN4m-PnycFyCIWBlj5YGbzYxH_-Hr5y7snuxlGHHmCKFVWdNHsW5tBzNNA6e_rXwfTPwQR20YnTZ2TTRJyEu7i8gu99SWRM3uMNDE7mshkx1EECQ6ATQrNkEEHNeEQQhbKL-SMDE1QWNkwmoXSwyqLNXZ8yLBPtn2TJA6MFDnwDTw_HarngTxLepDiwSPbynPsUcUnscfDSxjJnM_tZeph7ONtQnl-vYV-55O-Md7nNczUQ5_xpx5mtFwCpt7P-yyvqdRqS1PyC-RTXdVqgrOvi8WY28elv6GGmSmYO7H0RW0HxvOw3MrqdiQlG6__Vjr1MzDTtNxQsxqq8c63VSZPf25jb_1YoBxDbRQObD_8ULlrWKQ_vRGAnO42iMn1eMn1gMNffr4pjqlBNfU4tByI9UF4UikgzagdXDFV7c-7WrGFpT91C-NmqKJmQAXs0GRmQCtp9WRtktOLLspLYLi-L6vCgpk36hulQiogv9g-9MhOeRjYfxjgqATPyogJWbd2mIpju8bv5dk7m3uSVbmk24B_xR5nSDmaV3oQDfh3yN7Jbsx3G0OE78mr9NdiiSTAvOw5V3me67DMlFXHMi6GiFFInTM-PYBRuCXYC7GnSB1i62NR7R8oaM38e5WsB1e5YmA_RyH8e5WsB1e5WmA1PCYZN4WbD7mx6ZCPr4WshHADihJwo2GV9WK3mO90kcTrOJK90i6ZIBbdD7Ophvc_Nw12hU4awyfPnuku_5W_pnFi5gs8wZWtWsG3oisEBTGF6m1ukNnLUy6JYU3HWFkwnuDN0ylcpUE3f7YtcYSUmV3S95ksoUdwD9jcYJpIDqjClc8JgQP8issJn7HwjidAJ3FGo7it8UfiEFsOAliF5zw76S_dJWka8BRw_GWjnBj4_t6gtVzuhiFSCDyNuCyFBn_VxpzVaB)
 
 ### Base Interfaces
 
@@ -610,15 +617,17 @@ namespace System
     public interface IUnaryNegationOperators<TSelf, TResult>
         where TSelf : IUnaryNegationOperators<TSelf, TResult>
     {
-        // Should unary plus be on its own type?
-
-        static abstract TResult operator +(TSelf value);
-
-        static abstract TResult checked operator +(TSelf value);
-
         static abstract TResult operator -(TSelf value);
 
         static abstract TResult checked operator -(TSelf value);
+    }
+
+    public interface IUnaryPlusOperators<TSelf, TResult>
+        where TSelf : IUnaryPlusOperators<TSelf, TResult>
+    {
+        static abstract TResult operator +(TSelf value);
+
+        static abstract TResult checked operator +(TSelf value);
     }
 
     public interface IBitwiseOperators<TSelf, TOther, TResult>
@@ -670,13 +679,14 @@ namespace System
           IDecrementOperators<TSelf>,
           IDivisionOperators<TSelf, TSelf, TSelf>,
           IIncrementOperators<TSelf>,
+          IModulusOperators<TSelf, TSelf, TSelf>,
           IMultiplicativeIdentity<TSelf, TSelf>,
           IMultiplyOperators<TSelf, TSelf, TSelf>,
-          IModulusOperators<TSelf, TSelf, TSelf>,
           ISpanFormattable,                     // implies IFormattable
           ISpanParseable<TSelf>,                // implies IParseable<TSelf>
           ISubtractionOperators<TSelf, TSelf, TSelf>,
-          IUnaryNegationOperators<TSelf, TSelf>
+          IUnaryNegationOperators<TSelf, TSelf>,
+          IUnaryPlusOperators<TSelf, TSelf>
         where TSelf : INumber<TSelf>
     {
         // For the Create methods, there is some concern over users implementing them. It is not necessarily trivial to take an arbitrary TOther
@@ -684,9 +694,6 @@ namespace System
         // may have to fail and throw in the worst case.
 
         static abstract TSelf Create<TOther>(TOther value)
-            where TOther : INumber<TOther>;
-
-        static abstract TSelf? CreateExactly<TOther>(TOther value)
             where TOther : INumber<TOther>;
 
         static abstract TSelf CreateSaturating<TOther>(TOther value)
@@ -727,6 +734,9 @@ namespace System
 
         static abstract int Sign(TSelf value);
 
+        static abstract bool TryCreate<TOther>(TOther value, out TSelf result)
+            where TOther : INumber<TOther>;
+
         static abstract bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out TSelf result);
 
         static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out TSelf result);
@@ -737,6 +747,8 @@ namespace System
         where TSelf : ISignedNumber<TSelf>
     {
         // It's not possible to check for lack of an interface in a constraint, so ISignedNumber<TSelf> is likely required
+
+        static abstract TSelf NegativeOne { get; }
     }
 
     public interface IUnsignedNumber<TSelf>
@@ -758,19 +770,6 @@ namespace System
         static abstract bool IsPow2(TSelf value);
 
         static abstract TSelf Log2(TSelf value);
-
-        // We have a "well-defined" behavior for the next few methods in BigInteger. There are some cases where we would likely benefit
-        // returning nint/nuint to better support big data and its possible we would want to break compat here for a better experience
-
-        long GetBitLength();
-
-        int GetByteCount(bool isUnsigned);
-
-        byte[] ToByteArray()
-        byte[] ToByteArray(bool isUnsigned = false, bool isBigEndian = false);
-
-        bool TryWriteBytes(Span<byte> destination, out int bytesWritten);
-        bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned, bool isBigEndian);
     }
 
     public interface IBinaryInteger<TSelf>
@@ -863,7 +862,8 @@ namespace System
 
         // IEEE defines the result to be an integral type, but not the size
 
-        static abstract int ILogB(TSelf x);
+        static abstract TInteger ILogB<TInteger>(TSelf x)
+            where TInteger : IBinaryInteger<TInteger>;
 
         static abstract TSelf Log(TSelf x);
 
@@ -881,15 +881,18 @@ namespace System
 
         static abstract TSelf Round(TSelf x);
 
-        static abstract TSelf Round(TSelf x, int digits);
+        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits)
+            where TInteger : IBinaryInteger<TInteger>;
 
         static abstract TSelf Round(TSelf x, MidpointRounding mode);
 
-        static abstract TSelf Round(TSelf x, int digits, MidpointRounding mode);
+        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits, MidpointRounding mode)
+            where TInteger : IBinaryInteger<TInteger>;
 
         // IEEE defines n to be an integral type, but not the size
 
-        static abstract TSelf ScaleB(TSelf x, int n);
+        static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n)
+            where TInteger : IBinaryInteger<TInteger>;
 
         static abstract TSelf Sin(TSelf x);
 
@@ -911,6 +914,8 @@ namespace System
         static abstract TSelf NaN { get; }
 
         static abstract TSelf NegativeInfinity { get; }
+
+        static abstract TSelf NegativeZero { get; }
 
         static abstract TSelf PositiveInfinity { get; }
 
