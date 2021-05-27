@@ -270,7 +270,7 @@ Note that the `WaitAsync` call is not opinionated on how to order the incoming a
 
 The `ResourceLease` struct is designed to handle the owndership and release mechanics for concurrency resource limiters. The user is expected to dispose the `ResourceLease` when operations are completed. This way, the user can only release resources obtained from the limiter. The limiter is expected to use the `onDispose` argument when constructing the `ResourceLease` class to indicate how resources should be released.
 
-We've also identified scenarios where the limiter may want to return additional information to the caller, such as reason phrases, response codes, percentage of rate saturation, retry after etc. For these cases, the object `ResourceLease.State` can be used to store the additional metadata. Note that the user will need to downcast the `State` in order to access it and therefore needs to know about the specific implementation of the `ResourceLimiter` in order to know the type of the `State`. For a sample limiter implemenation that uses state, see this [proof of concept](#resource-limiter-wrapper-with-reason-phrases).
+We've also identified scenarios where the limiter may want to return additional information to the caller, such as reason phrases, response codes, percentage of rate saturation, retry after etc. For these cases, the object `ResourceLease.State` can be used to store the additional metadata. Note that the user will need to downcast the `State` in order to access it and therefore needs to know about the specific implementation of the `ResourceLimiter` in order to know the type of the `State`. For a sample limiter implemenation that uses state, see this [proof of concept](#resource-limiter-wrapper-with-reason-phrases). For alternatives to an `object` based `State`, see [alternative designs](#state-field-on-resourcelease).
 
 We also plan on adding extension methods to simplify the common scenario where a count of 1 is used to represent 1 request.
 
@@ -763,6 +763,43 @@ However, this design has the drawback for consumers of resource limits since the
 ### A class instead of struct for ResourceLease
 
 This approach allows for subclassing to include additional metadata instead of an `object? State` property on the struct. However, it was deemed that potentially allocating a new `ResourceLease` for each acquisition request is too much allocation and a struct was preferred.
+
+### State field on ResourceLease
+
+The current proposal uses a `object State` to communicate additional information on a resource limit decision. This is the most general way to provide additional information since the `ResourceLimiter` can add any arbitrary type or collections via `object State`. However, there is a tradeoff between the generality and flexibility of this approach with usability. For example, we have gotten feedback from ATS that they want a simpler way to specify a set of values such as RetryAfter, error codes, and number of resources still available or percentage of resources used. As such, here are several design alternatives.
+
+#### Interfaces
+
+One option to support access to values is to keep the `object State` but require limiters to set a state that implements different Interfaces. For example, there could be a `IResourceLimiterRetryAfterHeaderValue` interface that looks like:
+
+```c#
+public interface IResourceLimiterRetryAfterHeaderValue
+{
+    string RetryAfter { get; }
+}
+```
+
+Consumers of the `ResourceLimiter` would then check if the `State` object implements the interface before retrieving the value. It also puts burdens on the implementers of `ResourceLimiters` since they should also define a set interfaces to represent commonly used values.
+
+#### Property bags
+
+Property bags like `Activity.Baggage` and `Activity.Tags` are very well suited to store the values that were identified by the ATS team. For web work loads where these values are likely to be headers and header value pairs, this is a good way to express the `State` field on `ResourceLease`. Specifically, the type would be either:
+
+Option 1: `IEnumerable<KeyValuePair<string,string?>> State`
+
+However, there is a drawback here in terms of generality since it would mean that we are opinionated about the type of keys and values as strings. Alternatively we can modify this to be:
+
+Option 2: `IEnumerable<KeyValuePair<string,object?>> State`
+
+This is slightly more flexible since the value can be any type. However, to use these values, the user would need to know ahead of time what the value for specific keys are and downcast the object to whatever type it is. Going one step further:
+
+Option 3: `IEnumerable<KeyValuePair<object,object?>> State`
+
+This gives the most flexibility in the property bag, since we are no longer opinionated about the key type. But the same issue with option 2 remains and it's unclear whether this generality of key type would actually be useful.
+
+#### Feature collection
+
+Another way to represent the `State` would be something like a [`IFeatureCollection`](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.http.features.ifeaturecollection?view=aspnetcore-5.0). The benefit of this interface is that while it is general enough to contain any type of value and that specific implementations can optimize for commonly accessed fields by accessing them directly (e.g. https://github.com/dotnet/aspnetcore/blob/52eff90fbcfca39b7eb58baad597df6a99a542b0/src/Http/Http/src/DefaultHttpContext.cs).
 
 ### A `bool` returned by `TryAcquire` to indicate success/failure and throw for `WaitAsync` to indicate failure
 
