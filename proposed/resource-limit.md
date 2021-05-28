@@ -149,28 +149,35 @@ For example, this will likely involve a modified `ResourceLease` (expand details
 ```c#
 public struct ResourceLease : IDisposable
 {
-    // This represents whether resource lease acquisition was successful
+    // This represents whether resource acquisition was successful
     public bool IsAcquired { get; }
 
-    // Number of acquired resources in the lease. Alternatively this can be stored on `State`
-    public long ResourceCount { get; }
+    // This represents the count of resources obtained in the lease
+    public int Count { get; }
 
-    // This represents additional metadata that can be returned as part of a call to Acquire/WaitAsync
+    // This represents additional metadata that can be returned as part of a call to Acquire/AcquireAsync
     // Potential uses could include a RetryAfter value or an error code.
     public object? State { get; }
 
-    // `state` is the additional metadata, onDispose takes `state` as its argument.
-    public ResourceLease(long count, bool isAcquired, object? state, Action<ResourceLease>? onDispose);
+    // Private fields to be used by `onDispose()`, this is not a public API shown here for completeness
+    private ResourceLimiter? _resourceLimiter;
+    private Action<ResourceLimiter?, int, object?>? _onDispose;
+
+    // Constructor which sets all the readonly values
+    public ResourceLease(
+        bool isAcquired, 
+        int Count, 
+        object? state, 
+        ResourceLimiter? resourceLimiter, 
+        Action<ResourceLimiter?, int, object?>? onDispose);
 
     // Release a specific amount of resources, if possible
-    public void Release(long releaseCount);
 
-    // Release remaining resources
+    public void Release(int releaseCount);
+
+    // Return the acquired resources, calls onDispose with ResourceLimiter
+    // This can only be called once, it's an user error if called more than once
     public void Dispose();
-
-    // This static `ResourceLease` is used by rate limiters or in cases where `Acquire` returns false.
-    public static ResourceLease SuccessfulAcquisition = new ResourceLease(true, null, null);
-    public static ResourceLease FailedAcquisition = new ResourceLease(false, null, null);
 }
 ```
 
@@ -192,13 +199,13 @@ Sample API:
 public abstract class AggregatedResourceLimiter<TKey>
 {
     // an inaccurate view of resources
-    public abstract long EstimatedCount(TKey resourceID);
+    public abstract int EstimatedCount(TKey resourceID);
 
     // Fast synchronous attempt to acquire resources
-    public abstract ResourceLease Acquire(TKey resourceID, long requestedCount);
+    public abstract ResourceLease Acquire(TKey resourceID, int requestedCount);
 
     // Wait until the requested resources are available
-    public abstract ValueTask<ResourceLease> WaitAsync(TKey resourceID, long requestedCount, CancellationToken cancellationToken = default);
+    public abstract ValueTask<ResourceLease> WaitAsync(TKey resourceID, int requestedCount, CancellationToken cancellationToken = default);
 }
 ```
 
@@ -219,45 +226,58 @@ See a [proof of concept implementation](#ip-address-aggregated-resource-limiter-
 The main abstraction API will consist of the `ResourceLimiter` and the associated `ResourceLease`. The main responsibility of the `ResourceLimiter` is to allow the user to determine whether it's possible to proceed with an operation. The `ResourceLease` struct is returned by the `ResourceLimiter` to represent if the acquisition was successful and the resources that were obtained, if successful.
 
 ```c#
+namespace System.Threading.ResourceLimits 
+{
     // Represents a limiter type that users interact with to determine if an operation can proceed
     public abstract class ResourceLimiter
     {
-        // An estimated count of the underlying resources
-        abstract long EstimatedCount { get; }
+        // An estimated count of resources. Potential uses include diagnostics.
+        abstract int EstimatedCount { get; }
 
-        // Fast synchronous attempt to acquire resources
-        // Set requestedCount to 0 to get whether resource limit has been reached
-        abstract ResourceLease Acquire(long requestedCount);
+        // Fast synchronous attempt to acquire resources.
+        // Set requestedCount to 0 to get the limiter state, e.g. whether resource limit has been reached.
+        abstract ResourceLease Acquire(int requestedCount);
 
-        // Wait until the requested resources are available or resources can no longer be acquired
-        // Set requestedCount to 0 to wait until resource is replenished
-        abstract ValueTask<ResourceLease> WaitAsync(long requestedCount, CancellationToken cancellationToken = default);
+        // Wait until the requested resources are available.
+        // Set requestedCount to 0 to wait until resource is replenished.
+        abstract ValueTask<ResourceLease > AcquireAsync(int requestedCount, CancellationToken cancellationToken = default);
     }
 
     // Represents a resource lease obtained from the limiter. The user disposes this type to release the acquired resources.
     public struct ResourceLease : IDisposable
     {
-        // This represents whether resource lease acquisition was successful
+        // This represents whether resource acquisition was successful
         public bool IsAcquired { get; }
 
-        // This represents additional metadata that can be returned as part of a call to Acquire/WaitAsync
+        // This represents the count of resources obtained in the lease
+        public int Count { get; }
+
+        // This represents additional metadata that can be returned as part of a call to Acquire/AcquireAsync
         // Potential uses could include a RetryAfter value or an error code.
         public object? State { get; }
 
-        // `state` is the additional metadata, onDispose takes `state` as its argument.
-        public ResourceLease(bool isAcquired, object? state, Action<ResourceLease>? onDispose);
+        // Private fields to be used by `onDispose()`, this is not a public API shown here for completeness
+        private ResourceLimiter? _resourceLimiter;
+        private Action<ResourceLimiter?, int, object?>? _onDispose;
 
+        // Constructor which sets all the readonly values
+        public ResourceLease(
+            bool isAcquired, 
+            int Count, 
+            object? state, 
+            ResourceLimiter? resourceLimiter, 
+            Action<ResourceLimiter?, int, object?>? onDispose);
+
+        // Return the acquired resources, calls onDispose with ResourceLimiter
+        // This can only be called once, it's an user error if called more than once
         public void Dispose();
-
-        // This static `ResourceLease` is used by rate limiters or in cases where `Acquire` returns false.
-        public static ResourceLease SuccessfulAcquisition = new ResourceLease(true, null, null);
-        public static ResourceLease FailedAcquisition = new ResourceLease(false, null, null);
     }
+}
 ```
 
 The `Acquire` call represents a fast synchronous check that immediately returns whether there are enough resources available to continue with the operation and atomically acquires them if there are, returning `ResourceLease` with the value `ResourceLease.IsAcquired` representing whether the acquisition is successful and the struct itself representing the acquired resources, if successful. The user can pass in a `requestCount` of 0 to check whether the resource limit has been reached without acquiring any resources.
 
-`WaitAsync`, on the other hand, represents an awaitable request to check whether resources are available. If resources are available, obtain the resources and return immediately with a `ResourceLease` representing the acquired resources. If the resources are not available, the caller is willing to pause the operation and wait until the necesasary resources become available. The user can also pass in a `requestCount` of 0 but this semantically signifies that the caller wants to check whether the resource limit has been reached and if the limit is reached, want to wait until more resources become available. This method will throw upon: cancellation, error, or queue length exceeded ([see implementation section](#concrete-implementations)). For example, if the hard cap is reached, additional call to `WaitAsync` will result in `ResouceLease.FailedAcquisition` being returned.
+`WaitAsync`, on the other hand, represents an awaitable request to check whether resources are available. If resources are available, obtain the resources and return immediately with a `ResourceLease` representing the acquired resources. If the resources are not available, the caller is willing to pause the operation and wait until the necesasary resources become available. The user can also pass in a `requestCount` of 0 but this semantically signifies that the caller wants to check whether the resource limit has been reached and if the limit is reached, want to wait until more resources become available. This method will throw upon: cancellation, error, or queue length exceeded ([see implementation section](#concrete-implementations)). For example, if the hard cap is reached, additional call to `WaitAsync` will result in `ResouceLease.IsAcquired = false` being returned.
 
 In terms of design, these APIs are similar to System.Threading.Channels.ChannelWriter, for example:
 - `ResourceLimiter.Acquire(...)` vs `ChannelWriter.TryWrite(...)`
@@ -268,7 +288,9 @@ Note that the `WaitAsync` call is not opinionated on how to order the incoming a
 
 `EstimatedCount` is envisioned as a flexible and simple way for the limiter to communicate the status of the limiter to the user. For example, an implementation may use this to track the number of resources that are still available (e.g. a resource limiter that counts down on resource acquisition). Another may use it to indicate the current number of resources in use (e.g. a resource limiter that counts up on resource acquisition). This count is similar in essence to `SemaphoreSlim.CurrentCount`. This count can also be used in diagnostics to track the usage of the resource. Finally this count can be used in a best effort scenario where the user tries to check that a certain amount of resource are availble before trying to acquire those resources, though no atomicity is guaranteed between checking this count and calling `Acquire` or `WaitAsync`. Note that while the abstraction is not opinionated about the definition of this count, each implementation can be specific with what this count means. It should also be noted that there is a trade-off between flexibility of this count against precision of this field's meaning.
 
-The `ResourceLease` struct is designed to handle the owndership and release mechanics for concurrency resource limiters. The user is expected to dispose the `ResourceLease` when operations are completed. This way, the user can only release resources obtained from the limiter. The limiter is expected to use the `onDispose` argument when constructing the `ResourceLease` class to indicate how resources should be released.
+The struct `ResourceLease` is used to facilitate the release semantics of resource limiters. That is, for non self-replenishing, the returning of the resources obtained via `Acquire/WaitAsync` is achieved by disposing the `ResourceLease`. This enables the ability to ensure that the user can't release more resources than was obtained.
+
+The `ResourceLease.IsAcquired` property is used to express whether the acquisition request was successful. The `ResourceLease.Count` property is used to communicate the number of resource that were acquired.
 
 We've also identified scenarios where the limiter may want to return additional information to the caller, such as reason phrases, response codes, percentage of rate saturation, retry after etc. For these cases, the object `ResourceLease.State` can be used to store the additional metadata. Note that the user will need to downcast the `State` in order to access it and therefore needs to know about the specific implementation of the `ResourceLimiter` in order to know the type of the `State`. For a sample limiter implemenation that uses state, see this [proof of concept](#resource-limiter-wrapper-with-reason-phrases). For alternatives to an `object` based `State`, see [alternative designs](#state-field-on-resourcelease).
 
@@ -335,46 +357,6 @@ endpoints.MapGet("/waitAsync", async context =>
 }
 ```
 
-In cases where it is known that the `ResourceLimiter` is for certain a rate limiter, for example in cases where the user of the limiter is also the instantiator of the limiter, the usage can be simplified to ignore the release mechanic:
-
-```c#
-ResourceLimiter rateLimiter = new SomeRateLimiter(options => ...)
-
-// Synchronous checks
-endpoints.MapGet("/acquire", context =>
-{
-    // Check limiter using `Acquire` that should complete immediately
-    if (rateLimiter.Acquire().IsAcquired)
-    {
-        // ResourceLease was successfully obtained, process the request
-        return context.Response.WriteAsync("Hello World!");
-    }
-    else
-    {
-        // ResourceLease acquisition failed, send 429 response
-        context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        return Task.CompletedTask;
-    }
-}
-
-// Async checks
-endpoints.MapGet("/waitAsync", async context =>
-{
-    if (await rateLimiter.WaitAsync().IsAcquired)
-    {
-        // Check limiter using `WaitAsync` which may complete immediately
-        // or wait until resources are available.
-        await context.Response.WriteAsync("Hello World!");
-    }
-    else
-    {
-        // ResourceLease acquisition failed, send 429 response
-        context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        return;
-    }
-}
-```
-
 For additional usage samples, checkout the [proof of concepts](#proof-of-concepts).
 
 ### Concrete implementations
@@ -403,11 +385,11 @@ namespace System.Threading.ResourceLimits
     internal abstract class ResourceLimiterOptions
     {
         // Specifies the maximum number of resources for the limiter
-        public long ResourceLimit { get; set; }
+        public int ResourceLimit { get; set; }
         // Resource depleted mode, configures `WaitAsync` behaviour
         public ResourceDepletedMode ResourceDepletedMode { get; set; }
         // Queue limit when queuing is enabled
-        public long MaxQueueLimit { get; set; }
+        public int MaxQueueLimit { get; set; }
     }
 
     // Rate limiter options
@@ -435,7 +417,7 @@ namespace System.Threading.ResourceLimits
         // Specifies the period between replenishments
         public TimeSpan ReplenishmentPeriod { get; set; }
         // Specifies how many tokens to restore each replenishment
-        public long TokensPerPeriod { get; set; }
+        public int TokensPerPeriod { get; set; }
     }
 
     public class ConcurrencyLimiterOptions : ResourceLimiterOptions { }
@@ -462,7 +444,7 @@ When queuing is enabled, the behaviour of `WaitAsync` is controlled by this valu
 
 1. resource count <= `ResourceLimit`: `WaitAsync` succeeds and will return a `ResourceLease` representing the acquired resources immediately
 2. `ResourceLimit` < resource count <= `ResourceLimit`+ `MaxQueueLimit`: `WaitAsync` will enqueue or push the pending request until more resources become available.
-3. resource count > `ResourceLimit`+ `MaxQueueLimit`: `WaitAsync` will return `ResouceLease.FailedAcquisition` immediately if `EnqueueIncomingRequest` is configured. If `PushIncomingRequest` is configured, the oldest registration in the stack is removed and finished with `ResouceLease.FailedAcquisition`.
+3. resource count > `ResourceLimit`+ `MaxQueueLimit`: `WaitAsync` will return `ResouceLease.IsAcquired = false` immediately if `EnqueueIncomingRequest` is configured. If `PushIncomingRequest` is configured, the oldest registration in the stack is removed and finished with `ResouceLease.IsAcquired = false`.
 
 Side note:
 
@@ -551,29 +533,32 @@ class CPUUsageLimiter : ResourceLimiter
         _threshold = threshold;
     }
 
-    public long EstimatedCount { get; } => (long)_cpuUsageCounter.NextValue();
+    public int EstimatedCount { get; } => (int)_cpuUsageCounter.NextValue();
 
-    public ResourceLease Acquire(long requestedCount)
+    public ResourceLease Acquire(int requestedCount)
     {
         if (cpuCounter.NextValue() > _threshold)
         {
-            return ResourceLease.FailedAcquisition;
+            return FailedAcquisition;
         }
-        return ResourceLease.SuccessfulAcquisition;
+        return SuccessfulAcquisition;
     }
 
-    public async ValueTask<ResourceLease> WaitAsync(long requestedCount, CancellationToken cancellationToken = default)
+    public async ValueTask<ResourceLease> WaitAsync(int requestedCount, CancellationToken cancellationToken = default)
     {
         while(true)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (cpuCounter.NextValue() <= _threshold)
             {
-                return ResourceLease.SuccessfulAcquisition;
+                return SuccessfulAcquisition;
             }
             await Task.Delay(1000); // Wait 1s before rechecking.
         }
     }
+    
+    public static ResourceLease SuccessfulAcquisition = new ResourceLease(true, 0, null, null, null);
+    public static ResourceLease FailedAcquisition = new ResourceLease(false, 0, null, null, null);
 }
 ```
 
@@ -585,15 +570,15 @@ class ResourceLimiterWrapperReasonPhrase : ResourceLimiter
     private string _failureReasonPhrase;
     private ResourceLimiter _innerLimiter;
 
-    public ResourceLimiterWrapperReasonPhrase(string reasonPhrase, long requestPerSecond)
+    public ResourceLimiterWrapperReasonPhrase(string reasonPhrase, int requestPerSecond)
     {
         _failureReasonPhrase = reasonPhrase;
         _innerLimiter = new RateLimiter(requestPerSecond: requestPerSecond); // wrapping to reduce verbosity in this sample.
     }
 
-    public long EstimatedCount { get; } => _innerLimiter.EstimatedCount;
+    public int EstimatedCount { get; } => _innerLimiter.EstimatedCount;
 
-    public ResourceLease Acquire(long requestedCount)
+    public ResourceLease Acquire(int requestedCount)
     {
         var innerResource = _inner.Acquire(requestedCount)
         if (innerResource.IsAcquired)
@@ -605,7 +590,7 @@ class ResourceLimiterWrapperReasonPhrase : ResourceLimiter
         return resourceLease;
     }
 
-    public ValueTask<ResourceLease> WaitAsync(long requestedCount, CancellationToken cancellationToken = default)
+    public ValueTask<ResourceLease> WaitAsync(int requestedCount, CancellationToken cancellationToken = default)
         => _inner.WaitAsync(requestedCount, cancellationToken);
 }
 
