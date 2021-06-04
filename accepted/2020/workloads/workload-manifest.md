@@ -177,15 +177,38 @@ Workload definitions take the following form:
 | `description` | string | User-visible description for the workload. | Yes if dev and non-abstract |
 | `packs` | string array | IDs of the packs that are included in the workload. | No |
 | `extends` | string array | IDs of workloads whose packs should be included in this workload. | No |
-| `platforms` | string array | Limits the workload and workloads that extend it to only be shown and installed on these host platforms. The strings are RIDs. | False |
+| `platforms` | string array | Limits the workload and workloads that extend it to only be shown and installed on these host platforms. The strings are RIDs. | No |
+|`redirect-to` | string | The ID of another workload with which to replace this workload. Cannot coexist with any other keys. | No |
+
+### Workload Composition
 
 At least one of `extends` or `packs` is required. If a workload resolves to zero packs, which is possible when some packs are platform-specific, it is implicitly abstract. A workload may transitively include the same pack multiple times or extend the same workload multiple times, and they will be deduplicated. As a consequence, recursive `extends` references are technically permitted but redundant and although they may result in validation warnings they will not result in runtime errors.
+
+Note that `extends` is functionally a dependency system and a way to factor out common sets of packages from workloads. By analogy to package managers such as apt-get and NuGet, workloads are metapackages that only permit unversioned dependencies and packs are packages that are only installable transitively.
+
+### Workload Kinds
 
 The `kind` allows structuring workloads into smaller pieces so that their download and install footprint on CI is smaller. `build` workloads should contain only the packs that are used to build projects. They do not need descriptions as they are not expected to be shown in the UX - they will only be used via a CI-specific UX such as `dotnet workload restore --build-only`.
 
 > *NOTE:* scenario-specific workload restore operations such as build-only restore have not yet been defined so this metadata is currently unused
 
-Note that `extends` is functionally a dependency system and a way to factor out common sets of packages from workloads. By analogy to package managers such as apt-get and NuGet, workloads are metapackages that only permit unversioned dependencies and packs are packages that are only installable transitively.
+### Redirects
+
+The `redirect-to` key allows renaming workloads in non-breaking way by
+redirecting the old ID to the new ID. When renaming a workload, add a workload
+definition for the old ID that has `redirect-to` set to the new ID. Any
+reference to the old ID will be interpreted as a reference to the new ID. This
+applies to installation records, `extends` values, and UI such as CLI commands
+and output. Installation records on disk may be updated to the new value at any
+point the installer implementation chooses to do so.
+
+```json
+"my-workload-old-id": { "redirect-to": "my-workload-new-id" }
+```
+
+As multiple redirect workloads may redirect into the same workload, redirects
+may be used to provided a better experience for deprecation in cases where the
+deprecated workload's functionality is available in a non-deprecated workload.
 
 ## Pack Definitions
 
@@ -202,6 +225,8 @@ Pack definitions take the following form:
 | `alias-to` | object | Optional platform-dependent NuGet package ID | No |
 
 The `framework` pack kind is used for runtime packs and targeting packs. The workload system does not make a distinction between them at this time.
+
+### Alias Packs
 
 A pack definition with the optional `alias-to` key is an *alias pack*. An alias pack has a virtual pack ID that doesn't need to correspond to a real NuGet package. When querying the workload manifest, alias packs resolve to concrete pack IDs in a platform-dependent way. The `alias-to` value is a JSON object, where the keys are host platform RIDs, and the values are NuGet package IDs.
 
