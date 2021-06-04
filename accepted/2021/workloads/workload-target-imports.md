@@ -34,7 +34,7 @@ There are many .props and .targets filed that get imported when building a .NET 
 
 It is also possible to explore the project imports in the Visual Studio Solution Explorer. Clicking on the "Show All Files" button will add an "Imports" node to the solution tree under the project. You can expand this node and explore the tree of imports active in the project. You can also double click on an imported file to open it up in the editor and view its contents.
 
-![Project Imports in Solution Explorer](solution-explorer-project-imports.png)
+![Project Imports in Solution Explorer](./solution-explorer-project-imports.png)
 
 #### Order of Imports in the .NET SDK
 
