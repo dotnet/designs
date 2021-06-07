@@ -70,6 +70,7 @@ Use update-index to regenerate it:
 | 2020 | [Target Framework Names in .NET 5](accepted/2020/net5/net5.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Type for holding & converting binary data](accepted/2020/binary-data/binary-data.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [.NET 6.0 Target Frameworks](accepted/2021/net6.0-tfms/net6.0-tfms.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2021 | [.NET Workloads Target Import Ordering](accepted/2021/workloads/workload-target-imports.md) | [Sarah Oslund](https://github.com/sfoslund), [Daniel Plaisted](https://github.com/dsplaisted) |
 | 2021 | [Compile-time source generation for strongly-typed logging messages](accepted/2021/logging-generator.md) | [Maryam Ariyan](https://github.com/maryamariyan), [Martin Taillefer](https://github.com/geeknoid) |
 | 2021 | [Objective-C interoperability](accepted/2021/objectivec-interop.md) | [Aaron Robinson](https://github.com/AaronRobinsonMSFT) |
 | 2021 | [Preview Features](accepted/2021/preview-features/preview-features.md) | [Immo Landwerth](https://github.com/terrajobst) |
