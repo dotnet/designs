@@ -1,6 +1,6 @@
 # .NET Workloads Target Import Ordering
 
-**Owners** [Sarah Oslund](https://github.com/sfoslund) [Daniel Plaisted](https://github.com/dsplaisted)
+**Owners** [Sarah Oslund](https://github.com/sfoslund) | [Daniel Plaisted](https://github.com/dsplaisted)
 
 ## Background
 
