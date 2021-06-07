@@ -61,9 +61,29 @@ Conceptually, `Directory.Build.targets` is imported after the body of the main p
 
 There's not a perfect place to import `Directory.Build.targets`. However, given what we've learned, it may be that the best place to import it is after the TargetFramework parsing, and before the workloads are imported.  That way the logic in `Directory.Build.targets` would still be able to depend on the parsed TargetFramework information, but would not be able to override all of the targets and properties set by the .NET SDK and MSBuild common targets that it can today.
 
-## Proposed Solutions
+## Proposed Solution: Change import location of `Directory.Build.targets`
 
-The following are the current proposed solutions to the problem outlined above, to be reviewed by the community.
+Change`Directory.Build.targets` to be imported after TargetFramework parsing but before workloads and most of the .NET SDK and common targets. This would be a big breaking change but might not affect most people who use `Directory.Build.targets`. It would break people who use `Directory.Build.targets` to override properties or targets in the MSBuild common targets.
+
+#### Pros:
+
+- Logic to enable workloads in `Directory.Build.targets` would “just work”, which is likely what developers expect
+
+#### Cons
+
+- This would be a breaking change, possibly a very big one
+- Implementation would be somewhat complicated:
+  - Logic would be split betweenthe .NET SDK and MSBuild, as the .NET SDK would now be responsible for importing `Directory.Build.targets` for projects that use the .NET SDK, but other projects would still need MSBuild to import `Directory.Build.targets`
+  - The new behavior would need to be behind a change wave and ideally a separate opt-out flag
+- This goes against the original intent behind `Directory.Build.targets`, which was that it would be imported after all built-in targets.  However, the .NET SDK (or any MSBuild SDK) already break this.
+  - As part of this work we could possibly add another extension point that allows you to specify `.targets` files that are imported after all other projects or imports.  This would likely be an MSBuild engine feature.
+
+#### Proposed Breaking Change Mitigations
+
+- An opt out property would be implemented to allow for preserving existing behavior.
+- We would like to make this change only apply to projects targeting .NET 6 and higher.
+
+## Alternative solutions
 
 ### Extension Point via Property
 
@@ -94,25 +114,7 @@ Automatically find and import a `Directory.AfterTargetFrameworkInference.targets
 
 #### Cons:
 
-- Possible performance impact
 - Adds another way for a build to “leak out” of a repo root (which could be a security issue)
 - More extension points may be needed in the future, and we probably don’t want to add a new auto-imported file for each one
 
 A possible mitigation for some of the cons could be to say that we don’t look for the new file to import independently. Rather, we could say that you need to have a `Directory.Build.props` file and it needs to be in the same folder as `Directory.Build.props`. So a `Directory.AfterTargetFrameworkInference.targets` file outside the repo root wouldn’t automatically be imported unless a `Directory.Build.props` file was going to be imported from outside the repo anyway.
-
-### Change import location of `Directory.Build.targets`
-
-Change`Directory.Build.targets` to be imported after TargetFramework parsing but before workloads and most of the .NET SDK and common targets. This would be a big breaking change but might not affect most people who use `Directory.Build.targets`. It would break people who use `Directory.Build.targets` to override properties or targets in the MSBuild common targets.
-
-#### Pros:
-
-- Logic to enable workloads in `Directory.Build.targets` would “just work”, which is likely what developers expect
-
-#### Cons
-
-- This would be a breaking change, possibly a very big one
-- Implementation would be somewhat complicated:
-  - Logic would be split betweenthe .NET SDK and MSBuild, as the .NET SDK would now be responsible for importing `Directory.Build.targets` for projects that use the .NET SDK, but other projects would still need MSBuild to import `Directory.Build.targets`
-  - The new behavior would need to be behind a change wave and ideally a separate opt-out flag
-- This goes against the original intent behind `Directory.Build.targets`, which was that it would be imported after all built-in targets.  However, the .NET SDK (or any MSBuild SDK) already break this.
-  - As part of this work we could possibly add another extension point that allows you to specify `.targets` files that are imported after all other projects or imports.  This would likely be an MSBuild engine feature.
