@@ -99,6 +99,9 @@ follows:
     - However, it should still prefer `net6.0` assets over `xamarin.ios`.
     - It also shouldn't be compatible with any other existing Xamarin TFM (such
       as `xamarin.mac`)
+* It should prefer `netstandard2.1` and earlier assets before `net5.0`
+    - Packages with `net5.0`, `netcoreapp3.1` and earlier assets assumed desktop-like environments,
+      since this was the only place where .NET Core existed. This causes issues on mobile.
 * Generate NuGet warning [NU1701] when a `xamarin.ios` asset is being used
     - Package 'packageId' was restored using 'xamarin.ios' instead the project
       target framework 'net6.0-maccatalyst'. This package may not be fully
@@ -128,9 +131,9 @@ This reasoning results in these precedence rules:
 1. `net6.0-ios`
 1. `net6.0`
 1. `xamarin.ios` (no warning, skip if it points to `_._`)
+1. `netstandard2.1` – `1.0`
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
-1. `netstandard2.1` – `1.0`
 1. `net4.x` – `1.0` (warning)
 
 **net6.0-maccatalyst**
@@ -138,9 +141,9 @@ This reasoning results in these precedence rules:
 1. `net6.0-maccatalyst`
 1. `net6.0`
 1. `xamarin.ios` ([NU1701] warning, skip if it points to `_._`)
+1. `netstandard2.1` – `1.0`
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
-1. `netstandard2.1` – `1.0`
 1. `net4.x` – `1.0 ([NU1701] warning)
 
 **net6.0-macos**
@@ -148,9 +151,9 @@ This reasoning results in these precedence rules:
 1. `net6.0-macos`
 1. `net6.0`
 1. `xamarin.macos` (no warning, skip if it points to `_._`)
+1. `netstandard2.1` – `1.0`
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
-1. `netstandard2.1` – `1.0`
 1. `net4.x` – `1.0` ([NU1701] warning)
 
 **net6.0-tvos**
@@ -158,9 +161,9 @@ This reasoning results in these precedence rules:
 1. `net6.0-tvos`
 1. `net6.0`
 1. `xamarin.tvos` (no warning, skip if it points to `_._`)
+1. `netstandard2.1` – `1.0`
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
-1. `netstandard2.1` – `1.0`
 1. `net4.x` – `1.0` ([NU1701] warning)
 
 **net6.0-android**
@@ -168,9 +171,9 @@ This reasoning results in these precedence rules:
 1. `net6.0-android`
 1. `net6.0`
 1. `monoandroid12.0` - `1.0` (no warning, skip if it points to `_._`)
+1. `netstandard2.1` – `1.0`
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
-1. `netstandard2.1` – `1.0`
 1. `net4.x` – `1.0` ([NU1701] warning)
 
 The currently supported `monoandroid` TFMs are:
