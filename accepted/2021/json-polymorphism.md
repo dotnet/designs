@@ -4,6 +4,8 @@
 
 This documents describes the proposed design for extending [polymorphism support](https://github.com/dotnet/runtime/issues/45189) in System.Text.Json.
 
+[Draft Implementation PR](https://github.com/dotnet/runtime/pull/53882).
+
 ## Background
 
 By default, System.Text.Json will serialize a value using a converter derived from its declared type,
