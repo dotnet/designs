@@ -62,7 +62,7 @@ public class Bar : Foo
 
 public class Baz : Bar
 {
-  public int C { get; set; }
+    public int C { get; set; }
 }
 ```
 Currently, when serializing a `Bar` instance as type `Foo`
