@@ -57,7 +57,7 @@ public class Foo
 
 public class Bar : Foo
 {
-  public int B { get; set; }
+    public int B { get; set; }
 }
 
 public class Baz : Bar
