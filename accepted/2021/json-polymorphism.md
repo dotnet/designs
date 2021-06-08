@@ -88,8 +88,8 @@ public class Foo
 which will result in the above values now being serialized as follows:
 ```csharp
 JsonSerializer.Serialize<Foo>(foo1); // { "A" : 1 }
-JsonSerializer.Serialize<Foo>(foo1); // { "A" : 1, "B" : 2 }
-JsonSerializer.Serialize<Foo>(foo2); // { "A" : 1, "B" : 2, "C" : 3 }
+JsonSerializer.Serialize<Foo>(foo2); // { "A" : 1, "B" : 2 }
+JsonSerializer.Serialize<Foo>(foo3); // { "A" : 1, "B" : 2, "C" : 3 }
 ```
 Note that the `JsonPolymorphic` attribute is not inherited by derived types.
 In the above example `Bar` inherits from `Foo` yet is not polymorphic in its own right:
@@ -194,7 +194,7 @@ var options = new JsonSerializerOptions
 
 ### Open Questions
 
-The type discriminator feature has two possible design alternatives to be considered,
+The type discriminator semantics could be implemented following two possible alternatives,
 which for the purposes of this document I will be calling "strict mode" and "lax mode".
 Each approach comes with its own sets of trade-offs.
 
