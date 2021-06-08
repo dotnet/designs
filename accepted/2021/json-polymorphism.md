@@ -42,7 +42,7 @@ largely orthogonal features:
     arbitrary classes that can be specified by the user. It trivially dispatches to the converter corresponding 
     to the runtime type without emitting any metadata on the wire and does not provide any provision for 
     polymorphic deserialization.
-2. 	Polymorphism with type discriminators ("tagged polymorphism"): classes can be serialized and deserialized
+2.  Polymorphism with type discriminators ("tagged polymorphism"): classes can be serialized and deserialized
     polymorphically by emitting a type discriminator ("tag") on the wire. Users must explicitly associate each
     supported subtype of a given declared type with a string identifier.
 
