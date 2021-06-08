@@ -183,7 +183,7 @@ or alternatively
 ```csharp
 var options = new JsonSerializerOptions
 {
-    PolymorphicTypeDiscriminators =
+    TypeDiscriminatorConfigurations =
     {
         new TypeDiscriminatorConfiguration(typeof(Base))
           .WithKnownType(typeof(Derived1), "derived1")
