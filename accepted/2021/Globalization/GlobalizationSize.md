@@ -62,7 +62,7 @@ The native ICU bits end up being about 380KB compressed on wasm.
 - **Mobile Platforms**:
   - **Android**: Although Android OS comes with the ICU libraries which .NET can use, the OEMs can choose to not include such libraries in their device images.
   - **iOS/MacCatalyst**: don't come with an ICU library that .NET can use. .NET had to provide an ICU package to be used in such platforms.
-- **Web assembly**: The clients have to be a small size and need to run inside the browser which will not allow accessing any libraries outside the browser. That means WebAssembly clients need to include an ICU package for globalization support.
+- **WebAssembly**: The clients have to be a small size and need to run inside the browser which will not allow accessing any libraries outside the browser. That means WebAssembly clients need to include an ICU package for globalization support.
 - Users of the **Alpine Linux containers** which enable `Globalization Invariant Mode` ask for better globalization support without increasing the image size much.
 
 ### Current Status
