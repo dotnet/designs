@@ -79,7 +79,7 @@ JsonSerializer.Serialize<Foo>(foo3); // { "A" : 1 }
 Under the new proposal we can change this behaviour by annotating 
 the base class (or interface) with the `JsonPolymorphicType` attribute:
 ```csharp
-[JsonPolymorhicType]
+[JsonPolymorphicType]
 public class Foo
 {
   ...
