@@ -91,7 +91,7 @@ JsonSerializer.Serialize<Foo>(foo1); // { "A" : 1 }
 JsonSerializer.Serialize<Foo>(foo2); // { "A" : 1, "B" : 2 }
 JsonSerializer.Serialize<Foo>(foo3); // { "A" : 1, "B" : 2, "C" : 3 }
 ```
-Note that the `JsonPolymorphic` attribute is not inherited by derived types.
+Note that the `JsonPolymorphicType` attribute is not inherited by derived types.
 In the above example `Bar` inherits from `Foo` yet is not polymorphic in its own right:
 ```csharp
 Bar bar = new Baz { A = 1, B = 2, C = 3 };
