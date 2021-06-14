@@ -80,7 +80,7 @@ These are the goals we would like to achieve in .NET 6.0. The rate limit abstrac
 
 #### Rate limit abstractions
 
-Users will interact with this component in order to obtain decisions for rate or concurrency limits. This abstraction require explicit release sematics to accommodate non self-replenishing  limiter. This component encompasses the Acquire/WaitAsync mechanics (i.e. check vs wait behaviours) and default implementations will be provided for select accounting method (fixed window, sliding window, token bucket, concurrency). The return type is a `PermitLease` which indicates whether the acquisition is successful and manages the lifecycle of the aquired permits.
+Users will interact with this component in order to obtain decisions for rate or concurrency limits. This abstraction require explicit release sematics to accommodate non self-replenishing  limiter. This component encompasses the Acquire/WaitAsync mechanics (i.e. check vs wait behaviours) and default implementations will be provided for select accounting method (fixed window, sliding window, token bucket, concurrency). The return type is a `RateLimitLease` which indicates whether the acquisition is successful and manages the lifecycle of the aquired permits.
 
 #### Rate limit implementations
 
@@ -88,11 +88,11 @@ In addition to defining the abstractions, we would also like to ship some defaul
 
 1. Fixed window rate limiter
 
-This is the simplest type of window based rate limiter. It counts the number of permits acquired in a time span. If the permit limit is reached, additional calls to `Acquire` will return a `PermitLease` with a `PermitLease.IsAcquired = false` and additional calls to `WaitAsync` will wait if queuing is enabled until the queue limit. Permits are replenished when the current window has elapsed.
+This is the simplest type of window based rate limiter. It counts the number of permits acquired in a time span. If the permit limit is reached, additional calls to `Acquire` will return a `RateLimitLease` with a `RateLimitLease.IsAcquired = false` and additional calls to `WaitAsync` will wait if queuing is enabled until the queue limit. Permits are replenished when the current window has elapsed.
 
 1. Sliding window rate limiter
 
-This is another type of window based rate limiter. Counts for the number of permits acquired is maintained for time segments. A window is defined as multiple time segments and the rate limit is considered to be exceeded if the total across the segments in the window is exceeded. If the rate limit is exceeded, additional calls to `Acquire` will return a `PermitLease` with a `PermitLease.IsAcquired = false` and additional calls to `WaitAsync` will wait if queuing is enabled until the queue limit. The window is updated when the current time segment has elapsed.
+This is another type of window based rate limiter. Counts for the number of permits acquired is maintained for time segments. A window is defined as multiple time segments and the rate limit is considered to be exceeded if the total across the segments in the window is exceeded. If the rate limit is exceeded, additional calls to `Acquire` will return a `RateLimitLease` with a `RateLimitLease.IsAcquired = false` and additional calls to `WaitAsync` will wait if queuing is enabled until the queue limit. The window is updated when the current time segment has elapsed.
 
 As an example consider the following example:
 
@@ -142,12 +142,12 @@ Although we anticipate that there will be applications in many .NET areas and co
 
 Current design does not allow for partial acquisition or release of permits. In other words, either all of the permits requested are acquired or nothing is acquired. Likewise, when the operation is complete, all permits acquired via the limiter are released together. Though there are theoretically potential use cases for partial acquisitions and releases, no concrete examples has been identified in ASP.NET Core or .NET. In case these functionalities are needed, additional APIs can be added indepently from the APIs proposed here.
 
-For example, this will likely involve a modified `PermitLease` (expand details for API)
+For example, this will likely involve a modified `RateLimitLease` (expand details for API)
 
 <details>
 
 ```c#
-public abstract class PermitLease : IDisposable
+public abstract class RateLimitLease : IDisposable
 {
     // This represents whether permit lease acquisition was successful
     public abstract bool IsAcquired { get; }
@@ -182,13 +182,13 @@ Sample API:
 public abstract class AggregatedRateLimiter<TKey>
 {
     // Estimated available permits
-    public abstract int AvailablePermits(TKey id);
+    public abstract int GetAvailablePermits(TKey id);
 
     // Fast synchronous attempt to acquire permits
-    public abstract PermitLease Acquire(TKey id, int permitCount);
+    public abstract RateLimitLease Acquire(TKey id, int permitCount);
 
     // Wait until the requested permits are available
-    public abstract ValueTask<PermitLease> WaitAsync(TKey id, int permitCount, CancellationToken cancellationToken = default);
+    public abstract ValueTask<RateLimitLease> WaitAsync(TKey id, int permitCount, CancellationToken cancellationToken = default);
 }
 ```
 
@@ -198,7 +198,7 @@ See a [proof of concept implementation](#ip-address-aggregated-resource-limiter-
 
 - Owned by ASP.NET Core
 - Code will eventually be a new area in dotnet/runtime
-  - Tentatively System.Runtime.RateLimits
+  - Tentatively System.Threading.RateLimiting
 - Reviewers
   - David Fowler, Eric Erhardt, Stephen Halter
 
@@ -206,51 +206,78 @@ See a [proof of concept implementation](#ip-address-aggregated-resource-limiter-
 
 ### Abstractions
 
-The main abstraction API will consist of the `RateLimiter` and the associated `PermitLease`. The main responsibility of the `RateLimiter` is to allow the user to determine whether it's possible to proceed with an operation. The `PermitLease` struct is returned by the `RateLimiter` to represent if the acquisition was successful and the permit lease that were obtained, if successful.
+The main abstraction API will consist of the `RateLimiter` and the associated `RateLimitLease`. The main responsibility of the `RateLimiter` is to allow the user to determine whether it's possible to proceed with an operation. The `RateLimitLease` struct is returned by the `RateLimiter` to represent if the acquisition was successful and the permit lease that were obtained, if successful.
 
 ```c#
+namespace System.Threading.RateLimiting
+{
   public abstract class RateLimiter
   {
     // An estimated count of available permits. Potential uses include diagnostics.
-    public abstract int AvailablePermits();
+    public abstract int GetAvailablePermits();
 
     // Fast synchronous attempt to acquire permits
     // Set permitCount to 0 to get whether permits are exhausted
-    public abstract PermitLease Acquire(int permitCount);
+    public RateLimitLease Acquire(int permitCount = 1);
+
+    // Implementation
+    protected abstract RateLimitLease AcquireCore(int permitCount);
 
     // Wait until the requested permits are available or permits can no longer be acquired
     // Set permitCount to 0 to wait until permits are replenished
-    public abstract ValueTask<PermitLease> WaitAsync(int permitCount, CancellationToken cancellationToken = default);
+    public ValueTask<RateLimitLease> WaitAsync(int permitCount = 1, CancellationToken cancellationToken = default);
+
+    // Implementation
+    protected abstract ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken = default);
   }
 
-  public abstract class PermitLease : IDisposable
+  public abstract class RateLimitLease : IDisposable
   {
-    // This represents whether permit lease acquisition was successful
+    // This represents whether lease acquisition was successful
     public abstract bool IsAcquired { get; }
 
-    // Extension methods to convert value of well known metadata to specific types.
-    public abstract bool TryGetMetadata(MetadataName metadataName, [NotNullWhen(true)] out object? metadata);
+    // Method to extract any general metadata. This is implemented by subclasses
+    // to return the metadata they support.
+    public abstract bool TryGetMetadata(string metadataName, out object? metadata);
 
-    public abstract void Dispose();
+    // This casts the metadata returned by the general method above to known types of values.
+    public bool TryGetMetadata<T>(MetadataName<T> metadataName, [MaybeNullWhen(false)] out T metadata);
+
+    // Used to get a list of metadata that is available on the lease which can be dictionary keys or static list of strings.
+    // Useful for debugging purposes but TryGetMetadata should be used instead in product code.
+    public abstract IEnumerable<string> MetadataNames { get; }
+
+    // Virtual method that extracts all the metadata using the list of metadata names and TryGetMetadata().
+    public virtual IEnumerable<KeyValuePair<string, object?>> GetAllMetadata();
+
+    // Follow the general .NET pattern for dispose
+    public void Dispose() { Dispose(true); GC.SuppressFinalize(this); }
+    protected virtual void Dispose(bool disposing);
   }
 
-  // Wrapper of string, with curated set of known metadata names
-  public readonly struct MetadataName : IEquatable<MetadataName>
+  // Curated set of known MetadataName<T>
+  public static class MetadataName : IEquatable<MetadataName>
   {
-    // Value is a TimeSpan
-    public static MetadataName RetryAfter { get { return new MetadataName("RetryAfter"); } }
-    // Value is a string
-    public static MetadataName ReasonPhrase { get { return new MetadataName("ReasonPhrase"); } }
+    public static MetadataName<TimeSpan> RetryAfter { get; } = Create<TimeSpan>("RETRY_AFTER");
+    public static MetadataName<string> ReasonPhrase { get; } = Create<string>("REASON_PHRASE");
 
-    public MetadataName(string? name);
-
-    public string? Name { get; }
+    public static MetadataName<T> Create<T>(string name) => new MetadataName<T>(name);
   }
+
+  // Wrapper of string and a type parameter signifying the type of the metadata value
+  public sealed class MetadataName<T> : IEquatable<MetadataName<T>>
+  {
+    public MetadataName(string name);
+    public string Name { get; }
+  }
+}
 ```
 
-The `Acquire` call represents a fast synchronous check that immediately returns whether there are enough permits available to continue with the operation and atomically acquires them if there are, returning `PermitLease` with the value `PermitLease.IsAcquired` representing whether the acquisition is successful and the lease itself representing the acquired permits, if successful. The user can pass in a `permitCount` of 0 to check whether the permit limit has been reached without acquiring any permits.
+The `Acquire` call represents a fast synchronous check that immediately returns whether there are enough permits available to continue with the operation and atomically acquires them if there are, returning `RateLimitLease` with the value `RateLimitLease.IsAcquired` representing whether the acquisition is successful and the lease itself representing the acquired permits, if successful. The user can pass in a `permitCount` of 0 to check whether the permit limit has been reached without acquiring any permits. The default value for the `permitCount` is set to 1 since that's a common use scenario where limiters are used to impose a limit the number of requests/operations.
 
-`WaitAsync`, on the other hand, represents an awaitable request to check whether permits are available. If permits are available, obtain the permits and return immediately with a `PermitLease` representing the acquired permits. If the permits are not available, the caller is willing to pause the operation and wait until the necesasary permits become available. The user can also pass in a `requestCount` of 0 to signal that the caller wants to check whether the rate limit has been reached and if the limit is reached, wait until more permits become available. Iff the queue limit is reached, additional call to `WaitAsync` will result in `PermitLease.IsAcquired = false` being returned.
+`WaitAsync`, on the other hand, represents an awaitable request to check whether permits are available. If permits are available, obtain the permits and return immediately with a `RateLimitLease` representing the acquired permits. If the permits are not available, the caller is willing to pause the operation and wait until the necesasary permits become available. The user can also pass in a `requestCount` of 0 to signal that the caller wants to check whether the rate limit has been reached and if the limit is reached, wait until more permits become available. Again, the default value for the `permitCount` is set to 1 since that's a common use scenario where limiters are used to impose a limit the number of requests/operations. If the queue limit is reached, additional call to `WaitAsync` will result in `RateLimitLease.IsAcquired = false` being returned.
+
+`Acquire` and `WaitAsync` also follow the template method pattern and will invoke `AcquireCore` and `WaitAsyncCore` after validating parameters. The implementations will override `RateLimitLease AcquireCore(int permitCount)` and `ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken = default)` to provide the actual limiter functionality.
 
 In terms of design, these APIs are similar to System.Threading.Channels.ChannelWriter, for example:
 - `RateLimiter.Acquire(...)` vs `ChannelWriter.TryWrite(...)`
@@ -259,36 +286,13 @@ In terms of design, these APIs are similar to System.Threading.Channels.ChannelW
 
 Note that the `WaitAsync` call is not opinionated on how to order the incoming acquisition requests. This is up to the implementation and will be further elaborated in the [implementation section](#concrete-implementations).
 
-`AvailablePermits` is envisioned as a flexible and simple way for the limiter to communicate the status of the limiter to the user. This count is similar in essence to `SemaphoreSlim.CurrentCount`. This count can also be used in diagnostics to track the usage of the rate limiter. Finally this count can be used in a best effort scenario where the user tries to check that a certain amount of permits are availble before trying to acquire those permits, though no atomicity is guaranteed between checking this count and calling `Acquire` or `WaitAsync`.
+`GetAvailablePermits()` is envisioned as a flexible and simple way for the limiter to communicate the status of the limiter to the user. This count is similar in essence to `SemaphoreSlim.CurrentCount`. This count can also be used in diagnostics to track the usage of the rate limiter. Finally this count can be used in a best effort scenario where the user tries to check that a certain amount of permits are availble before trying to acquire those permits, though no atomicity is guaranteed between checking this count and calling `Acquire` or `WaitAsync`.
 
-The abstract class `PermitLease` is used to facilitate the release semantics of rate limiters. That is, for non self-replenishing, the returning of the permits obtained via Acquire/WaitAsync is achieved by disposing the `PermitLease`. This enables the ability to ensure that the user can't release more permits than was obtained.
+The abstract class `RateLimitLease` is used to facilitate the release semantics of rate limiters. That is, for non self-replenishing, the returning of the permits obtained via Acquire/WaitAsync is achieved by disposing the `RateLimitLease`. This enables the ability to ensure that the user can't release more permits than was obtained.
 
-The `PermitLease.IsAcquired` property is used to express whether the acquisition request was successful. `TryGetMetadata` is implemented by subclasses to allow for returning additional metadata as part of the rate limit decision. A curated list of well know names for commonly used metadata is provided via `MetadataName` which itself is a wrapper of `string`. Each well known `MetadataName` also has a corresponding extension method on `PermitLeaseExtensions` which is provided for convenience. To optimize performance, implementations will need to pool `PermitLease`.
+The `RateLimitLease.IsAcquired` property is used to express whether the acquisition request was successful. `bool TryGetMetadata(string metadataName, out object? metadata)` is implemented by subclasses to allow for returning additional metadata as part of the rate limit decision. A curated list of well know names for commonly used metadata is provided via `MetadataName` which keeps a list of `MetadataName<T>`s which are wrappers of `string` and a type parameter indicating the value type. `bool TryGetMetadata<T>(MetadataName<T> metadataName, [MaybeNullWhen(false)] out T metadata)` casts the `object? metadata` to the type that's indicated by the `T` of `MetadataName<T>`. The `MetadataNames` property is used as a way to query for all the metadata names available on the lease and the `GetAllMetadata()` method is used to get all the metadata key value pairs. To optimize performance, implementations will need to pool `RateLimitLease`.
 
-For a sample limiter implemenation that uses state, see this [proof of concept](#rate-limiter-wrapper-with-reason-phrases). For alternative designs, see [alternative designs](#state-field-on-permitlease).
-
-We also plan on adding extension methods to simplify the common scenario where a count of 1 is used to represent 1 request.
-
-```c#
-  public static class RateLimiterExtensions
-  {
-    public static PermitLease Acquire(this RateLimiter limiter)
-    {
-        return limiter.Acquire(1);
-    }
-
-    public static ValueTask<PermitLease> WaitAsync(this RateLimiter limiter, CancellationToken cancellationToken = default)
-    {
-        return limiter.WaitAsync(1, cancellationToken);
-    }
-  }
-
-  public static class PermitLeaseExtensions
-  {
-    public static bool TryGetRetryAfter(this PermitLease lease, [NotNullWhen(true)] out TimeSpan? retryAfter);
-    public static bool TryGetReasonPhrase(this PermitLease lease, [NotNullWhen(true)] out string? reasonPhrase);
-  }
-```
+For a sample limiter implemenation that uses state, see this [proof of concept](#rate-limiter-wrapper-with-reason-phrases). For alternative designs, see [alternative designs](#state-field-on-ratelimitlease).
 
 #### Common usage patterns
 
@@ -301,10 +305,10 @@ RateLimiter limiter = new SomeRateLimiter(options => ...)
 endpoints.MapGet("/acquire", async context =>
 {
     // Check limiter using `Acquire` that should complete immediately
-    using var permitLease = limiter.Acquire();
-    // PermitLease was successfully obtained, the using block ensures
-    // that the permitLease is released upon processing completion.
-    if (permitLease.IsAcquired)
+    using var lease = limiter.Acquire();
+    // RateLimitLease was successfully obtained, the using block ensures
+    // that the lease is released upon processing completion.
+    if (lease.IsAcquired)
     {
         await context.Response.WriteAsync("Hello World!");
     }
@@ -322,8 +326,8 @@ endpoints.MapGet("/waitAsync", async context =>
     // Check limiter using `WaitAsync` which may complete immediately
     // or wait until permits are available. Using block ensures that
     // the lease is released upon processing completion.
-    using var permitLease = await limiter.WaitAsync();
-    if (permitLease.IsAcquired)
+    using var lease = await limiter.WaitAsync();
+    if (lease.IsAcquired)
     {
         await context.Response.WriteAsync("Hello World!");
     }
@@ -345,7 +349,7 @@ For additional usage samples, checkout the [proof of concepts](#proof-of-concept
 Additional public APIs are needed to configure specific limiter implementations listed in [the goals](#rate-limit-implementations). The options for configuring these implementations will be described here without going into implementation details.
 
 ```c#
-namespace System.Runtime.RateLimits
+namespace System.Threading.RateLimiting
 {
     // Limiter implementations
     public sealed class FixedWindowRateLimiter : RateLimiter { }
@@ -414,9 +418,9 @@ This enum is used to configure the behaviour of `WaitAsync` to also allow for wa
 
 When queuing is enabled, the behaviour of `WaitAsync` is controlled by this value and `PermitsExhaustedMode`. There are 3 possible states the limiter can be in. Note "permit count" here represents the sum of 1. outstanding permits (i.e. permits that have been already acquired) + 2. queued count (i.e. sum of all requested counts currently queued) 3. requested permits (i.e. value passed in via `permitCount`).
 
-1. permit count <= `PermitLimit`: `WaitAsync` succeeds and will return a `PermitLease` representing the acquired permits immediately
+1. permit count <= `PermitLimit`: `WaitAsync` succeeds and will return a `RateLimitLease` representing the acquired permits immediately
 2. `PermitLimit` < permit count <= `PermitLimit`+ `QueueLimit`: `WaitAsync` will enqueue or push the pending request until more permits become available.
-3. permit count > `PermitLimit`+ `QueueLimit`: `WaitAsync` will return `PermitLease.IsAcquired = false` immediately if `EnqueueIncomingRequest` is configured. If `PushIncomingRequest` is configured, the oldest registration in the stack is removed and finished with `PermitLease.IsAcquired = false`.
+3. permit count > `PermitLimit`+ `QueueLimit`: `WaitAsync` will return `RateLimitLease.IsAcquired = false` immediately if `EnqueueIncomingRequest` is configured. If `PushIncomingRequest` is configured, the oldest registration in the stack is removed and finished with `RateLimitLease.IsAcquired = false`.
 
 Side note:
 
@@ -478,7 +482,7 @@ namespace System.Threading.Channels
 }
 ```
 
-The `RateLimitedChannel` represents a superset of the functionality of `BoundedChannel` allowing for configuration with both concurrency and rate limits. As a general overview, the `WriteLimiter` is queried on `TryWrite`, `WriteAsync` and `WaitToWriteAsync`. When a written item is enqueued to `_items`, a corresponding `PermitLease` is also added. Upon dequeue from `_items` from the `ChannelReader` or upon unblocking a reader, `PermitLease.Dispose` is invoked to release permits back to the write limiter. NOte that the `RateLimitedChannel` will only limit the producer side, i.e. writes. For details on proof of concept for the implementation, see [dotnet/runtime PoCs](#dotnetruntime-pocs).
+The `RateLimitedChannel` represents a superset of the functionality of `BoundedChannel` allowing for configuration with both concurrency and rate limits. As a general overview, the `WriteLimiter` is queried on `TryWrite`, `WriteAsync` and `WaitToWriteAsync`. When a written item is enqueued to `_items`, a corresponding `RateLimitLease` is also added. Upon dequeue from `_items` from the `ChannelReader` or upon unblocking a reader, `RateLimitLease.Dispose` is invoked to release permits back to the write limiter. NOte that the `RateLimitedChannel` will only limit the producer side, i.e. writes. For details on proof of concept for the implementation, see [dotnet/runtime PoCs](#dotnetruntime-pocs).
 
 #### Pipelines
 
@@ -501,49 +505,51 @@ class CPUUsageLimiter : RateLimiter
         _threshold = threshold;
     }
 
-    public int AvailablePermits() => (int)_cpuUsageCounter.NextValue();
+    public override int GetAvailablePermits() => (int)_cpuUsageCounter.NextValue();
 
-    public PermitLease Acquire(int permitCount)
+    protected override RateLimitLease AcquireCore(int permitCount)
     {
         if (cpuCounter.NextValue() > _threshold)
         {
-            return RateLimitLease.Fail;
+            return CPULease.Fail;
         }
-        return RateLimitLease.Success;
+        return CPULease.Success;
     }
 
-    public async ValueTask<PermitLease> WaitAsync(int permitCount, CancellationToken cancellationToken = default)
+    protected override async ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken = default)
     {
-        while(true)
+        while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (cpuCounter.NextValue() <= _threshold)
             {
-                return RateLimitLease.Success;
+                return CPULease.Success;
             }
             await Task.Delay(1000); // Wait 1s before rechecking.
         }
     }
 
-    private class RateLimitLease : PermitLease
+    private class CPULease : RateLimitLease
     {
-        public static readonly RateLimitLease Success = new RateLimitLease(true);
-        public static readonly RateLimitLease Fail = new RateLimitLease(false);
+        public static readonly RateLimitLease Success = new CPULease(true);
+        public static readonly RateLimitLease Fail = new CPULease(false);
 
-        public RateLimitLease(bool isAcquired)
+        public CPULease(bool isAcquired)
         {
             IsAcquired = isAcquired;
         }
 
         public override bool IsAcquired { get; }
 
-        public override void Dispose() { }
+        public override IEnumerable<string> MetadataNames => Enumerable.Empty<string>();
 
-        public override bool TryGetMetadata(MetadataName metadataName, [NotNullWhen(true)] out object? metadata)
+        public override bool TryGetMetadata(string metadataName, out object? metadata)
         {
             metadata = null;
             return false;
         }
+
+        protected override void Dispose(bool disposing) { }
     }
 }
 ```
@@ -559,14 +565,14 @@ class RateLimiterWrapperReasonPhrase : RateLimiter
     public RateLimiterWrapperReasonPhrase(string reasonPhrase, int requestPerSecond)
     {
         _failureReasonPhrase = reasonPhrase;
-        _innerLimiter = new SimpleRateLimiter(requestPerSecond: requestPerSecond); // wrapping to reduce verbosity in this sample.
+        _innerLimiter = new TokenBucketRateLimiter(requestPerSecond: requestPerSecond); // wrapping to reduce verbosity in this sample.
     }
 
-    public int AvailablePermits() => _innerLimiter.AvailablePermits();
+    public override int GetAvailablePermits() => _innerLimiter.GetAvailablePermits();
 
-    public PermitLease Acquire(int permitCount)
+    protected override RateLimitLease AcquireCore(int permitCount)
     {
-        var innerLease = _inner.Acquire(permitCount);
+        var innerLease = _innerLimiter.Acquire(permitCount);
         if (innerLease.IsAcquired)
         {
             return innerLease;
@@ -575,9 +581,9 @@ class RateLimiterWrapperReasonPhrase : RateLimiter
         return new WrappedFailedLimitLease(_failureReasonPhrase, innerLease);
     }
 
-    public async ValueTask<PermitLease> WaitAsync(int permitCount, CancellationToken cancellationToken = default)
+    protected override async ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken = default)
     {
-        var innerLease = await _inner.WaitAsync(permitCount, cancellationToken);
+        var innerLease = await _innerLimiter.WaitAsync(permitCount, cancellationToken);
 
         if (innerLease.IsAcquired)
         {
@@ -587,12 +593,12 @@ class RateLimiterWrapperReasonPhrase : RateLimiter
         return new WrappedFailedLimitLease(_failureReasonPhrase, innerLease);
     }
 
-    private class WrappedFailedLimitLease : PermitLease
+    private class WrappedFailedLimitLease : RateLimitLease
     {
         private readonly string _reasonPhrase;
-        private readonly PermitLease _innerLease;
+        private readonly RateLimitLease _innerLease;
 
-        public RateLimitLease(string reasonPhrase, PermitLease innerLease)
+        public WrappedFailedLimitLease(string reasonPhrase, RateLimitLease innerLease)
         {
             _reasonPhrase = reasonPhrase;
             _innerLease = innerLease;
@@ -600,17 +606,22 @@ class RateLimiterWrapperReasonPhrase : RateLimiter
 
         public override bool IsAcquired { get; }
 
-        public override void Dispose() => _innerLease.Dispose();
+        public override IEnumerable<string> MetadataNames => throw new NotImplementedException();
 
-        public override bool TryGetMetadata(MetadataName metadataName, [NotNullWhen(true)] out object? metadata)
+        public override bool TryGetMetadata(string metadataName, out object? metadata)
         {
-            if (metadataName.Name == "reasonPhrase")
+            if (metadataName == "reasonPhrase")
             {
                 metadata = _reasonPhrase;
                 return true;
             }
 
             return _innerLease.TryGetMetadata(metadataName, out metadata);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _innerLease.Dispose();
         }
     }
 }
@@ -641,31 +652,31 @@ public async Task Invoke(HttpContext context)
     var endpoint = context.GetEndpoint();
     var limiters = endpoint?.Metadata.GetOrderedMetadata<RateLimiter>();
 
-    var leases = new Stack<PermitLease>();
+    var leases = new Stack<RateLimitLease>();
     try
     {
         foreach (var limiter in limiters)
         {
-            var permitLease = limiter.Acquire();
-            if (!permitLease.IsAcquired)
+            var lease = limiter.Acquire();
+            if (!lease.IsAcquired)
             {
                 context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                if (permitLease.TryGetMetadata(new MetadataName("reasonPhrase", out var reasonPhrase)))
+                if (lease.TryGetMetadata(new MetadataName("reasonPhrase", out var reasonPhrase)))
                 {
                     await context.Response.WriteAsync(reasonPhrase as string);
                 }
                 return;
             }
-            leases.Push(permitLease);
+            leases.Push(lease);
         }
 
         await _next.Invoke(context);
     }
     finally
     {
-        while (leases.TryPop(out var permitLease))
+        while (leases.TryPop(out var lease))
         {
-            permitLease.Dispose();
+            lease.Dispose();
         }
     };
 }
@@ -690,16 +701,16 @@ var limiter = new IPAggregatedRateLimiter(permitLimit: 5, newPermitsPerSecond: 5
 endpoints.MapGet("/acquire", async context =>
 {
     // Check limiter using `Acquire` that should complete immediately
-    using var permitLease = limiter.Acquire(context, 1);
-    if (permitLease.IsAcquired)
+    using var lease = limiter.Acquire(context, 1);
+    if (lease.IsAcquired)
     {
-        // PermitLease was successfully obtained, the using block ensures
+        // RateLimitLease was successfully obtained, the using block ensures
         // that the lease is released upon processing completion.
         await context.Response.WriteAsync("Hello World!");
     }
     else
     {
-        // PermitLease acquisition failed, send 429 response
+        // RateLimitLease acquisition failed, send 429 response
         context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
         return;
     }
@@ -762,18 +773,18 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<
 
 ### Separate abstractions for rate and concurrency limits
 
-A design where time based limits and concurrency limits were expressed by separate abstractions was considered. The design more clearly express the intended use pattern where time based limits do not need to return a `PermitLease` and does not possess release semantics. Contrasted with the proposed design, the release semantics for rate limits will no-op.
+A design where time based limits and concurrency limits were expressed by separate abstractions was considered. The design more clearly express the intended use pattern where time based limits do not need to return a `RateLimitLease` and does not possess release semantics. Contrasted with the proposed design, the release semantics for rate limits will no-op.
 
 However, this design has the drawback for consumers of limiters since there are two possible limiter types that can be specified by the user. To alleviate some of the complexity, a wrapper for time based limits was considered. However, the complexity of this design was deemed undesirable and a unified abstraction for time based and concurrency limits was preferred.
 
 
-### A struct instead of class for PermitLease
+### A struct instead of class for RateLimitLease
 
-This approach was considered since allocating a new `PermitLease` for each acquisition request is considered to be a performance bottleneck. The design evolved to the following:
+This approach was considered since allocating a new `RateLimitLease` for each acquisition request is considered to be a performance bottleneck. The design evolved to the following:
 
 ```c#
 // Represents a permit lease obtained from the limiter. The user disposes this type to release the acquired permits.
-public struct PermitLease : IDisposable
+public struct RateLimitLease : IDisposable
 {
   // This represents whether permit acquisition was successful
   public bool IsAcquired { get; }
@@ -786,7 +797,7 @@ public struct PermitLease : IDisposable
   private RateLmiter? _rateLimiter;
   private Action<RateLimiter?, int, object?>? _onDispose;
   // Constructor which sets all the readonly values
-  public PermitLease(
+  public RateLimitLease(
     bool isAcquired,
     int count,
     object? state,
@@ -798,15 +809,15 @@ public struct PermitLease : IDisposable
 }
 ```
 
-However, this design became problematic with the consideration of including a `AggregatedRateLimiter<TKey>` which necessitates the existence of another struct `PermitLease<TKey>` with a private reference to the `AggregatedRateLimiter<TKey>`. This bifurcation of the return types of `Acquire` and `WaitAsync` between the `AggregatedRateLimiter<TKey>` and `RateLimiter` make it very difficult to consume aggregated and simple limiters in a consistent manner. Additional complexity in definiting an API to store and retrieve additional metadata is also a concern, see below. For this reason, it is better to make `PermitLease` a class instead of a struct and require implementations to pool if optimization for performance is required.
+However, this design became problematic with the consideration of including a `AggregatedRateLimiter<TKey>` which necessitates the existence of another struct `RateLimitLease<TKey>` with a private reference to the `AggregatedRateLimiter<TKey>`. This bifurcation of the return types of `Acquire` and `WaitAsync` between the `AggregatedRateLimiter<TKey>` and `RateLimiter` make it very difficult to consume aggregated and simple limiters in a consistent manner. Additional complexity in definiting an API to store and retrieve additional metadata is also a concern, see below. For this reason, it is better to make `RateLimitLease` a class instead of a struct and require implementations to pool if optimization for performance is required.
 
-Additional concerns that needed to be resolved for a struct `PermitLease` are elaborated below:
+Additional concerns that needed to be resolved for a struct `RateLimitLease` are elaborated below:
 
 #### Permit as reference ID
 
-There was alternative proposal where the struct only contains a reference ID and additional APIs on the `RateLimiter` instance is used to return permits and obtain additional metadata. This is equivalent to the `RateLimiter` internally tracking outstanding permit leases and allow permit release via `RateLimiter.Release(PermitLease.ID)` or obtain additional metadata via `RateLimiter.TryGetMetadata(PermitLease.ID, MetadataName)`. This shifts the need to pool data structures for tracking idempotency of `Dispose` and additional metadata to the `RateLimiter` implementation itself. This additional indirection doesn't resolve the bifurcation issue mentioned previously and necessitates additional APIs that are hard to use and implement on the `RateLimiter`, as such this alternative is not chosen.
+There was alternative proposal where the struct only contains a reference ID and additional APIs on the `RateLimiter` instance is used to return permits and obtain additional metadata. This is equivalent to the `RateLimiter` internally tracking outstanding permit leases and allow permit release via `RateLimiter.Release(RateLimitLease.ID)` or obtain additional metadata via `RateLimiter.TryGetMetadata(RateLimitLease.ID, MetadataName)`. This shifts the need to pool data structures for tracking idempotency of `Dispose` and additional metadata to the `RateLimiter` implementation itself. This additional indirection doesn't resolve the bifurcation issue mentioned previously and necessitates additional APIs that are hard to use and implement on the `RateLimiter`, as such this alternative is not chosen.
 
-#### PermitLease state
+#### RateLimitLease state
 
 The current proposal uses a `object State` to communicate additional information on a rate limit decision. This is the most general way to provide additional information since the `RateLimiter` can add any arbitrary type or collections via `object State`. However, there is a tradeoff between the generality and flexibility of this approach with usability. For example, we have gotten feedback from ATS that they want a simpler way to specify a set of values such as RetryAfter, error codes, or percentage of permits used. As such, here are several design alternatives.
 
@@ -825,7 +836,7 @@ Consumers of the `RateLimiter` would then check if the `State` object implements
 
 ##### Property bags
 
-Property bags like `Activity.Baggage` and `Activity.Tags` are very well suited to store the values that were identified by the ATS team. For web work loads where these values are likely to be headers and header value pairs, this is a good way to express the `State` field on `PermitLease`. Specifically, the type would be either:
+Property bags like `Activity.Baggage` and `Activity.Tags` are very well suited to store the values that were identified by the ATS team. For web work loads where these values are likely to be headers and header value pairs, this is a good way to express the `State` field on `RateLimitLease`. Specifically, the type would be either:
 
 Option 1: `IReadonlyDictionary<string,string?> State`
 
@@ -848,45 +859,45 @@ Another way to represent the `State` would be something like a [`IFeatureCollect
 An earlier iteration proposed the following API instead:
 
 ```c#
-namespace System.Runtime.RateLimits
+namespace System.Threading.RateLimiting
 {
   public abstract class RateLimiter
   {
     // An estimated count of permits. Potential uses include diagnostics.
-    abstract int AvailablePermits();
+    abstract int GetAvailablePermits();
 
     // Fast synchronous attempt to acquire permits.
     // Set requestedCount to 0 to get whether permit limit has been reached.
-    abstract bool Acquire(int requestedCount, out PermitLease lease);
+    abstract bool Acquire(int requestedCount, out RateLimitLease lease);
 
     // Wait until the requested permits are available.
     // Set requestedCount to 0 to wait until permits are replenished.
     // An exception is thrown if permits cannot be obtained.
-    abstract ValueTask<PermitLease> WaitAsync(int requestedCount, CancellationToken cancellationToken = default);
+    abstract ValueTask<RateLimitLease> WaitAsync(int requestedCount, CancellationToken cancellationToken = default);
   }
 
-  public struct PermitLease: IDisposable
+  public struct RateLimitLease: IDisposable
   {
     // This represents additional metadata that can be returned as part of a call to TryAcquire/WaitAsync
     // Potential uses could include a RetryAfter value.
     public object? State { get; init; }
 
     // Constructor
-    public PermitLease(object? state, Action<PermitLease>? onDispose);
+    public RateLimitLease(object? state, Action<RateLimitLease>? onDispose);
 
     // Return the acquired permits
     public void Dispose();
 
     // This static field can be used for rate limiters that do not require release semantics or for failed concurrency limiter acquisition requests.
-    public static PermitLease NoopSuccess = new PermitLease(null, null);
+    public static RateLimitLease NoopSuccess = new RateLimitLease(null, null);
   }
 ```
 
 This was proposed since the method name `TryAcquire` seemed to convey the idea that it is a quick synchronous check. However, this also impacted the shape of the API to return `bool` by convention and return additional information via out parameters. If a limiter wants to communicate a failure for a `WaitAsync`, it would throw an exception. This may occur if the limiter has reached the hard cap. The drawback here is that these scenarios, which may be frequent depending on the scenario, will necessitate an allocation of an `Exception` type.
 
-Another alternative was identified with `WaitAsync` returning a tuple, i.e. `ValueTask<(bool, PermitLease)> WaitAsync(...)`. The consumption pattern would then look like:
+Another alternative was identified with `WaitAsync` returning a tuple, i.e. `ValueTask<(bool, RateLimitLease)> WaitAsync(...)`. The consumption pattern would then look like:
 ```c#
-(bool successful, PermitLease lease) = await WaitAsync(1);
+(bool successful, RateLimitLease lease) = await WaitAsync(1);
 if (successful)
 {
     using lease;
@@ -910,7 +921,7 @@ This can be useful in scenarios where the resource being protected can be obtain
 
 2. The concurrency limiter only allows the user to "release" the permits that were obtained
 
-The permits obtained through concurrency limiters imply ownership. Since the user interacts with the `PermitLease` instead of being able to directly call a `Release(...)` method, the user cannot release more permits than was obtained through the limiter. This is different from a Semaphore where releasing without first obtaining any permits is possible.
+The permits obtained through concurrency limiters imply ownership. Since the user interacts with the `RateLimitLease` instead of being able to directly call a `Release(...)` method, the user cannot release more permits than was obtained through the limiter. This is different from a Semaphore where releasing without first obtaining any permits is possible.
 
 ### How "allocating" will rate limiters be?
 
