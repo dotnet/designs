@@ -49,13 +49,13 @@ public class Baz : Bar
 ```
 Currently, when serializing a `Bar` instance as type `Foo` the serializer will apply the JSON schema derived from the type `Foo`:
 ```csharp
-Foo foo1 = new Foo { A = 1 };
-Foo foo2 = new Bar { A = 1, B = 2 };
-Foo foo3 = new Baz { A = 1, B = 2, C = 3 };
+Foo foo = new Foo { A = 1 };
+Bar bar = new Bar { A = 1, B = 2 };
+Baz baz = new Baz { A = 1, B = 2, C = 3 };
 
-JsonSerializer.Serialize<Foo>(foo1); // { "A" : 1 }
-JsonSerializer.Serialize<Foo>(foo2); // { "A" : 1 }
-JsonSerializer.Serialize<Foo>(foo3); // { "A" : 1 }
+JsonSerializer.Serialize<Foo>(foo); // { "A" : 1 }
+JsonSerializer.Serialize<Foo>(bar); // { "A" : 1 }
+JsonSerializer.Serialize<Foo>(baz); // { "A" : 1 }
 ```
 Under the new proposal we can change this behaviour by annotating the base class (or interface) with the `JsonPolymorphicType` attribute:
 ```csharp
@@ -67,14 +67,24 @@ public class Foo
 ```
 which will result in the above values now being serialized as follows:
 ```csharp
-JsonSerializer.Serialize<Foo>(foo1); // { "A" : 1 }
-JsonSerializer.Serialize<Foo>(foo2); // { "A" : 1, "B" : 2 }
-JsonSerializer.Serialize<Foo>(foo3); // { "A" : 1, "B" : 2, "C" : 3 }
+JsonSerializer.Serialize<Foo>(foo); // { "A" : 1 }
+JsonSerializer.Serialize<Foo>(bar); // { "A" : 1, "B" : 2 }
+JsonSerializer.Serialize<Foo>(baz); // { "A" : 1, "B" : 2, "C" : 3 }
+```
+Polymorphism applies to nested values as well, for example:
+```csharp
+public class MyPoco
+{
+    public Foo Value { get; set; }
+}
+
+JsonSerializer.Serialize(new MyPoco { Value = foo }); // { "Value" : { "A" : 1 } }
+JsonSerializer.Serialize(new MyPoco { Value = bar }); // { "Value" : { "A" : 1, "B" : 2 } }
+JsonSerializer.Serialize(new MyPoco { Value = baz }); // { "Value" : { "A" : 1, "B" : 2, "C" : 3 } }
 ```
 Note that the `JsonPolymorphicType` attribute is not inherited by derived types. In the above example `Bar` inherits from `Foo` yet is not polymorphic in its own right:
 ```csharp
-Bar bar = new Baz { A = 1, B = 2, C = 3 };
-JsonSerializer.Serialize<Bar>(bar); // { "A" : 1, "B" : 2 }
+JsonSerializer.Serialize<Bar>(baz); // { "A" : 1, "B" : 2 }
 ```
 If annotating the base class with an attribute is not possible, polymorphism can alternatively be opted in for a type using the new `JsonSerializerOptions.SupportedPolymorphicTypes` predicate:
 ```csharp
