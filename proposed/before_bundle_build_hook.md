@@ -4,7 +4,7 @@ There is a known issue around singlefile apps when the user needs to sign includ
 A problem arises for files that are included in a singlefile bundle. The fact that included files are not signed is observable for extractable files, but the user cannot easily address that.
 
 Requiring that constituent files are signed prior to building a singlefile app could be highly inconvenient to existing build pipelines.
-It is particularly problematic for a file that exist only in a transient form before its inclusion in a single file bundle. This includes the app main binary itself (as in `hello.dll` for a hello app) and composite r2r image, when composite r2r is used. The build does not currently present a documented opportunity for the user to observe and modify files before inclusion into the bundle.
+It is particularly problematic for a file that exists only in a transient form before its inclusion in a single file bundle. This includes the app main binary itself (as in `hello.dll` for a hello app) and composite r2r image, when composite r2r is used. The build does not currently present a documented opportunity for the user to observe and modify files before inclusion into the bundle.
 
 In addition to signing a similar difficulties may affect other scenarios that rely on post-build modification of build artefacts. For example obfuscation and instrumentation.
 
@@ -23,7 +23,7 @@ Note that these files include the app dll itself as well as `.r2r.dll` in a case
 This is the case where extraction is a very observable feature and it is plausible the extraction as a feature will be carried forward in the future versions.
 I believe this is the case that causes the most inconveniences.
 
-The abscense of documented solutions in this are forces users to implement solutions that rely on internal implementation details.  
+The abscense of documented solutions in this area forces users to implement solutions that rely on internal implementation details.  
 For example: [`CollectBundleFilesToSign` target](https://github.com/dotnet/diagnostics/blob/18a8e986ddf28ee3c950b5acf00abc652d87be74/src/Tools/Directory.Build.targets).  
 
 ## Proposal for .NET 6
