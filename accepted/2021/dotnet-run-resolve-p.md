@@ -31,6 +31,10 @@ We will interpret `-p` as `--property` when the argument value is legal MSBuild 
 
 * A comma or semi-colon delimited strings of values in the format <name>=<value> or <name>:<value>. We may simplify this to only checking for the equals - the simplest sufficient check will be used.
 
+If you have any scripts that are using “dotnet run” and process the output you could encounter a break. dotnet run typically doesn’t output anything of its own if there are no errors, so you only get the output of the program that is being run. If you have a script or other program wrapping “dotnet run” and parsing the output, the warning would be unexpected text and may cause a failure.
+
+If you have a project argument that includes an `=` and use the `-p` abbreviation, it will be interpreted as `--property` and passed to MSBuild. 
+
 ## Goals
 
 We believe that in the long term `-p` should be used consistently across `dotnet build`, `dotnet publish` and `dotnet run`  because of similarity between these commands. 
