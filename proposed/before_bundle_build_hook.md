@@ -6,12 +6,12 @@ A problem arises for files that are included in a singlefile bundle. The fact th
 Requiring that constituent files are signed prior to building a singlefile app could be highly inconvenient to existing build pipelines.
 It is particularly problematic for a file that exists only in a transient form before its inclusion in a single file bundle. This includes the app main binary itself (as in `hello.dll` for a hello app) and composite r2r image, when composite r2r is used. The build does not currently present a documented opportunity for the user to observe and modify files before inclusion into the bundle.
 
-In addition to signing a similar difficulties may affect other scenarios that rely on post-build modification of build artefacts. For example obfuscation and instrumentation.
+In addition to signing, similar difficulties may affect other scenarios that rely on post-build modification of build artefacts. Some common modifications include obfuscation and instrumentation.
 
 ## Current state (as of .NET 6)
 
-The problem of signing applies primarily to files that are extracted to the file system as a part of execution. For the assemblies that are not extracted the problem is generally not a concern. 
-With transitioning to superhost technology on all platforms in 6.0 a need to extract files is greatly reduced as native binaries that belong to the dotnet platform are no longer extracted and in fact cannot be extracted, since they are monolithically linked with the app. 
+The problem of signing applies primarily to files that are extracted to the file system as a part of execution. For the assemblies that are not extracted, this problem is generally not a concern. 
+The transition to using `superhost` as the host technology for singlefile apps on all platforms in 6.0 means the need to extract files is greatly reduced. Native binaries that belong to the .NET platform are no longer extracted and in fact cannot be extracted, since they are monolithically linked with the app. 
 
 The files that still can be extracted:
 -	Native dependencies included via a nuget references. (this is, technically, the only truly supported scenario to include a native dependency)
@@ -46,4 +46,3 @@ Provide a way to unbundle/rebundle a singlefile app.
 While very feasible in principle, a good UX for such solution remained elusive. 
 The main problem here is that bundling process is inherently lossy and to perform bundling for the second time user would need to restate what was lost. Alternatively the lost information could be inferred form the bundle (which is nontrivial unless it is stored in the bundle by the build) and stored on a side to be subsequently used when bundling. 
 In either case it leads to unnecessarily complicated, unintuitive and fragile user experience.
-
