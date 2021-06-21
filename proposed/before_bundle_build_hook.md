@@ -46,3 +46,8 @@ Provide a way to unbundle/rebundle a singlefile app.
 While very feasible in principle, a good UX for such solution remained elusive. 
 The main problem here is that bundling process is inherently lossy and to perform bundling for the second time user would need to restate what was lost. Alternatively the lost information could be inferred form the bundle (which is nontrivial unless it is stored in the bundle by the build) and stored on a side to be subsequently used when bundling. 
 In either case it leads to unnecessarily complicated, unintuitive and fragile user experience.
+
+When compared to the currently proposed solution, unbundle/rebundle approach has one obvious advantage - the signing does not need to happen while the build is in progress. In some scenarios it may be advantageous.  
+For example when signing must happen on a special machine, there is a need to transfer the files there and back. While that would be a requirement regardless of the chosen solution, it could be harder to arrange while the build is in progress.
+
+The proposed solution for 6.0 should be sufficient for many scenarios, but based on feedback a more complicated solutions could be considered in the future.
