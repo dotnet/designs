@@ -130,7 +130,7 @@ As manifests are NuGet packages, they use the same distribution mechanisms as pa
 
 ## Installation
 
-Manifests are installed to `dotnet/sdk/{sdk-band}-manifests/{manifest-id}/` in an extracted form. These are called the *installed manifests* (and targets).
+Manifests are installed to `dotnet/sdk-manifests/{sdk-band}/{manifest-id}/` in an extracted form. These are called the *installed manifests* (and targets).
 
 The dotnet SDK is expected to include baseline versions of the installed manifests and targets for all manifests that are known and supported.
 
