@@ -1,5 +1,7 @@
 # Install location search for .NET Core
 
+**Owner** [Vitek Karas](https://github.com/vitek-karas)
+
 .NET Core has several cases where it needs to search for the install location of the runtime and SDKs. This document described the proposed algorithm for how this search will be done on all the supported platforms.
 
 ## .NET Core install layout

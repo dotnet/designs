@@ -1,6 +1,6 @@
 # Better Obsoletion
 
-**PM** [Immo Landwerth](https://github.com/terrajobst) |
+**Owner** [Immo Landwerth](https://github.com/terrajobst) |
 **Work Items** [Framework](https://github.com/dotnet/runtime/issues/33089) |
 [Roslyn](https://github.com/dotnet/roslyn/issues/42119) |
 [F#](https://github.com/dotnet/fsharp/issues/8654) |

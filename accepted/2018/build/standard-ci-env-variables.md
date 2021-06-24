@@ -1,5 +1,7 @@
 # Standardized Environment Variables for CI Services
 
+**Owner** [Tomáš Matoušek](https://github.com/tmat)
+
 The .NET Core SDK is implementing new scenarios that require source control manager information. We want to make it very easy to embed repo-specific information in built assets as a means of creating a strong relationship between binary and source.
 
 To make it possible to provide application platform provided experiences across CI services, we need a standardized set of environment variables that are supported across those same CI services. Ideally, this set of environment variables would be supported across multiple CI services and useful for multiple application environments, not just .NET.

@@ -1,4 +1,6 @@
-# Single-file Publish
+# Single-file Publish for .NET Core 3.0
+
+**Owner** [Swaroop Sridhar](https://github.com/swaroop-sridhar)
 
 The design of single-file apps in .NET Core 3.0.
 

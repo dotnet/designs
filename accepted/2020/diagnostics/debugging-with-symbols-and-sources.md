@@ -1,5 +1,7 @@
 # Publishing and Consuming Symbols and Source for Debugging
 
+**Owner** [Tomáš Matoušek](https://github.com/tmat)
+
 Debugging with symbols and source makes developers much more efficient and effective at developing and debugging (including debugging crash dumps). Our goal is to make debugging with source and symbols a characteristic of the .NET ecosystem.
 
 This document outlines an end-to-end flow from library through to app development that enables symbols and source to always be available. The primary audience of this document are developers who participate in the .NET ecosystem, either as a producer or consumer of NuGet packages.

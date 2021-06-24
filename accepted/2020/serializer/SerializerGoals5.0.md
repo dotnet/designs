@@ -1,5 +1,7 @@
 # Overview and goals
 
+**Owner** [Steve Harter](https://github.com/steveharter)
+
 April 28th, 2020.
 
 This document provides options and recommendations for 5.0 to handle overlapping serializer goals including reach, faster cold startup performance, reducing memory usage, and smaller size-on-disk.

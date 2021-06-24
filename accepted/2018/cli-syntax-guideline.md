@@ -1,5 +1,7 @@
 # CLI Syntax Guidelines
 
+**Owner** [Kathleen Dollard](https://github.com/KathleenDollard)
+
 Many tools have a CLI (command-line interface) which allows users to type English words to describe commands. This post describes how we build the syntax for commands in the .NET Core CLI. This articulates the guidelines that are similar to behavior of other CLIs, including Git (git), Angular (ng) and Azure (az).
 
 These guidelines were adopted as a goal for the CLI during .NET Core SDK 2.1.300 development. This version implements these goals for new features. Future SDKs will bring CLI syntax in line with these guidelines, while allowing existing syntax for backwards compatibility.

@@ -1,5 +1,7 @@
 # Improve Activity API usability and OpenTelemetry integration (Part 2)
 
+**Owner** [Sourabh Shirhatti](https://github.com/shirhatti) | [Tarek Mahmoud Sayed](https://github.com/tarekgh)
+
 We have exposed [Activity APIs to improve the API usability and to integrate with OpenTelemetry](https://github.com/dotnet/designs/pull/98) (OT) to have `Activity` be suitable replacement for the OT Span type described by the [OT Specs](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/api.md#span). We have received feedback regarding some OT blocked scenarios which need to be addressed in the Activity APIs and unblock the OT SDK implementation.
 
 [Design Review Notes and Video](https://github.com/dotnet/runtime/issues/38419#issuecomment-655054487)

@@ -1,0 +1,21 @@
+---
+name: Check INDEX.md is up-to-date
+
+on: [push, pull_request]
+
+jobs:
+  check-index-is-up-to-date:
+    name: Check INDEX.md is up-to-date
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check INDEX.md is up-to-date
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./update-index -o INDEX.md.auto-generated
+          if ! diff -u INDEX.md INDEX.md.auto-generated; then
+            echo "error: INDEX.md is out of date"
+            echo "  please use './update-index' to regenerate"
+            exit 1
+          fi

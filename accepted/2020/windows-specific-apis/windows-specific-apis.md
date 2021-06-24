@@ -1,5 +1,7 @@
 # Marking Windows-only APIs
 
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
+
 As discussed in [dotnet/runtime#33331] we're adding an analyzer to detect usage
 of platform-specific APIs. This analyzer requires a custom attribute applied to
 method, containing type, or assembly.

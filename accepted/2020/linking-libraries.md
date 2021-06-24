@@ -1,5 +1,7 @@
 # Linking the .NET Libraries
 
+**Owner** [Eric Erhardt](https://github.com/eerhardt)
+
 When publishing a self-contained application, a .NET runtime is bundled together
 with the application. This bundling adds a significant amount of content to the
 packaged application. Depending on the complexity of the application, only a

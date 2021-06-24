@@ -1,0 +1,5 @@
+#!/bin/bash
+
+rootdir="$(dirname "${BASH_SOURCE[0]}")"
+toolsdir="$rootdir/tools"
+dotnet run --project "$toolsdir/update-index" -- $rootdir "$@"

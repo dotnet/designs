@@ -1,5 +1,7 @@
 # .NET 5 Minimum OS Versioning
 
+**Owner** [Mikayla Hutchinson](https://github.com/mhutch)
+
 # Introduction
 
 It is common for apps and libraries to support running on older versions of the OS than the version against which they were compiled. This pattern involves using runtime checks to guard against calling APIs that are not available, and is encouraged and widely used on the Xamarin platforms (iOS, Android, Mac etc).
@@ -40,124 +42,53 @@ To enable tooling to provide a good experience, assemblies should be annotated w
 
 Availability annotations are intended to be used both in third-party assemblies and in assemblies that are part of .NET itself. The most straightforward usage is in binding assemblies, such as the iOS and Android platform bindings, where they directly reflect the availability of the underlying native API. However, they may be used by higher level APIs in platform-specific assemblies (e.g. `net5.0-ios15`) or platform-neutral assemblies (e.g. `net5.0`) to indicate that a method or class implementation depends on APIs from a particular OS version or is unavailable on certain OSes.
 
-The following attributes are proposed for the `System.Runtime.Versioning` namespace. They are based on the Xamarin attributes, but they do not have the `Deprecated` availability kind (it’s redundant), they rename the `Unavailable` availability kind to `Removed` (for consistency), and they do not have the ability to differentiate availability based on architecture (reduction of scope).
+Earlier versions of this section proposed a form of these annotation attributes based on the Xamarin.iOS/Xamarin.Mac attributes, but it has been superseded by a further refined and generalized form defined in the [attributes section of the Platform Checks spec](../platform-checks/platform-checks.md#attributes).
 
-```csharp
-[AttributeUsage(AttributeTargets.All, AllowMultiple=true)]
-public abstract class PlatformAvailabilityAttribute
-{
-    internal PlatformAvailabilityAttribute(
-        string platformIdentifier,
-        int majorVersion, int minorVersion, int buildVersion, int revisionVersion
-        string message
-    ) {}
-    public AvailabilityKind AvailabilityKind { get; }
-    public string Message { get; }
-    public string PlatformIdentifier { get; }
-    public Version OSVersion { get; }
-}
+These availability attributes omit the `Deprecated` availability kind from the Xamarin attributes as it’s redundant, and rename `Introduced` to `Supported` to better reflect their alternate purpose of annotating multi-platform assemblies. They also omit the ability to differentiate availability based on architecture for reduction of scope, though this could be added if needed in future.
 
-public enum AvailabilityKind
-{
-  Introduced,
-  Obsoleted,
-  Removed
-}
-```
-
-The platform string is expected to have the same values as used in the `TargetPlatformIdentifier` portion of platform-specific TFMs. Having it in the availability attributes may seem redundant as it will also be burned into assembly attributes for platform-specific reference assemblies. However, explicitly specifying the attribute is useful for platform-agnostic `net5.0` reference assemblies that have methods that are only available on some platforms e.g. due to having platform-specific implementations via bait-and-switch. This may also improve source readability when multi-targeting as it will remove the need to use `#if` around the annotations.
-
-Constants for the platform identifiers could perhaps be exposed on a `PlatformIdentifier` type.
-
-The values declared on this attribute are expected to be accessible by extracting constructor arguments from metadata. However, for readability it’s expected to be applied using subclasses with more specific names. To enforce this, it has an internal constructor and its subclasses are sealed.
-
-The concrete subclasses are `IntroducedAttribute`, `ObsoletedAttribute` and `RemovedAttribute` subclasses, which take of the following form:
-
-```csharp
-public sealed class IntroducedAttribute : PlatformAvailabilityAttribute
-{
-    public IntroducedAttribute(
-        string platform,
-        int majorVersion,
-        int minorVersion = 0,
-        int buildVersion = 0,
-        int revisionVersion = 0,
-        string message = null
-    ) : base(platform, majorVersion, minorVersion, buildVersion, revisionVersion, message) {}
-}
-```
-
-These attributes are used as follows:
-
-
-```csharp
-[Introduced(PlatformIdentifier.macOS, 10, 2)]
-[Deprecated(PlatformIdentifier.macOS, 10, 9)]
-[Removed(PlatformIdentifier.macOS, 10, 12, 1)]
-public class Foo : NSObject { ... }
-```
-
-The purpose of keeping ‘removed’ APIs and annotating them with `RemovedAttribute` is to allow apps and libraries to continue to use these APIs in fallback paths for older OS versions. This is a pattern that exists on Apple platforms.
-
-If and when C# support target typing for enums, we could add convenience overloads that would improve readability:
-
-```csharp
-[Introduced (.macOS, 10, 1)]
-[Obsoleted (.macOS, 10, 8)]
-[Removed (.macOS, 10, 12)]
-```
+> ***NOTE*** If and when C# support target typing for enums, we could add convenience overloads that would improve readability:
+>
+>```csharp
+>[Introduced (.macOS, 10, 1)]
+>[Obsoleted (.macOS, 10, 8)]
+>[Removed (.macOS, 10, 12)]
+>```
 
 > ***NOTE***: These annotations are only needed on reference assemblies, as they are not used at runtime. They should be omitted or stripped from the implementation assemblies that are shipped as part of .NET, and it is recommended that third -party assemblies do so too. If any remain in a compiled app, they should be removed by the linker.
 
 # Runtime Checks
 
-> ***NOTE***: See [this issue](https://github.com/dotnet/runtime/issues/33331) *for a more active/current discussion of runtime check APIs.*
+The runtime avalaibility check APIs originally proposed in this section have been superseded by the APIs defined in the [platform guards section of the Platform Checks spec](../platform-checks/platform-checks.md#platform-guards).
 
-The following method will be added to the `RuntimeInformation` class in the `System.Runtime.InteropServices` namespace:
-
-```csharp
-public static bool CheckOSVersion(
-    int majorVersion, int minorVersion = 0, int buildVersion = 0, int revisionVersion = 0
-);
-```
-
-It is used as follows:
-
-```csharp
-if (RuntimeInformation.CheckOSVersion(15)) {
-    // use 15.0+ APIs
-} else {
-    // gracefully degrade
-}
-```
-
-There will be another method on `RuntimeInformation` that checks the OS as well as the OS version, for use in platform-neutral libraries that use runtime checks to support or light up features on multiple OSes:
-
-```csharp
-public static bool CheckOS(
-    string platformIdentifier,
-    int majorVersion, int minorVersion = 0, int buildVersion = 0, int revisionVersion = 0
-);
-```
-
-As with the availability attributes, there could be an additional overload that used enums and target typing to improve readability.
-
-***NOTE****: The linker, JIT and/or AOT compiler could treat these method as intrinsics with constant values, which would enable it to eliminate unnecessary fallback code when consuming portable libraries or libraries with a lower OS minimum version than the app itself.*
+> ***NOTE***: The linker, JIT and/or AOT compiler could treat these method as intrinsics with constant values, which would enable it to eliminate unnecessary fallback code when consuming portable libraries or libraries with a lower OS minimum version than the app itself.
 
 # MSBuild Properties
 
 The `Microsoft.Net.Sdk` targets will extract the OS API Version component from the `TargetFramework` into the `TargetPlatformVersion` MSBuild property and burn it into an assembly attribute. Tools that use this value are expected to access it from the MSBuild property or from the assembly attribute.
 
-Project files may specify an `OSMinimumVersion`, and if they do not it will default to OS Version equivalent to the OS API version specified in the `TargetPlatformVersion` value. The `OSMinimumVersion` must not be higher than the `TargetPlatformVersion`, and this will be validated at the start of the build.
+Project files may specify a `SupportedOSPlatformVersion` property, and if they do not it will default to OS Version equivalent to the OS API version specified in the `TargetPlatformVersion` value. The `SupportedOSPlatformVersion` must not be higher than the `TargetPlatformVersion`, and this will be validated at the start of the build.
 
-> ***NOTE:*** The mapping from `TargetPlatformVersion` to default `OSMinimumVersion` varies between platforms, so it must be defined and implemented by platform tools authors.
-> In some cases the initial release of the bindings for a given OS version might be missing some API bindings that are later added in a bindings revision. This mapping is left to platform tooling authors as versioning schemes differ between platforms.
->
-> For example, the iOS tooling might define that API version `14.0.*` maps to OS version `14.0`, using the first two components of the API version to represent the OS version and the third to represent a revision to the bindings. On the other hand, the macOS tooling might need a third component for the OS version and define that API version `10.12.0.*` maps to OS version `10.12.0`, while the Windows tooling might not need binding revisions and hence have a direct 1:1 mapping.
+> ***NOTE***: In an earlier version of this spec the MSBuild property was called `MinimumOSVersion`. It was changed to `SupportedOSPlatformVersion` to make its correspondance to the updated availability attributes clearer.
 
-It is recommended that platforms define more specifically named versions of this property of the form `{PlatformIdentifier}MinimumVersion`, for example `IOSMinimumVersion` or `WindowsMinimumVersion`, and that their targets assign this value to `OSMinimumVersion` if it is set. This will simplify use of the property when multi-targeting.
+The SDK targets uses the `TargetPlatformVersion` property to provide a default `SupportedOSPlatformVersion` value if none is explicitly provided. If this 1:1 mapping is not valid (for example a bindings revision that is independent of the OS version) then the default must be overridden by platform tools authors.
 
-These per-platform properties will not work when building platform-neutral assemblies, as that would require centralizing definitions of all of the platform-specific `MinimumVersion` properties into the `Microsoft.Net.Sdk` targets. We may at some point add some other way to specify `OSMinimumVersion` values for multiple OSes for a single platform-neutral assembly, perhaps using items, but for now such assemblies must use assembly attributes directly.
+It is recommended that platforms define more specifically named versions of this property of the form `{PlatformIdentifier}MinimumVersion`, for example `IOSMinimumVersion` or `WindowsMinimumVersion`, and that their targets assign this value to `SupportedOSPlatformVersion` if it is set. This will simplify use of the property when multi-targeting.
+
+```xml
+<PropertyGroup Condition="'$(TargetFrameworkIdentifier)'=='android'">
+  <SupportedOSPlatformVersion Condition="'$(SupportedOSPlatformVersion)'==''">$(AndroidMinimumVersion)</SupportedOSPlatformVersion>
+</PropertyGroup>
+```
+
+For these per-platform properties work work in platform-neutral assemblies, the workload targets should also map them to `SupportedOSPlatformVersion` items.
+
+```xml
+<ItemGroup Condition="'$(AndroidMinimumVersion)'!=''">
+  <SupportedOSPlatformVersion Include="android" Version="$(AndroidMinimumVersion)" />
+</ItemGroup>
+```
+
+The SDK targets will use these items to generate [assembly attributes](#assembly-attribute).
 
 > ***NOTE***: `{PlatformIdentifier}MinimumVersion` was chosen over `Minimum{PlatformIdentifier}Version` as it it's more easily searchable and sorts/group more easily with other OS-specific properties.
 
@@ -167,30 +98,15 @@ These per-platform properties will not work when building platform-neutral assem
 
 We cannot provide useful errors or warnings at an assembly level when a project references a library with a higher minimum version, as it may guard usage of that library with runtime checks.
 
-However, it still useful to burn the minimum platform version into the assembly or NuGet package as a a baseline value for the classes and members that are not explicitly annotated. It can also be displayed as an information value in the user experience, for example in the NuGet package manager or on NuGet.org, although those are out of the scope of this document.
+However, it still useful to burn the minimum platform version into the assembly or NuGet package as a a baseline value for the classes and members that are not explicitly annotated. This is done with by applying the `SupportedOSPlatformAttribute` at assembly level.
 
-## Assembly Attribute
+Ite may be useful to display the assembly level minimum version as an information value, for example in the NuGet package manager or on NuGet.org, although those are out of the scope of this document.
 
-The minimum OS version will be burned into reference assemblies at build time using an assembly attribute. This attribute will be in the `System.Runtime.Versioning` namespace and will take the following form:
+## Assembly Attribute Generation
 
-```csharp
-[AttributeUsage(AttributeTargets.Assembly, AllowMultiple=true)]
-public sealed class OSMinimumVersionAttribute
-{
-    public OSMinimumVersionAttribute(
-        string platformIdentifier,
-        int majorVersion, int minorVersion, int buildVersion, int revisionVersion
-    ) {}
-    public string PlatformIdentifier { get; }
-    public Version Version { get; }
-}
-```
+The MSBuild step that generates and injects TFM assembly attributes will be updated to generate this attribute when both the `SupportedOSPlatformVersion` and `TargetPlatformIdentifier` properties are set.
 
-As with `PlatformAvailabilityAttribute` , the `PlatformIdentifier` property is included so that platform-agnostic assemblies can participate in platform minimum version annotations and checks.
-
-The MSBuild step that generates and injects TFM assembly attributes will be updated to generate this attribute when the `OSMinimumVersion` and `TargetPlatformIdentifier` properties are set.
-
-Platform-neutral assemblies, i.e. assemblies that target a platform-neutral TFM such as `net5.0`, will have to declare the attribute explicitly.
+It will also generate this attribute from the `SupportedOSPlatformVersion` items defined in the [MSBuild properties](#msbuild-properties) section. This will allow developers to use platform minimum version properties such as `AndroidMinimumVersion` and `IOSMinimumVersion` in platform-neutral assemblies (i.e. assemblies that target a platform-neutral TFM such as `net5.0`).
 
 Like the API annotation attributes, the `OSMinimumVersionAttribute` attribute is not needed in implementation assemblies as it is not used at runtime.
 
@@ -224,10 +140,6 @@ A reference assembly for a platform-neutral TFM (e.g. `net5.0` or `net6.0`) may 
 
 Using these mechanisms, a NuGet package can declare minimum platform versions for any or all of its reference assemblies.
 
-# Availability Inheritance
-
-Members and nested types that do not have explicit availability annotations will inherit the values from their containing types. Types that do not have `Introduced` annotations will be treated as if they were introduced in the minimum platform version of the assembly itself.
-
 # IDE Experience
 
 Quick Info and IntelliSense tooltips will display the minimum platform version for any member with a minimum platform version higher than the current project’s minimum platform version.
@@ -236,12 +148,8 @@ We may also want to consider some kind of sorting, grouping or colorization base
 
 # Analyzers
 
-There will be a Roslyn analyzer that will squiggle calls to any method or property with a minimum platform version higher than the current project’s minimum platform version, unless either of the following is true:
+The availability analyzers described in the [Platform Checks spec](../platform-checks/platform-checks.md#analyzers) will detect unguarded calls to APIs with a minimum platform version higher than the current project’s minimum platform version.
 
-
-- the call is guarded by a `CheckOS` or `CheckOSVersion` call against a version that is greater than or equal to the member’s minimum platform version
-- the caller member has a minimum platform version that is equal to or higher than the callee
 # See Also
 - [Swift](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html) `[@available](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html)` [attribute](https://docs.swift.org/swift-book/ReferenceManual/Attributes.html)
 - [Xamarin.iOS/Mac](https://docs.microsoft.com/en-us/dotnet/api/objcruntime.availabilitybaseattribute?view=xamarin-ios-sdk-12) `AvailabilityBaseAttribute` and its subclasses
-

@@ -1,4 +1,7 @@
 # Feature switch
+
+**Owner** [Vitek Karas](https://github.com/vitek-karas)
+
 The functionality available in the .NET libraries is getting bigger and wider with every release. Applications typically don't need or want all of it, which means when an app includes the libraries as part of it, app size is unnecessarily increased. With technologies like the linker, we have the ability to remove parts of the framework which the app doesn't use. These technologies have limitations based on existing public API patterns and code behavior, sometimes they can't determine what the app really needs. This proposal adds a way to explicitly disable functionality in the framework.
 
 ## Goals

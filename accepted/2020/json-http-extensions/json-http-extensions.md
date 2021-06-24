@@ -1,6 +1,6 @@
 # JSON extension methods for HttpClient
 
-**[Immo Landwerth](https://github.com/terrajobst)**
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 Serializing and deserializing JSON payloads from the network is a very common
 operation for clients, especially in the upcoming Blazor environment. Right now,

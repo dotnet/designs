@@ -1,5 +1,7 @@
 # Runtime Binding Behavior
 
+**Owner** [Rich Lander](https://github.com/richlander)
+
 [Framework-dependent](https://docs.microsoft.com/dotnet/core/deploying/#framework-dependent-deployments-fdd)  applications require a .NET Core host to find a compatible runtime from a central location. The behavior of runtime binding is critical for both application compatibility and runtime deployment convenience. [Self-contained](https://docs.microsoft.com/dotnet/core/deploying/#self-contained-deployments-scd) apps don't have this need, because there is only one runtime they will ever use.
 
 This document proposes a model that works for both apps and managed COM components/hosting.

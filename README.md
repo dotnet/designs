@@ -1,7 +1,7 @@
 # .NET Design Proposals
 
-This repo contains [design proposals](meta/proposals.md) for the .NET platform.
-It focuses on designs for the runtime, framework, and the SDK. For others, see:
+This repo contains [design proposals](meta/proposals.md) for the .NET platform. For a complete listing, see [INDEX.md](INDEX.md).
+This repo focuses on designs for the runtime, framework, and the SDK. For others, see:
 
 * [C# Language Designs and Suggestions (dotnet/csharplang)](https://github.com/dotnet/csharplang)
 * [VB Language Designs and Suggestions (dotnet/vblang)](https://github.com/dotnet/vblang)
@@ -19,8 +19,9 @@ To create a proposal:
 1. Create a new branch off of `main`
 2. Create a document in the `accepted` folder and use [meta/template.md](meta/template.md) as your
    starting point.
-3. Create a pull request against `main`
-4. Once broad agreement is reached, merge the PR
+3. Run `./update-index` to update the [INDEX](INDEX.md).
+4. Create a pull request against `main`
+5. Once broad agreement is reached, merge the PR
 
 ## License
 

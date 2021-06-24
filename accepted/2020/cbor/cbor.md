@@ -1,5 +1,6 @@
 #  CBOR Reader & Writer
-[Eirik Tsarpalis](https://github.com/eiriktsarpalis)
+
+**Owner** [Eirik Tsarpalis](https://github.com/eiriktsarpalis)
 
 CBOR (Concise Binary Object Representation), as defined by [RFC 7049](https://tools.ietf.org/html/rfc7049),
 is a binary data format loosely based on JSON, emphasizing small message sizes, 

@@ -1,5 +1,7 @@
 # Proposal for global.json
 
+**Owner** [Kathleen Dollard](https://github.com/KathleenDollard)
+
 ---
 **NOTE:** 
 

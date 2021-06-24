@@ -1,5 +1,7 @@
 # Globalization Support in .NET 5
 
+**Owner** [Steve Pfister](https://github.com/steveisok)
+
 ## Overview
 Globalization in the .NET Core space has been handled by taking a dependency on the [icu4c](http://site.icu-project.org/home) library and p-invoking into it from managed code.  This model has been successful for desktop and server modes mostly because they can afford to take on the disk space ICU requires. However, in the size restricted workloads, this is quite a different story as there are differences in platform support and tolerance of taking on a significantly sized dependency.
 
