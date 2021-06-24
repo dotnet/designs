@@ -45,6 +45,7 @@ A developer has confidence that their library using inbox source generators will
 - Roslyn team - responsible for source generator infrastructure.
 - .NET SDK team - responsible for resolving shared frameworks and doing conflict resolution with content.
 - NuGet team - FYI only, no changes requested
+- WindowsForms team - interested in providing source generators. 
 
 ## Design
 
