@@ -176,8 +176,8 @@ Workload definitions take the following form:
 | `kind` | string | Either `build` or `dev`. Default is `dev`. | No |
 | `description` | string | User-visible description for the workload. | Yes if dev and non-abstract |
 | `packs` | string array | IDs of the packs that are included in the workload. | No |
-| `platforms` | string array | Limits the workload and workloads that extend it to only be shown and installed on these host platforms. The strings are RIDs. | No |
 | `extends` | string array | IDs of "base" workloads whose packs should be included in this workload. | No |
+| `platforms` | string array | Restricts the workload and workloads that extend it to only be shown and installed on these host platforms. Inherits any restrictions imposed by base workloads. The strings are RIDs. | No |
 |`redirect-to` | string | The ID of another workload with which to replace this workload. Cannot coexist with any other keys. | No |
 
 ### Workload Composition
@@ -194,6 +194,7 @@ Although `extends` is a composition system, it may be useful to conceptualize it
 
 Workload composition may also be compared to package managers such as apt-get and NuGet. In this analogy, workloads are metapackages with unversioned dependencies and packs are packages that are only installable transitively.
 
+Platform restrictions are transitive across workload composition: a workload will inherit `platforms` restrictions from the workloads that it extends. The effective set of supported platforms for any workload is the intersection of its supported platforms and the platforms supported by base workloads.
 
 ### Workload Kinds
 
