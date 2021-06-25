@@ -176,15 +176,24 @@ Workload definitions take the following form:
 | `kind` | string | Either `build` or `dev`. Default is `dev`. | No |
 | `description` | string | User-visible description for the workload. | Yes if dev and non-abstract |
 | `packs` | string array | IDs of the packs that are included in the workload. | No |
-| `extends` | string array | IDs of workloads whose packs should be included in this workload. | No |
 | `platforms` | string array | Limits the workload and workloads that extend it to only be shown and installed on these host platforms. The strings are RIDs. | No |
+| `extends` | string array | IDs of "base" workloads whose packs should be included in this workload. | No |
 |`redirect-to` | string | The ID of another workload with which to replace this workload. Cannot coexist with any other keys. | No |
 
 ### Workload Composition
 
-At least one of `extends` or `packs` is required. If a workload resolves to zero packs, which is possible when some packs are platform-specific, it is implicitly abstract. A workload may transitively include the same pack multiple times or extend the same workload multiple times, and they will be deduplicated. As a consequence, recursive `extends` references are technically permitted but redundant and although they may result in validation warnings they will not result in runtime errors.
+A workload is fundamentally a set of packs. This set can be defined using the `packs` key. A workload may also be defined as a union of the sets of packs from other workloads by composing them using `extends`. A workload must have either `extends` or `packs`, and may have both. If a workload resolves to zero packs, which is possible when some packs are platform-specific, it is implicitly abstract.
 
-Note that `extends` is functionally a dependency system and a way to factor out common sets of packages from workloads. By analogy to package managers such as apt-get and NuGet, workloads are metapackages that only permit unversioned dependencies and packs are packages that are only installable transitively.
+Abstract workloads are workloads that cannot be installed directly. Their only purpose is to be extended by a concrete workload. This allows factoring out sets of packs into smaller abstract workloads that may be composed together using `extends`.
+
+A workload may transitively include the same pack multiple times or extend the same workload multiple times, and they will be deduplicated. As a consequence, recursive `extends` references are technically permitted and although they may result in validation warnings they will not currently result in runtime errors.
+
+As workloads are often supersets of other workloads, conceptualizing and defining these relationships in terms of `extends` makes it easier to understand and maintain. Updates to the packs in the base workload will be inherited by the extending workload. However, it is possible to include the same pack directly in multiple workloads.
+
+Although `extends` is a composition system, it may be useful to conceptualize it as an inheritance hierarchy, where a workload may "inherit" (extend) one or more base workloads, which may inherit other workloads in turn. Workloads marked as abstract may be inherited but cannot be "instantiated" (installed) directly.
+
+Workload composition may also be compared to package managers such as apt-get and NuGet. In this analogy, workloads are metapackages with unversioned dependencies and packs are packages that are only installable transitively.
+
 
 ### Workload Kinds
 
