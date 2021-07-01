@@ -82,7 +82,7 @@ Library packs are normal NuGet packages. When a library pack is installed, the n
 
 This location is used as a local feed by NuGet, not a fallback folder. If ones of these packages gets used, it will be extracted into the global packages folder. If the SDK is updated and the library pack is removed or replaced with a newer version, projects that have already been created and restored will continue to be able to use the extracted copy from the global packages folder.
 
-Library packs are intended to be used to pre-download NuGet packages referenced by templates so that a workload can work offline after installation. Core workloads should include library packs very sparingly, if at all. It is strongly recommended that library packs are contained in workloads with the ID suffix `-offline-templates`. An offline template workload should only contain library packs referenced by templates, and should extend the workload that contains the templates.
+Library packs are intended to be used to pre-download NuGet packages referenced by templates so that a workload can work offline after installation. Core workloads should include library packs very sparingly, if at all. Instead, it is strongly recommended that library packs are contained in separate workloads with the ID suffix `-offline-templates`. An offline template workload should only contain library packs referenced by templates, and should extend the workload that contains the templates.
 
 > NOTE: SDK targets should **not** implicitly add `PackageReference` items. They should instead add `FrameworkReference` items that resolve to runtime packs and targeting packs.
 
@@ -552,4 +552,3 @@ This has the advantage that it does not introduce any new mechanisms. However, i
 - No compatibility checks and error experience when building project that uses newer APIs on SDK series that only has older APIs
 - Requires centralized coordination
 - Not scalable to nontrivial number of platforms and updates
-
