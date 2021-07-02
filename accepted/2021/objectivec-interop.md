@@ -151,18 +151,18 @@ The Xamarin approach for static registration directly influenced the design of t
 ### Diagnostics
 
 **CoreCLR**
-The CoreCLR Diagnostics' infrastructure (that is, [SOS](https://github.com/dotnet/diagnostics)) should be updated to assist in live and coredump scenarios. The following details should be retrievable from types:
+The CoreCLR Diagnostics' infrastructure (that is, [SOS](https://github.com/dotnet/diagnostics)) should be updated to assist in live and coredump scenarios. The following details should be retrievable from types based on the Objective-C interop APIs, `ObjectiveCMarshal` and `ObjectiveCTrackedTypeAttribute`:
 
-* Determine the address of the Objective-C instance wrapping a specific managed object as well as the external reference count on that managed object (for example, `DumpOCCW` &ndash; "Dump Objective-C Callable Wrapper").
-* Determine the address of the Objective-C instance that a managed object is representing in a managed environment (for example, `DumpROCW` &ndash; "Dump Runtime callable Objective-C Wrapper").
+* Determine if a managed `object` is tracked/registered for Objective-C interop.
+* Provide a way to show user defined data associated with a tracked/registered `object` instance.
+
+This functionality is exposed through the SOS `!DumpObj` command.
 
 ### References
 
 [Xamarin-macios repository][xamarin_repo].
 
 [Objective-C runtime][objc_runtime].
-
-## Q & A
 
 <!-- Forward references -->
 
