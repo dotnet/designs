@@ -196,6 +196,42 @@ namespace System
 </Project>
 ```
 
+### Meaning of property in multi-targeted projects
+
+Imagine a project that targets .NET 6, .NET 5, and .NET Standard 2.0:
+
+```xml
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net5.0;netstandard2.0</TargetFrameworks>
+    <EnablePreviewFeatures>True</EnablePreviewFeatures>
+  </PropertyGroup>
+
+</Project>
+```
+
+This configuration shouldn't mean "turn preview features on in all TFMs" but
+rather "turn preview features on for the current TFM". The current TFM is
+defined as the major version of the SDK. For example, in the .NET 6 SDK the
+current TFM would be `net6.0` while in the .NET 7 SDK the current TFM is defined
+as `net7.0`.
+
+The reason for this is that experimental features aren't expected to be
+backwards compatible. That's the entire point of making them experimental in the
+first place.
+
+So you're only expect to be able to use experimental features when the TFM and
+the SDK match. This ensures that users get an error message if, for example,
+they try to use an experimental feature in .NET 6 but they are using the .NET 7
+SDK. The assumption is that because the feature was experimental in .NET 6, we
+likely took some customer feedback and made a breaking change when we shipped
+.NET 7. For people that want to target .NET 6 and its experimental features,
+they will have to use the .NET 6 SDK.
+
+In practice this means that a multi-targeted project will only be able to use
+experimental features in a single TFM, specifically the current one.
+
 ### Assembly info generation
 
 When we generate the `AssemblyInfo.cs`, we'll generate an assembly level
