@@ -194,7 +194,7 @@ Assuming a Windows Arm64 SDK, the following RIDs would be used in these examples
 
 - `win-arm64`
 - `win-x64`
-- `linux-x64`
+- `linux-arm64`
 - `osx-arm64`
 
 Note: We should also determine if we can switch from `osx` to `macos` as the RID-suffix for macOS. That's out of scope of this proposal.
