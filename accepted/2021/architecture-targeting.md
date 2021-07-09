@@ -1,6 +1,6 @@
 # .NET SDK build types and Architecture targeting
 
-**Owner** Rich Lander
+**Owner** [Rich Lander](https://github.com/richlander)
 
 Developer platforms tend to fall into two categories, in terms of the apps they produce and support: architecture-neutral, or architecture-specific. .NET is potentially an outlier in that it attempts to support both of these architecture modes equally well. From a runtime and libraries standpoint, we've satisfied this goal. From a CLI standpoint, we have not. This proposal aims to improve the CLI experience of producing both architecture-neutral and architecture-specific apps.
 
