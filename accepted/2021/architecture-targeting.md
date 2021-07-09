@@ -269,7 +269,7 @@ The following changes should be included in .NET 6, motivated by the x64 emulati
    - `dotnet build -r win-x64 --no-self-contained`
 - Add warning when using `-r` without a `--self-contained` or `--no-self-contained`. The warning is for .NET 6+ apps only.
 
-The addition of the shorthand RID syntax and the parity syntax between `build` and `publish` will provide a satisfactory set of gestures to enable migration with .NET 6 to a non-breaking syntax with respect to .NET 7. In particular, users need to migrate any uses or `-r` to always be accompanied by one of the `--self-contained` or `--no-self-contained` switches.
+The addition of the shorthand RID syntax and the parity syntax between `build` and `publish` will provide a satisfactory set of gestures to enable migration with .NET 6 to a non-breaking syntax with respect to .NET 7. In particular, users need to migrate any uses of `-r` to always be accompanied by one of the `--self-contained` or `--no-self-contained` switches.
 
 ### .NET 7
 
