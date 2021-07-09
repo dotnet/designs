@@ -98,6 +98,8 @@ The default build type should be changed to the RID-specific framework-dependent
 
 The most significant beneficiary of this change would be containerized ASP.NET Core apps with RID-specific dependencies. We'd also get to delete a bunch of [architecture-specific Dockerfiles](https://github.com/dotnet/dotnet-docker/tree/main/samples/aspnetapp). A number of those Dockerfiles only exist due to the current architectural targeting CLI model.
 
+This change would resolve the request for [dotnet-publish with --use-current-rid or --infer-rid option](https://github.com/dotnet/sdk/issues/10449) without needing any additional syntax. This request aligns with the challenge we have with Dockerfiles.
+
 Portable framework-dependent apps are the default scenario today. As already stated, it's not a good default choice because it produces larger apps with niche benefits.
 
 ### Enable gesture to build portable apps
@@ -118,6 +120,10 @@ The rationale for making apphost EXEs opt-in is that they are a non-portable ass
 Note: Portable apps are not a meaningful option for client apps since almost all client apps require an executable launcher, and there is only ever one generated. Portable apps are only meaningful for commandline apps.
 
 Note: In theory, we could consider an option to create multiple apphosts for different RIDs, either of different names or in different directories. Again, this capability would need to be opt-in.
+
+### Enable RID folders for RID-specific and portable apps
+
+There have been some issues filed (see appendix) that suggest that managed libraries are not resilient to RID-specific libraries changing location as a result of changing build type (portable to RID-specific). We should consider adding an option that creates `runtimes` folder (for compatible RIDs) for RID-specific builds. Perhaps this challenge just needs to be investigated more.
 
 ### Use SDK RID as default RID
 
@@ -165,6 +171,10 @@ Note: `dotnet watch` is effectively a wrapper over `dotnet run` and `dotnet test
 
 Where appropriate, the SDK should encode a different implicit RID, such as `osx-x64` when targeting .NET Core 3.1 on Apple Silicon macOS machines with the Arm64 .NET 6 SDK. The SDK should understand that .NET Core 3.1 only supports x64 and not Arm64 for macOS. The x64 SDK should provide the same behavior in reverse.
 
+Tool installation with `dotnet tool install` is a particularly problematic scenario. At the time .NET 6 is released, one can expect that close to 100% of .NET tools (packaged via NuGet) will target a verion prior to .NET 6 and therefore be incapable on running on Arm64 (at least on macOS). However, when installed, the SDK will generate an apphost that matches the SDK RID. As a result, the tool will consistently fail to launch (since the required runtime will be missing). The SDK needs to apply the same implicit RID rules for .NET tools that it will apply for `dotnet build`. In addition, `dotnet tool install` should enable explicit RID targeting.
+
+Note: One can think of .NET tools as being distributed as portable apps with no apphost, with the most favorable apphost being provided just-in-time at installation. It's a pretty good model and aligns with the spirit of the overall design.
+
 ### Enable shorthand RID targeting syntax
 
 RIDs are a pain to use on a regular basis. Particularly for emulation, it would be very useful to have a shorthand model for just specifying the architecture. The operating system remains constant.
@@ -208,7 +218,12 @@ That means that the following commands would be equivalent:
 
 This asymmetry largely locks us into making the breaking change to `-r`. If we don't, the architecture targeting system will become even more confusing than it already is.
 
-This shorthand syntax is intended as a CLI and not MSBuild concept. For scenarios that today require specifying RIDs in project file, the intent is that users will continue to specify RIDs. If we find that there is a need for a shorthand RID syntax in project files, then we can consider extending this syntax to MSBuild.
+Specifying both a RID and the short-hand syntax would be an error, for example with the following commands:
+
+- `dotnet build -r win-x64 -a arm64`
+- `dotnet build -r linux-arm64 --os win -a x64`
+
+The shorthand syntax is intended as a CLI and not MSBuild concept. For scenarios that today require specifying RIDs in project file, the intent is that users will continue to specify RIDs. If we find that there is a need for a shorthand RID syntax in project files, then we can consider extending this syntax to MSBuild.
 
 ## Implementation timeline
 
@@ -248,7 +263,7 @@ The following changes should be included in .NET 6, motivated by the x64 emulati
    - `dotnet build -r win-x64 --self-contained true`
    - `dotnet build -r win-x64 --self-contained false`
    - `dotnet build -r win-x64 --no-self-contained`
-- Add warning when using `-r` without a `--self-contained` or `--no-self-contained`.
+- Add warning when using `-r` without a `--self-contained` or `--no-self-contained`. The warning is for .NET 6+ apps only.
 
 The addition of the shorthand RID syntax and the parity syntax between `build` and `publish` will provide a satisfactory set of gestures to enable migration with .NET 6 to a non-breaking syntax with respect to .NET 7. In particular, users need to migrate any uses or `-r` to always be accompanied by one of the `--self-contained` or `--no-self-contained` switches.
 
@@ -271,16 +286,16 @@ The breaking changes will be configurable:
 The following settings will be exposed:
 
 - `DefaultDeploymentTypeRIDSpecific`
-   - `frameworkdependent` (default)
-   - `selfcontained`
+   - `frameworkdependent` (for all TFMs)
+   - `selfcontained` (for all TFMs)
    - Note: Disables change #2.
 - `DefaultBuildType`
-   - `ridspecific` (default)
-   - `portable`
+   - `ridspecific` (for all TFMs)
+   - `portable` (for all TFMs)
    - Note: disables change #3, which in turn disables change #4.
 - `EnableDotnet7RIDTargetingForAllVersions`
-   - `false` (default)
-   - `true`
+   - `false` (for all TFMs)
+   - `true` (for all TFMs)
    - Note: Enables changes #2, #3 and #4 for all versions.
 
 Note: These config names are not great. They are placeholders for better names.
@@ -324,31 +339,42 @@ The following dotnet/sdk issues demonstrate various challenges related to this t
 
 ### RID-targeting
 
+The following issues are resolved by this proposal.
+
+- [How to dotnet publish RID to the current OS (closest matching RID)](https://github.com/dotnet/sdk/issues/11282)
+- [dotnet-publish with --use-current-rid or --infer-rid option](https://github.com/dotnet/sdk/issues/10449)
+
+The following issues need more information:
+
+- [Dotnet Publish with RID doesn't bring the native dll in original folder structure](https://github.com/dotnet/sdk/issues/11754)
+- [Publishing with win-x64 RID doesn't include runtime-specific Nuget libraries](https://github.com/dotnet/sdk/issues/10665)
+- [Cannot find dependencies when executing2 an assembly published by dotnet publish](https://github.com/dotnet/sdk/issues/3903)
+- [dotnet publish from non-Windows does not copy required native files](https://github.com/dotnet/sdk/issues/3875)
+- [dotnet restore no longer supports multiple runtimes](https://github.com/dotnet/sdk/issues/3843)
+
+The following issue are related but unresolved by this proposal.
+
 - [Architecture-specific folders](https://github.com/dotnet/sdk/issues/16381)
 - [RuntimeIdentifier does not propagate to dependency projects when multi-targeting TFMs](https://github.com/dotnet/sdk/issues/10625)
 - [How to consume native dependencies via ProjectReference?](https://github.com/dotnet/sdk/issues/10575)
 - [Android's implementation of multiple $(RuntimeIdentifiers)](https://github.com/dotnet/sdk/issues/14359)
-- [Dotnet Publish with RID doesn't bring the native dll in original folder structure](https://github.com/dotnet/sdk/issues/11754)
-- [How to dotnet publish RID to the current OS (closest matching RID)](https://github.com/dotnet/sdk/issues/11282)
-- [dotnet-publish with --use-current-rid or --infer-rid option](https://github.com/dotnet/sdk/issues/10449)
 - [Consider guards for projects missing RID-specific assets](https://github.com/dotnet/sdk/issues/11206)
-- [Publishing with win-x64 RID doesn't include runtime-specific Nuget libraries](https://github.com/dotnet/sdk/issues/10665)
 - [NETSDK1083 error when providing multiple RIDs in .NET Core 3](https://github.com/dotnet/sdk/issues/11426)
-- [Cannot find dependencies when executing an assembly published by dotnet publish](https://github.com/dotnet/sdk/issues/3903)
-- [dotnet publish from non-Windows does not copy required native files](https://github.com/dotnet/sdk/issues/3875)
-- [dotnet restore no longer supports multiple runtimes](https://github.com/dotnet/sdk/issues/3843)
 
 ### Build type
 
+The following issues are resolved by this proposal.
+
 - [Publishing as framework dependent creates self-contained instead when not explicitly disabled](https://github.com/dotnet/sdk/issues/4230)
+- [dotnet publish won't publish self contained exe without a RuntimeIdentifier. I am passing -r in the command.](https://github.com/dotnet/sdk/issues/10566)
+- [Cannot publish self-contained worker project referencing another](https://github.com/dotnet/sdk/issues/10902)
 
 ### General
 
+The following issues need more information:
+
 - [Regression with package restore: RID Graph not respected when selecting native library from nuget package](https://github.com/dotnet/sdk/issues/4195)
-- [Single file with --self-contained false, then --self-contained true behaves unexpectedly](https://github.com/dotnet/sdk/issues/12929)
 - [PlatformTarget is not set when Platform is "arm64" (MSBuild)](https://github.com/dotnet/sdk/issues/15434)
-- [Cannot publish self-contained worker project referencing another](https://github.com/dotnet/sdk/issues/10902)
-- [dotnet publish won't publish self contained exe without a RuntimeIdentifier. I am passing -r in the command.](https://github.com/dotnet/sdk/issues/10566)
 
 ## Appendix -- Portable App analysis
 
