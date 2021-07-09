@@ -121,9 +121,13 @@ Note: Portable apps are not a meaningful option for client apps since almost all
 
 Note: In theory, we could consider an option to create multiple apphosts for different RIDs, either of different names or in different directories. Again, this capability would need to be opt-in.
 
-### Enable RID folders for RID-specific and portable apps
+### Rationalize RID folders for RID-specific and portable apps
 
-There have been some issues filed (see appendix) that suggest that managed libraries are not resilient to RID-specific libraries changing location as a result of changing build type (portable to RID-specific). We should consider adding an option that creates `runtimes` folder (for compatible RIDs) for RID-specific builds. Perhaps this challenge just needs to be investigated more.
+There have been some issues filed (see appendix) that suggest that managed libraries are not resilient to RID-specific libraries changing location as a result of changing build type (portable to RID-specific). This would also be true for single file deployment builds.
+
+We could enable (as an option) creating `runtimes` folders for RID-specific apps to make the folder layout the same across deployment types. Doing that would put single file at a significant disadvantage. We'd rather encourage the ecosystem to support both folder layouts. If we had to choose one of these deployments types to disadvantage, it would be portable (with the `runtimes` folders), not RID-specific, which is the likely the opposite of what developers are tuning for today.
+
+We need to invest more in docs and tools to the end of clear and actionable guidance.
 
 ### Use SDK RID as default RID
 
