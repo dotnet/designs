@@ -282,6 +282,8 @@ The following changes should be included in an early .NET 7 preview, motivated b
 
 Note: The last change isn't really breaking. It's a follow-on change of the actual break to switch from portable to RID-specific as the default build type. That said, it should be communicated as a breaking change.
 
+These gestures need to work for all relevant MSBuild assets, specifically `*.*proj` and `*.sln` files. `-r` is not supported for solution build as of .NET 6.
+
 The breaking changes will be configurable:
 
 - By default, they will only affect app projects that target .NET 7 or higher.
