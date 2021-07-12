@@ -30,10 +30,17 @@ For example: [`CollectBundleFilesToSign` target](https://github.com/dotnet/diagn
 
 Provide a build-time hook to implement signing logic. The use pattern is expected to be similar to `CollectBundleFilesToSign`, but without relying on undocumented behavior.  
 We will provide:
--	A target `BeforeBundle` that will be called between `_ComputeFilesToBundle` and `GenerateBundle`
+-	A target `PrepareForBundle` that will be called between `_ComputeFilesToBundle` and `GenerateBundle`
 -	An ItemGroup `FilesToBundle` containing all files that will be passed to `GenerateSingleFileBundle`
 -	A Property `AppHostFile` that will specify the apphost.  
 The reason for this is that the host will be in the list of files to bundle, but generally need not be signed.
+
+The way to plug into this would typically involve creating a target that will be executed between `PrepareForBundle` and `GenerateSingleFileBundle`
+
+Example:
+```XML
+<Target Name="MySignBundledFile" BeforeTargets="GenerateSingleFileBundle" DependsOnTargets="PrepareForBundle">
+```
 
 It is possible that the signing tool will need to copy files in the process of signing. That could happen if the file is a shared item not owned by the build, for example the file comes from a nuget cache. In such case it is expected that the tool will modify the path of the corresponding `FilesToBundle` item to point to the signed copy.
 
