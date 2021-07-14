@@ -310,7 +310,7 @@ Note: These config names are not great. They are placeholders for better names.
 
 The following changes should be included in an early .NET 8 preview.
 
-- Remove support for the three config options added in .NET 7, just just above.
+- Remove support for the three config options added in .NET 7, just above.
 - The breaking changes will be enabled for all versions, including .NET 6.
 
 ## Summary
