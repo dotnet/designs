@@ -33,7 +33,7 @@ of the product:
 * There is no servicing story for bugs and security issues.
 
 However, making `libgdiplus` a first-class citizen is costly. It's around 30k
-lines of pretty old C code, virtually untestable, and lacks a lot of
+lines of pretty old C code, virtually untested, and lacks a lot of
 functionality. `libgdiplus` also has a lot of external dependencies for all the
 image processing and text rendering, such as `cairo`, `pango`, and other native
 libraries, which makes shipping even more challenging.
