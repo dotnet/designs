@@ -122,7 +122,7 @@ have on them.
 
 ***Note:** This only affect `System.Drawing.Common` and would leave
 `System.Drawing.Primitives` as-is. That assembly contains primitive types
-that don't depend on GDI+, such `Rectangle`, `Point`, and `Size`. Any type in `System.Drawing.Common`
+that don't depend on GDI+, such `Rectangle`, `Point`, and `Size`. Any types in `System.Drawing.Common`
 that don't depend on GDI+, will be moved to `System.Drawing.Primitives`.
 
 # Q & A
