@@ -65,7 +65,7 @@ context of Windows Forms and GDI+.
 
 * Consumers of `System.Drawing.Common` will be informed that starting with .NET
   6, it's only supported on Windows, via the platform compatibility analyzer
-* Cross-platform consumers have the ability to turn on a compatibility switch to
+* Cross-platform consumers can reference older versions of the package to
   continue using `System.Drawing.Common` via `libgdiplus`
 
 ### Non-Goals
@@ -109,10 +109,7 @@ The proposal is to do the following for .NET 6:
    pointing to an aka.ms link with the reasons behind it and recommending
    stable, well-maintained open-source library alternatives
 
-3. Add an AppContext switch customers can set in their apps or at runtime to
-   re-enable `System.Drawing.Common` via `libgdiplus` on non-Windows platforms.
-
-4. Add targets to the package that when it is restored using a non-windows RID,
+3. Add targets to the package that when it is restored using a non-windows RID,
    it warns that we no longer support it on non-windows and point to the aka.ms
    link with more info.
 
@@ -125,9 +122,22 @@ have on them.
 
 ***Note:** This only affect `System.Drawing.Common` and would leave
 `System.Drawing.Primitives` as-is. That assembly on contains primitive types
-that don't depend on GDI+, such `Rectangle`, `Point`, and `Size`.
+that don't depend on GDI+, such `Rectangle`, `Point`, and `Size`. Any type in `System.Drawing.Common`
+that don't depend on GDI+, will be moved to `System.Drawing.Primitives`.
 
 # Q & A
+
+## Will this prevent applications to move to .NET 6?
+
+No, `System.Drawing.Common` is a standalone package that does not ship as part
+of the shared framework. For that reason if an application wants to keep using
+`System.Drawing.Common` on `Unix` and move to .NET 6, they can reference the
+`5.0.x` version of the package.
+
+## How will applications migrate to recommended libraries?
+
+We will provide with the right documentation via a breaking change notice and a document
+that will contain guidance and samples.
 
 ## What does the usage data of `System.Drawing.Common` reveal?
 
