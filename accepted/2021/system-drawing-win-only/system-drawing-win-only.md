@@ -15,7 +15,7 @@ While `libgdiplus` has helped a lot of customers expand to cross-platform it has
 also caused some headaches. `System.Drawing.Common` is very Windows driven as it
 is mostly a wrapper around GDI+ and is heavily coupled to Windows Forms, which
 keeps evolving and diverging from cross-platform graphics. This has caused some
-confusion over why some things don't work well on Unix or don't work not at all.
+confusion over why some things don't work well on Unix or don't work at all.
 
 Since the inclusion of the Mono cross-platform implementation we spent lot of
 time redirecting issues to `libgdiplus` that never got fixed, or helping people
