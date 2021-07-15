@@ -118,7 +118,7 @@ The proposal is to do the following for .NET 6:
 
 The challenge is that `System.Drawing.Common` is used by 1st party consumers
 such as ML.NET, which uses it for image manipulation and even exposes an API
-that returns a Bitmap. At the same time, `System.Devices.Iot` is in the process
+that returns a Bitmap. At the same time, https://github.com/dotnet/iot is in the process
 of moving to use ImageSharp and so far they had a great migration experience. We
 need to engage with 1st party customers to see what impact this proposal will
 have on them.
