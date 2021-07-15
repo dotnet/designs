@@ -121,7 +121,7 @@ need to engage with 1st party customers to see what impact this proposal will
 have on them.
 
 ***Note:** This only affect `System.Drawing.Common` and would leave
-`System.Drawing.Primitives` as-is. That assembly on contains primitive types
+`System.Drawing.Primitives` as-is. That assembly contains primitive types
 that don't depend on GDI+, such `Rectangle`, `Point`, and `Size`. Any type in `System.Drawing.Common`
 that don't depend on GDI+, will be moved to `System.Drawing.Primitives`.
 
