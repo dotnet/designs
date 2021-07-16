@@ -64,7 +64,7 @@ context of Windows Forms and GDI+.
 ### Goals
 
 * Consumers of `System.Drawing.Common` will be informed that starting with .NET
-  6, it's only supported on Windows, via the platform compatibility analyzer
+  6, it's only supported on Windows, via the [platform compatibility analyzer]
 * Cross-platform consumers can reference older versions of the package to
   continue using `System.Drawing.Common` via `libgdiplus`
 
@@ -191,3 +191,5 @@ Other interesting takeaways:
   which very similar usage patterns to .NET Core. If you combine "no TFM"
   assemblies, you get an extra almost 200k of hits, so this dwarfs .NET Core
   usage, but that's no surprise.
+
+[platform compatibility analyzer]: https://docs.microsoft.com/en-us/dotnet/standard/analyzers/platform-compat-analyzer
