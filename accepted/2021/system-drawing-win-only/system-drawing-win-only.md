@@ -44,7 +44,7 @@ issues. This makes it harder as we are basically on our “own” for those secu
 issues. `libgdiplus` is a library we don't own, but that we must spend time
 investigating issues and proposing fixes.
 
-We have noticed that `System.Drawing.Common` is used on cross-platform mostly for
+We have noticed (such as from analysis of NuGet packages) that `System.Drawing.Common` is used on cross-platform mostly for
 image manipulation like QR code generators and text rendering. We haven't
 noticed heavy graphics usage as our cross-platform graphics support is very
 incomplete. For example, right now some components crash on macOS because the
