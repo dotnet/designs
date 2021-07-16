@@ -131,21 +131,21 @@ don't depend on GDI+, such `Rectangle`, `Point`, and `Size`. Any types in
 `System.Drawing.Common` that don't depend on GDI+, will be moved to
 `System.Drawing.Primitives`.*
 
-# Q & A
+## Q & A
 
-## Will this prevent applications to move to .NET 6?
+### Will this prevent applications to move to .NET 6?
 
 No, `System.Drawing.Common` is a standalone package that does not ship as part
 of the shared framework. For that reason if an application wants to keep using
 `System.Drawing.Common` on `Unix` and move to .NET 6, they can reference the
 `5.0.x` version of the package.
 
-## How will applications migrate to recommended libraries?
+### How will applications migrate to recommended libraries?
 
 We will provide with the right documentation via a breaking change notice and a
 document that will contain guidance and samples.
 
-## Does this mean .NET is keeping drawing/image processing code to Windows users?
+### Does this mean .NET is keeping drawing/image processing code to Windows users?
 
 Not really. The types in `System.Drawing.Common` don't actually implement
 drawing, font processing or image parsing. The .NET APIs are merely wrappers
@@ -161,7 +161,7 @@ in mind. This means trying to make these technologies work on other platforms
 doesn't always work well. And in case of `System.Drawing.Common` the end result
 feels like square peg in a round hole.
 
-## What does the usage data of `System.Drawing.Common` reveal?
+### What does the usage data of `System.Drawing.Common` reveal?
 
 In order to assess how `System.Drawing.Common` we looked at the API usage from
 libraries published to nuget.org.
