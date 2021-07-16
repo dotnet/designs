@@ -24,7 +24,7 @@ have thought about our options, and to support `System.Drawing.Common` properly
 on Unix we'd need to make `libgdiplus` a first-class citizen and ship it as part
 of the product:
 
-* `libgdiplus` doesn't ship with all operating systems by default, just like
+* `libgdiplus` doesn't ship with all operating systems by default, unlike
   other native libraries we depend on (icu, openssl).
 
 * `libgdiplus` is community driven, so a lot of issues/PRs just go stale and are
