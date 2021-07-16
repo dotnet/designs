@@ -24,8 +24,8 @@ have thought about our options, and to support `System.Drawing.Common` properly
 on Unix we'd need to make `libgdiplus` a first-class citizen and ship it as part
 of the product:
 
-* `libgdiplus` doesn't ship with all operating systems by default, unlike
-  other native libraries we depend on (icu, openssl).
+* `libgdiplus` doesn't ship with all operating systems by default, unlike other
+  native libraries we depend on (icu, openssl).
 
 * `libgdiplus` is community driven, so a lot of issues/PRs just go stale and are
   never looked at.
@@ -44,20 +44,21 @@ issues. This makes it harder as we are basically on our “own” for those secu
 issues. `libgdiplus` is a library we don't own, but that we must spend time
 investigating issues and proposing fixes.
 
-We have noticed (such as from analysis of NuGet packages) that `System.Drawing.Common` is used on cross-platform mostly for
-image manipulation like QR code generators and text rendering. We haven't
-noticed heavy graphics usage as our cross-platform graphics support is very
-incomplete. For example, right now some components crash on macOS because the
-native APIs we use have been deprecated and are no longer included with recent
-macOS releases. We have never gotten a report about that crash; we discovered it
-ourselves while making `System.Drawing.Common` trim compatible.
+We have noticed (such as from analysis of NuGet packages) that
+`System.Drawing.Common` is used on cross-platform mostly for image manipulation
+like QR code generators and text rendering. We haven't noticed heavy graphics
+usage as our cross-platform graphics support is very incomplete. For example,
+right now some components crash on macOS because the native APIs we use have
+been deprecated and are no longer included with recent macOS releases. We have
+never gotten a report about that crash; we discovered it ourselves while making
+`System.Drawing.Common` trim compatible.
 
 The usages we see of `System.Drawing.Common` in non-Windows environments are
 typically well supported with SkiaSharp and ImageSharp.
 
-Thus, we believe it is not worth investing in making `System.Drawing.Common` work
-on non-Windows platforms and instead propose we only keep evolving it in the
-context of Windows Forms and GDI+.
+Thus, we believe it is not worth investing in making `System.Drawing.Common`
+work on non-Windows platforms and instead propose we only keep evolving it in
+the context of Windows Forms and GDI+.
 
 ## Requirements
 
@@ -83,27 +84,27 @@ context of Windows Forms and GDI+.
 
 In the past we decided to include the following disclaimer in our docs:
 
->   The `System.Drawing.Common` NuGet package works on Windows, Linux, and macOS.
->   However, there are some platform differences. On Linux and macOS, the GDI+
->   functionality is implemented by the `libgdiplus` library. This library is not
->   installed by default in most Linux distributions and doesn't support all the
->   functionality of GDI+ on Windows on macOS. There are also platforms where
->   `libgdiplus` is not available at all. To use types from the
->   `System.Drawing.Common` package on Linux and macOS, you must install
->   `libgdiplus` separately. For more information, see Install .NET on Linux or
->   Install .NET on macOS.
+> The `System.Drawing.Common` NuGet package works on Windows, Linux, and macOS.
+> However, there are some platform differences. On Linux and macOS, the GDI+
+> functionality is implemented by the `libgdiplus` library. This library is not
+> installed by default in most Linux distributions and doesn't support all the
+> functionality of GDI+ on Windows on macOS. There are also platforms where
+> `libgdiplus` is not available at all. To use types from the
+> `System.Drawing.Common` package on Linux and macOS, you must install
+> `libgdiplus` separately. For more information, see Install .NET on Linux or
+> Install .NET on macOS.
 >
->   If you can't use System.Drawing with your application, recommended
->   alternatives include ImageSharp, SkiaSharp, and Windows Imaging Components.
+> If you can't use System.Drawing with your application, recommended
+> alternatives include ImageSharp, SkiaSharp, and Windows Imaging Components.
 
 However, this disclaimer doesn't feel clear enough to steer people towards using
 other graphics libraries.
 
 The proposal is to do the following for .NET 6:
 
-1. **Mark the assembly as only being supported on Windows**. That will cause
-   the platform compatibility analyzer to warn when consumed from a project
-   that isn't targeting net6.0-windows (or marked as Windows-specific).
+1. **Mark the assembly as only being supported on Windows**. That will cause the
+   platform compatibility analyzer to warn when consumed from a project that
+   isn't targeting net6.0-windows (or marked as Windows-specific).
 
 2. Throw `PlatformNotSupportedException` when trying to load `libgdiplus`
    pointing to an aka.ms link with the reasons behind it and recommending
@@ -115,15 +116,16 @@ The proposal is to do the following for .NET 6:
 
 The challenge is that `System.Drawing.Common` is used by 1st party consumers
 such as ML.NET, which uses it for image manipulation and even exposes an API
-that returns a Bitmap. At the same time, https://github.com/dotnet/iot is in the process
-of moving to use ImageSharp and so far they had a great migration experience. We
-need to engage with 1st party customers to see what impact this proposal will
-have on them.
+that returns a Bitmap. At the same time, https://github.com/dotnet/iot is in the
+process of moving to use ImageSharp and so far they had a great migration
+experience. We need to engage with 1st party customers to see what impact this
+proposal will have on them.
 
 ***Note:** This only affect `System.Drawing.Common` and would leave
-`System.Drawing.Primitives` as-is. That assembly contains primitive types
-that don't depend on GDI+, such `Rectangle`, `Point`, and `Size`. Any types in `System.Drawing.Common`
-that don't depend on GDI+, will be moved to `System.Drawing.Primitives`.*
+`System.Drawing.Primitives` as-is. That assembly contains primitive types that
+don't depend on GDI+, such `Rectangle`, `Point`, and `Size`. Any types in
+`System.Drawing.Common` that don't depend on GDI+, will be moved to
+`System.Drawing.Primitives`.*
 
 # Q & A
 
@@ -136,8 +138,8 @@ of the shared framework. For that reason if an application wants to keep using
 
 ## How will applications migrate to recommended libraries?
 
-We will provide with the right documentation via a breaking change notice and a document
-that will contain guidance and samples.
+We will provide with the right documentation via a breaking change notice and a
+document that will contain guidance and samples.
 
 ## What does the usage data of `System.Drawing.Common` reveal?
 
