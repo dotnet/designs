@@ -74,6 +74,7 @@ Use update-index to regenerate it:
 | 2021 | [Inbox Source Generators](accepted/2021/InboxSourceGenerators.md) | [Eric StJohn](https://github.com/ericstj) |
 | 2021 | [Objective-C interoperability](accepted/2021/objectivec-interop.md) | [Aaron Robinson](https://github.com/AaronRobinsonMSFT) |
 | 2021 | [Preview Features](accepted/2021/preview-features/preview-features.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2021 | [Streamline Windows Forms application configuration and bootstrap](accepted/2021/winforms/streamline-application-bootstrap.md) | [Igor Velikorossov](https://github.com/RussKie) |
 | 2021 | [TFM for .NET nanoFramework](accepted/2021/nano-framework-tfm/nano-framework-tfm.md) | [Immo Landwerth](https://github.com/terrajobst), [Laurent Ellerbach](https://github.com/Ellerbach), [José Simões](https://github.com/josesimoes) |
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
 
