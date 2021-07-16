@@ -110,9 +110,9 @@ The proposal is to do the following for .NET 6:
    pointing to an aka.ms link with the reasons behind it and recommending
    stable, well-maintained open-source library alternatives
 
-3. Add targets to the package that when it is restored using a non-windows RID,
-   it warns that we no longer support it on non-windows and point to the aka.ms
-   link with more info.
+3. Provide a runtime config switch named `System.Drawing.UnixSupport`, that when is set to `true` we will no longer throw a `PlatformNotSupportedException` when loading `libgdiplus`.
+
+4. In .NET 7+ all of `Sytem.Drawing.Common` APIs dependent of `libgdiplus` will throw `PlatformNotSupportedException` and the runtime config switch will no longer work.
 
 The challenge is that `System.Drawing.Common` is used by 1st party consumers
 such as ML.NET, which uses it for image manipulation and even exposes an API
