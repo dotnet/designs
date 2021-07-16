@@ -145,6 +145,22 @@ of the shared framework. For that reason if an application wants to keep using
 We will provide with the right documentation via a breaking change notice and a
 document that will contain guidance and samples.
 
+## Does this mean .NET is keeping drawing/image processing code to Windows users?
+
+Not really. The types in `System.Drawing.Common` don't actually implement
+drawing, font processing or image parsing. The .NET APIs are merely wrappers
+that call into native Windows APIs (namely GDI and GDI+). The cross-platform
+implementation of `System.Drawing.Common` is provided by `libgdiplus` which is a
+native re-implementation of the underlying Windows APIs. That's why the
+experience on other operating systems is subpar and difficult to maintain -- it
+amounts to re-implementing parts of Windows.
+
+`System.Drawing.Common`, just like `System.Windows.Forms`, are very thin
+wrappers over Windows technologies and weren't designed for cross-platform use
+in mind. This means trying to make these technologies work on other platforms
+doesn't always work well. And in case of `System.Drawing.Common` the end result
+feels like square peg in a round hole.
+
 ## What does the usage data of `System.Drawing.Common` reveal?
 
 In order to assess how `System.Drawing.Common` we looked at the API usage from
