@@ -17,32 +17,28 @@ is mostly a wrapper around GDI+ and is heavily coupled to Windows Forms, which
 keeps evolving and diverging from cross-platform graphics. This has caused some
 confusion over why some things don't work well on Unix or don't work at all.
 
-Since the inclusion of the Mono cross-platform implementation we spent lot of
-time redirecting issues to `libgdiplus` that never got fixed, or helping people
-install `libgdiplus` correctly (because it's not part of .NET Core proper). We
-have thought about our options, and to support `System.Drawing.Common` properly
-on Unix we'd need to make `libgdiplus` a first-class citizen and ship it as part
-of the product:
-
-* `libgdiplus` doesn't ship with all operating systems by default, unlike other
-  native libraries we depend on (icu, openssl).
-
-* `libgdiplus` is community driven, so a lot of issues/PRs just go stale and are
-  never looked at.
-
-* There is no servicing story for bugs and security issues.
-
-However, making `libgdiplus` a first-class citizen is costly. It's around 30k
+The cross-platform implementation of `System.Drawing.Common` is mainly provided
+on the native side, via `libgdiplus`. It's effectively a re-implementation of
+the parts of Windows that `System.Drawing.Common` is depending on. As you can
+imagine, that makes `libgdiplus` a very non-trivial component. It's around 30k
 lines of pretty old C code, virtually untested, and lacks a lot of
 functionality. `libgdiplus` also has a lot of external dependencies for all the
 image processing and text rendering, such as `cairo`, `pango`, and other native
-libraries, which makes shipping even more challenging.
+libraries, which makes maintaining and shipping it even more challenging.
 
-We've also hit some memory leaks or double free'd memory that weren't fixed in
-`libgdiplus` and that we had to work around because they were potential security
-issues. This makes it harder as we are basically on our “own” for those security
-issues. `libgdiplus` is a library we don't own, but that we must spend time
-investigating issues and proposing fixes.
+Since `System.Drawing.Common` was really designed to be a thin wrapper over
+Windows technologies, its cross-platform implementation is a bit like a square
+peg in a round hole; it's subpar because it was only designed with Windows in
+mind.
+
+Since the inclusion of the Mono cross-platform implementation we spent lot of
+time redirecting issues to `libgdiplus` that never got fixed, or helping people
+install `libgdiplus` correctly (because it's not part of .NET Core proper). This
+is very different from other external dependencies we have taken, for example,
+`icu` or `openssl`, which are high-quality libraries, rather than poorly
+maintained re-implementation of Windows components. Thus, we have come to
+believe that it's not viable to get `libgdiplus` to the point where its feature
+set and quality is on par with the rest of the .NET stack.
 
 We have noticed (such as from analysis of NuGet packages) that
 `System.Drawing.Common` is used on cross-platform mostly for image manipulation
