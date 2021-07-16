@@ -68,6 +68,10 @@ the context of Windows Forms and GDI+.
   it's only supported on Windows, via the [platform compatibility analyzer]
 * Cross-platform consumers can reference older versions of the package to
   continue using `System.Drawing.Common` via `libgdiplus`
+* We don't have to support usages of `System.Drawing.Common` on operating
+  systems other than Windows. We also will not support teams at Microsoft using
+  this component on other platforms either. Instead, we'll point people to other
+  libraries.
 
 ### Non-Goals
 
