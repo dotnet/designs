@@ -110,7 +110,7 @@ The proposal is to do the following for .NET 6:
    pointing to an aka.ms link with the reasons behind it and recommending
    stable, well-maintained open-source library alternatives
 
-3. Provide a runtime config switch named `System.Drawing.UnixSupport`, that when is set to `true` we will no longer throw a `PlatformNotSupportedException` when loading `libgdiplus`.
+3. Provide a [runtime config switch](https://docs.microsoft.com/dotnet/core/run-time-config/) named `System.Drawing.EnableUnixSupport`, that when is set to `true` we will no longer throw a `PlatformNotSupportedException` when loading `libgdiplus`.
 
 4. In .NET 7+ all of `Sytem.Drawing.Common` APIs dependent of `libgdiplus` will throw `PlatformNotSupportedException` and the runtime config switch will no longer work.
 
