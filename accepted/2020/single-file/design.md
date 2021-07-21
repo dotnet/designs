@@ -124,7 +124,7 @@ On Startup, the [host components](https://github.com/dotnet/core-setup/blob/mast
 * **HostFxr**: If invoked from a single-file app, HostFxr process the `runtimeconfig.json` and `deps.json` files directly from the bundle. The location of these `json` files  are identified directly from the bundle-header for simple access.
 * **HostPolicy**: Much of the bundle-processing is performed within HostPolicy.
   
-  * If the app needs extraction, extracts out the appropriate files as explained in [this document](extractor.md).
+  * If the app needs extraction, extracts out the appropriate files as explained in [this document](extract.md).
   * Reads the `deps.json` file directly from the bundle and resolves dependencies.
   * Processes the Bundle manifest to maintain internal data-structures to locate bundled assemblies when probed by the runtime.
   * Implements a [`bundle_probe` ](#Dependency-Resolution) function, and passes it (function pointer encoded as a string) to the runtime through a property named `BUNDLE_PROBE`.
