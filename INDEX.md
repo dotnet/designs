@@ -72,6 +72,7 @@ Use update-index to regenerate it:
 | 2021 | [.NET 6.0 Target Frameworks](accepted/2021/net6.0-tfms/net6.0-tfms.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Compile-time source generation for strongly-typed logging messages](accepted/2021/logging-generator.md) | [Maryam Ariyan](https://github.com/maryamariyan), [Martin Taillefer](https://github.com/geeknoid) |
 | 2021 | [Inbox Source Generators](accepted/2021/InboxSourceGenerators.md) | [Eric StJohn](https://github.com/ericstj) |
+| 2021 | [Make `System.Drawing.Common` only supported on Windows](accepted/2021/system-drawing-win-only/system-drawing-win-only.md) | [Santiago Fernandez Madero](https://github.com/safern) |
 | 2021 | [Objective-C interoperability](accepted/2021/objectivec-interop.md) | [Aaron Robinson](https://github.com/AaronRobinsonMSFT) |
 | 2021 | [Preview Features](accepted/2021/preview-features/preview-features.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Streamline Windows Forms application configuration and bootstrap](accepted/2021/winforms/streamline-application-bootstrap.md) | [Igor Velikorossov](https://github.com/RussKie) |
