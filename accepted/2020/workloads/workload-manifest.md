@@ -82,7 +82,9 @@ Library packs are normal NuGet packages. When a library pack is installed, the n
 
 This location is used as a local feed by NuGet, not a fallback folder. If ones of these packages gets used, it will be extracted into the global packages folder. If the SDK is updated and the library pack is removed or replaced with a newer version, projects that have already been created and restored will continue to be able to use the extracted copy from the global packages folder.
 
-This is intended to be used to pre-download NuGet packages referenced by templates so that a workload can work offline after installation. It should be used sparingly i.e. only for NuGets referenced by the core templates with default or popular options.
+Library packs are intended to be used to pre-download NuGet packages referenced by templates so that a workload can work offline after installation. Core workloads should include library packs very sparingly, if at all. Instead, it is strongly recommended that library packs are contained in separate workloads with the ID suffix `-offline-templates`. An offline template workload should only contain library packs referenced by templates, and should extend the workload that contains the templates.
+
+> NOTE: SDK targets should **not** implicitly add `PackageReference` items. They should instead add `FrameworkReference` items that resolve to runtime packs and targeting packs.
 
 ## Template Packs
 
@@ -176,15 +178,25 @@ Workload definitions take the following form:
 | `kind` | string | Either `build` or `dev`. Default is `dev`. | No |
 | `description` | string | User-visible description for the workload. | Yes if dev and non-abstract |
 | `packs` | string array | IDs of the packs that are included in the workload. | No |
-| `extends` | string array | IDs of workloads whose packs should be included in this workload. | No |
-| `platforms` | string array | Limits the workload and workloads that extend it to only be shown and installed on these host platforms. The strings are RIDs. | No |
+| `extends` | string array | IDs of "base" workloads whose packs should be included in this workload. | No |
+| `platforms` | string array | Restricts the workload and workloads that extend it to only be shown and installed on these host platforms. Inherits any restrictions imposed by base workloads. The strings are RIDs. | No |
 |`redirect-to` | string | The ID of another workload with which to replace this workload. Cannot coexist with any other keys. | No |
 
 ### Workload Composition
 
-At least one of `extends` or `packs` is required. If a workload resolves to zero packs, which is possible when some packs are platform-specific, it is implicitly abstract. A workload may transitively include the same pack multiple times or extend the same workload multiple times, and they will be deduplicated. As a consequence, recursive `extends` references are technically permitted but redundant and although they may result in validation warnings they will not result in runtime errors.
+A workload is fundamentally a set of packs. This set can be defined using the `packs` key. A workload may also be defined as a union of the sets of packs from other workloads by composing them using `extends`. A workload must have either `extends` or `packs`, and may have both. If a workload resolves to zero packs, which is possible when some packs are platform-specific, it is implicitly abstract.
 
-Note that `extends` is functionally a dependency system and a way to factor out common sets of packages from workloads. By analogy to package managers such as apt-get and NuGet, workloads are metapackages that only permit unversioned dependencies and packs are packages that are only installable transitively.
+Abstract workloads are workloads that cannot be installed directly. Their only purpose is to be extended by a concrete workload. This allows factoring out sets of packs into smaller abstract workloads that may be composed together using `extends`.
+
+A workload may transitively include the same pack multiple times or extend the same workload multiple times, and they will be deduplicated. As a consequence, recursive `extends` references are technically permitted and although they may result in validation warnings they will not currently result in runtime errors.
+
+As workloads are often supersets of other workloads, conceptualizing and defining these relationships in terms of `extends` makes it easier to understand and maintain. Updates to the packs in the base workload will be inherited by the extending workload. However, it is possible to include the same pack directly in multiple workloads.
+
+Although `extends` is a composition system, it may be useful to conceptualize it as an inheritance hierarchy, where a workload may "inherit" (extend) one or more base workloads, which may inherit other workloads in turn. Workloads marked as abstract may be inherited but cannot be "instantiated" (installed) directly.
+
+Workload composition may also be compared to package managers such as apt-get and NuGet. In this analogy, workloads are metapackages with unversioned dependencies and packs are packages that are only installable transitively.
+
+Platform restrictions are transitive across workload composition: a workload will inherit `platforms` restrictions from the workloads that it extends. The effective set of supported platforms for any workload is the intersection of its supported platforms and the platforms supported by base workloads.
 
 ### Workload Kinds
 
@@ -540,4 +552,3 @@ This has the advantage that it does not introduce any new mechanisms. However, i
 - No compatibility checks and error experience when building project that uses newer APIs on SDK series that only has older APIs
 - Requires centralized coordination
 - Not scalable to nontrivial number of platforms and updates
-
