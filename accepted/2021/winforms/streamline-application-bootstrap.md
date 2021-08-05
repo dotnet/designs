@@ -106,7 +106,7 @@ like. The design section can establish an execution order.
     * Check for invocations of now-redundant `Applicaiton.*` methods invoked by `ApplicationConfiguration.Initialize()`.
     * If a custom app.manifest is specified, parse it, and if dpi-related settings are found - warn the user, and direct to supply the dpi mode via the MSBuild property defined below.
     * (Consider) checking for app.config and dpi-related configurations, if found - warn the user, and direct to supply the dpi mode via the MSBuild property defined below.
-    * Check if `Application.SetHighDpiMode()` is invoked with anything other than `HighDpiMode.PerMonitorV2` (see: [dotnet/winforms-designer#3278](https://github.com/dotnet/winforms-designer/issues/3278))
+    * Check if `Application.SetHighDpiMode()` is invoked with anything other than `HighDpiMode.SystemAware` (see: [dotnet/winforms-designer#3278](https://github.com/dotnet/winforms-designer/issues/3278))
 
 3. Update the Windows Forms application template using the top level statements syntax.
 
@@ -203,7 +203,7 @@ The designer surface process should have no issues reading configuration values 
 -           Application.EnableVisualStyles();
 -           Application.SetCompatibleTextRenderingDefault(false);
 -           Application.SetDefaultFont(new Font(....));
--           Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+-           Application.SetHighDpiMode(HighDpiMode.SystemAware);
 
             Application.Run(new MainForm());
        }
@@ -245,8 +245,8 @@ New properties:
 
 +    <!--
 +       Purpose: the value in: Application.SetHighDpiMode(...);
-+       Default=PerMonitorV2
-+       Empty value=PerMonitorV2
++       Default=SystemAware
++       Empty value=SystemAware
 +     -->
 +    <ApplicationHighDpiMode>[string/HighDpiMode enum value]</ApplicationHighDpiMode>
   </PropertyGroup>
@@ -360,7 +360,7 @@ Existing properties of interest:
 
     -           Application.EnableVisualStyles();                       // ApplicationVisualStyles='' or true
     -           Application.SetCompatibleTextRenderingDefault(false);   // ApplicationUseCompatibleTextRendering='' or false
-    -           Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);   // ApplicationHighDpiMode='' or PerMonitorV2
+    -           Application.SetHighDpiMode(HighDpiMode.SystemAware);    // ApplicationHighDpiMode='' or SystemAware
 
     -           Application.SetDefaultFont(new Font(....));             // New in .NET 6.0 Preview5
     -                                                                   //    ApplicationFont='' -> Control.DefaultFont
@@ -480,7 +480,7 @@ Thread.CurrentThread.SetApartmentState(ApartmentState.STA);
 Application.EnableVisualStyles();
 Application.SetCompatibleTextRenderingDefault(defaultValue: false);
 Application.SetDefaultFont(new Font(new FontFamily("Arial"), 12f));
-Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+Application.SetHighDpiMode(HighDpiMode.SystemAware);
 
 Application.Run(new Form1());
 ```
