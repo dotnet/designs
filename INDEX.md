@@ -70,6 +70,7 @@ Use update-index to regenerate it:
 | 2020 | [Target Framework Names in .NET 5](accepted/2020/net5/net5.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Type for holding & converting binary data](accepted/2020/binary-data/binary-data.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [.NET 6.0 Target Frameworks](accepted/2021/net6.0-tfms/net6.0-tfms.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2021 | [.NET SDK build types and Architecture targeting](accepted/2021/architecture-targeting.md) | [Rich Lander](https://github.com/richlander) |
 | 2021 | [Compile-time source generation for strongly-typed logging messages](accepted/2021/logging-generator.md) | [Maryam Ariyan](https://github.com/maryamariyan), [Martin Taillefer](https://github.com/geeknoid) |
 | 2021 | [Inbox Source Generators](accepted/2021/InboxSourceGenerators.md) | [Eric StJohn](https://github.com/ericstj) |
 | 2021 | [Make `System.Drawing.Common` only supported on Windows](accepted/2021/system-drawing-win-only/system-drawing-win-only.md) | [Santiago Fernandez Madero](https://github.com/safern) |
