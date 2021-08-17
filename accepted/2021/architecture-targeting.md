@@ -20,6 +20,8 @@ Today, architecture targeting shows up in the following SDK experiences and conc
 
 Across these topic areas, we find that the .NET SDK lacks a coherent model for architecture targeting. The following statements provide a brief description of the SDK UX today. Feel free to skip this section. It is primarily here to demonstrate the state of the current model.
 
+Note: `dotnet pack` is largely out of scope for this proposal. It is a ripe target for a v2 version of this effort.
+
 ### Good
 
 * The SDK produces framework-dependent apps by default across all verbs. These apps rely on a separately installed runtime on the machine of a compatible version.
@@ -366,6 +368,7 @@ The following issue are related but unresolved by this proposal.
 - [Android's implementation of multiple $(RuntimeIdentifiers)](https://github.com/dotnet/sdk/issues/14359)
 - [Consider guards for projects missing RID-specific assets](https://github.com/dotnet/sdk/issues/11206)
 - [NETSDK1083 error when providing multiple RIDs in .NET Core 3](https://github.com/dotnet/sdk/issues/11426)
+- [Need a way to specify RID-specific dependencies](https://github.com/dotnet/sdk/issues/4552)
 
 ### Build type
 
