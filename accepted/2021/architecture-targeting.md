@@ -6,7 +6,7 @@ Developer platforms tend to fall into two categories, in terms of the apps they 
 
 As a comparison, node.js apps are architecture-neutral (one build of the app can run on multiple architectures) by default, while golang apps are (always) architecture-specific (one build of the app is required for each architecture). There are plenty of other examples of development platforms for both categories.
 
-This topic has always been important, but not front-and-center for most developers. The introduction of [x64 emulation on Arm64 operating systems](https://github.com/dotnet/designs/pull/217) makes architecture targeting a mainline scenario, and is the motivating reason to make the proposed changes.
+This topic has always been important, but not front-and-center for most developers. The introduction of [x64 emulation on Arm64 operating systems](https://github.com/dotnet/designs/blob/main/accepted/2021/x64-emulation-on-arm64/x64-emulation.md) makes architecture targeting a mainline scenario, and is the motivating reason to make the proposed changes.
 
 The proposal aims to resolve the outstanding problems with architecture targeting, not solely the aspects required to satisfy the x64 emulation scenario. However, the proposal is prioritized in terms of the x64 emulation scenario, as described near the end of the document.
 
