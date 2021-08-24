@@ -6,7 +6,9 @@
 
 ### Package authors
 
-A *package author* may enable shading on any package reference as long as its assets are configured such that it is effectively private. Any other package references that have a shaded package reference as a transitive dependency must also be shaded. When the project is restored, shaded copies of the packages are created and swapped in. When the project is packed, the shaded assets are embedded in the resulting package.
+A *package author* may enable shading on any package reference as long as its assets are configured such that it is effectively private, and as long as any transitive references to that package are via shaded package references. When they restore their project, its shaded package references will be substituted for renamed copies of those packages and their assets. When the project is packed, these renamed assets are bundled in the resulting package.
+
+The package author can be confident that when their library is used in an app, it will use the bundled copy of the shaded dependencies, and will not be affected by any other versions of those dependencies used elsewhere in the app.
 
 ### Package consumers
 
@@ -16,25 +18,37 @@ Shading is superficially invisible to consumers of a package that has shaded dep
 
 ### Private assets
 
-This shading mechanism is built upon the existing NuGet concept of *private assets*. A shaded asset is inherently private and must be treated the same way as other private assets. Handling shaded assets using the private assets mechanisms reuses existing behavior and concepts, and should result in a consistent experience.
+The concept of shading overlaps NuGet's existing concept of [*private assets*](https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets). Both enable a project to consume assets from a package reference without exposing it transitively.
 
-Shading may be enabled on any package reference that is effectively a *private package reference* i.e. all assets consumed from the package are consumed as private assets, and the reference is not exposed transitively. A future proposal will explore making private package references a first class concept.
+Although a project can technically repackage private assets into its own package, this is only useful in certain scenarios such as packages containing MSBuild tasks and targets. A project should not repackage private assets from a dependency as compile-time and runtime assets in its own package, as they will collide with other copies of those assets in a referencing project.
+
+Shading removes this limitation by renaming assets so that they can be repackaged without colliding with other copies. Shading can be seen as an extension to the concept of private assets. By treating it as such, we can reuse existing behavior and concepts.
+
+Shading will be an option that can be enabled on *private package references*: any package reference where all assets consumed from the package are consumed as private assets, and the reference is not exposed transitively
+
+A future proposal will explore making private package references a first class concept in NuGet that can be declared and validated in a  straighforward manner.
 
 ### Shaded packages
 
-To ensure consistency in package assets, shading applies to an entire package rather than individual assets or asset types. The core of this feature is a mechanism that can take a package and synthesize a *shaded package* by copying the original package and renaming the copy it and its assets to have a new identity: the *shaded name*.
+Shading is the process of creating a modified copy of a package and/or its assets that can be used without risk of conflicting or colliding with other versions of that package and their assets. The modified copy is a *shaded package* and has a new identity, the *shaded name*. The *shaded assets* in a shaded package have their identity changed to match the package's shaded name, and any internal references within the assets are *retargeted* to reflect the new identities.
 
-The shaded name is a mangled name specific to the context in which the package is shaded and is designed such that the shaded package's assets do not collide at runtime with assets from other shaded copies and from the original unshaded package.
+ To maintain coherence within a package's assets and across package dependencies, shading is always performed on an entire package and its contents rather than only on individual assets or asset types.
+
+A shaded package and the shading process that creates it are specific to the *shading context* of the project with the shaded package reference. A project may have multiple shaded package references, and those packages may depend in each other. If a shaded package depends on a package that is shaded in the same shading context, then the shading process must retarget the package's dependency and any references in its assets so that they target the shaded package and its assets.
+
+Retargeting a dependency involves finding references in th any references in the package and its assets so that they refer to the shaded version of that dependency. For example, an assembly reference in an assembly asset's metadata table would be updated to reference the shaded version.
+
+The shaded name is a mangled name specific to the shading context and is designed such that the shaded package's assets do not collide at runtime with assets from other shaded copies and from the original unshaded package.
 
 The name mangling is an implementation detail, and although it is deterministic to allow for deterministic builds, it may change in future versions of the .NET SDK. Developers should not depend on the mangling format or specific mangled IDs outside of references created by the .NET SDK itself.
 
-When a shaded package has a dependency on a package that is also shaded, its assets will be processed so that any references to the dependency's unshaded assets are updated to reference the shaded assets.
-
 ### Shade-on-restore
 
-During NuGet restore, any package reference in the graph that is shaded will be replaced with a reference to a shaded package created locally in the intermediate output directory.
+Shading will take place at restore time. For each project with package references that are marked as shaded, corresponding shaded packages will be created in the project's intermediate output directory, and the references will resolve to the shaded versions of the packages. For the purposes of everything outside restore, shaded assets will be no different than private assets.
 
-A package may only be shaded when all other packages in the graph that depend on it are also shaded. Their assets must be shaded in order to be rewritten to reference its shaded assets.
+Performing shading at restore time rather than pack time means that the project will use the shaded versions of its dependencies at development time. This will give a higher fidelity development experience for debugging and testing.
+
+Keeping shading independent of NuGet pack also makes it applicable to plugin scenarios, where shading private dependencies can prevent conflict with other plugins loaded in the same host that reference different versions of those dependencies. Examples of this include PowerShell cmdlets and Visual Studio extensions.
 
 ### Rename safety
 
@@ -46,7 +60,7 @@ A particularly problematic case is when assets are not inherently unsafe, but ar
 
 ### Controlling shading
 
-Shading will be controlled by a boolean parameter named `ShadePrivateAssets` will alter the behavior of NuGet restore in .NET SDK based projects. Any package reference for which `ShadePrivateAssets` is `true` will be shaded: replaced with a reference to a synthetic package created by copying the package and renaming it and its assets. The name of this parameter is based on the existing `PrivateAssets` package reference metadata that causes assets to be consumed by the project and not surfaced transitively to referencing packages. Certain types of private assets such as runtime libraries are embedded in any package created by running the Pack target on the project.
+Shading will be controlled by a boolean parameter named `ShadePrivateAssets` will alter the behavior of NuGet restore in .NET SDK based projects. Any package reference for which `ShadePrivateAssets` is `true` will be shaded: replaced at restore time with a reference to a synthetic package created by copying the package and renaming it and its assets. The name of this parameter is based on the existing `PrivateAssets` package reference metadata that causes assets to be consumed by the project and not surfaced transitively to referencing packages. Certain types of private assets such as runtime libraries are embedded in any package created by running the Pack target on the project.
 
 The `ShadePrivateAssets` parameter exists both as an MSBuild property and as MSBuild item metadata. The property defaults to an empty value, and the metadata defaults to the property value. Empty values are interpreted as `False`. The property can be used to set the behavior for all package references in a project, and the metadata can set or override the behavior for individual package reference items.
 
