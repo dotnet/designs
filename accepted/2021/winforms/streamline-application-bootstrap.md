@@ -240,7 +240,7 @@ New properties:
 +       Default=''
 +       Empty value='', implies Control.DefaultFont
 +     -->
-+    <ApplicationFont>[equivalent to Font.ToString()]</ApplicationFontName>
++    <ApplicationFont>[equivalent to Font.ToString()]</ApplicationFont>
 
 
 +    <!--
