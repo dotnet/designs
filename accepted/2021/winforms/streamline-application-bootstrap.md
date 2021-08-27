@@ -240,7 +240,7 @@ New properties:
 +       Default=''
 +       Empty value='', implies Control.DefaultFont
 +     -->
-+    <ApplicationFont>[equivalent to Font.ToString()]</ApplicationFont>
++    <ApplicationDefaultFont>[equivalent to Font.ToString()]</ApplicationDefaultFont>
 
 
 +    <!--
@@ -363,7 +363,7 @@ Existing properties of interest:
     -           Application.SetHighDpiMode(HighDpiMode.SystemAware);    // ApplicationHighDpiMode='' or SystemAware
 
     -           Application.SetDefaultFont(new Font(....));             // New in .NET 6.0 Preview5
-    -                                                                   //    ApplicationFont='' -> Control.DefaultFont
+    -                                                                   //    ApplicationDefaultFont='' -> Control.DefaultFont
 
                 Application.Run(new MainForm());
            }
@@ -426,7 +426,7 @@ E.g.:
 Application.SetDefaultFont(new Font(new FontFamily("Calibri"), 11f, FontStyle.Italic | FontStyle.Bold, GraphicsUnit.Point));
 ```
 
-It would rather be impractical to provide an MSBuild properties for each argument the `Font` constructor takes, and instead the proposal is to configure fonts via a single property `ApplicationFont`. This property will have a format equivalent to the output of [`FontConverter.ConvertToInvariantString()` API](https://github.com/dotnet/runtime/blob/00ee1c18715723e62484c9bc8a14f517455fc3b3/src/libraries/System.Drawing.Common/src/System/Drawing/FontConverter.cs#L29-L86) e.g.: 
+It would rather be impractical to provide an MSBuild properties for each argument the `Font` constructor takes, and instead the proposal is to configure fonts via a single property `ApplicationDefaultFont`. This property will have a format equivalent to the output of [`FontConverter.ConvertToInvariantString()` API](https://github.com/dotnet/runtime/blob/00ee1c18715723e62484c9bc8a14f517455fc3b3/src/libraries/System.Drawing.Common/src/System/Drawing/FontConverter.cs#L29-L86) e.g.: 
 
 ```
 name, size[units[, style=style1[, style2, ...]]]
@@ -439,12 +439,12 @@ It is theoretically possible that [`Font.FamilyName`](https://docs.microsoft.com
 #### Error scenarios
 
 Runtime:
-* If the value of `ApplicationFont` resource can't  be parsed, this will result in a compilation error.
-* If the font name supplied in the `ApplicationFont` value is invalid, this will result in a runtime error.
+* If the value of `ApplicationDefaultFont` resource can't  be parsed, this will result in a compilation error.
+* If the font name supplied in the `ApplicationDefaultFont` value is invalid, this will result in a runtime error.
 
 Designer:
-* If the value of `ApplicationFont` resource can't  be parsed, this will result in the designer process load failure.
-* If the font name supplied in the `ApplicationFont` value is invalid, this will result in the designer process load failure.
+* If the value of `ApplicationDefaultFont` resource can't  be parsed, this will result in the designer process load failure.
+* If the font name supplied in the `ApplicationDefaultFont` value is invalid, this will result in the designer process load failure.
 
 
 
