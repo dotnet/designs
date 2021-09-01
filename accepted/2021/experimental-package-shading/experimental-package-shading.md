@@ -21,13 +21,7 @@ NuGet only allows a single version of each package to be resolved in the package
 
 To demonstrate this, consider an example where a project references package `Foo v2.0` and package `Bar`, and `Bar` depends on `Foo v1.0`:
 
-```mermaid
-flowchart LR
-P[Project]
-P --> B[Bar]
-P --> |2.0| C2[Foo v2.0]
-B --> |1.0| C1[Foo v1.0]
-```
+![block1](experimental-package-shading.md.1.png)]
 
 The project *transitively* depends on `Foo v1.0` and directly depends on `Foo v2.0`. A project cannot depend on multiple versions of the same package, because this would cause conflicts and ambiguity. NuGet must *unify* the two differently versioned Foo dependencies to a single version in the context of that project.
 
@@ -35,13 +29,7 @@ The project *transitively* depends on `Foo v1.0` and directly depends on `Foo v2
 
 NuGet performs unification based on the dependency versions defined in the referencing packages or projects. Dependency versions may be exact, an explicit range, or a simple version that implicitly means "equal to or greater than". In the above example, the `v1.0` dependency means `>= v1.0`, so it is compatible with `v2.0`, and NuGet can unify them:
 
-```mermaid
-flowchart LR
-P[Project]
-P --> B[Bar]
-P --> |2.0| C[Foo v2.0]
-B --> |1.0| C
-```
+![block2](experimental-package-shading.md.2.png)]
 
  When different versions of a dependency cannot be unified, NuGet restore fails with errors that are often difficult to understand (`NU1605`, `NU1107`). These errors currently make up a majority of NuGet restore errors. In some cases unification is possible but not automatic, in which case a developer may opt in by adding a direct reference to the dependency, but this is not straightforward.
 
@@ -63,28 +51,11 @@ To solve this problem, we will implement a mechanism called _dependency shading_
 
 When a dependency of a package is _shaded_, the dependency and its assets are renamed so that it does not conflict with any other copies of that dependency that are directly or transitively references by the referencing project.
 
-```mermaid
-flowchart LR
-P[Project]
-P --> B[Bar]
-P --> |2.0| C2[Foo v2.0]
-B --> |1.0| C1[Foo v1.0]
-```
+![block3](experimental-package-shading.md.3.png)]
 
-```mermaid
-flowchart LR
-P[Project]
-P --> B[Bar]
-P --> |2.0| C2[Foo]
-B --> C1[Foo.Shaded.v1_0.Bar]
-```
+![block4](experimental-package-shading.md.4.png)]
 
-```mermaid
-flowchart LR
-P[Project]
-P --> B["Bar\nFoo.Shaded.v1_0.Bar"]
-P --> |2.0| C2[Foo]
-```
+![block5](experimental-package-shading.md.5.png)]
 
  A package author may choose to shade a dependency, and if they do so, the dependency will effectively become invisible to consumers of the package. A shaded dependency's assets are embedded into the shading package in such a way that they do not conflict with any other copies of those assets in the consumer's graph. Any reference to the shaded assets in the referencing copy will always resolve to the exact copy of those assets that it embedded.
 
