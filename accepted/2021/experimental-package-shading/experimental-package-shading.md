@@ -1,6 +1,104 @@
 # Experiment: NuGet Package Shading
 
+**Owner** [Mikayla Hutchinson](https://github.com/mhutch)
+
+## Introduction
+
+Producer-side package shading is an experimental feature that allows a NuGet package authors to "shade" a dependency: embed a renamed copy of it their package. This ensures that consumers of the package get the exact same version that the package author intended, regardless of any other direct or indirect references to that dependency.
+
+The major downside to producer-side shading is that the shaded assemblies are included in the app even when they are identical or completely compatible with other shaded or non-shaded copies of the same dependency. This forced redundancy is a problem for scenarios where app size and memory use is highly important such as mobile apps and client-side web apps, **so producer side shading is not intended to ever become non-experimental or recommended for general use**.
+
+The preferred long-term solution is consumer-side shading, where shading is performed holistically for an app, where it shade packages only when necessary, and deduplicate compatible and identical shaded assemblies.
+
+Producer-side shading uses same building blocks as consumer-side shading, but is substantially smaller in scope. Developing and releasing producer-side shading as an experimental feature allows us to build out and test some of the underlying mechanisms for consumer-side shading, while making shading functionality available to package authors who need it.
+
+## Background
+### Dependency unification
+
+To understand why shading is needed, we must understand dependency unification and the problems it can cause.
+
+NuGet only allows a single version of each package to be resolved in the package graph. When a project has multiple references to the same package, NuGet must *unify* them to a single version. This frequently happens with transitive references to common packages such as `Newtonsoft.Json`.
+
+To demonstrate this, consider an example where a project references package `Foo v2.0` and package `Bar`, and `Bar` depends on `Foo v1.0`:
+
+```mermaid
+flowchart LR
+P[Project]
+P --> B[Bar]
+P --> |2.0| C2[Foo v2.0]
+B --> |1.0| C1[Foo v1.0]
+```
+
+The project *transitively* depends on `Foo v1.0` and directly depends on `Foo v2.0`. A project cannot depend on multiple versions of the same package, because this would cause conflicts and ambiguity. NuGet must *unify* the two differently versioned Foo dependencies to a single version in the context of that project.
+
+> **NOTE** Unification is independent for each project. All the direct and transitive dependencies for each project must be unified in the context of that project, but the result of unification is specific to that set of dependencies. Another project in the same solution with different dependencies and/or dependency versions may unify to different versions of the same dependencies.
+
+NuGet performs unification based on the dependency versions defined in the referencing packages or projects. Dependency versions may be exact, an explicit range, or a simple version that implicitly means "equal to or greater than". In the above example, the `v1.0` dependency means `>= v1.0`, so it is compatible with `v2.0`, and NuGet can unify them:
+
+```mermaid
+flowchart LR
+P[Project]
+P --> B[Bar]
+P --> |2.0| C[Foo v2.0]
+B --> |1.0| C
+```
+
+ When different versions of a dependency cannot be unified, NuGet restore fails with errors that are often difficult to understand (`NU1605`, `NU1107`). These errors currently make up a majority of NuGet restore errors. In some cases unification is possible but not automatic, in which case a developer may opt in by adding a direct reference to the dependency, but this is not straightforward.
+
+When unification takes places, it often works fine. However, when references are incorrectly unified (i.e. they are not not actually compatible), this can result compiler errors, runtime errors, and behavioral differences. Runtime errors and behavioral errors in particular can be extremely difficult to find and diagnose. They may only be observed in production, and it may not be clear where they originate. These kinds of issues are often not attributed to NuGet, so NuGet unification issues likely represent a much bigger problem than the restore error codes would indicate.
+
+### Impact on package authors
+
+Unification problems create issues for package authors, not just consumers:
+
+* Package consumers may be averse to install or update a reference to a package if it depends on another package used in their app, as it may cause unification errors or force them to The two versions may unify but are no longer fully compatible, it will cause problems elsewhere in their app.
+* Package consumers may not be able to install or update a reference to a package if it depends on a package that their project already dependencs on. package used in their project and the references cannot be unified.
+* Unifiication-related bugs may manifest in an application ways that make them appear to be a bug in the referencing package.
+
+As a result, some package authors avoid depending on other packages to avoid the risk of their consumers encountering unification problems, particularly if those other packages are widely used.
+
+## Shading
+
+To solve this problem, we will implement a mechanism called _dependency shading_.
+
+When a dependency of a package is _shaded_, the dependency and its assets are renamed so that it does not conflict with any other copies of that dependency that are directly or transitively references by the referencing project.
+
+```mermaid
+flowchart LR
+P[Project]
+P --> B[Bar]
+P --> |2.0| C2[Foo v2.0]
+B --> |1.0| C1[Foo v1.0]
+```
+
+```mermaid
+flowchart LR
+P[Project]
+P --> B[Bar]
+P --> |2.0| C2[Foo]
+B --> C1[Foo.Shaded.v1_0.Bar]
+```
+
+```mermaid
+flowchart LR
+P[Project]
+P --> B["Bar\nFoo.Shaded.v1_0.Bar"]
+P --> |2.0| C2[Foo]
+```
+
+ A package author may choose to shade a dependency, and if they do so, the dependency will effectively become invisible to consumers of the package. A shaded dependency's assets are embedded into the shading package in such a way that they do not conflict with any other copies of those assets in the consumer's graph. Any reference to the shaded assets in the referencing copy will always resolve to the exact copy of those assets that it embedded.
+
+> NOTE: The terminology of dependency shading comes from [Maven's shade plugin](https://maven.apache.org/plugins/maven-shade-plugin/index.html), but similar concepts apply in other ecosystems such as "vendoring" in Go.
+
+A major downside to shading is that an app will end up with multiple copies of the same library, even when those copies are compatible or identical. This is particularly problematic in mobile and WebAssembly where app size is important and significant effort has been invested to reduce app size. This solution should be considered an intermediate step towards a more complete, whole-app solution that is able to unify compatible shaded dependencies.
+
 (intro and scenarios to be added)
+
+## Concerns
+
+Package shading is fundamentally inefficient. Loading multiple copies of the same library increases an app's download size and memory use, which is particularly problematic in mobile and client-side web applications. Mobile devices have limited memory and will terminate backgrounded applications if they use too much memory, and users may be reluctant to download an app if it's too large, particularly on client namespaces.
+
+ users will be unhappy if a client side web page takes too long to load.
 
 ## Usage
 
@@ -16,9 +114,45 @@ Shading is superficially invisible to consumers of a package that has shaded dep
 
 ## Behavior
 
+The goal of this spec is to build a package shading mechanism that builds upon and extends NuGet's current functionality for handling package assets.
+
+### Characteristics
+
+A shaded package reference must have all of the following characteristics:
+
+1. **It is not transitive**. It does not flow to projects that reference the
+   project that contains the shaded package reference, nor is it a dependency of
+   the package created by packing that project.
+2. **Its runtime assets are treated as `CopyLocal`**. They are copied into the
+   output directory of the project that contains the shaded package reference,
+   and are packed into the package created by packing that project.
+3. **Its runtime assets are renamed** such that
+   they are specific to the referencing project. When the a package created from
+   that project is consumed as a package reference, the renamed runtime assets
+   must not collide with copies of those assets from any other shaded or
+   unshaded package reference to the original package.
+4. **References to its compile assets are not exposed** by the project that
+   contains the shaded package reference. For example, public APIs in compile
+   assets of that project must not use types from the shaded package's compile
+   assets, as the shaded package's compile assets will not be available to
+   projects that reference that project or the package created by packing it.
+
+The only one of these characteristics that is specific to shaded package
+references is runtime asset renaming. A project will already make a package
+reference non-transitive if it only consumes [*private
+assets*](https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets)
+from that reference. Validating that that references to a dependency's  compile
+assets are not exposed would a useful way for projects to ensure they do not
+expose implementation details. And bundling private assets is a [problem for authors of MSBuild tasks](https://til.cazzulino.com/msbuild/how-to-include-package-reference-files-in-your-nuget-package).
+
+
+explain idea of building from primitives.
+
 ### Private assets
 
-The concept of shading overlaps NuGet's existing concept of [*private assets*](https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets). Both enable a project to consume assets from a package reference without exposing it transitively.
+The concept of shading overlaps NuGet's existing concept of 
+Both enable a project to consume assets from a package reference without
+exposing it transitively.
 
 Although a project can technically repackage private assets into its own package, this is only useful in certain scenarios such as packages containing MSBuild tasks and targets. A project should not repackage private assets from a dependency as compile-time and runtime assets in its own package, as they will collide with other copies of those assets in a referencing project.
 
@@ -71,3 +205,6 @@ Shading will only be performed on private package references. Package references
 To allow deterministic builds, the assets in a synthetic shaded package are renamed using a deterministic ID created by mangling the name of the project and the original ID of the package: `__Shaded_{ProjectName}_{OriginalPackageId}`. The ID of the synthetic package is an internal implementation detail and may be subject to change, but this does not matter as it should never end up in any artifacts created from the project.
 
 Only direct package references may be shaded. Shaded direct package references may be unified with transitive package references, but only when those transitive package references are transitive via other shaded package references.
+
+
+TODO explain why direct only
