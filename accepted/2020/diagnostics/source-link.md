@@ -18,7 +18,7 @@ Generating and embedding a Source Link file can also be done manually with an MS
 ### GitHub
 GitHub allows files to be downloaded from the domain raw.githubusercontent.com. For example, the README for the [.NET Core](https://github.com/dotnet/core) repo can be downloaded directly for commit `1ae869434444693bd463bf972af5b9a1b1a889d0` with the following URL:
 ```
-https://raw.githubusercontent.com/dotnet/core/1ae869434444693bd463bf972af5b9a1b1a889d0/README.md. 
+https://raw.githubusercontent.com/dotnet/core/1ae869434444693bd463bf972af5b9a1b1a889d0/README.md
 ```
 Using this URL scheme, it is possible to generate Source Link for GitHub repositories. 
 
