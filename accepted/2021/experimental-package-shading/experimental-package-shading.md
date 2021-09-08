@@ -193,7 +193,25 @@ We could build a mechanism for opting transitive references out of shading, but 
 
  However, direct dependencies that are shaded will unify with indirect dependencies that are transitive via other shaded dependencies. This is necessary for correctness, but it also means a package author can opt into shading a transitive dependency by making it a direct dependency.
 
-> TODO diagrams
+To demonstrate this, consider a project that produces a package. The project has a shaded reference to package `Foo`, and `Foo` depends on package `Bar`, so the package project transitively depends on `Bar`.
+
+![block6](experimental-package-shading.md.6.png)
+
+Restoring, building and packing this will result in a package where the transitive reference to `Bar` from the project has become a direct dependency in the package. The shaded package `Foo` has been hidden from the dependency graph but the graph is otherwise unchanged.
+
+![block7](experimental-package-shading.md.7.png)
+
+However, if the project adds a direct shaded reference to `Bar`, this will unify with the transitive reference from `Bar`, and `Foo` will depend on the shaded version of `Bar`.
+
+![block8](experimental-package-shading.md.8.png)
+
+This unification is necessary so that the package project doesn't have two references to differently named copies of the same assembly, which would result in the same problems as shading public references. The package project would see multiple copies of the types from `Bar` with the exact same fully qualified names, which would cause compile errors. While it is possible to resolve this, it would substantially increase scope.
+
+Lastly, consider a case where the package project has a shaded reference to a package that's also a dependency of an unshaded reference.
+
+![block9](experimental-package-shading.md.9.png)
+
+This is **explicitly disallowed** at this time for the same reason as the previous example: the package project's direct and transitive references to `Bar` must unify. The only way to do this is by shading `Foo` so that its references to `Bar` can be updated to target the shaded version, and we require the developer do this explicitly so that all shading operations are clear and intentional.
 
 ## FAQ
 
@@ -207,7 +225,9 @@ We could build a mechanism for opting transitive references out of shading, but 
 
 ### Why only allow shading private references?
 
-> TODO
+We have made an explicit scoping decision to disallow shading of public references. Shading of public references leads to scenarios where a project has references to multiple types with the same fully qualified names, differing only by assembly name. While this could be handled using [`extern alias`](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/extern-alias), it massively complicates the experience for consumers of the library, and would need better support from tooling before being made mainstream.
+
+Changing the *namespace* of shaded assemblies would also make public shaded references possible, but this would substantially complicate the assembly rewriting and bake the rewritten namespaces into the APIs, samples, and docs. This is not scalable and doesn't align with the long term goal of consumer-side shading.
 
 ### As a package author, when should I shade a dependency?
 
