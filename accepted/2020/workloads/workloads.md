@@ -31,7 +31,7 @@ The goals for this proposal follow:
 
 ## High-level approach
 
-The proposal can be broken into two main topics: acquisition, and composition.
+The proposal can be broken into two main topics: acquisition and composition.
 
 * *Acquisition* describes the capability and mechanism to acquire a workload, in part or in full, via an installation tool.
 * *Composition* describes file formats, pack types, on-disk locations, and other mechanisms that define a workload, its constituent parts and associated versions, which enables those parts to be acquired, updated, and used as a coherent set.
@@ -46,7 +46,7 @@ Since the first .NET Core release, we have delivered various types of "packs" as
 
 ### Composition
 
-Workloads will be composed and distributed as a set of packs. Packs are just a compressed set of files, like the [ASP.NET Core runtime]((https://www.nuget.org/packages/Microsoft.AspNetCore.App.Runtime.linux-arm64)). They are not discoverable on their own, nor do they describe the other packs that may work with or require or the various scenarios in which they can be used. Packs can includes runtimes, templates, MSBuild tasks, tools, and anything else that is required to build and run projects.
+Workloads will be composed and distributed as a set of packs. Packs are just a compressed set of files, like the [ASP.NET Core runtime]((https://www.nuget.org/packages/Microsoft.AspNetCore.App.Runtime.linux-arm64)). They are not discoverable on their own, nor do they describe the other packs that may work with or require or the various scenarios in which they can be used. Packs can include runtimes, templates, MSBuild tasks, tools, and anything else that is required to build and run projects.
 
 Today, there are many hard-coded [versions and packages described in MSBuild targets](https://github.com/dotnet/core-sdk/blob/edbdf82041abff369ed64e5d0d6fd590e75b5328/src/redist/targets/GenerateBundledVersions.targets) in the SDK that are used to compose the product. Moving forward, we will externalize this compositional information into a set of workload manifest files. Each workload will be defined by a manifest (likely distributed as its own small pack), and use it to describe the set of versioned packs that it offers. MSBuild and potentially other tools will be updated to discover and read these manifests, to the end of honoring them in the build and any other relevant operations.
 
@@ -54,7 +54,7 @@ The target framework will be used as the primary currency in project files that 
 
 The set of TFM to workload mappings defined by the workloads. The SDK will carry a copy of this mapping, but will defer to information carried as part of installed workloads when they present newer information.
 
-Each workload will expose a set of bundles of packs that a users can use. One of these bundles will be the default one you get to satisfy a TFM. Additional bundles will offer additional functionality. For example, Android AOT support would be exposed as an additional bundle, not provided by the default bundle. These additional bundles can be referenced as a required dependency of a project as a project property or installed manually via the CLI or a supported installation tool.
+Each workload will expose a set of bundles of packs that a user can use. One of these bundles will be the default one you get to satisfy a TFM. Additional bundles will offer additional functionality. For example, Android AOT support would be exposed as an additional bundle, not provided by the default bundle. These additional bundles can be referenced as a required dependency of a project as a project property or installed manually via the CLI or a supported installation tool.
 
 ### Acquisition
 
