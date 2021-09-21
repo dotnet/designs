@@ -178,7 +178,7 @@ products are installed.
 
 | File name | Content |
 | --- | --- |
-| `install_location` | `usr/local/share/dotnet/x64` |
+| `install_location` | `/usr/local/share/dotnet/x64` |
 | `install_location_arm64` | `usr/local/share/dotnet` |
 | `install_location_x64` | `usr/local/share/dotnet/x64` |
 
@@ -188,7 +188,7 @@ that is the right location.
 * arm64 6 apphost will react to the `install_location_arm64`
 * x64 6 apphost will react to the `install_location_x64`
 
-*Note: All supported downlevel installers (3.1 and 5) will need to be updated
+*Note: All supported downlevel installers (3.1) will need to be updated
 to install the product into a different location and to always write
 the arch-less configuration file `install_location`.*
 
