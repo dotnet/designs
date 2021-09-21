@@ -161,8 +161,11 @@ with the product location, in the format `install_location_<arch>`. So for examp
 `install_location_x64` (all lower case). The content of the file should be
 a single line with the path to the product.
 
-*Note: If installers can write the file, they should also read it and validate
-that they don't overwrite it with different information.*
+*Note: Installers should probably not overwrite any of these files if
+they're already present. The best option would be to read the file and install
+into the location specified in the file instead of the default (this is how Windows
+installers should work already). The next best option is to not overwrite
+as the file may contain intentional user changes.*
 
 #### Support for downlevel apphost
 
@@ -179,8 +182,8 @@ products are installed.
 | File name | Content |
 | --- | --- |
 | `install_location` | `/usr/local/share/dotnet/x64` |
-| `install_location_arm64` | `usr/local/share/dotnet` |
-| `install_location_x64` | `usr/local/share/dotnet/x64` |
+| `install_location_arm64` | `/usr/local/share/dotnet` |
+| `install_location_x64` | `/usr/local/share/dotnet/x64` |
 
 * 3.1 and 5 apphosts will only read the arch-less file `install_location`,
 which points to x64 install. Since 3.1 and 5 are only supported on x64 on macOS,
@@ -250,8 +253,7 @@ Apphosts would have to contain a parser for this format and implement additional
 logic to handle duplicate entries and such.
 
 But more importantly installers would have to be able to read and edit this file
-which is rather challenging given the currently used installer technologies
-(which basically rely on shell scripts).
+which adds complexity to the installers.
 
 ### Use existing format for architecture specific environment variables
 
