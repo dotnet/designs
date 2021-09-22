@@ -161,11 +161,10 @@ with the product location, in the format `install_location_<arch>`. So for examp
 `install_location_x64` (all lower case). The content of the file should be
 a single line with the path to the product.
 
-*Note: Installers should probably not overwrite any of these files if
-they're already present. The best option would be to read the file and install
-into the location specified in the file instead of the default (this is how Windows
-installers should work already). The next best option is to not overwrite
-as the file may contain intentional user changes.*
+*Note: Installers will overwrite existing files. This is to provide
+predictable experience: Installing a given SDK followed by trying to use it
+should just work. These files are maintained by the installer. Custom modifications
+will be overwritten by the next installation.*
 
 #### Support for downlevel apphost
 
@@ -175,6 +174,9 @@ the architecture which .NET supports in versions lower than .NET 6
 should also write the product location to the arch-less location file
 `install_location`. This is needed for downlevel applications to correctly
 find the product.
+
+*Note: Installers will overwrite the `install_location` file to make the installed
+product work as expected. Custom modification will be discarded in that case.*
 
 For example this should be present on macOS arm64 systems if both x64 and arm64
 products are installed.
@@ -263,3 +265,16 @@ and so on.
 
 We don't like this pattern as it feels too Windows-centric and would look
 weird on non-Windows platforms.
+
+### Preserve configuration
+
+The installers would read the config files to determine the location
+of already installed product. And they would either install to that location
+or provide feedback to the user.
+
+This approach is problematic because currently the macOS installers are not capable
+of customizing their install location when they run, so the installer would have
+to basically fail if the config file contained a non-default location.
+
+Also, it's expected that custom modifications to the config files will be very rare.
+In general the config files are maintained by the installer to make the product work.
