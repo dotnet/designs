@@ -218,7 +218,7 @@ This option is intended as the most user friendly option. It's the best experien
   - x64 .NET 6 runtimes
   - x64 .NET 5 runtimes
   - x64 .NET Core 3.1 runtimes
-  - [New] x64 .NET 3.1+ ASP.NET Core runtimes for macOS
+  - x64 .NET 3.1+ ASP.NET Core runtimes for macOS
 - **Unsupported x64 installers (for coexistence)**
   -  x64 .NET SDKs
 
@@ -245,3 +245,34 @@ Actual Plan:
 We decided that option 3 will result in CLI breaking changes. While option 2 could theoretically be delivered between .NET 6 and .NET 7 with a .NET SDK update (like `6.0.200`), option 3 can only be delivered with a major release. It is also fair to note that the breaking changes associated with option 3 are not dependent on option 2. We could in theory make the breaking changes for option 3 now, enabling the remaining work to be done either before .NET 6 or in a .NET SDK update.
 
 Note: These plans assume that Visual Studio (Dev17) will not be supported on Windows Arm64 (with x64 emulation) before .NET 7. They also assume that Visual Studio for Mac will adapt to this plan, aligned with .NET 6. If those are not true, then we need to re-assess this plan.
+
+## Update
+
+Update: September 23, 2021
+
+The following is what we've decided to support, in terms of x64 emulation and native Arm64 architecture builds and their necessary co-existence.
+
+Supported products:
+
+- .NET Core 3.1 x64 runtimes
+- .NET 5 x64 runtimes
+- .NET 5 Arm64 runtimes (Windows only)
+- .NET 6+ x64 and Arm64 runtimes
+- .NET 6+ x64 and Arm64 SDKs
+
+In terms of CLI targeting, we will deliver the following experience.
+
+macOS:
+
+- .NET Core 3.1 will default to x64
+- .NET 5 will default to x64
+- .NET 6+ will default Arm64
+
+Windows:
+
+- .NET Core 3.1 will default to x64
+- .NET 5+ will default to Arm64
+
+What is meant by "default to x64?"
+
+Assume a project that target `netcoreapp3.1`. `dotnet run` should generate an x64 apphost that attempts to discover a compatible runtime (like .NET Core 3.1) in the x64 installation location. This same model applies to other commands like `dotnet test` and `dotnet tool install`.
