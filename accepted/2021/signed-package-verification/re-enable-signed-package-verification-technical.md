@@ -2,7 +2,7 @@
 
 Owners:  [Damon Tivel](https://github.com/dtivel), [Richard Lander](https://github.com/richlander)
 
-This document specifies the technical details to [re-enable cross-platform NuGet signed package verification](https://github.com/dotnet/designs/pull/245).
+This document specifies the technical details to [re-enable cross-platform NuGet signed package verification](re-enable-signed-package-verification.md).
 
 ## Context
 
