@@ -151,6 +151,8 @@ on Linux and macOS.
 Pre-.NET 6 Windows installer writes registry keys for all architectures
 (even though it only installs one of them). Ideally the installer would
 only write the key for the architecture it's actually installing.
+The plan is to eventually  modify the installers such that only the "runtime" installers
+write the registry key (and only for the architecture they install).
 
 #### Linux/macOS installer behavior
 
