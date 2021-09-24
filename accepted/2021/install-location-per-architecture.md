@@ -65,22 +65,26 @@ line, which is the registered location path. There's nothing else in this file.
 
 Already shipped apphost (.NET Core 3.1 and .NET 5) only knows about one install location
 and only about one registration mechanism. The current proposal is to use
-the existing default install location for the native architecture (that is Arm64)
+the existing default install location for the native architecture (that is arm64)
 and have a new location for the non-native architecture (x64). Existing apphost
 is always x64 (.NET hasn't yet shipped Arm64 release with this) and as such
 will not work when using just the default install location knowledge.
 
 On Linux and macOS the apphost only reads the `DOTNET_ROOT`, in all cases.
 
-## Proposal for .NET 6
+## New .NET 6 behavior
 
 ### New default install location
 
 The current design is to use a different location for each architecture,
 so apphost should hardcode the knowledge of each of the default locations.
 This means specifically that x64 apphost on macOS will need to be aware
-whether it's running on Arm64 OS and change the default install location.
+whether it's running on arm64 OS and change the default install location.
 Similarly for Windows.
+
+Note that we can't change downlevel apphosts and thus we need to rely on
+the global registration mechanism to redirect these apphosts to the correct
+location.
 
 ### No changes to registration on Windows
 
@@ -91,39 +95,38 @@ to change anything.
 ### Evolve the registration on Linux and macOS
 
 Add the ability to register architecture specific install location
-on Linux and macOS. This will be done by changing the format of the existing
-configuration file `/etc/dotnet/install_location`.
+on Linux and macOS. This will be done by adding architecture specific configuration
+files next to the existing `/etc/dotnet/install_location`.
 
 #### Current format
 
-```console
-/path/to/install/location
-```
+| File name | Content |
+| --- | --- |
+| `/etc/dotnet/install_location` | `/path/to/install/location` |
+
+Single configuration file `/etc/dotnet/install_location` which contains
+a single line which is the path to the product.
 
 #### New format
 
-```console
-[/path/to/install/location]
-<arch1>=/path/to/arch/install/location
-<arch2>=/path/to/arch2/install/location
-```
+| File name | Content |
+| --- | --- |
+| `/etc/dotnet/install_location` | `/path/to/install/location` |
+| `/etc/dotnet/install_location_<arch1>` | `/path/to/arch1/install/location` |
+| `/etc/dotnet/install_location_<arch2>` | `/path/to/arch2/install/location` |
 
-* The first line of the file can still be just a path (no architecture prefix).
-Apphost from .NET Core 3.1 and .NET 5 will only read this line and nothing
-else in the file (already the case). .NET 6 apphost will use this only if
-architecture specific location is not specified. Only the first line can
-omit the architecture prefix.
-* All other lines are prefixed with the name of the architecture
-(`x86`, `x64`, `arm32`, `arm64`) followed by the equal sign `=` followed
-by the absolute path of the install location for that architecture.
+* The arch-less file contains location for downlevel product.
+Apphost from .NET Core 3.1 and .NET 5 will only read this file.
+.NET 6 apphost will use this only if architecture specific file is not present.
+* All other files are architecture specific with the name of the architecture
+(`x86`, `x64`, `arm32`, `arm64`) appended to the file name (all lower case).
+.NET 6+ apphosts will read the architecture specific file first and use its content
+if present.
 
-Each architecture should be specified no more than once (apphost will
-use only the first occurrence). Installers should write architecture
-specific lines (with arch prefix) even on systems with only one architecture.
-The un-prefixed first line should only be added to support downlevel apphost.
+All files are of the same format, single line which contains the path to the product.
 
-This will mean adding more complex parsing logic into the host, but there
-has to be some addition to support multi-arch on non-Windows platforms.
+Installers should write architecture specific files even on systems with only
+one architecture. The arch-less file should only be added to support downlevel apphost.
 
 ### Installer behavior and impact on host
 
@@ -138,34 +141,63 @@ any specific knowledge of where to find the install location, it would just
 invoke the right apphost.
 
 On all platforms the apphost will have a default location hardcoded
-and so if the installer puts the layout into that location it doesn't have to
+and so if the installer puts the product into that location it doesn't have to
 register that installation. But it would be cleaner if it did so anyway.
-Currently we always register the installation on Windows, but we don't seem
-to do so on Linux and macOS.
+Currently we always register the installation on Windows, but we don't do so
+on Linux and macOS.
 
-*Note: If installers write the file, they should also read it and validate
-that they don't overwrite it with different information. It's unclear yet
-if this is necessary and in which situations.*
+#### Windows installer behavior
+
+Pre-.NET 6 Windows installer writes registry keys for all architectures
+(even though it only installs one of them). Ideally the installer would
+only write the key for the architecture it's actually installing.
+The plan is to eventually  modify the installers such that only the "runtime" installers
+write the registry key (and only for the architecture they install).
+
+#### Linux/macOS installer behavior
+
+Pre-.NET 6 Linux/macOS installer doesn't write the `install_location` file.
+
+Starting with .NET 6, installers should write architecture specific file
+with the product location, in the format `install_location_<arch>`. So for example
+`install_location_x64` (all lower case). The content of the file should be
+a single line with the path to the product.
+
+*Note: Installers will overwrite existing files. This is to provide
+predictable experience: Installing a given SDK followed by trying to use it
+should just work. These files are maintained by the installer. Custom modifications
+will be overwritten by the next installation.*
 
 #### Support for downlevel apphost
 
 In order to support running downlevel apphost apps on multi-arch non-Windows
-architectures (currently only applies to macOS), the installer of .NET 6 and above
-should write the configuration file in a specific shape, for example (on macOS arm64):
+architectures (currently only applies to macOS), the installer for
+the architecture which .NET supports in versions lower than .NET 6
+should also write the product location to the arch-less location file
+`install_location`. This is needed for downlevel applications to correctly
+find the product.
 
-```console
-/usr/local/share/dotnet/x64
-arm64=/usr/local/share/dotnet
-x64=/usr/local/share/dotnet/x64
-```
+*Note: Installers will overwrite the `install_location` file to make the installed
+product work as expected. Custom modification will be discarded in that case.*
 
-With the above proposed changes this would guarantee that all apphosts
-would work if the right frameworks are installed.
+For example this should be present on macOS arm64 systems if both x64 and arm64
+products are installed.
 
-* 3.1 and 5 apphost would only read the first line, which points to x64 install.
-Since 3.1 and 5 are only supported on x64 on macOS, that is the right location.
-* arm64 6 apphost would react to the `arm64` location
-* x64 6 apphost would react to the `x64` location
+| File name | Content |
+| --- | --- |
+| `install_location` | `/usr/local/share/dotnet/x64` |
+| `install_location_arm64` | `/usr/local/share/dotnet` |
+| `install_location_x64` | `/usr/local/share/dotnet/x64` |
+
+* 3.1 and 5 apphosts will only read the arch-less file `install_location`,
+which points to x64 install. Since 3.1 and 5 are only supported on x64 on macOS,
+that is the right location.
+* arm64 6 apphost will react to the `install_location_arm64`
+* x64 6 apphost will react to the `install_location_x64`
+
+*Note: All supported downlevel installers (3.1) will need to be updated
+to install the product into a different location and to always write
+the arch-less configuration file `install_location`.*
 
 ### Evolve environment variable overrides
 
@@ -176,9 +208,10 @@ on Windows only works for x86 and x64.
 #### Proposed architecture specific environment variables
 
 Apphost should first recognize architecture specific environment variable
-in the format `DOTNET_ROOT_ARCH` - for example, `DOTNET_ROOT_X64` or `DOTNET_ROOT_ARM64`.
-The same mechanism would be used on all OSes. This means that x86 apphost
-on Windows would recognize `DOTNET_ROOT_X86` (it would also recognize
+in the format `DOTNET_ROOT_ARCH` (all upper case).
+For example, `DOTNET_ROOT_X64` or `DOTNET_ROOT_ARM64`.
+The same mechanism will be used on all OSes. This means that x86 apphost
+on Windows will recognize `DOTNET_ROOT_X86` (it will also recognize
 `DOTNET_ROOT(x86)` as it does today for backward compat reasons).
 
 If the architecture specific environment variable is not set all apphosts
@@ -204,17 +237,27 @@ for .NET 3.1 (which will read the non-architecture-specific variable only).
 
 ## Alternative designs
 
-### Configuration file per architecture
+### One configuration file with multiple lines
 
-In this case x64 apphost would look for its configuration in `/etc/dotnet/install_location_x64`.
-And `arm64` apphost would look into `/etc/dotnet/install_location_arm64`.
-Both would fallback to the existing `/etc/dotnet/install_location` if the arch-specific
-one doesn't exist.
+In this case the `/etc/dotnet/install_location` file format is extended to support
+multiple lines with architecture prefixes, like:
 
-The effect of this is almost identical to the proposed solution.
-The only downside is that this doesn't follow to "native first" approach
-where the native architecture gets the existing "nice" names. It also adds more
-files into `/etc/dotnet` which doesn't feel necessary.
+```console
+/usr/local/share/dotnet/x64
+arm64=/usr/local/share/dotnet
+x64=/usr/local/share/dotnet/x64
+```
+
+The advantage is less files in the configuration folder and arguably easier to
+understand configuration for humans.
+
+The main downside is added complexity to the product and installers.
+
+Apphosts would have to contain a parser for this format and implement additional
+logic to handle duplicate entries and such.
+
+But more importantly installers would have to be able to read and edit this file
+which adds complexity to the installers.
 
 ### Use existing format for architecture specific environment variables
 
@@ -224,3 +267,16 @@ and so on.
 
 We don't like this pattern as it feels too Windows-centric and would look
 weird on non-Windows platforms.
+
+### Preserve configuration
+
+The installers would read the config files to determine the location
+of already installed product. And they would either install to that location
+or provide feedback to the user.
+
+This approach is problematic because currently the macOS installers are not capable
+of customizing their install location when they run, so the installer would have
+to basically fail if the config file contained a non-default location.
+
+Also, it's expected that custom modifications to the config files will be very rare.
+In general the config files are maintained by the installer to make the product work.
