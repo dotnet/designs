@@ -252,7 +252,7 @@ Update: September 23, 2021
 
 The following is what we've decided to support, in terms of x64 emulation and native Arm64 architecture builds and their necessary co-existence.
 
-Supported products:
+Supported products for installation on ARM64 Windows and macOS:
 
 - .NET Core 3.1 x64 runtimes
 - .NET 5 x64 runtimes
