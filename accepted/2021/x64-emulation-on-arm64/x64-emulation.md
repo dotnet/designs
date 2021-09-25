@@ -260,6 +260,12 @@ Supported products for installation on ARM64 Windows and macOS:
 - .NET 6+ x64 and Arm64 runtimes
 - .NET 6+ x64 and Arm64 SDKs
 
+Note: Pre-.NET 6 x64 SDKS will be installable on macOS and Windows x64 but are not supported. They have not been updated in terms of this plan and will break Arm64 installs. If they are installed on a machine, all .NET versions will need to be uninstalled/removed and you'll need to start again with installing supported .NET SDK versions.
+
+Note: The same model is true with .NET Core 3.1 and .NET 5 x64 runtime updates before a certain TBD release. We haven't updated these runtime versions yet to work correctly. We will announce which releases (and going forward) are supported. We hope it is the servicing release that goes out at the same time as .NET 6 RTM, but that is still to be determined.
+
+Note: The same model is true .NET Core 3.0 and earlier versions.
+
 In terms of CLI targeting, we will deliver the following experience.
 
 macOS:
