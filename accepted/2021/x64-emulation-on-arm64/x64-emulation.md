@@ -275,4 +275,4 @@ Windows:
 
 What is meant by "default to x64?"
 
-Assume a project that target `netcoreapp3.1`. `dotnet run` should generate an x64 apphost that attempts to discover a compatible runtime (like .NET Core 3.1) in the x64 installation location. This same model applies to other commands like `dotnet test` and `dotnet tool install`.
+Assume a project that targets `netcoreapp3.1`. `dotnet run` should generate an x64 apphost that attempts to discover a compatible runtime (like .NET Core 3.1) in the x64 installation location. This same model applies to other commands like `dotnet test` and `dotnet tool install`.
