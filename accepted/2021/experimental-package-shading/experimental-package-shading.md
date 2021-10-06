@@ -4,7 +4,7 @@
 
 ## Introduction
 
-Producer-side package shading is an experimental feature that allows a NuGet package authors to "shade" a dependency: embed a renamed copy of it their package. This ensures that consumers of the package get the exact same version that the package author intended, regardless of any other direct or indirect references to that dependency.
+Producer-side package shading is an experimental feature that allows a NuGet package author to "shade" a dependency: embed a renamed copy of it in their package. This ensures that consumers of the package get the exact same version that the package author intended, regardless of any other direct or indirect references to that dependency.
 
 **The major downside to producer-side shading** is that the shaded assemblies are included in the app even when they are identical or completely compatible with other shaded or non-shaded copies of the same dependency. This forced redundancy is a problem for scenarios where app size and memory use is highly important such as mobile apps and client-side web apps, **so producer side shading is not intended to ever become non-experimental or recommended for general use**.
 
@@ -38,7 +38,7 @@ NuGet performs unification based on the dependency versions defined in the refer
 
  When different versions of a dependency cannot be unified, NuGet restore fails with errors that are often difficult to understand (`NU1605`, `NU1107`). These errors currently make up a majority of NuGet restore errors. In some cases unification is possible but not automatic, in which case a developer may opt in by adding a direct reference to the dependency, but this is not straightforward.
 
-Even when dependencies are unified, the result may not be correct. The versions of the dependencies may make them appear to be compatible when they are not. This can result compiler errors, runtime errors, and behavioral differences.
+Even when dependencies are unified, the result may not be correct. The versions of the dependencies may make them appear to be compatible when they are not. This can result in compiler errors, runtime errors, and behavioral differences.
 
 Runtime errors and behavioral errors in particular can be extremely difficult to find and diagnose. They may only be observed in production, and it may not be clear where they originate. These kinds of issues are often not attributed to NuGet, so NuGet unification issues likely represent a much bigger problem than the restore error codes would indicate.
 
@@ -48,13 +48,13 @@ Unification problems create issues for package authors, not just consumers:
 
 * **Package consumers may be averse to installing or updating** a reference to a package if it depends on another package used in their app, as unification may change the version of that package and cause problems elsewhere in their app.
 * **Package consumers may not be able to install or update** a reference to a package if it depends on a package that their project already depends on but the versions are different and cannot be unified.
-* **They may appear to be bugs in the package itself** if unification causes one of the package's dependencies to have a different version than it specified and it is not compatible with that version.
+* **Unification issues may appear to be bugs in the package itself** if unification causes one of the package's dependencies to have a different version than it specified and it is not compatible with that version.
 
 Some package authors go out of their way to avoid dependencies so that they will not cause unification problems for their consumers.
 
 ## Shading
 
-Shading makes a dependency immune to unification problems by giving it a new identity so it is not unified with any other dependency. When a dependency is shaded, the dependency and its assets are renamed so that it does not conflict with any other copies of that dependency that are directly or transitively references by the referencing project.
+Shading makes a dependency immune to unification problems by giving it a new identity so it is not unified with any other dependency. When a dependency is shaded, the dependency and its assets are renamed so that it does not conflict with any other copies of that dependency that are directly or transitively referenced by the referencing project.
 
 To demonstrate how shading works, we will start with our example from earlier. We have a project that depends directly on package `Foo v2.0` and transitively on `Foo v1.0` via a direct reference to package `Bar`.
 
@@ -80,6 +80,7 @@ Loading multiple copies of the same library increases an app's download size and
 
 A major downside to shading is that an app will end up with multiple copies of the same library, even when those copies are compatible or identical. This is particularly problematic in mobile and WebAssembly where app size is important and significant effort has been invested in .NET to reduce app size. This solution should be considered an intermediate step towards a more complete, whole-app solution that is able to unify compatible shaded dependencies.
 
+Shading also prevents a consumer from updating a shaded dependency directly even when they have good reason to do so, for example a critical security update.
 ## User experience
 
 ### Package consumers
@@ -104,7 +105,7 @@ The package author can be confident that when their library is used in an app, i
 
 ## Shading mechanics
 
-Shading is the process of creating a *shaded package* from an existing package: a copy of that package that has been modified to have a new identity, the *shaded name*. The *shaded assets* in a shaded package have their identity changed to match the package's shaded name, and any internal references within the assets are *retargeted* to reflect the new identities.
+Shading is the process of creating a *shaded package* from an existing package: a copy of that package that has been modified to have a new identity, the *shaded name*. The *shaded assets* in a shaded package (e.g. assemblies, localization assemblies, content files) have their identity changed to match the package's shaded name, and any internal references within the assets are *retargeted* to reflect the new identities.
 
 ### Restore-time shading
 
@@ -126,7 +127,7 @@ To maintain coherence within a package's assets and across package dependencies,
 
 A shaded package and the shading process that creates it are specific to the *shading context* of the project with the shaded package reference. A project may have multiple shaded package references, and those packages may depend on each other. If a shaded package depends on a package that is shaded in the same shading context, then the shading process must retarget the package's dependency and any references in its assets so that they target the shaded package and its assets.
 
-Retargeting a dependency involves finding references in the any references in the package and its assets so that they refer to the shaded version of that dependency. For example, an assembly reference in an assembly asset's metadata table would be updated to reference the shaded version.
+Retargeting a dependency involves [finding any references](#rename-safety) in the package and its assets so that they refer to the shaded version of that dependency. For example, an assembly reference in an assembly asset's metadata table would be updated to reference the shaded version.
 
 The shaded name is a mangled name specific to the shading context and is designed such that the shaded package's assets do not collide at runtime with assets from other shaded copies and from the original unshaded package. The mangling is an implementation detail, and may change in future versions of the .NET SDK. Developers should not depend on the mangling format or specific mangled IDs. However, for a given version of the SDK, the mangled ID is deterministic to allow for deterministic builds.
 
@@ -142,7 +143,7 @@ We start by considering the required and desired characteristics of a producer-s
 
 1. **It is not transitive**. It does not flow to projects that reference the project that contains the shaded package reference, nor is it a dependency of the package created by packing that project.
 2. **Its runtime assets are bundled**. They are copied into the output directory of the project that contains the shaded package reference, and are packed into the package created by packing that project.
-3. **Its runtime assets are renamed** such that they are specific to the referencing project. When the a package created from that project is consumed as a package reference, the renamed runtime assets must not collide with copies of those assets from any other shaded or unshaded package reference to the original package.
+3. **Its runtime assets are renamed** such that they are specific to the referencing project. When the package created from that project is consumed as a package reference, the renamed runtime assets must not collide with copies of those assets from any other shaded or unshaded package reference to the original package.
 4. **References to its compile assets are not exposed** by the project that contains the shaded package reference. For example, public APIs in compile assets of that project must not use types from the shaded package's compile assets, as the shaded package's compile assets will not be available to projects that reference that project or the package created by packing it.
 
 We next consider how setting `Shade="true"` on a package reference will cause it to have these behaviors.
@@ -155,7 +156,7 @@ Asset renaming will be handled by restore-time shading. Setting `Shade="true"` o
 
 NuGet's existing concept of [private assets](https://docs.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#controlling-dependency-assets) already provides a way to make a package reference non-transitive. If a package reference has all its assets set to be private assets, then the package reference will not be transitive.
 
-As producer-side shading requires the shaded package be private, setting `Shade="true"` on a package reference should implicitly set `PrivateAssets="all"` on that reference. Explicitly setting any other value should be cause an error.
+As producer-side shading requires the shaded package be private, setting `Shade="true"` on a package reference should implicitly set `PrivateAssets="all"` on that reference. Explicitly setting any other value should cause an error.
 
 ### Asset repackaging
 
@@ -181,10 +182,11 @@ Once this feature exists, setting `Shade="true"` on a package reference should i
 
 Renaming a package's assets so that multiple renamed versions can be used at runtime is not something that can be performed safely. Some assets may inherently have singleton behavior, and assets may embed the original name in ways that cannot automatically be detected and updated, for example when using reflection to load an assembly by name.
 
-The shading tools will detect known unsafe patterns and warn when assets cannot be renamed safely, for example calls to [`AssemblyLoadContext.Load`](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.loader.assemblyloadcontext.load?view=net-5.0) with values that cannot be determined statically. However, the shading tools will not be able to detect all problematic cases. Authors of packages with shaded dependencies are expected to test their package thoroughly and verify that it works correctly with shaded dependencies.
+The shading tools will detect known unsafe patterns and warn when assets cannot be renamed safely, for example calls to [`AssemblyLoadContext.Load`](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.loader.assemblyloadcontext.load?view=net-5.0) or `Type.GetType` with values that cannot be determined statically. We may be able to reuse existing implementations of such analyses, such as those performed by the .NET IL linker. However, the shading tools will not be able to detect all problematic cases. Authors of packages with shaded dependencies are expected to test their package thoroughly and verify that it works correctly with shaded dependencies.
 
 A particularly problematic case is when assets are not inherently unsafe, but are used by the consumer in an unsafe way. For example, types from a library with shaded dependencies may get serialized in a way that embeds a shaded shaded assembly's shaded ID into the serialization output. This is unlikely to occur in practice as  reflection based serialization of private fields is generally considered problematic, but it represents an example of the kinds of problems that cannot easily be detected automatically.
 
+There will also be challenges with assets and resources that contain assembly names, such as XAML files or linker descriptor files. We can add support for some asset/resource formats directly but a full general purpose system would need some kind of extensibility mechanism.
 ### Shading transitive references
 
 A project will only shade direct package references using producer-side shading. Although we could automatically shade transitive references of shaded references, there will be cases where a package author may _not_ actually want that, such as transitive references to out-of-band assemblies that are part of dotnet itself. Forcing a package author to unnecessarily shade transitive dependencies would increase the negative impact of producer-side package shading for no good reason.
@@ -217,18 +219,38 @@ This is **explicitly disallowed** at this time for the same reason as the previo
 
 ### Why not runtime side-by-side assembly loading?
 
-> TODO
+By extending the runtime to support side-by-side loading of different versions of the same assembly, we would remove the need to manipulate assemblies and their bytecode. However, the other parts of this proposal would still be needed - specifying which dependencies are to be shaded and including the the shaded dependencies in the package. It would limit shading to a future version of the runtime that supported such a feature, which means it would not be usable for many package authors who need to support older runtimes such as including .NET Framework.side-by-side assembly loading.
 
 ### Why not AssemblyLoadContext?
 
-> TODO
+[`AssemblyLoadContext`](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.loader.assemblyloadcontext?view=net-5.0) allows loading side-by-side copies of the same assembly on .NET Core, Xamarin, and .NET. However, it's not supported on .NET Framework. The different copies of the assemblies must be loaded into different contexts, and it's complex to manage the contexts and marshalling across the boundaries between them when the library/app architecture has not be designed around such a boundary.
+
+### Why not ILMerge or il-repack?
+
+Both [ILMerge](https://github.com/dotnet/ILMerge) and [il-repack](https://github.com/gluck/il-repack) perform the same kind of identity-changing IL/asset manipulation required by this proposal, and we may be able to leverage them for those mechanics. However, their goal is to _merge_ assemblies, and while pack-time merging could be used to implement a producer-side shading solution, it would not offer a transition path to the consumer-side shading model into which this is intended to evolve.
+
+This proposal is also largely about how shading is specified in the project file, how it fits into the restore/build/pack pipeline, and how it affects the dependency graph. ILMerge/il-repack do not by themselves answer any of those.
+
+### How does this compare to Maven shading?
+
+The Maven shade plugin shades the dependencies specified by [explicit includes](https://maven.apache.org/plugins/maven-shade-plugin/examples/includes-excludes.html), or shades all dependencies except those explicitly excluded. The include and exclude declarations permit glob patterns but do not take transitivity into account. There's a an option (`promoteTransitiveDependencies`) to promote transitive dependencies of shaded dependencies to direct dependencies, without which they are omitted. This NuGet proposal supports only explicit shading of direct dependencies, to avoid the size increase caused by unnecessary/accidental shading. It always promotes transitive dependencies as this is required for correct behavior.
+
+By default the Maven shade plugin does not change the identity of shaded classes, it simply bundles them. The developer must explicitly [specify classes to relocated](https://maven.apache.org/plugins/maven-shade-plugin/examples/class-relocation.html) if they want to prevent collisions with other copies of those classes. This NuGet proposal always changes the identity of shaded classes, as the primary purpose is to prevent collisions by changing identity.
+
+The Maven shade plugin is not limited to private dependencies. It can shade public dependencies as well. Shading of public dependencies is excluded from the scope of this proposal as the approach used by Maven is not compatible with deduplication of shaded resources.
+
+The Maven shade plugin supports explicitly specifying which classes and other assets from a dependency should be shaded. This NuGet proposal uses the existing IncludeAssets mechanism to control which assets are included from shaded dependencies, and defers removal of unused assets to the .NET IL linker.
+
+The Maven shade plugin has an extensible system of [resource transformers](https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html) that are used to perform the rewriting of assets, and supports a large range of asset types, including things like merging LICENSE files. This proposal is much more limited and handles only .NET assemblies/bytecode, with the intent that it be extended to support other known asset types later. An extensible shading mechanism may also be considered in future if needed.
+
+The Maven shade plugin has an option to mark the shaded package with a *classifier*, a mechanism that can be used to produce multiple variants of the same package. This allows package authors to produced a shaded and non-shaded variant of the package so that consumers are able to choose between them. Giving control to package consumers is good, but classifiers aren't a great way to do this: the consumer does not know what versions of the dependencies are shaded, and cannot choose whether individual dependencies are shaded. Moving the entire shading operation to consumer side will allow us to offer more fine grained control and better information and diagnostics.
 
 ### Why only allow shading private references?
 
-We have made an explicit scoping decision to disallow shading of public references. Shading of public references leads to scenarios where a project has references to multiple types with the same fully qualified names, differing only by assembly name. While this could be handled using [`extern alias`](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/extern-alias), it massively complicates the experience for consumers of the library, and would need better support from tooling before being made mainstream.
+We have made an explicit scoping decision to disallow shading of public references in the initial version of this feature. Shading of public references leads to scenarios where a project has references to multiple types with the same fully qualified names, differing only by assembly name. While this could be handled using [`extern alias`](https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/keywords/extern-alias), it massively complicates the experience for consumers of the library, and would need better support from tooling before being made mainstream.
 
 Changing the *namespace* of shaded assemblies would also make public shaded references possible, but this would substantially complicate the assembly rewriting and bake the rewritten namespaces into the APIs, samples, and docs. This is not scalable and doesn't align with the long term goal of consumer-side shading.
 
 ### As a package author, when should I shade a dependency?
 
-> TODO
+You should only shade a dependency if you are reasonably certain that it is likely to conflict with other incompatible versions of that dependency in apps that consume your package. Producer-side shading comes at a cost to the consuming application: the download/install/startup/memory cost of your shaded dependencies will no longer be shared with other copies of those dependencies, even if they are identical. By shading a dependency, you are also taking on responsibility for its bugs and security issues, as your consumers can no longer update it directly.
