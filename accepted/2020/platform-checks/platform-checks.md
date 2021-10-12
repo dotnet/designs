@@ -540,6 +540,6 @@ We have a [extended this feature][platform-exclusion] to cover that.
 [dotnet/platform-compat]: https://github.com/dotnet/platform-compat
 [API Analyzer]: https://devblogs.microsoft.com/dotnet/introducing-api-analyzer/
 [Microsoft.DotNet.Analyzers.Compatibility]: https://www.nuget.org/packages/Microsoft.DotNet.Analyzers.Compatibility
-[net5-tfms]: https://github.com/dotnet/designs/blob/master/accepted/2020/net5/net5.md
+[net5-tfms]: https://github.com/dotnet/designs/blob/main/accepted/2020/net5/net5.md
 [os-minimum-version]: https://github.com/dotnet/designs/pull/97
 [platform-exclusion]: https://github.com/dotnet/designs/blob/master/accepted/2020/platform-exclusion/platform-exclusion.md

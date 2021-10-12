@@ -36,7 +36,7 @@ For developers publishing their libraries on NuGet.org the options for publicly 
 
 Today, [symbol packages](https://docs.microsoft.com/en-us/nuget/create-packages/symbol-packages) are used to distribute symbols and sources. Although NuGet client tools provide an option to create these packages NuGet.org gallery doesn't accept them. Developers either have to manually host and acquire the packages or use other services, like http://www.symbolsource.org. 
 
-We propose that NuGet.org gallery accepts symbol packages, indexes symbols it finds in them and makes these symbols publicly available via an existing symbol server protocol ([SSQP](https://github.com/dotnet/symstore/blob/master/docs/specs/Simple_Symbol_Query_Protocol.md)). Visual Studio would be pre-configured with this symbol service by default, making it easy for developers to enable it (single click). Consumers of other tools would use this symbol service as well, not only on Windows but on any platform.
+We propose that NuGet.org gallery accepts symbol packages, indexes symbols it finds in them and makes these symbols publicly available via an existing symbol server protocol ([SSQP](https://github.com/dotnet/symstore/blob/main/docs/specs/Simple_Symbol_Query_Protocol.md)). Visual Studio would be pre-configured with this symbol service by default, making it easy for developers to enable it (single click). Consumers of other tools would use this symbol service as well, not only on Windows but on any platform.
 
 Today, symbol packages duplicate files contained in the corresponding primary package. To reduce the amount of data that the package publisher needs to upload to the server, we propose to introduce a new style of symbol packages that only contains artifacts that the NuGet symbol server indexes.
 
@@ -136,7 +136,7 @@ Acquiring and consuming source is mostly a function of first having acquired sym
 
 Source link files are json files that describe the relationship between symbol records of source files and the physical availability of source files on a secure web server (meaning using the https protocol).
 
-You can see an [example of a source link file](https://github.com/dotnet/core/blob/master/Documentation/diagnostics/source_link.md#examples) in the following example.
+You can see an [example of a source link file](https://github.com/dotnet/designs/blob/main/accepted/2020/diagnostics/source-link.md#examples) in the following example.
 
 ```json
 {

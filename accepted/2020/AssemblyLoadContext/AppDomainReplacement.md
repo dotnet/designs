@@ -236,8 +236,8 @@ all the moving parts.
 + Guidance documentation (In progress)
 + Tutorials and Samples
     * [AppWithPluginSample](https://docs.microsoft.com/dotnet/core/tutorials/creating-app-with-plugin-support)
-    * [`System.Reflection.TypeLoader` documentation and design doc](https://github.com/dotnet/corefxlab/blob/master/docs/specs/typeloader.md)
-    * [Unloading Sample](https://github.com/dotnet/samples/tree/master/core/tutorials/Unloading)
+    * [`System.Reflection.TypeLoader` documentation and design doc](https://github.com/dotnet/corefxlab/blob/archive/docs/specs/typeloader.md)
+    * [Unloading Sample](https://github.com/dotnet/samples/tree/main/core/tutorials/Unloading)
     * [gRPC C# Quick Start](https://grpc.io/docs/quickstart/csharp.html)
     * [gRPC C# Basics Tutorial](https://grpc.io/docs/tutorials/basic/csharp.html)
 + `AssemblyDependencyResolver`

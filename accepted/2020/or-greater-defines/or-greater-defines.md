@@ -205,7 +205,7 @@ need to change as follows:
 > * The `XXX_OR_GREATER` symbols are defined for the version you're targeting
 >   and all earlier versions.
 
-[docs-table]: https://github.com/dotnet/docs/blob/master/includes/preprocessor-symbols.md
+[docs-table]: https://github.com/dotnet/docs/blob/main/includes/preprocessor-symbols.md
 [docs]: https://docs.microsoft.com/en-us/dotnet/csharp/language-reference/preprocessor-directives/preprocessor-if#remarks
 
 ## Q & A

@@ -66,7 +66,7 @@ All packs are expected to be installed into the `dotnet` folder.
 
 ## Targeting and Runtime Packs
 
-The [targeting and runtime packs](https://github.com/dotnet/designs/blob/master/accepted/2019/targeting-packs-and-runtime-packs.md) introduced in .NET Core 3.0 are permitted in workloads. Targeting packs contain the framework assemblies that a project compiles against at build time, and runtime packs contain the framework and runtime binaries used to execute the project. They install into `dotnet/packs/{pack-id}/{pack-version}` and are resolved at build time using `FrameworkReference` MSBuild items.
+The [targeting and runtime packs](https://github.com/dotnet/designs/blob/main/accepted/2019/targeting-packs-and-runtime-packs.md) introduced in .NET Core 3.0 are permitted in workloads. Targeting packs contain the framework assemblies that a project compiles against at build time, and runtime packs contain the framework and runtime binaries used to execute the project. They install into `dotnet/packs/{pack-id}/{pack-version}` and are resolved at build time using `FrameworkReference` MSBuild items.
 
 Framework references are expected to be added to a project automatically by the manifest’s MSBuild targets based on the TFM. There will be a mechanism that allows the targets to omit the pack version from the framework reference, so that all versions are centralized in the manifest. Targets may add multiple targeting or runtime pack references, for example when building a `net5.0-ios` project they could add a reference to a pack containing the `net5.0` reference assemblies and a pack containing the reference assemblies for the iOS platform bindings.
 
@@ -74,7 +74,7 @@ Manifest targets may choose to add additional framework referenced based on MSBu
 
 ## SDK Packs
 
-SDK packs are MSBuild SDK NuGet packages, but they are installed to `dotnet/packs/{pack-id}/{pack-version}`. They are expected to be automatically referenced by the targets as described in the [workload resolvers](https://github.com/dotnet/designs/blob/master/accepted/2020/workloads/workload-resolvers.md) specification.
+SDK packs are MSBuild SDK NuGet packages, but they are installed to `dotnet/packs/{pack-id}/{pack-version}`. They are expected to be automatically referenced by the targets as described in the [workload resolvers](https://github.com/dotnet/designs/blob/main/accepted/2020/workloads/workload-resolvers.md) specification.
 
 ## Library Packs
 
@@ -439,7 +439,7 @@ Here is a *hypothetical* example manifest. It's not prescriptive but demonstrate
 
 # Side-by-Side Platform Updates
 
-In .NET 5, the [TFM is used to specify the .NET version](https://github.com/dotnet/designs/blob/master/accepted/2020/net5/net5.md) (e.g. .NET 5, .NET 6), and may also be used to specify a target platform (e.g. iOS, Android, WinUI) to access platform-specific API. If the TFM specifies a platform, it also implicitly or explicitly specifies a *Platform API Version*. Developers are generally expected to use the latest platform API version, specify a minimum OS version, and [use runtime checks to guard use of APIs from newer OS versions](minimum-os-version/minimum-os-version.md). Templates burn in the most recent OS API version so that new projects start out in the recommended configuration, warning-free and with access to the latest APIs.
+In .NET 5, the [TFM is used to specify the .NET version](https://github.com/dotnet/designs/blob/main/accepted/2020/net5/net5.md) (e.g. .NET 5, .NET 6), and may also be used to specify a target platform (e.g. iOS, Android, WinUI) to access platform-specific API. If the TFM specifies a platform, it also implicitly or explicitly specifies a *Platform API Version*. Developers are generally expected to use the latest platform API version, specify a minimum OS version, and [use runtime checks to guard use of APIs from newer OS versions](minimum-os-version/minimum-os-version.md). Templates burn in the most recent OS API version so that new projects start out in the recommended configuration, warning-free and with access to the latest APIs.
 
 .NET versioning policy requires that updates *within* an SDK feature band only contain low-risk servicing updates, not new features. This means that developers can feel safe installing servicing updates. They know that it's not going to allow them to accidentally make the project depend on APIs that will break it for other members on their team who are not as up to date.
 
