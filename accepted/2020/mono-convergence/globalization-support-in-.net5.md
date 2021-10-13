@@ -83,7 +83,7 @@ The packages have to be split into implementation and data parts, and ideally th
 ### Data Library Customizer (TBD)
 There is a [tool](http://www.icu-project.org/docs/demo/datacustom_help.html) built by ICU which allows customizing what kind of data will be included in the final data set. We need to explore if that is something we could leverage, either for the data islands or even as something used during the build process.
 
-Additional documentation about the tool is [here](https://github.com/unicode-org/icu/blob/master/docs/userguide/icu_data/buildtool.md)
+Additional documentation about the tool is [here](https://github.com/unicode-org/icu/blob/main/docs/userguide/icu_data/buildtool.md)
 
 ## App Local ICU for Windows
 The Windows teams is working on packaging ICU for .NET needs. It will be available as a NuGet package, and we could explore using a similar mechanism for iOS/tvOS packaging (although Windows will contain the whole data file). 

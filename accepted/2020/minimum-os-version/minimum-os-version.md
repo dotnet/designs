@@ -20,7 +20,7 @@ For libraries that are distributed as NuGet packages, it is useful to be able to
 
 The OS API Version is expected to have a clear and obvious mapping to an OS version. For example, the API binding for iOS 15.0 would have an API version of 15.0. However, small increases in the last two components of the API version are permitted for revisions to the bindings, for example API version 15.0.1 might be a revised binding for iOS 15.0.
 
-Per the [.NET 5 TFM spec](https://github.com/dotnet/designs/blob/master/accepted/2020/net5/net5.md), the MSBuild targets will extract this value from the TFM and assign it to the `TargetPlatformVersion` property.
+Per the [.NET 5 TFM spec](https://github.com/dotnet/designs/blob/main/accepted/2020/net5/net5.md), the MSBuild targets will extract this value from the TFM and assign it to the `TargetPlatformVersion` property.
 
 ## OS Target Version
 

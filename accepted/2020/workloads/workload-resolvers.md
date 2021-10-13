@@ -150,7 +150,7 @@ The `AutoImport.props` files should keep their top-level conditions as simple as
 
 ### MSBuild and resolver features
 
-We will add the following capabilities to MSBuild [SdkResolvers](https://github.com/microsoft/msbuild/blob/master/src/Framework/Sdk/SdkResolver.cs):
+We will add the following capabilities to MSBuild [SdkResolvers](https://github.com/dotnet/msbuild/blob/main/src/Framework/Sdk/SdkResolver.cs):
 
 - Return any number of SDK paths (zero, one, or many)
 - Return MSBuild items and properties to add to the evaluation result

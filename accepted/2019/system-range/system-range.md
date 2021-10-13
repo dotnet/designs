@@ -6,7 +6,7 @@ The C# team is adding [language syntax for specifying ranges][csharp-range] to
 represent parts of a string, array, or span. In order to make this work, the
 language has to be bound to a .NET type, which we call `System.Range`.
 
-[csharp-range]: https://github.com/dotnet/csharplang/blob/master/proposals/ranges.md
+[csharp-range]: https://github.com/dotnet/csharplang/blob/main/proposals/csharp-8.0/ranges.md
 
 ## Scenarios and User Experience
 
