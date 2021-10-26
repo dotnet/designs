@@ -240,8 +240,7 @@ New properties:
 +       Default=''
 +       Empty value='', implies Control.DefaultFont
 +     -->
-+    <ApplicationDefaultFont>[equivalent to Font.ToString()]</ApplicationDefaultFont>
-
++    <ApplicationDefaultFont>[equivalent to FontConverter.ConvertToInvariantString()]</ApplicationDefaultFont>
 
 +    <!--
 +       Purpose: the value in: Application.SetHighDpiMode(...);
