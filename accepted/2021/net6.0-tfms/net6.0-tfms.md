@@ -9,20 +9,20 @@ this document, we're listing which TFMs we're adding in .NET 6.0.
 
 ## Scenarios and User Experience
 
-### Using an existing library in Mac Catalyst
+### Using an existing library in Android
 
-Sophia is building an application for Mac Catalyst. From her experience with
-Xamarin iOS she knows the library `Xamarin.FFImageLoading` and wants to use it.
-The package installs successfully, but upon building she gets the following
-warning:
+Sophia is building an application for Android. From her experience with
+Xamarin.Android she knows the library `Xamarin.FFImageLoading` and wants to
+use it. The package installs successfully, but upon building she gets the
+following warning:
 
-> Package 'Xamarin.FFImageLoading' was restored using 'xamarin.ios' instead of
-> the project target framework 'net6.0-maccatalyst'. This package may not be
-> fully compatible with your project.
+> Package 'Xamarin.FFImageLoading' was restored using 'monoandroid' instead of
+> the project target framework 'net6.0-android'. This package may not be fully
+> compatible with your project.
 
-To find out more, she visits the package's project site, which is on GitHub. She
-decides to file an issue to ask whether the library will add support for Mac
-Catalyst, but for the time being she's unblocked and can continue to develop her
+To find out more, she visits the package's project site, which is on GitHub.
+She decides to file an issue to ask whether the library will add support for
+.NET 6, but for the time being she's unblocked and can continue to develop her
 app.
 
 ## Requirements
@@ -30,9 +30,6 @@ app.
 ### Goals
 
 * Support the definition of frameworks relevant for Xamarin development
-* Mac Catalyst is able to consume libraries built for Xamarin iOS, even though
-  the binary might not work. The developer should get a warning, but the tools
-  shouldn't block it.
 
 ### Non-Goals
 
@@ -53,14 +50,10 @@ app.
 | net6.0-windows     | (subsequent version of net5.0-windows)   |
 | net6.0-android     | monoandroid                              |
 |                    | (+everything else inherited from net6.0) |
-| net6.0-ios         | xamarin.ios                              |
-|                    | (+everything else inherited from net6.0) |
-| net6.0-macos       | xamarin.mac                              |
-|                    | (+everything else inherited from net6.0) |
-| net6.0-maccatalyst | xamarin.ios                              |
-|                    | (+everything else inherited from net6.0) |
-| net6.0-tvos        | xamarin.tvos                             |
-|                    | (+everything else inherited from net6.0) |
+| net6.0-ios         | everything inherited from net6.0 (only)  |
+| net6.0-macos       | everything inherited from net6.0 (only)  |
+| net6.0-maccatalyst | everything inherited from net6.0 (only)  |
+| net6.0-tvos        | everything inherited from net6.0 (only)  |
 | net6.0-tizen       | tizen                                    |
 |                    | (+everything else inherited from net6.0) |
 
@@ -91,28 +84,24 @@ example of this. The same rational can be applied to `netcoreapp` where this
 would logically be the server implementation (or maybe a .NET Core 3.x desktop
 implementation).
 
-A `net6.0-maccatalyst` project referencing a NuGet package should behave as
+A `net6.0-android` project referencing a NuGet package should behave as
 follows:
 
-* It should prefer `xamarin.ios` assets over `netcoreapp`, `netstandard`,
+* It should prefer `monoandroid` assets over `netcoreapp`, `netstandard`,
   and `net5.0` assets.
-    - However, it should still prefer `net6.0` assets over `xamarin.ios`.
+    - However, it should still prefer `net6.0` assets over `monoandroid`.
     - It also shouldn't be compatible with any other existing Xamarin TFM (such
       as `xamarin.mac`)
-* Generate NuGet warning [NU1701] when a `xamarin.ios` asset is being used
-    - Package 'packageId' was restored using 'xamarin.ios' instead the project
-      target framework 'net6.0-maccatalyst'. This package may not be fully
+* Generate NuGet warning [NU1701] when a `monoandroid` asset is being used
+    - Package 'packageId' was restored using 'monoandroid' instead the project
+      target framework 'net6.0-android'. This package may not be fully
       compatible with your project.
 * Should only use compatible `net5.0` based TFMs, namely `net5.0`, `net6.0`, and
-  `net6.0-maccatalyst`.
-    - Specifically, it should not accept `net6.0-ios`. The expectation is that
-      moving forward libraries that want to work on iOS and Mac Catalyst should
-      use `net6.0` or multi-target for `net6.0-ios` and `net6.0-maccatalyst`
+  `net6.0-android`.
 
-We want the same rules for `net6.0-ios` except that using `xamarin.ios` should
-not generate a warning. `net6.0-android` will behave in the same way as `net6.0-ios`,
-except that the Xamarin.Android TFM is `monoandroid` (1.0 - 12.0). `net6.0-tizen` is
-also the same as `net6.0-ios` except the TFM is `tizen`.
+The `net6.0-ios`, `net6.0-tvos` and `net6.0-macos` TFMs are not compatible
+with the previous `xamarin*` versions, because they contain breaking changes
+that makes existing assets unusable.
 
 This reasoning results in these precedence rules:
 
@@ -120,7 +109,6 @@ This reasoning results in these precedence rules:
 
 1. `net6.0-ios`
 1. `net6.0`
-1. `xamarin.ios` (no warning)
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
@@ -130,7 +118,6 @@ This reasoning results in these precedence rules:
 
 1. `net6.0-maccatalyst`
 1. `net6.0`
-1. `xamarin.ios` ([NU1701] warning)
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
@@ -140,7 +127,6 @@ This reasoning results in these precedence rules:
 
 1. `net6.0-macos`
 1. `net6.0`
-1. `xamarin.macos` (no warning)
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
@@ -150,7 +136,6 @@ This reasoning results in these precedence rules:
 
 1. `net6.0-tvos`
 1. `net6.0`
-1. `xamarin.tvos` (no warning)
 1. `net5.0`
 1. `netcoreapp3.1` – `1.0`
 1. `netstandard2.1` – `1.0`
@@ -429,41 +414,18 @@ it harder to add support for this later.
 
 Looks like [Apple refers to it as "Mac Catalyst"](https://developer.apple.com/mac-catalyst/).
 
-### Why did we make `net6.0-maccatalyst` compatible with the existing Xamarin TFMs?
+### Why did we not make `net6.0-ios` compatible with the existing Xamarin TFMs?
 
-It's true that for native code existing binaries don't work in Mac
-Catalyst and that developers are generally expected to recompile. However, the
-Xamarin team believes that enough managed code would just work that makes this
-compat relationship useful. This follows the principle of the .NET Framework
-compatibility mode which is:
-
-> Instead of blocking things that might not work, unblock things that could
-> work.
-
-### Why did we make `net6.0-maccatalyst` prefer `net6.0` over `xamarin.ios`?
-
-The intention of making `net6.0-maccatalyst` being able to use `xamarin.ios` is
-so that the new platform can use packages that were designed before Mac Catalyst
-existed but would have a high chance of working just fine.
-
-Considering that many Xamarin packages use bait & switch (that is they provide a
-cross-platform API but have a Xamarin-specific implementation) it is desirable
-that `xamarin.ios` is preferred over `netcoreapp` and `netstandard`. This also
-includes `net5.0`, because it is the successor of `netstandard` and existed
-before `net6.0-maccatalyst`.
-
-This rationale doesn't apply for packages that target .NET 6. When they do that,
-they are generally not expected to target the old Xamarin TFMs but the new .NET
-6 TFMs, such as `net6.0-maccatalyst` and `net6.0-ios`. As such, preferring
-`net6.0` over `xamarin.ios` is more sensible. It also avoids ambiguities for
-package authors that want to ship assets for the old Xamarin stack and the new
-.NET 6-based Xamarin stack.
+`net6.0-ios` (and the other Apple TFMs, `net6.0-tvos` and `net6.0-macos`)
+contains [breaking changes][BreakingChanges] that makes binaries built for
+existing Xamarin TFMs unusable.
 
 ### Why didn't we make `net6.0-ios` compatible with `net6.0-maccatalyst`?
 
-The expectation is that moving forward libraries that want to work on iOS and
-Mac Catalyst would use `net6.0` or multi-target for `net6.0-ios` and
-`net6.0-maccatalyst`
+The expectation is that libraries that want to work on iOS and Mac Catalyst
+would use `net6.0` or multi-target for `net6.0-ios` and `net6.0-maccatalyst`
 
 [net5.0]: ../../2020/net5/net5.md
 [NU1701]: https://docs.microsoft.com/en-us/nuget/reference/errors-and-warnings/nu1701
+[BreakingChanges]: https://github.com/xamarin/xamarin-macios/issues/13087
+
