@@ -57,7 +57,7 @@ public class LoggingSample2
 }
 ```
 
-It would be better in most end-user applications to not have to repeat the generic argument types above while declaring the strongly-typed ILogger methods. Using these Action-returning static methods via `LoggerMessage.Define<T1,T2,...,Tn>`, even though results into writing more efficient logs and is recommended as best practices, it still does not necessarily enforce event ID uniqueness for each logging method. `LoggingSample2` also involves some boilerplace code that developers would prefer to reduce maintaining.
+It would be better in most end-user applications to not have to repeat the generic argument types above while declaring the strongly-typed ILogger methods. Using these Action-returning static methods via `LoggerMessage.Define<T1,T2,...,Tn>`, even though results into writing more efficient logs and is recommended as best practices, it still does not necessarily enforce event ID uniqueness for each logging method. `LoggingSample2` also involves some boilerplate code that developers would prefer to reduce maintaining.
 
 ## Goal
 
