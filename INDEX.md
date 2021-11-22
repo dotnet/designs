@@ -86,7 +86,7 @@ Use update-index to regenerate it:
 |----|-----|------|
 | 2021 | [Flexible HTTP APIs](accepted/2021/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
 | 2021 | [Improve UTF-8 support](accepted/2021/utf8/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
-| 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Immo Landwerth](https://github.com/terrajobst), [Mads Torgersen](https://github.com/MadsTorgersen) |
+| 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Tanner Gooding](https://github.com/tannergooding), [David Wrighton](https://github.com/davidwrighton), [Mads Torgersen](https://github.com/MadsTorgersen), [Immo Landwerth](https://github.com/terrajobst) |
 
 ## Proposals
 
