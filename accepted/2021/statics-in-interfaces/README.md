@@ -196,14 +196,15 @@ interface "IModulusOperators<TSelf, TOther, TResult>"
 interface "IMultiplicativeIdentity<TSelf, TResult>"
 interface "IMultiplyOperators<TSelf, TOther, TResult>"
 interface "INumber<TSelf>"
+interface "INumberBase<TSelf>"
 interface "IParseable<TSelf>"
 interface "ISerializable"
 interface "IShiftOperators<TSelf, TOther, TResult>"
-interface "ISignedNumber<TSelf>"
+interface "ISignedNumberBase<TSelf>"
 interface "ISpanFormattable"
 interface "ISpanParseable<TSelf>"
 interface "ISubtractionOperators<TSelf, TOther, TResult>"
-interface "IUnsignedNumber<TSelf>"
+interface "IUnsignedNumberBase<TSelf>"
 interface "IUnaryNegationOperators<TSelf, TResult>"
 interface "IUnaryPlusOperators<TSelf, TResult>"
 interface "IVector<TSelf, TScalar>"
@@ -223,39 +224,42 @@ interface "IVector<TSelf, TScalar>"
 
 "IEquatable<T>"                                 <|-- "IEqualityOperators<TSelf, TOther>"
 
-"ISignedNumber<TSelf>"                          <|-- "IFloatingPoint<TSelf>"
+"ISignedNumberBase<TSelf>"                      <|-- "IFloatingPoint<TSelf>"
 
-"IAdditionOperators<TSelf, TOther, TResult>"    <|-- "INumber<TSelf>"
-"IAdditiveIdentity<TSelf, TResult>"             <|-- "INumber<TSelf>"
 "IComparisonOperators<TSelf, TOther>"           <|-- "INumber<TSelf>"
 "IDecrementOperators<TSelf>"                    <|-- "INumber<TSelf>"
 "IDivisionOperators<TSelf, TOther, TResult>"    <|-- "INumber<TSelf>"
 "IIncrementOperators<TSelf>"                    <|-- "INumber<TSelf>"
 "IModulusOperators<TSelf, TOther, TResult>"     <|-- "INumber<TSelf>"
 "IMultiplicativeIdentity<TSelf, TResult>"       <|-- "INumber<TSelf>"
-"IMultiplyOperators<TSelf, TOther, TResult>"    <|-- "INumber<TSelf>"
+"INumberBase<TSelf>"                            <|-- "INumber<TSelf>"
 "ISpanFormattable"                              <|-- "INumber<TSelf>"
 "ISpanParseable<TSelf>"                         <|-- "INumber<TSelf>"
-"ISubtractionOperators<TSelf, TOther, TResult>" <|-- "INumber<TSelf>"
 "IUnaryNegationOperators<TSelf, TResult>"       <|-- "INumber<TSelf>"
-"IUnaryPlusOperators<TSelf, TResult>"           <|-- "INumber<TSelf>"
 
-"INumber<TSelf>"                                <|-- "ISignedNumber<TSelf>"
+"IAdditionOperators<TSelf, TOther, TResult>"    <|-- "INumberBase<TSelf>"
+"IAdditiveIdentity<TSelf, TResult>"             <|-- "INumberBase<TSelf>"
+"IEqualityOperators<TSelf, TOther>"             <|-- "INumberBase<TSelf>"
+"IMultiplyOperators<TSelf, TOther, TResult>"    <|-- "INumberBase<TSelf>"
+"ISubtractionOperators<TSelf, TOther, TResult>" <|-- "INumberBase<TSelf>"
+"IUnaryPlusOperators<TSelf, TResult>"           <|-- "INumberBase<TSelf>"
+
+"INumberBase<TSelf>"                            <|-- "ISignedNumberBase<TSelf>"
 
 "IFormattable"                                  <|-- "ISpanFormattable"
 
 "IParseable<TSelf>"                             <|-- "ISpanParseable<TSelf>"
 
-"INumber<TSelf>"                                <|-- "IUnsignedNumber<TSelf>"
+"INumberBase<TSelf>"                            <|-- "IUnsignedNumberBase<TSelf>"
 
 "IAdditionOperators<TSelf, TOther, TResult>"    <|-- "IVector<TSelf, TScalar>"
 "IAdditiveIdentity<TSelf, TResult>"             <|-- "IVector<TSelf, TScalar>"
 "IBitwiseOperators<TSelf, TOther, TResult>"     <|-- "IVector<TSelf, TScalar>"
 "IComparisonOperators<TSelf, TOther>"           <|-- "IVector<TSelf, TScalar>"
-"IDecrementOperators<TSelf>"                    <|-- "INumber<TSelf>"
+"IDecrementOperators<TSelf>"                    <|-- "IVector<TSelf, TScalar>"
 "IDivisionOperators<TSelf, TOther, TResult>"    <|-- "IVector<TSelf, TScalar>"
-"IIncrementOperators<TSelf>"                    <|-- "INumber<TSelf>"
-"IModulusOperators<TSelf, TOther, TResult>"     <|-- "INumber<TSelf>"
+"IIncrementOperators<TSelf>"                    <|-- "IVector<TSelf, TScalar>"
+"IModulusOperators<TSelf, TOther, TResult>"     <|-- "IVector<TSelf, TScalar>"
 "IMultiplicativeIdentity<TSelf, TResult>"       <|-- "IVector<TSelf, TScalar>"
 "IMultiplyOperators<TSelf, TOther, TResult>"    <|-- "IVector<TSelf, TScalar>"
 "ISpanFormattable"                              <|-- "IVector<TSelf, TScalar>"
@@ -296,13 +300,13 @@ class "Vector4"
 "IBinaryInteger<TSelf>"                         <|-- "Byte"
 "IConvertible"                                  <|-- "Byte"
 "IMinMaxValue<TSelf>"                           <|-- "Byte"
-"IUnsignedNumber<TSelf>"                        <|-- "Byte"
+"IUnsignedNumberBase<TSelf>"                    <|-- "Byte"
 "ValueType"                                     <|-- "Byte"
 
 "IBinaryInteger<TSelf>"                         <|-- "Char"
 "IConvertible"                                  <|-- "Char"
 "IMinMaxValue<TSelf>"                           <|-- "Char"
-"IUnsignedNumber<TSelf>"                        <|-- "Char"
+"IUnsignedNumberBase<TSelf>"                    <|-- "Char"
 "ValueType"                                     <|-- "Char"
 
 "IComparisonOperators<TSelf, TOther>"           <|-- "DateOnly"
@@ -337,7 +341,7 @@ class "Vector4"
 "IDeserializationCallback"                      <|-- "Decimal"
 "IMinMaxValue<TSelf>"                           <|-- "Decimal"
 "ISerializable"                                 <|-- "Decimal"
-"ISignedNumber<TSelf>"                          <|-- "Decimal"
+"ISignedNumberBase<TSelf>"                      <|-- "Decimal"
 "ValueType"                                     <|-- "Decimal"
 
 "IBinaryFloatingPoint<TSelf>"                   <|-- "Double"
@@ -362,31 +366,31 @@ class "Vector4"
 "IBinaryInteger<TSelf>"                         <|-- "Int16"
 "IConvertible"                                  <|-- "Int16"
 "IMinMaxValue<TSelf>"                           <|-- "Int16"
-"ISignedNumber<TSelf>"                          <|-- "Int16"
+"ISignedNumberBase<TSelf>"                      <|-- "Int16"
 "ValueType"                                     <|-- "Int16"
 
 "IBinaryInteger<TSelf>"                         <|-- "Int32"
 "IConvertible"                                  <|-- "Int32"
 "IMinMaxValue<TSelf>"                           <|-- "Int32"
-"ISignedNumber<TSelf>"                          <|-- "Int32"
+"ISignedNumberBase<TSelf>"                      <|-- "Int32"
 "ValueType"                                     <|-- "Int32"
 
 "IBinaryInteger<TSelf>"                         <|-- "Int64"
 "IConvertible"                                  <|-- "Int64"
 "IMinMaxValue<TSelf>"                           <|-- "Int64"
-"ISignedNumber<TSelf>"                          <|-- "Int64"
+"ISignedNumberBase<TSelf>"                      <|-- "Int64"
 "ValueType"                                     <|-- "Int64"
 
 "IBinaryInteger<TSelf>"                         <|-- "IntPtr"
 "IMinMaxValue<TSelf>"                           <|-- "IntPtr"
-"ISignedNumber<TSelf>"                          <|-- "IntPtr"
+"ISignedNumberBase<TSelf>"                      <|-- "IntPtr"
 "ISerializable"                                 <|-- "IntPtr"
 "ValueType"                                     <|-- "IntPtr"
 
 "IBinaryInteger<TSelf>"                         <|-- "SByte"
 "IConvertible"                                  <|-- "SByte"
 "IMinMaxValue<TSelf>"                           <|-- "SByte"
-"ISignedNumber<TSelf>"                          <|-- "SByte"
+"ISignedNumberBase<TSelf>"                      <|-- "SByte"
 "ValueType"                                     <|-- "SByte"
 
 "IBinaryFloatingPoint<TSelf>"                   <|-- "Single"
@@ -416,25 +420,25 @@ class "Vector4"
 "IBinaryInteger<TSelf>"                         <|-- "UInt16"
 "IConvertible"                                  <|-- "UInt16"
 "IMinMaxValue<TSelf>"                           <|-- "UInt16"
-"IUnsignedNumber<TSelf>"                        <|-- "UInt16"
+"IUnsignedNumberBase<TSelf>"                    <|-- "UInt16"
 "ValueType"                                     <|-- "UInt16"
 
 "IBinaryInteger<TSelf>"                         <|-- "UInt32"
 "IConvertible"                                  <|-- "UInt32"
 "IMinMaxValue<TSelf>"                           <|-- "UInt32"
-"IUnsignedNumber<TSelf>"                        <|-- "UInt32"
+"IUnsignedNumberBase<TSelf>"                    <|-- "UInt32"
 "ValueType"                                     <|-- "UInt32"
 
 "IBinaryInteger<TSelf>"                         <|-- "UInt64"
 "IConvertible"                                  <|-- "UInt64"
 "IMinMaxValue<TSelf>"                           <|-- "UInt64"
-"IUnsignedNumber<TSelf>"                        <|-- "UInt64"
+"IUnsignedNumberBase<TSelf>"                    <|-- "UInt64"
 "ValueType"                                     <|-- "UInt64"
 
 "IBinaryInteger<TSelf>"                         <|-- "UIntPtr"
 "IMinMaxValue<TSelf>"                           <|-- "UIntPtr"
 "ISerializable"                                 <|-- "UIntPtr"
-"IUnsignedNumber<TSelf>"                        <|-- "UIntPtr"
+"IUnsignedNumberBase<TSelf>"                    <|-- "UIntPtr"
 "ValueType"                                     <|-- "UIntPtr"
 
 "Object"                                        <|-- "ValueType"
@@ -451,7 +455,7 @@ class "Vector4"
 @enduml
 -->
 
-![UML](http://www.plantuml.com/plantuml/svg/r9ZDRjim3CVlVeeWv_NGZmKx5CNMZsuvP0dcf7VQOL9kifn9T3SFU_Yb7QecbXpAHZ5WlHHao9z8IVbJo7lBOBWgL4AQqQmWny5m_66v9APIJpTeW4jZp-SfgjMRmNpAzsYs_x-WhHHV30Df3pXUecRYscK5eoz9WwblLGbCUZqhIVFVX63SUEjPepaGyRagijO0_a4MExPpLHORC90fRFEVpuCfP5ktpelN3sYOl3MkCJTOeEO6vw8PPj4GAFe5Z-Tr1Kfba7zh1D43sUwdUVEz0aLSYvsuQ0xkYNp2OntLx6rf2c3s3sH2UW8_xq1L64oSbCjALRPZ_vEjYpQASl3lj91JTrpgmDMTWR48cGftbZwVlhSdwJsjk6CPAQqrBWyKasv0Xqx1VIXKMsLi8E-XB0jjfTeMJng0QmZYVQpBcQdAHiRVORuDSZ5f3WhCDYO9Qz2WzU_yzz6H884jNvp-oFvbXXKu-ex5m98E8ktHN3-kijW61o8hsTLxWUHWaPEWEKfU4otBTrzqqX3xs1sHvqaIbY2Ht7hRuzynZkQ9SSIpngl9fqHjhKmvy2vmgH6K-1V18SfOlq8jySFv02LwM0krn8_lTihUb9H4Gw1uuxGxfSl8RQ54prQXbeXfAtRKJzizNN4m-PnycFyCIWBlj5YGbzYxH_-Hr5y7snuxlGHHmCKFVWdNHsW5tBzNNA6e_rXwfTPwQR20YnTZ2TTRJyEu7i8gu99SWRM3uMNDE7mshkx1EECQ6ATQrNkEEHNeEQQhbKL-SMDE1QWNkwmoXSwyqLNXZ8yLBPtn2TJA6MFDnwDTw_HarngTxLepDiwSPbynPsUcUnscfDSxjJnM_tZeph7ONtQnl-vYV-55O-Md7nNczUQ5_xpx5mtFwCpt7P-yyvqdRqS1PyC-RTXdVqgrOvi8WY28elv6GGmSmYO7H0RW0HxvOw3MrqdiQlG6__Vjr1MzDTtNxQsxqq8c63VSZPf25jb_1YoBxDbRQObD_8ULlrWKQ_vRGAnO42iMn1eMn1gMNffr4pjqlBNfU4tByI9UF4UikgzagdXDFV7c-7WrGFpT91C-NmqKJmQAXs0GRmQCtp9WRtktOLLspLYLi-L6vCgpk36hulQiogv9g-9MhOeRjYfxjgqATPyogJWbd2mIpju8bv5dk7m3uSVbmk24B_xR5nSDmaV3oQDfh3yN7Jbsx3G0OE78mr9NdiiSTAvOw5V3me67DMlFXHMi6GiFFInTM-PYBRuCXYC7GnSB1i62NR7R8oaM38e5WsB1e5YmA_RyH8e5WsB1e5WmA1PCYZN4WbD7mx6ZCPr4WshHADihJwo2GV9WK3mO90kcTrOJK90i6ZIBbdD7Ophvc_Nw12hU4awyfPnuku_5W_pnFi5gs8wZWtWsG3oisEBTGF6m1ukNnLUy6JYU3HWFkwnuDN0ylcpUE3f7YtcYSUmV3S95ksoUdwD9jcYJpIDqjClc8JgQP8issJn7HwjidAJ3FGo7it8UfiEFsOAliF5zw76S_dJWka8BRw_GWjnBj4_t6gtVzuhiFSCDyNuCyFBn_VxpzVaB)
+![UML](http://www.plantuml.com/plantuml/svg/h9ZDSjCm4CVlVefCplJG3p8SEXteHy67a0nEUbyxcrGWoq5Q5ypmyBXbwZIoDf8ruSBiUlSdhRJTlzgFXa1JNSf4A4AzXW97u_JJQYL8L6gsHGrKQNEvo52ktuqMCtf4tVx_3KqjwMhiI7l2T8MA13LTbZFwMYZGpRsiW8JQp2kXw7-2CovjFHlK1oA-rcNE1j0lON1WEJTLkGKDkKJEVxbmfWZ37bqlNZsX9j5RunOBZIKgiZXNTfX1BK2AF_1yNpSWPGx53oj8F0ap_3RlVjOjc1ecpH5DpZFntt2gWegzhtG9HFqBcGerXTyF86jq9awhLIrhCx3-QUiIMoaAO7gQpsa6BiMrRlVf6eoxj3beWv1BzzVijJbwHvOzYZKDt6KcDWfNdWrbMr2kY-e-UdPSvwIXY1W-IsL2zhTy6HMu0VSIFNINCvUr2On_mA8DwcAo0YJeDYPnZweH--_oxyc9Pr8oFr_noEXjCeCwkDT2OCc0MMxJx7fQLcY18oyhsPCBZc310WN3LfnZelrJFXQTM9eGUY9-sKduKNIGp7PxG3bzMg-PUCdkKWCeuM9zY9Ag8-mbN3SFK89rrBENmBlsK6nruWayXP6nWPHW9Jf8IOQyrIsC9PBUvxjL8aEA7IeCAVn1vICDUbaS80Kz1uAgY-jgQ_XPGBwvUM3_pPOu7fQX83inlaxcHHVVzypBBBxvULpKAuN7HIaKZukIAXuNfLayBbL7tLsKYl6uA3dpufeZdLsKm36uYA79us8bZySbXGHZHkFhXd3yQjmyWkwCMo2SATdiEHQYn9vZjbuRf9qR2r62tDbLdSjTrfsgoyxuN8jLPtm1kUwCLD7fvArrVlRMcboyjUQaEtEMVyU2EZFRgp0JQYDtvlFkdo-zSoptbrtkhxlSNtXfhVpoDvH5iztnNq__ol9CBlg-qxCFVUVP-ud3QTddbjtkC65-1_GqyxzIxHWdOnW8ed2Vun14pHqGDu0EwBW_XMKz2H5YVUvvctZ-mHxlPcXLPstz88pzev-qp5uVMhTiulS7Iyz5iSP_2uWL2s9D5iIA1R5YwJnjDx55n-is7Iyta7WJBvxJLxklnAru3KJnvlXuCq3yhyuiF5yD54y6YeTW42y6ZDyoOAVzhWshucQiolKi9tBbNToOLN5xLcNNf5LngrR53LkLFTjMXNQVCgau9Pmi4cxU29VMRRZz0k75fFkPINpn7twuQ10-MbOUZUE9ST61PST2HoeMbZnPotZZCWSxLopiLx6muCcQjSU55QmP2oyTIzUMUR46NmR3aeDX5miMmO9TiVC150i6nO91iM1IBDWLUteanO91iM1GB1WK2oR5QcB1ggDXsT6OJg91jMYKxGKxLi4WUJ0e7WoI1UEPLGSK98i6pQ9btT6OJaQlrpjGyPPmuYtbnDjzB1xaZ_SELirsR1t4am7YRUWMRmQAjpbOl0s-uit0yMR0U9jbnPk1u_cmUUNe72tcYSQsVpG85-soUNwE9jcYJJQFqD4kcuVeQ98jscJp71sjid6I3lSm7CxAUPWEF-OKV8MDxw77SVdfmFyL6dXxXGRaNg9vkjTe_BvNPEyTJiJx6E3v_Ulj-_FZ1m00)
 
 ### Base Interfaces
 
@@ -667,21 +671,30 @@ The numeric interfaces build upon the base interfaces by defining the core abstr
 ```csharp
 namespace System
 {
-    public interface INumber<TSelf>
+    public interface INumberBase<TSelf>
         : IAdditionOperators<TSelf, TSelf, TSelf>,
           IAdditiveIdentity<TSelf, TSelf>,
-          IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
+          IEqualityOperators<TSelf, TSelf>,     // implies IEquatable<TSelf>
+          IMultiplyOperators<TSelf, TSelf>,
+          ISubtractionOperators<TSelf, TSelf, TSelf>,
+          IUnaryPlusOperators<TSelf, TSelf>
+        where TSelf : INumberBase<TSelf>
+    {
+        // Alias for AdditiveIdentity
+        static abstract TSelf Zero { get; }
+    }
+
+    public interface INumber<TSelf>
+        : IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
           IDecrementOperators<TSelf>,
           IDivisionOperators<TSelf, TSelf, TSelf>,
           IIncrementOperators<TSelf>,
           IModulusOperators<TSelf, TSelf, TSelf>,
           IMultiplicativeIdentity<TSelf, TSelf>,
-          IMultiplyOperators<TSelf, TSelf, TSelf>,
+          INumberBase<TSelf>,
           ISpanFormattable,                     // implies IFormattable
           ISpanParseable<TSelf>,                // implies IParseable<TSelf>
-          ISubtractionOperators<TSelf, TSelf, TSelf>,
-          IUnaryNegationOperators<TSelf, TSelf>,
-          IUnaryPlusOperators<TSelf, TSelf>
+          IUnaryNegationOperators<TSelf, TSelf>
         where TSelf : INumber<TSelf>
     {
         // For the Create methods, there is some concern over users implementing them. It is not necessarily trivial to take an arbitrary TOther
@@ -702,9 +715,6 @@ namespace System
 
         // Alias for MultiplicativeIdentity
         static abstract TSelf One { get; }
-
-        // Alias for AdditiveIdentity
-        static abstract TSelf Zero { get; }
 
         // Abs mirrors Math.Abs and returns the same type. This can fail for MinValue of signed integer types
         // Swift has an associated type that can be used here, which would require an additional type parameter in .NET
@@ -737,20 +747,20 @@ namespace System
         static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out TSelf result);
     }
 
-    public interface ISignedNumber<TSelf>
-        : INumber<TSelf>
-        where TSelf : ISignedNumber<TSelf>
+    public interface ISignedNumberBase<TSelf>
+        : INumberBase<TSelf>
+        where TSelf : ISignedNumberBase<TSelf>
     {
-        // It's not possible to check for lack of an interface in a constraint, so ISignedNumber<TSelf> is likely required
+        // It's not possible to check for lack of an interface in a constraint, so ISignedNumberBase<TSelf> is likely required
 
         static abstract TSelf NegativeOne { get; }
     }
 
-    public interface IUnsignedNumber<TSelf>
-        : INumber<TSelf>
-        where TSelf : IUnsignedNumber<TSelf>
+    public interface IUnsignedNumberBase<TSelf>
+        : INumberBase<TSelf>
+        where TSelf : IUnsignedNumberBase<TSelf>
     {
-        // It's not possible to check for lack of an interface in a constraint, so IUnsignedNumber<TSelf> is likely required
+        // It's not possible to check for lack of an interface in a constraint, so IUnsignedNumberBase<TSelf> is likely required
     }
 
     public interface IBinaryNumber<TSelf>
@@ -790,7 +800,7 @@ namespace System
     }
 
     public interface IFloatingPoint<TSelf>
-        : ISignedNumber<TSelf>
+        : ISignedNumberBase<TSelf>
         where TSelf : IFloatingPoint<TSelf>
     {
         // This currently implies IEEE floating-point types and so decimal does not implement it
@@ -1219,7 +1229,7 @@ namespace System
         : IBinaryInteger<byte>,
           IConvertible,
           IMinMaxValue<byte>,
-          IUnsignedNumber<byte>
+          IUnsignedNumberBase<byte>
     {
     }
 
@@ -1227,7 +1237,7 @@ namespace System
         : IBinaryInteger<char>,
           IConvertible,
           IMinMaxValue<char>,
-          IUnsignedNumber<char>
+          IUnsignedNumberBase<char>
     {
     }
 
@@ -1273,7 +1283,7 @@ namespace System
           IDeserializationCallback,
           IMinMaxValue<decimal>,
           ISerializable,
-          ISignedNumber<decimal>
+          ISignedNumberBase<decimal>
     {
         // Decimal defines a few additional operations like Ceiling, Floor, Round, and Truncate
         // The rest of the IEEE operations are missing.
@@ -1313,7 +1323,7 @@ namespace System
         : IBinaryInteger<short>,
           IConvertible,
           IMinMaxValue<short>,
-          ISignedNumber<short>
+          ISignedNumberBase<short>
     {
     }
 
@@ -1321,7 +1331,7 @@ namespace System
         : IBinaryInteger<int>,
           IConvertible,
           IMinMaxValue<int>,
-          ISignedNumber<int>
+          ISignedNumberBase<int>
     {
     }
 
@@ -1329,7 +1339,7 @@ namespace System
         : IBinaryInteger<long>,
           IConvertible,
           IMinMaxValue<long>,
-          ISignedNumber<long>
+          ISignedNumberBase<long>
     {
     }
 
@@ -1337,7 +1347,7 @@ namespace System
         : IBinaryInteger<nint>,
           IMinMaxValue<nint>,
           ISerializable,
-          ISignedNumber<nint>
+          ISignedNumberBase<nint>
     {
     }
 
@@ -1345,7 +1355,7 @@ namespace System
         : IBinaryInteger<sbyte>,
           IConvertible,
           IMinMaxValue<sbyte>,
-          ISignedNumber<sbyte>
+          ISignedNumberBase<sbyte>
     {
     }
 
@@ -1384,7 +1394,7 @@ namespace System
         : IBinaryInteger<ushort>,
           IConvertible,
           IMinMaxValue<ushort>,
-          IUnsignedNumber<ushort>
+          IUnsignedNumberBase<ushort>
     {
     }
 
@@ -1392,7 +1402,7 @@ namespace System
         : IBinaryInteger<uint>,
           IConvertible,
           IMinMaxValue<uint>,
-          IUnsignedNumber<uint>
+          IUnsignedNumberBase<uint>
     {
     }
 
@@ -1400,7 +1410,7 @@ namespace System
         : IBinaryInteger<ulong>,
           IConvertible,
           IMinMaxValue<ulong>,
-          IUnsignedNumber<ulong>
+          IUnsignedNumberBase<ulong>
     {
     }
 
@@ -1408,7 +1418,7 @@ namespace System
         : IBinaryInteger<nuint>,
           IMinMaxValue<nuint>,
           ISerializable,
-          IUnsignedNumber<nuint>
+          IUnsignedNumberBase<nuint>
     {
     }
 }
