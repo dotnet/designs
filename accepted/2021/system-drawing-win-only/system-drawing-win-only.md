@@ -133,7 +133,7 @@ don't depend on GDI+, such `Rectangle`, `Point`, and `Size`. Any types in
 
 No, `System.Drawing.Common` is a standalone package that does not ship as part
 of the shared framework. For that reason if an application wants to keep using
-`System.Drawing.Common` on `Unix` and move to .NET 6, they can use the `6.0.x` package and set a runtime config switch `System.Drawing.UnixSupport` to `true`.
+`System.Drawing.Common` on `Unix` and move to .NET 6, they can use the `6.0.x` package and set a runtime config switch `System.Drawing.EnableUnixSupport` to `true`.
 
 However application should be aware that we will not provide any support for Unix issues starting from .NET 6 and that we will be removing Unix implementation entirely on .NET 7+.
 
