@@ -724,8 +724,6 @@ namespace System
 
         static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
 
-        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
-
         static abstract TSelf Max(TSelf x, TSelf y);
 
         static abstract TSelf Min(TSelf x, TSelf y);
@@ -787,6 +785,8 @@ namespace System
 
         // Returning int is currently what BitOperations does, however this can be cumbersome or prohibitive
         // in various algorithms where returning TSelf is better.
+
+        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
 
         static abstract TSelf LeadingZeroCount(TSelf value);
 
