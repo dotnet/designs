@@ -354,9 +354,9 @@ class "Vector4"
 
 "IConvertible"                                  <|-- "Decimal"
 "IDeserializationCallback"                      <|-- "Decimal"
+"IFloatingPoint<TSelf>"                         <|-- "Decimal"
 "IMinMaxValue<TSelf>"                           <|-- "Decimal"
 "ISerializable"                                 <|-- "Decimal"
-"ISignedNumberBase<TSelf>"                      <|-- "Decimal"
 "ValueType"                                     <|-- "Decimal"
 
 "IBinaryFloatingPointIeee754<TSelf>"            <|-- "Double"
@@ -470,7 +470,7 @@ class "Vector4"
 @enduml
 -->
 
-![UML](http://www.plantuml.com/plantuml/svg/h9ZDKjim4CVlVefCpkN01saF3DFoGSbCQJ8uuRvsDebQMKhbDU1E7xw63WwHb8sib0kpwzLFkxAi_ogVIm93LI4JeGZD77BizOTVPZD1GglH2WsGDkNP94Kv_z2RZ6Y9flb_ZsKbwRpl6VQ8mnag4bItexpH5qA1gM-a1X9gCTP2qH0HFvwU_1ld3HysdWKQ9k9xLMHR0-X9bDYngajThC109d6R_spY7IBAhIlenAj7D2ISEQumDrYW8ejpReULQ0H8yHj8Q7K9KcQG_xI2nACekx_KwrzL0wQQgSIA9k-QN3-lj4950kHDfVANFFt5REm89Y9WpzneKm2H--vkwwQQJ4kHyxaCLT3wVzCBC8AMnIxUdL1tyFm0iaB_SpshP5LsV4LtZKkifCZ1y_NnO-gEKrbVb_le0af_QMCm9K8cjppLJsZujRlNclY8zEqZSDvtkXHpwbXgAXOAPpkgIbUWVBkiVSYNdLOP6SWZpjg94GkjT85aTcswgIf3Ifc-dfwu06ysRXRjcB6ioi3u1yoRe3OcpK62QM8I_-dTs_ftzkVW84n3-ECYdXoVj5_9WZTf22pf87OEpQgdOOKMsDl9IZRqbEUqi415jINvFw83P30MdLYY6RWY0RgSR3_3MB9VW1DUmbaQyt4oIjoBPN9o7CUq7ZkmEAPVzFPZkYgvVvwyriGmaw1lmuKw9vFJ83CrCvJWrfYZ3DN-kNHe0NbAM4ku8vVGWuEZk3qIns0fRZFLcHBOvB2KfCi5sS9O_LV0dRajYI75A1H32hyRyAIE_IrB2kWqWwgBszMMabf0PdCpGFlca7ZkIA4WPs1qdSnb8MhVCqr_nEPdS34jBuEBK2W65o5L32v6inXSZ7Wnk1WLOt2nSXQ0g_TVkoY1Ot0HXoQ3YvGy1fVa4igorx-e2VjlnkKIJ6jS0U58oNh3CH45EexHV5uYhTsOYmBasjPL9h4rhrLLjCRNIinQunRal3M6YWu7xwtZe_VMuEIzDIRJcgFi1-RKckb6XQbG2xasNx9_UUcjOxevxNHptkdcn5DhvjUV0oVrQir_M_rpopCuSNs7HvzSvz7fmEEqx6FBRZ9Ct1yKGlgilwNQCKu4CH14qTp7OH4nTq3S038Wu_u4blK5Oi1wplazuzh2BdVFrAe-zkv16FjhQtIRlJwq_cKJlp_OUYwADVzRGAnO42iMn8e5iHPBvscxYIqwNhVfUBc1n9juyPY-scmjRiLR88etnyUx0UA_pGVW-M2WU39Gl0M3U3LW_941E-tTXbKvDMDLhYQdaJlluiQiYjkpAgSchOfRjIfksAgSsROgjFkKISKfuMIHSFD6kCm1ml4N21yxmxIVVF4VVhXe43vQLXwDiwvvqO5bnq97Qh6mv5ZBUFCo1pjNBEnNYuK5nvgrvuKLh1aBBnrBrvPriGPV1iEIWs4N2nR1Wbsnsnqe5WoA1ODYmQHOi2lsS4-A1ODYmQ1OC2WMJ8hLn89LHyEoep6TH8DgqIZR4tQiWa7oO50y62GBnZEh3YX85WsQHSkwep6Tp5wlTw3YBU74Myg9j_jOFCWVxnsicktOEeWd0yJRq2tU31HlSx1u6tp5cu7ZpO3nDikADmF7ys7ppD4vMimJZMt_Q10kscNp_1nDiaMRR1wXerqs3z7H95kqoUOvEbfbuoGTxc4ud9NpC1q-rXHyXutleMDSVZhmTuK6tbwX0RcNQ9xkDHg_dnKvUuSRudqCyFZwyVBv_lO5)
+![UML](http://www.plantuml.com/plantuml/svg/h9ZFKziw4CVl_YioEJyEGCXx1uPvvGSbCwN9u8JxsjaaQcKfbTQ0E_tZ6-ZWO5dPo4gvCBjUVQJL3trN-TyI62eBcGX5Q1QGOwy_-ZIV2n9QZTTeWBInvzCKvUAVtdHCApIR_mzeIqaNVK-p9npDKP6WgcxbZRuK2anrApMGKCk95ef6YFZlsU1FEs_uI14kqJ0HNyiYsnb0py9YnwokTB460vd4NVxpgRU9i3jdi1Mldj2GQFLnZRd10XKvd0itpA8H8CLF8A7L5KYPGVxT2H9FmdPVr9iV9KX15PE94qtUERbvMMk5YWJ8srBbh-Fq9zFO4Kn4m9wvrQO0elRQtLLhD9cM8kV7Cb91y_z5By48MXNxUFT2tSFB8yWI_T_rl9IbxRX4znkNM4kH0t_wF6sgZbsrJvVpwHAiFxK968kGoHrVzJCQVkuUj2O-8dq_1AtrJbTYGHrJJSLIuNnFLkaQb6-NrH_vjDCo8mDvn5qxDMAfbIwGpBvDDrCs99NPs-s9I_2EfXv5kyr4bZOm_X5pqgQEINEGO3OnYV_sxktyE_zrT1Ic8Vnr4K-E7xHVoO8tQGWiwI1sBitDPyCAJR2tbvKqz9JdrB10HNKb-I-Y0sGm5fqueXau8m6wdEo-mrYoNu0JNi8P6dE4M2NknJ5vEOvZEfzTM2JJBtg7CTigUVWuUQs9OIP1PwCDTMuJha1kvSfHWajZZZ9IXu-bGmd8Ky9AmZrZ2RquU8fJ8t4Cdj8kfZfJ0eiSbf9qUI0x6AV-2dWproanf0Y5uaZXRmEUrB6-PKa1bMPGTd6xsb5I1yXiRWRelXmIpnif5EGsZCoJVon4xNkcw8_O_0mkekJbS14AnU0Yf8h1HMWMXuiGBmuNeM8SBbRE0d3LuNCN8N0SBkBIv70naiVZabo2jRt-PKNOVpUkLc1gune8nqfM3STK5DXoZ1SBYxHrOouAa5jRbvdSjhfHPL4Rdqinhuqxa8lQ62aw7dwqJay-MiF1Hsj2fZR7sJVCgJRJHeQfK4kvDLz7_xhejMFMx7RMx7VMx7ZczFpsS-2qMc_vxxD_uNY6WxRl-EI_jlFaREXnElQfOmz-bse7DxN3G1X6zsc7FQ87H0Um0tRqpm8T1Inoh_LD0SSl_j-GZCVt76aOA6prMQhXpnpx95lstz7ejht-QDsrmjzvuCMciForjB3O4XORmc93M6pyddgRr4tpzJNDrnC8NyFZS_VbPLlRBRusH7ojUBuN0B_S3uH_lnGGNmk8huq1NmkG7nQWh_si3AqoBKQhNDwSddJhMNfXMgMNvxfABrAhz59TL-a5QvLfsLgbldtqfAbIy3e_nck5uQcqyFm_W1yxbschr_xdpmOTagFhpkbqr-MW4xRDXeaKcxRCjXxFOIwykTZmlcBRXjbKsWwieJJPyD1iFROuM8UwXEkMuNIR2PV0u9QOuKDC34w9mIKnk2G6jyGCQ69YS4eCBed19J4u9cQK57TDXstJhRsWMsfqZkqvJwpW53cS4eTJP73yPfc0fiZedXaTzat7xkHdrjidK7oVGF6ro-7hUOoFyVDzWcNONaS7V1qQyFNIZUy5nBTxCBvUVF6zWFbUW7ovo-9h0VFvO_CIMsUwzyvq6_lJCJYwnzRxPph6HlVOUWjDzzXw4qstsEWUM--ZwHvRxwJntWpZCJayHuSVRi6tCF_x0lku_Ed0pHMOnzaABiZx4kxJPskuVfyjCdk6Xypz6E3fxVFrw-Fz6m00)
 
 ### Base Interfaces
 
@@ -1334,9 +1334,9 @@ namespace System
     public struct Decimal
         : IConvertible,
           IDeserializationCallback,
+          IFloatingPoint<decimal>,
           IMinMaxValue<decimal>,
-          ISerializable,
-          ISignedNumberBase<decimal>
+          ISerializable
     {
         // Decimal defines a few additional operations like Ceiling, Floor, Round, and Truncate
         // The rest of the IEEE operations are missing.
