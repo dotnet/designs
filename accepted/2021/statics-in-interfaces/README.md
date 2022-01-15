@@ -175,7 +175,7 @@ The overall design has been influenced by the existing .NET surface area, the Sw
 @startuml
 interface "IAdditionOperators<TSelf, TOther, TResult>"
 interface "IAdditiveIdentity<TSelf, TResult>"
-interface "IBinaryFloatingPoint<TSelf>"
+interface "IBinaryFloatingPointIeee754<TSelf>"
 interface "IBinaryInteger<TSelf>"
 interface "IBinaryNumber<TSelf>"
 interface "IBitwiseOperators<TSelf, TOther, TResult>"
@@ -188,9 +188,13 @@ interface "IDeserializationCallback"
 interface "IDivisionOperators<TSelf, TOther, TResult>"
 interface "IEqualityOperators<TSelf, TOther>"
 interface "IEquatable<T>"
+interface "IExponentialFunctions<TSelf>"
 interface "IFloatingPoint<TSelf>"
-interface "IIncrementOperators<TSelf>"
+interface "IFloatingPointIeee754<TSelf>"
 interface "IFormattable"
+interface "IHyperbolicFunctions<TSelf>"
+interface "IIncrementOperators<TSelf>"
+interface "ILogarithmicFunctions<TSelf>"
 interface "IMinMaxValue<TSelf>"
 interface "IModulusOperators<TSelf, TOther, TResult>"
 interface "IMultiplicativeIdentity<TSelf, TResult>"
@@ -198,19 +202,22 @@ interface "IMultiplyOperators<TSelf, TOther, TResult>"
 interface "INumber<TSelf>"
 interface "INumberBase<TSelf>"
 interface "IParseable<TSelf>"
+interface "IPowerFunctions<TSelf>"
+interface "IRootFunctions<TSelf>"
 interface "ISerializable"
 interface "IShiftOperators<TSelf, TOther, TResult>"
 interface "ISignedNumberBase<TSelf>"
 interface "ISpanFormattable"
 interface "ISpanParseable<TSelf>"
 interface "ISubtractionOperators<TSelf, TOther, TResult>"
+interface "ITrigonometricFunctions<TSelf>"
 interface "IUnsignedNumberBase<TSelf>"
 interface "IUnaryNegationOperators<TSelf, TResult>"
 interface "IUnaryPlusOperators<TSelf, TResult>"
 interface "IVector<TSelf, TScalar>"
 
-"IBinaryNumber<TSelf>"                          <|-- "IBinaryFloatingPoint<TSelf>"
-"IFloatingPoint<TSelf>"                         <|-- "IBinaryFloatingPoint<TSelf>"
+"IBinaryNumber<TSelf>"                          <|-- "IBinaryFloatingPointIeee754<TSelf>"
+"IFloatingPointIeee754<TSelf>"                  <|-- "IBinaryFloatingPointIeee754<TSelf>"
 
 "IBinaryNumber<TSelf>"                          <|-- "IBinaryInteger<TSelf>"
 "IShiftOperators<TSelf, TOther, TResult>"       <|-- "IBinaryInteger<TSelf>"
@@ -225,6 +232,14 @@ interface "IVector<TSelf, TScalar>"
 "IEquatable<T>"                                 <|-- "IEqualityOperators<TSelf, TOther>"
 
 "ISignedNumberBase<TSelf>"                      <|-- "IFloatingPoint<TSelf>"
+
+"IExponentialFunctions<TSelf>"                  <|-- "IFloatingPointIeee754<TSelf>"
+"IHyperbolicFunctions<TSelf>"                   <|-- "IFloatingPointIeee754<TSelf>"
+"ILogarithmicFunctions<TSelf>"                  <|-- "IFloatingPointIeee754<TSelf>"
+"IFloatingPoint<TSelf>"                         <|-- "IFloatingPointIeee754<TSelf>"
+"IPowerFunctions<TSelf>"                        <|-- "IFloatingPointIeee754<TSelf>"
+"IRootFunctions<TSelf>"                         <|-- "IFloatingPointIeee754<TSelf>"
+"ITrigonometricFunctions<TSelf>"                <|-- "IFloatingPointIeee754<TSelf>"
 
 "IComparisonOperators<TSelf, TOther>"           <|-- "INumber<TSelf>"
 "IDecrementOperators<TSelf>"                    <|-- "INumber<TSelf>"
@@ -344,7 +359,7 @@ class "Vector4"
 "ISignedNumberBase<TSelf>"                      <|-- "Decimal"
 "ValueType"                                     <|-- "Decimal"
 
-"IBinaryFloatingPoint<TSelf>"                   <|-- "Double"
+"IBinaryFloatingPointIeee754<TSelf>"            <|-- "Double"
 "IConvertible"                                  <|-- "Double"
 "IMinMaxValue<TSelf>"                           <|-- "Double"
 "ValueType"                                     <|-- "Double"
@@ -359,7 +374,7 @@ class "Vector4"
 "ISpanParseable<TSelf>"                         <|-- "Guid"
 "ValueType"                                     <|-- "Guid"
 
-"IBinaryFloatingPoint<TSelf>"                   <|-- "Half"
+"IBinaryFloatingPointIeee754<TSelf>"            <|-- "Half"
 "IMinMaxValue<TSelf>"                           <|-- "Half"
 "ValueType"                                     <|-- "Half"
 
@@ -393,7 +408,7 @@ class "Vector4"
 "ISignedNumberBase<TSelf>"                      <|-- "SByte"
 "ValueType"                                     <|-- "SByte"
 
-"IBinaryFloatingPoint<TSelf>"                   <|-- "Single"
+"IBinaryFloatingPointIeee754<TSelf>"            <|-- "Single"
 "IConvertible"                                  <|-- "Single"
 "IMinMaxValue<TSelf>"                           <|-- "Single"
 "ValueType"                                     <|-- "Single"
@@ -455,7 +470,7 @@ class "Vector4"
 @enduml
 -->
 
-![UML](http://www.plantuml.com/plantuml/svg/h9ZDSjCm4CVlVefCplJG3p8SEXteHy67a0nEUbyxcrGWoq5Q5ypmyBXbwZIoDf8ruSBiUlSdhRJTlzgFXa1JNSf4A4AzXW97u_JJQYL8L6gsHGrKQNEvo52ktuqMCtf4tVx_3KqjwMhiI7l2T8MA13LTbZFwMYZGpRsiW8JQp2kXw7-2CovjFHlK1oA-rcNE1j0lON1WEJTLkGKDkKJEVxbmfWZ37bqlNZsX9j5RunOBZIKgiZXNTfX1BK2AF_1yNpSWPGx53oj8F0ap_3RlVjOjc1ecpH5DpZFntt2gWegzhtG9HFqBcGerXTyF86jq9awhLIrhCx3-QUiIMoaAO7gQpsa6BiMrRlVf6eoxj3beWv1BzzVijJbwHvOzYZKDt6KcDWfNdWrbMr2kY-e-UdPSvwIXY1W-IsL2zhTy6HMu0VSIFNINCvUr2On_mA8DwcAo0YJeDYPnZweH--_oxyc9Pr8oFr_noEXjCeCwkDT2OCc0MMxJx7fQLcY18oyhsPCBZc310WN3LfnZelrJFXQTM9eGUY9-sKduKNIGp7PxG3bzMg-PUCdkKWCeuM9zY9Ag8-mbN3SFK89rrBENmBlsK6nruWayXP6nWPHW9Jf8IOQyrIsC9PBUvxjL8aEA7IeCAVn1vICDUbaS80Kz1uAgY-jgQ_XPGBwvUM3_pPOu7fQX83inlaxcHHVVzypBBBxvULpKAuN7HIaKZukIAXuNfLayBbL7tLsKYl6uA3dpufeZdLsKm36uYA79us8bZySbXGHZHkFhXd3yQjmyWkwCMo2SATdiEHQYn9vZjbuRf9qR2r62tDbLdSjTrfsgoyxuN8jLPtm1kUwCLD7fvArrVlRMcboyjUQaEtEMVyU2EZFRgp0JQYDtvlFkdo-zSoptbrtkhxlSNtXfhVpoDvH5iztnNq__ol9CBlg-qxCFVUVP-ud3QTddbjtkC65-1_GqyxzIxHWdOnW8ed2Vun14pHqGDu0EwBW_XMKz2H5YVUvvctZ-mHxlPcXLPstz88pzev-qp5uVMhTiulS7Iyz5iSP_2uWL2s9D5iIA1R5YwJnjDx55n-is7Iyta7WJBvxJLxklnAru3KJnvlXuCq3yhyuiF5yD54y6YeTW42y6ZDyoOAVzhWshucQiolKi9tBbNToOLN5xLcNNf5LngrR53LkLFTjMXNQVCgau9Pmi4cxU29VMRRZz0k75fFkPINpn7twuQ10-MbOUZUE9ST61PST2HoeMbZnPotZZCWSxLopiLx6muCcQjSU55QmP2oyTIzUMUR46NmR3aeDX5miMmO9TiVC150i6nO91iM1IBDWLUteanO91iM1GB1WK2oR5QcB1ggDXsT6OJg91jMYKxGKxLi4WUJ0e7WoI1UEPLGSK98i6pQ9btT6OJaQlrpjGyPPmuYtbnDjzB1xaZ_SELirsR1t4am7YRUWMRmQAjpbOl0s-uit0yMR0U9jbnPk1u_cmUUNe72tcYSQsVpG85-soUNwE9jcYJJQFqD4kcuVeQ98jscJp71sjid6I3lSm7CxAUPWEF-OKV8MDxw77SVdfmFyL6dXxXGRaNg9vkjTe_BvNPEyTJiJx6E3v_Ulj-_FZ1m00)
+![UML](http://www.plantuml.com/plantuml/svg/h9ZDKjim4CVlVefCpkN01saF3DFoGSbCQJ8uuRvsDebQMKhbDU1E7xw63WwHb8sib0kpwzLFkxAi_ogVIm93LI4JeGZD77BizOTVPZD1GglH2WsGDkNP94Kv_z2RZ6Y9flb_ZsKbwRpl6VQ8mnag4bItexpH5qA1gM-a1X9gCTP2qH0HFvwU_1ld3HysdWKQ9k9xLMHR0-X9bDYngajThC109d6R_spY7IBAhIlenAj7D2ISEQumDrYW8ejpReULQ0H8yHj8Q7K9KcQG_xI2nACekx_KwrzL0wQQgSIA9k-QN3-lj4950kHDfVANFFt5REm89Y9WpzneKm2H--vkwwQQJ4kHyxaCLT3wVzCBC8AMnIxUdL1tyFm0iaB_SpshP5LsV4LtZKkifCZ1y_NnO-gEKrbVb_le0af_QMCm9K8cjppLJsZujRlNclY8zEqZSDvtkXHpwbXgAXOAPpkgIbUWVBkiVSYNdLOP6SWZpjg94GkjT85aTcswgIf3Ifc-dfwu06ysRXRjcB6ioi3u1yoRe3OcpK62QM8I_-dTs_ftzkVW84n3-ECYdXoVj5_9WZTf22pf87OEpQgdOOKMsDl9IZRqbEUqi415jINvFw83P30MdLYY6RWY0RgSR3_3MB9VW1DUmbaQyt4oIjoBPN9o7CUq7ZkmEAPVzFPZkYgvVvwyriGmaw1lmuKw9vFJ83CrCvJWrfYZ3DN-kNHe0NbAM4ku8vVGWuEZk3qIns0fRZFLcHBOvB2KfCi5sS9O_LV0dRajYI75A1H32hyRyAIE_IrB2kWqWwgBszMMabf0PdCpGFlca7ZkIA4WPs1qdSnb8MhVCqr_nEPdS34jBuEBK2W65o5L32v6inXSZ7Wnk1WLOt2nSXQ0g_TVkoY1Ot0HXoQ3YvGy1fVa4igorx-e2VjlnkKIJ6jS0U58oNh3CH45EexHV5uYhTsOYmBasjPL9h4rhrLLjCRNIinQunRal3M6YWu7xwtZe_VMuEIzDIRJcgFi1-RKckb6XQbG2xasNx9_UUcjOxevxNHptkdcn5DhvjUV0oVrQir_M_rpopCuSNs7HvzSvz7fmEEqx6FBRZ9Ct1yKGlgilwNQCKu4CH14qTp7OH4nTq3S038Wu_u4blK5Oi1wplazuzh2BdVFrAe-zkv16FjhQtIRlJwq_cKJlp_OUYwADVzRGAnO42iMn8e5iHPBvscxYIqwNhVfUBc1n9juyPY-scmjRiLR88etnyUx0UA_pGVW-M2WU39Gl0M3U3LW_941E-tTXbKvDMDLhYQdaJlluiQiYjkpAgSchOfRjIfksAgSsROgjFkKISKfuMIHSFD6kCm1ml4N21yxmxIVVF4VVhXe43vQLXwDiwvvqO5bnq97Qh6mv5ZBUFCo1pjNBEnNYuK5nvgrvuKLh1aBBnrBrvPriGPV1iEIWs4N2nR1Wbsnsnqe5WoA1ODYmQHOi2lsS4-A1ODYmQ1OC2WMJ8hLn89LHyEoep6TH8DgqIZR4tQiWa7oO50y62GBnZEh3YX85WsQHSkwep6Tp5wlTw3YBU74Myg9j_jOFCWVxnsicktOEeWd0yJRq2tU31HlSx1u6tp5cu7ZpO3nDikADmF7ys7ppD4vMimJZMt_Q10kscNp_1nDiaMRR1wXerqs3z7H95kqoUOvEbfbuoGTxc4ud9NpC1q-rXHyXutleMDSVZhmTuK6tbwX0RcNQ9xkDHg_dnKvUuSRudqCyFZwyVBv_lO5)
 
 ### Base Interfaces
 
@@ -799,17 +814,155 @@ namespace System
         static abstract TSelf TrailingZeroCount(TSelf value);
     }
 
+    public interface IExponentialFunctions<TSelf>
+        where TSelf : IExponentialFunctions<TSelf>
+    {
+        static abstract TSelf Exp(TSelf x);
+
+        // IEEE defines n to be an integral type, but not the size
+
+        static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n)
+            where TInteger : IBinaryInteger<TInteger>;
+
+        // The following methods are approved but not yet implemented in the libraries
+
+        static abstract TSelf ExpM1(TSelf x);
+
+        static abstract TSelf Exp2(TSelf x);
+
+        static abstract TSelf Exp2M1(TSelf x);
+
+        static abstract TSelf Exp10(TSelf x);
+
+        static abstract TSelf Exp10M1(TSelf x);
+    }
+
+    public interface IHyperbolicFunctions<TSelf>
+        where TSelf : IHyperbolicFunctions<TSelf>
+    {
+        static abstract TSelf Acosh(TSelf x);
+
+        static abstract TSelf Asinh(TSelf x);
+
+        static abstract TSelf Atanh(TSelf x);
+
+        static abstract TSelf Cosh(TSelf x);
+
+        static abstract TSelf Sinh(TSelf x);
+
+        static abstract TSelf Tanh(TSelf x);
+    }
+
+    public interface ILogarithmicFunctions<TSelf>
+        where TSelf : ILogarithmicFunctions<TSelf>
+    {
+        // IEEE defines the result to be an integral type, but not the size
+
+        static abstract TInteger ILogB<TInteger>(TSelf x)
+            where TInteger : IBinaryInteger<TInteger>;
+
+        static abstract TSelf Log(TSelf x);
+
+        static abstract TSelf Log(TSelf x, TSelf newBase);
+
+        static abstract TSelf Log2(TSelf x);
+
+        static abstract TSelf Log10(TSelf x);
+
+        // The following methods are approved but not yet implemented in the libraries
+
+        static abstract TSelf LogP1(TSelf x);
+
+        static abstract TSelf Log2P1(TSelf x);
+
+        static abstract TSelf Log10P1(TSelf x);
+    }
+
+    public interface IPowerFunctions<TSelf>
+        where TSelf : IPowerFunctions<TSelf>
+    {
+        static abstract TSelf Pow(TSelf x, TSelf y);
+    }
+
+    public interface IRootFunctions<TSelf>
+        where TSelf : IRootFunctions<TSelf>
+    {
+        static abstract TSelf Cbrt(TSelf x);
+
+        static abstract TSelf Sqrt(TSelf x);
+
+        // The following methods are approved but not yet implemented in the libraries
+
+        static abstract TSelf Root(TSelf x, TSelf n);
+    }
+
+    public interface ITrigonometricFunctions<TSelf>
+        where TSelf : ITrigonometricFunctions<TSelf>
+    {
+        static abstract TSelf Acos(TSelf x);
+
+        static abstract TSelf Asin(TSelf x);
+
+        static abstract TSelf Atan(TSelf x);
+
+        static abstract TSelf Atan2(TSelf y, TSelf x);
+
+        static abstract TSelf Cos(TSelf x);
+
+        static abstract TSelf Sin(TSelf x);
+
+        static abstract TSelf Tan(TSelf x);
+
+        // The following methods are approved but not yet implemented in the libraries
+
+        static abstract TSelf AcosPi(TSelf x);
+
+        static abstract TSelf AsinPi(TSelf x);
+
+        static abstract TSelf AtanPi(TSelf x);
+
+        static abstract TSelf Atan2Pi(TSelf y, TSelf x);
+
+        static abstract TSelf CosPi(TSelf x);
+
+        static abstract TSelf SinPi(TSelf x);
+
+        static abstract TSelf TanPi(TSelf x);
+    }
+
     public interface IFloatingPoint<TSelf>
         : ISignedNumberBase<TSelf>
         where TSelf : IFloatingPoint<TSelf>
     {
-        // This currently implies IEEE floating-point types and so decimal does not implement it
-        // If we want decimal to implement it, we would need to move several methods down and define
-        // some IeeeFloatingPoint interface instead. This wasn't done for simplicity and because decimal
-        // is not an industry standard type.
+        static abstract TSelf Ceiling(TSelf x);
 
+        static abstract TSelf Floor(TSelf x);
+
+        static abstract TSelf Round(TSelf x);
+
+        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits)
+            where TInteger : IBinaryInteger<TInteger>;
+
+        static abstract TSelf Round(TSelf x, MidpointRounding mode);
+
+        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits, MidpointRounding mode)
+            where TInteger : IBinaryInteger<TInteger>;
+
+        static abstract TSelf Truncate(TSelf x);
+    }
+
+    public interface IFloatingPointIeee754<TSelf>
+        : IExponentialFunctions<TSelf>,
+          IFloatingPoint<TSelf>,
+          IHyperbolicFunctions<TSelf>,
+          ILogarithmicFunctions<TSelf>,
+          IPowerFunctions<TSelf>,
+          IRootFunctions<TSelf>,
+          ITrigonometricFunctions<TSelf>
+        where TSelf : IFloatingPointIeee754<TSelf>
+    {
         // TODO: The Exponent and Signifcand need to be exposed here
-        // They should return INumber<TSelf> here and IBinaryNumber<TSelf> on IBinaryFloatingPoint<TSelf>
+        // They should return INumber<TSelf> here and IBinaryNumber<TSelf> on IBinaryFloatingPointIeee754<TSelf>
 
         // TODO: We may want to expose constants related to the subnormal and finite boundaries
 
@@ -826,90 +979,22 @@ namespace System
         // This, in a way, obsoletes Math/MathF and brings float/double inline with how non-primitive types support similar functionality
         // API review will need to determine if we'll want to continue adding APIs to Math/MathF in the future
 
-        static abstract TSelf Acos(TSelf x);
-
-        static abstract TSelf Acosh(TSelf x);
-
-        static abstract TSelf Asin(TSelf x);
-
-        static abstract TSelf Asinh(TSelf x);
-
-        static abstract TSelf Atan(TSelf x);
-
-        static abstract TSelf Atan2(TSelf y, TSelf x);
-
-        static abstract TSelf Atanh(TSelf x);
-
         static abstract TSelf BitIncrement(TSelf x);
 
         static abstract TSelf BitDecrement(TSelf x);
-
-        static abstract TSelf Cbrt(TSelf x);
-
-        static abstract TSelf Ceiling(TSelf x);
 
         // CopySign is likely more general purpose and may apply to any signed number type
         // It may even be applicable to unsigned numbers where it simply returns x, for convenience
 
         static abstract TSelf CopySign(TSelf x, TSelf y);
 
-        static abstract TSelf Cos(TSelf x);
-
-        static abstract TSelf Cosh(TSelf x);
-
-        static abstract TSelf Exp(TSelf x);
-
-        static abstract TSelf Floor(TSelf x);
-
         static abstract TSelf FusedMultiplyAdd(TSelf x, TSelf y, TSelf z);
 
         static abstract TSelf IEEERemainder(TSelf x, TSelf y);
 
-        // IEEE defines the result to be an integral type, but not the size
-
-        static abstract TInteger ILogB<TInteger>(TSelf x)
-            where TInteger : IBinaryInteger<TInteger>;
-
-        static abstract TSelf Log(TSelf x);
-
-        static abstract TSelf Log(TSelf x, TSelf newBase);
-
-        static abstract TSelf Log2(TSelf x);
-
-        static abstract TSelf Log10(TSelf x);
-
         static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
 
         static abstract TSelf MinMagnitude(TSelf x, TSelf y);
-
-        static abstract TSelf Pow(TSelf x, TSelf y);
-
-        static abstract TSelf Round(TSelf x);
-
-        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits)
-            where TInteger : IBinaryInteger<TInteger>;
-
-        static abstract TSelf Round(TSelf x, MidpointRounding mode);
-
-        static abstract TSelf Round<TInteger>(TSelf x, TInteger digits, MidpointRounding mode)
-            where TInteger : IBinaryInteger<TInteger>;
-
-        // IEEE defines n to be an integral type, but not the size
-
-        static abstract TSelf ScaleB<TInteger>(TSelf x, TInteger n)
-            where TInteger : IBinaryInteger<TInteger>;
-
-        static abstract TSelf Sin(TSelf x);
-
-        static abstract TSelf Sinh(TSelf x);
-
-        static abstract TSelf Sqrt(TSelf x);
-
-        static abstract TSelf Tan(TSelf x);
-
-        static abstract TSelf Tanh(TSelf x);
-
-        static abstract TSelf Truncate(TSelf x);
 
         // The following members are exposed on the floating-point types as constants today
         // This may be of concern when implementing the interface
@@ -944,35 +1029,9 @@ namespace System
 
         // The following methods are approved but not yet implemented in the libraries
 
-        static abstract TSelf AcosPi(TSelf x);
-
-        static abstract TSelf AsinPi(TSelf x);
-
-        static abstract TSelf AtanPi(TSelf x);
-
-        static abstract TSelf Atan2Pi(TSelf y, TSelf x);
-
         static abstract TSelf Compound(TSelf x, TSelf n);
 
-        static abstract TSelf CosPi(TSelf x);
-
-        static abstract TSelf ExpM1(TSelf x);
-
-        static abstract TSelf Exp2(TSelf x);
-
-        static abstract TSelf Exp2M1(TSelf x);
-
-        static abstract TSelf Exp10(TSelf x);
-
-        static abstract TSelf Exp10M1(TSelf x);
-
         static abstract TSelf Hypot(TSelf x, TSelf y);
-
-        static abstract TSelf LogP1(TSelf x);
-
-        static abstract TSelf Log2P1(TSelf x);
-
-        static abstract TSelf Log10P1(TSelf x);
 
         static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
 
@@ -981,12 +1040,6 @@ namespace System
         static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
 
         static abstract TSelf MinNumber(TSelf x, TSelf y);
-
-        static abstract TSelf Root(TSelf x, TSelf n);
-
-        static abstract TSelf SinPi(TSelf x);
-
-        static abstract TSelf TanPi(TSelf x);
 
         // The majority of the IEEE required operations are listed below
         // This doesn't include the recommended operations such as sin, cos, acos, etc
@@ -1120,16 +1173,16 @@ namespace System
         //  TSelf SetPayloadSignaling(TSelf x);
     }
 
-    public interface IBinaryFloatingPoint<TSelf>
+    public interface IBinaryFloatingPointIeee754<TSelf>
         : IBinaryNumber<TSelf>,
-          IFloatingPoint<TSelf>
-        where TSelf : IBinaryFloatingPoint<TSelf>
+          IFloatingPointIeee754<TSelf>
+        where TSelf : IBinaryFloatingPointIeee754<TSelf>
     {
     }
 
-    public interface IDecimalFloatingPoint<TSelf>
-        : IFloatingPoint<TSelf>
-        where TSelf : IDecimalFloatingPoint<TSelf>
+    public interface IDecimalFloatingPointIeee754<TSelf>
+        : IFloatingPointIeee754<TSelf>
+        where TSelf : IDecimalFloatingPointIeee754<TSelf>
     {
         // This interface is defined for convenience of viewing the IEEE requirements
         // it would not actually be defined until the .NET libraries requires it
@@ -1292,7 +1345,7 @@ namespace System
     }
 
     public struct Double
-        : IBinaryFloatingPoint<double>,
+        : IBinaryFloatingPointIeee754<double>,
           IConvertible,
           IMinMaxValue<double>
     {
@@ -1314,7 +1367,7 @@ namespace System
     }
 
     public struct Half
-        : IBinaryFloatingPoint<Half>,
+        : IBinaryFloatingPointIeee754<Half>,
           IMinMaxValue<Half>
     {
     }
@@ -1360,7 +1413,7 @@ namespace System
     }
 
     public struct Single
-        : IBinaryFloatingPoint<float>,
+        : IBinaryFloatingPointIeee754<float>,
           IConvertible,
           IMinMaxValue<float>
     {
