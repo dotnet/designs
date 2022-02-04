@@ -42,20 +42,20 @@ We have not yet settled on how workload installation will work when the .NET SDK
 
 The only workload that will be supported on Linux in .NET 6 will be Blazor AoT.  For .NET 6, we will recommend that developers using a .NET SDK installed via a package manager run `dotnet workload install` under `sudo`.  This will use the file based installation mechanism, ie it will download the workload packs and copy them to the .NET SDK folder.
 
-For source-built .NET, we should not be copying non source-built files into the source-built .NET SDK folder.  For that case, we will provide instructions for how to use workloads outside of the .NET SDK folder.  This will involve downloading and extracting various workload NuGet packages to a user folder, and setting some environment variables (`DOTNETSDK_WORKLOAD_MANIFEST_ROOTS` and `DOTNETSDK_WORKLOAD_PACK_ROOTS`) so that the .NET SDK knows where to find them.
+For source-built .NET, we should not be copying non source-built files into the source-built .NET SDK folder.  For that case, we will support [installing workloads to a user-local folder](https://github.com/dotnet/sdk/issues/18104) that does not require admin permission to write to.
 
 ## For .NET 7
 
-For .NET 7, we will need a better solution for source-built .NET, and may also want a better solution for package managers in general.  This will likely be one of the following options:
+For .NET 7, we will probably want a better option for package managers in general.  This will likely be one of the following options:
 
 - Create workload packages for each package manager we support.  The workloads could be installed via the package managers, and `dotnet workload install` would either shell out to the appropriate package manager to install or print a message instructing the user to install the workloads via the package manager.
-- Install workloads to a user-writable folder outside of the .NET SDK installation folder.
+- Use user-local workload installs for all package manager based installs of the .NET SDK.
 
 # Choosing the installer abstraction
 
-Before any installation operation is started, the .NET SDK will need to choose which installer abstraction will be used and instantiate it.  To do so, it will look for marker files in the `<DOTNET ROOT>/metadata/workloads/<SdkFeatureBand>/installertype/` folder.  If an `msi` file is present, the msi based installer will be used.  Otherwise, the file based installer will be used.
+Before any installation operation is started, the .NET SDK will need to choose which installer abstraction will be used and instantiate it.  To do so, it will look for marker files in the `{DOTNET ROOT}/metadata/workloads/{sdk-band}/installertype/` folder.  If an `msi` file is present, the msi based installer will be used.  Otherwise, the file based installer will be used.
 
-This means that the installer packages that we create for the .NET SDK will need to include these files.  For Windows, we will include the `visualstudio` file in the placeholder MSI which we create for Visual Studio, and the `msi` file will go in the main SDK MSI.
+This means that the installer packages that we create for the .NET SDK will need to include these files.  For Windows, both Visual Studio and the standalone .NET SDK installer will include an `msi` file in this folder.
 
 On Mac OS, we will always use the file based installer.  There will be packages for the initial installation of the .NET SDK, but whenever the SDK is installing or updating workloads it will simply do so by copying files around on disk.
 
@@ -82,17 +82,19 @@ When the .NET SDK is updated to a new version, developers may expect for the sam
 
 Given that for some installers we won't be able to automatically, we should make it easy to install the same workloads that were installed for a previous version of the .NET SDK.  If there are workloads that were previously installed, we should also print a message as part of the first run experience telling the developer how to update them.
 
-We will use the `dotnet workload update` command for this.  This means that if there are any workload installation records for the current SDK feature band, it will update them.  Otherwise, it will use the workloads installation records from the most recent SDK feature band prior to the current one that has any workload installation records, and install those workloads.
+We will use the `dotnet workload update --from-previous-sdk` command for this.  This command will use the workloads installation records from the most recent SDK feature band prior to the current one that has any workload installation records, and install those workloads.
 
-We will print a message on first run suggesting updating the workloads in the following cases:
+We will [print a message on first run](https://github.com/dotnet/sdk/issues/19060) suggesting updating the workloads in the following cases:
 
 - A new feature band of the SDK was installed.  This will be if the following are both true:
   - There are no workload installation records for the current SDK feature band
   - There are workload installation records for any SDK feature band prior to the current one
+  - In this case, the message should suggest running `dotnet workload update --from-previous-sdk`
 - A patch to the SDK was installed which updated the baseline workload manifest.  This is likely to happen for workloads that are shipped in sync with the .NET SDK, such as Blazor.  We will detect this by:
   - From IAL: Get list of workload installation records for the current SDK
   - Map these via the workload manifests to workload packs that should be installed
   - Check if all those packs are installed.  If any aren't then print the the message
+  - In this case, the message should suggest running `dotnet workload update`
 
 ## Updating the workload manifests
 
@@ -149,10 +151,7 @@ To install updated manifests, the following process will be used (for each workl
 ## Workload update process
 - Update workload advertising manifests
 - From IAL: Get list of workloads installed from workload installation record
-- If there are no workload installation records for the current band, then:
-  - From IAL: Get list of feature bands that have workload installation records
-  - From that list of feature bands, select the most recent one prior to the current SDK Feature band
-  - If such a feature band exists, then get the list of workloads installed for that feature band, and use that as the list of workloads to install.  Otherwise, there is nothing to update, and quit the update process
+- If there are no workload installation records for the current band, then print message suggesting using the `--from-previous-sdk` option and quit since there's nothing else to do.
 - With rollback:
   - Install updated workload manifests
   - Run workload installation process for list of workloads that were installed
@@ -164,7 +163,7 @@ To install updated manifests, the following process will be used (for each workl
 # Installer Abstraction API
 
 - Get *unit of installation*: workloads or packs
-- If unit of installation is workloads
+- If *unit of installation* is workloads
   - Install workload
     - Optionally using offline installation cache folder
     - Should support transaction / rollback
@@ -172,8 +171,8 @@ To install updated manifests, the following process will be used (for each workl
     - This should support using the currently installed workload manifests, or another set of manifest, which may be for a future SDK feature band.  This is so that VS for Mac can use the currently installed version of the SDK to pre-download the assets for an updated SDK.
   - Uninstall workload
   - List installed workloads
-  - Not part of the API, but important for implementation: How to map from SDK workload ID to underlying installation ID and version?
-- If unit of installation is workload pack
+  - Not part of the API, but important for implementation: How to map from SDK workload ID to underlying installation ID and version
+- If *unit of installation* is workload pack
   - Install workload pack
     - Optionally using offline installation cache folder
     - Should support transaction / rollback
@@ -184,9 +183,9 @@ To install updated manifests, the following process will be used (for each workl
   - Should support transaction / rollback
   - This may involve downloading a package or installer for the workload manifest
   - Should optionally support using offline installation cache folder
-  - End result should be that the manifest under `<DOTNET ROOT>/sdk-manifests/<SdkFeatureBand>/` is installed / updated
+  - End result should be that the manifest under `{DOTNET ROOT}/sdk-manifests/{sdk-band}/` is installed / updated
 - Does IAL support installing or just giving instructions on how to install?
-  - Initial installer implementations may all support installation directly, so this may not need to be included in the first version of the installer abstraction API
+  - Initial installer implementations all support installation directly, so this is not needed in the first version of the installer abstraction API
 - Workload installation records
   - List installed workloads (SDK feature band)
   - Write installation record (workload ID, SDK feature band)
@@ -203,11 +202,11 @@ To install updated manifests, the following process will be used (for each workl
     - Depending on package type, this may be a check for a folder or a nupkg file on disk
     - Note that we don't check the workload pack installation record here
     - If the workload pack is already installed, then just write the workload pack installation record, and skip the rest
-  - Download NuGet package (eventually via new NuGet API)
+  - Download NuGet package
     - NuGet package type should be DotnetPlatform (will this prevent projects / packages from incorrectly taking a dependency on them?)
     - NuGet package ID and version will be exactly the same as the workload pack ID and version
     - If an offline installation cache folder was specified, we'll look for the NuGet package there first before trying to download it
-    - Otherwise, we'll use the NuGet APIs to download the NuGet package to a temporary folder `<DOTNET ROOT>/metadata/temp/`
+    - Otherwise, we'll use the NuGet APIs to download the NuGet package to a temporary folder `{DOTNET ROOT}/metadata/temp/`
   - Determine target folder for NuGet package.  This depends on the pack type, and can be determined via the workload resolver
   - For Library and Template packs, copy nupkg to target folder
   - For other pack types, copy contents of `data/` folder in .nupkg archive to target folder
@@ -218,48 +217,58 @@ To install updated manifests, the following process will be used (for each workl
   - This will use the same download mechanics as when installing a workload pack.  However, the target folder will be different (passed in via an argument) and the pack won't be installed to the dotnet folder
 - Garbage collect: See below
 - Install workload manifest
-  - This implementation doesn't need to support downloading the .nupkg manifest, as the files can simply be copied from the advertised manifest
-  - Calculate workload manifest package ID: `<ManifestID>.Manifest-<SdkFeatureBand>`
-  - Look for specified version of workload manifest package in global packages folder
-  - Copy contents of `data` folder from package to `<DOTNET ROOT>/sdk-manifests/<SdkFeatureBand>/<ManifestID>/`
+  - Calculate workload manifest package ID: `{ManifestID}.Manifest-{sdk-band}`
+  - Download workload manifest package
+  - Copy contents of `data` folder from package to `{DOTNET ROOT}/sdk-manifests/{sdk-band}/{manifest-id}/`
     - To support rollback: first copy existing contents to temporary folder
     - To rollback: delete folder in SDK and copy contents back from temporary folder
 - Read / write workload installation record
-  - Installation records should be empty files with workload ID name under `<DOTNET ROOT>/metadata/workloads/<SdkFeatureBand>/installedworkloads/`
+  - Installation records should be empty files with workload ID name under `{DOTNET ROOT}/metadata/workloads/{sdk-band}/installedworkloads/`
   - Read: List files in band directory
   - Write: Create file
   - Delete: Delete file
 
 ### Workload Pack installation records and garbage collection
 
-A workload pack installation record will be a folder with the path `<DOTNET ROOT>/metadata/workloads/installedpacks/v1/<Pack ID>/<Pack Version>/`.  The `v1` element in the path gives us some flexibility to change the format in a later version if we need to.  A reference count for an SDK feature band will be a `<SdkFeatureBand>` file under the installation record folder.  When there are no SDK feature band reference count files under a workload pack installation record folder, then the workload pack can be deleted from disk, and then the whole workload pack installation record folder can be deleted.
+A workload pack installation record will be a folder with the path `{DOTNET ROOT}/metadata/workloads/installedpacks/v1/{pack-id}/{pack-version}/`.  The `v1` element in the path gives us some flexibility to change the format in a later version if we need to.  A reference count for an SDK feature band will be a `{sdk-band}` file under the installation record folder.  When there are no SDK feature band reference count files under a workload pack installation record folder, then the workload pack can be deleted from disk, and then the whole workload pack installation record folder can be deleted.
 
 Thus, the garbage collection process will be as follows:
 
-- Get installed SDK versions and map them to SDK feature bands (ie 6.0.200-preview6 or 6.0.205 would map to 6.0.200)
+- Get installed SDK versions and map them to SDK feature bands (ie 6.0.200 or 6.0.205 would map to 6.0.200)
 - Get installed workloads for current SDK feature band
 - Using current workload manifest, map from currently installed workloads to all pack IDs and versions that should be installed for the current band
-- For each pack / version combination where there is an installation record folder (ie `<DOTNET ROOT>/metadata/workloads/installedpacks/v1/<Pack ID>/<Pack Version>/`):
+- For each pack / version combination where there is an installation record folder (ie `{DOTNET ROOT}/metadata/workloads/installedpacks/v1/{pack-id}/{pack-version}/`):
   - Delete any reference count files that correspond to a band that is not an installed SDK
   - If the pack ID and version is not in the list that should be installed for the current band, and there is a reference count file for the current band, then delete that reference count file
   - If there are now no reference count files under the workload pack installation record folder, then the workload pack can be garbage collected
     - Delete the workload pack file or folder from disk
-    - Delete the workload pack installation record folder: `<DOTNET ROOT>/metadata/workloads/installedpacks/v1/<Pack ID>/<Pack Version>/`
-    - Also delete the `<Pack ID>` folder if there are no longer any `<Pack Version>` folders under it
+    - Delete the workload pack installation record folder: `{DOTNET ROOT}/metadata/workloads/installedpacks/v1/{pack-id}/{pack-version}/`
+    - Also delete the `{pack-id}` folder if there are no longer any `{pack-version}` folders under it
+
+### Setting Unix file permissions
+
+Some workload packs will include executable tools.  These will need to be set as executable on Unix-style operating systems.  Since NuGet packages don't natively support encoding Unix file permissions, the code that extracts the workload pack files from the NuGet packages will support a `data/UnixFilePermissions.xml` file which will describe the file permissions.  It will set the file permissions for any files listed there.  The file format will be as follows:
+
+```xml
+<FileList>
+  <File Path="data/Darwin/mono" Permission="755"/>
+  <File Path="data/Darwin/other" Permission="755"/>
+</FileList>
+```
  
 ## MSI based IAL Implementation
 
 - Unit of installation: Workload packs
 - Install workload pack
   - The MSI will be wrapped in a NuGet package
-    - NuGet package ID will be `<WorkloadPackID>.Msi.<InstallerPlatform>`, version will match the workload pack version
-    - The InstallerPlatform will be x64 or x86 (and possibly eventually arm64 and more).  It refers to which Program Files directory the assets will be installed to, not what architecture the assets inside the MSI are for (they will usually be architecture-neutral, and if they differ there will be different WorkloadPackIDs and the manifest RID aliases will handle that).
+    - NuGet package ID will be `{pack-id}.Msi.{installer-platform}`, version will match the workload pack version
+    - The installer-platform will be x64 or x86 (and possibly eventually arm64 and more).  It refers to which Program Files directory the assets will be installed to, not what architecture the assets inside the MSI are for (they will usually be architecture-neutral, and if they differ there will be different WorkloadPackIDs and the manifest RID aliases will handle that).
   - If MSI NuGet package is not in an offline cache, then download it (to temporary folder) via NuGet API
   - If MSI isn't installed, then 
     - Extract MSI from .nupkg to the MSI package cache
     - Install MSI
-  - Add reference count for workload pack in registry.  Create `Dependents\Microsoft.NET.Sdk,<SdkFeatureBand>` under MSI reference counting key
-    - If we don't have a direct way to get the DependencyProviderKey which is part of the MSI reference counting key, we can look it up as it is stored as a value under the workload pack installation record key (`HKLM\SOFTWARE\Microsoft\dotnet\InstalledPacks\<Pack ID>\<Pack Version>`)
+  - Add reference count for workload pack in registry.  Create `Dependents\Microsoft.NET.Sdk,{sdk-band}` under MSI reference counting key
+    - If we don't have a direct way to get the DependencyProviderKey which is part of the MSI reference counting key, we can look it up as it is stored as a value under the workload pack installation record key (`HKLM\SOFTWARE\Microsoft\dotnet\InstalledPacks\{pack-id}\{pack-version}`)
   - If MSI NuGet package was downloaded, then delete it from the temporary folder
   - Rollback:
     - Delete registry key for reference count
@@ -273,18 +282,19 @@ Thus, the garbage collection process will be as follows:
 - Install workload manifest
   - Acquire workload manifest MSI
     - MSI will be wrapped in a NuGet package
-      - NuGet package ID will be `<ManifestID>.Manifest-<SdkFeatureBand>.Msi.<InstallerPlatform>`
+      - NuGet package ID will be `{manifest-id}.Manifest-{sdk-band}.Msi.{installer-platform}
     - Download workload manifest MSI NuGet package (to temporary folder)
   - Extract MSI to the package cache
   - Install MSI
-  - Add reference count to workload manifest MSI: `Dependents\Microsoft.NET.Sdk,<SdkFeatureBand>` under workload manifest MSI reference counting key
+  - Add reference count to workload manifest MSI: `Dependents\Microsoft.NET.Sdk,{sdk-band}` under workload manifest MSI reference counting key
   - Rollback:
     - Delete registry key for reference count
     - Uninstall MSI
     - Delete MSI from MSI package cache
     - If MSI NuGet package was downloaded, then delete it from the temporary folder
 - Read / write workload installation record
-  - Workload installation records will be stored as a key in the registry: `HKLM\SOFTWARE\Microsoft\dotnet\InstalledWorkloads\Standalone\<SdkFeatureBand>\<WorkloadID>`
+  - Workload installation records will be stored as a key in the registry: `HKLM\SOFTWARE\Microsoft\dotnet\InstalledWorkloads\Standalone\{host-architecture}\{sdk-band}\{workload-id}`
+    - host-architecture is the processor architecture for the current process, such as x86 or x64
   - Read: List keys under `SdkFeatureBand` key
   - Write: Create key
   - Delete: Delete key
@@ -307,13 +317,13 @@ There will be MSIs for both workload packs and workload manifests.  Both of thes
     - Provider key (Dependency Provider Key)
     - Size required on disk
 - MSIs
-  - The MSI should create a reference counting key in the registry: `HKLM\Software\Classes\Installer\Dependencies\<DependencyProviderKey>`
+  - The MSI should create a reference counting key in the registry: `HKLM\Software\Classes\Installer\Dependencies\{DependencyProviderKey}`
 
 
 ### Workload pack MSIs
 - DependencyProviderKey should include the Pack ID, full semantic version of the workload pack, and InstallerPlatform.  The full semantic version should be used since multiple packs with the same ID but different versions can be installed side-by-side and should have separate reference counts
   - `InstallerPlatform` won't be part of the path to the reference counting key, but 32-bit processes will end up reading / writing under the WOW6432Node key
-- The MSI should create a workload pack installation record: `HKLM\SOFTWARE\Microsoft\dotnet\InstalledPacks\<Pack ID>\<Pack Version>`.  It should also create the following values under the workload pack installation record:
+- The MSI should create a workload pack installation record: `HKLM\SOFTWARE\Microsoft\dotnet\InstalledPacks\{pack-id}\{pack-version}`.  It should also create the following values under the workload pack installation record:
   - DependencyProviderKey: To link the workload pack installation record with the ref counting key
   - Product Code, Upgrade Code, and Product Version: To support uninstallation
 
@@ -327,7 +337,7 @@ There will be MSIs for both workload packs and workload manifests.  Both of thes
 Reference counting for the workload manifest MSIs will work as follows:
 
 - The baseline workload manifest MSI will be included in the standalone bundle.  Thus, when the bundle is installed, a reference from the bundle will be written under the Dependencies key
-- When an updated manifest is installed by the MSI based IAL implementation, it will write another reference under the Dependencies key (of the form `Microsoft.NET.Sdk,<SdkFeatureBand>`)
+- When an updated manifest is installed by the MSI based IAL implementation, it will write another reference under the Dependencies key (of the form `Microsoft.NET.Sdk,{sdk-band},{host-architecture}`)
 - If an updated manifest is installed by VS, it will also write a different reference under the dependencies key (of the form `VS.{GUID}`)
 - When the standalone bundle is uninstalled, it will remove its reference count key, and then uninstall the MSI if a newer MSI hasn't been installed and there are no other reference counts
 - The custom bundle finalizer will remove the reference created by the MSI based IAL implementation, and uninstall the MSI if there are no other references
@@ -336,12 +346,12 @@ Reference counting for the workload manifest MSIs will work as follows:
 
 The garbage collection process for the MSI based IAL will be similar to the file based IAL implementation, just with a different method of storing the workload and workload pack installation records.
 
-- Get installed SDK versions and map them to SDK feature bands (ie 6.0.200-preview6 or 6.0.205 would map to 6.0.200)
+- Get installed SDK versions and map them to SDK feature bands
 - Get installed workloads for current SDK feature band
 - Using current workload manifest, map from currently installed workloads to all pack IDs and versions that should be installed for the current band
-- Iterate over installed workload pack records (in registry under ``HKLM\SOFTWARE\Microsoft\dotnet\InstalledPacks\<Pack ID>\<Pack Version>`)
+- Iterate over installed workload pack records (in registry under ``HKLM\SOFTWARE\Microsoft\dotnet\InstalledPacks\{pack-id}\{pack-version}`)
   - Read the `DependencyProviderKey` value under the workload pack installation record key
-  - Read workload pack MSI reference count keys, which will have the path `HKLM\Software\Classes\Installer\Dependencies\<DependencyProviderKey>\Dependents\Microsoft.NET.Sdk,<SdkFeatureBand>`
+  - Read workload pack MSI reference count keys, which will have the path `HKLM\Software\Classes\Installer\Dependencies\{DependencyProviderKey}\Dependents\Microsoft.NET.Sdk,{sdk-band}`
   - Delete any reference count keys corresponding to an SDK band which is no longer installed
   - If the pack ID and version is not in the list that should be installed for the current band, then delete the reference count key for the current band (if it exists)
   - If there are now no reference count keys for the workload pack MSI, then the workload pack can be garbage collected

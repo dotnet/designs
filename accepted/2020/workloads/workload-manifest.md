@@ -148,7 +148,13 @@ To mantain installation coherence, any workload management operation (install, u
 
 ## Advertising
 
-The .NET tooling will automatically and opportunistically download updated versions of all manifests for the current SDK band and unpack them to `~/.dotnet/sdk-advertising/{sdk-band}/{manifest-id}/`. These user-local updated copies of the manifest are known as *advertising manifests.* The advertising manifests are used when listing workloads that are available to be installed, and for the build tooling to produce warnings that newer versions of installed components are available. They are **not** used in pack resolution or installation.
+The .NET tooling will automatically and opportunistically download updated versions of all manifests for the current SDK band and unpack them to `~/.dotnet/sdk-advertising/{sdk-band}/{manifest-id}/`. These user-local updated copies of the manifest are known as *advertising manifests.* The advertising manifests are used to notify that newer versions of installed components are available. They are **not** used in pack resolution or installation.
+
+By default, the .NET SDK will look for newer versions of workload manifests and update the advertising manifests when a `dotnet` CLI command is run which runs NuGet restore, and it has been at least 24 hours since the SDK checked for updated workload manifests.  This can be disabled by setting the `WORKLOAD_UPDATE_NOTIFY_DISABLE` environment variable to `true`, and the interval can be controlled with the `WORKLOAD_UPDATE_NOTIFY_INTERVAL_HOURS` environment variable.
+
+To explicitly update the advertising manifests without also updating workloads, the following command can be used: `dotnet workload update --advertising-manifests-only`
+
+If the advertising manifests indicate that workload updates are available, commands which check for updating workload manifests (except for the `dotnet run` command) will output a message after running notifying the user that workload updates are available.
 
 # Format
 
