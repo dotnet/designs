@@ -42,7 +42,7 @@ We have not yet settled on how workload installation will work when the .NET SDK
 
 The only workload that will be supported on Linux in .NET 6 will be Blazor AoT.  For .NET 6, we will recommend that developers using a .NET SDK installed via a package manager run `dotnet workload install` under `sudo`.  This will use the file based installation mechanism, ie it will download the workload packs and copy them to the .NET SDK folder.
 
-For source-built .NET, we should not be copying non source-built files into the source-built .NET SDK folder.  For that case, we will support [installing workloads to a user-local folder](https://github.com/dotnet/sdk/issues/18104) that does not require admin permission to write to.
+For source-built .NET, we should not be copying non source-built files into the source-built .NET SDK folder.  For that case, we support [installing workloads to a user-local folder](https://github.com/dotnet/sdk/issues/18104) that does not require admin permission to write to.
 
 ## For .NET 7
 
