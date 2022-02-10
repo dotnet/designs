@@ -42,7 +42,7 @@ Here are some examples of SDK workloads and the packs that they might include:
 
 Manifest versioning broadly tracks SDK versioning: manifests are always associated with an SDK band, and each SDK instance uses only the manifests corresponding to its own band. This association only holds at the band level; manifest versions are completely independent of SDK patch levels. An SDK uses the latest available versions of the manifests available for its band.
 
-To make this relationship more explicit, the SDK band for a manifest is encoded into the manifest’s ID e.g. `Microsoft.NET.Sdk.Android.SdkManifest-5.0.200`. The “version” of a manifest package can then be as simple as a monotonic integer value.
+To make this relationship more explicit, the SDK band for a manifest is encoded into the manifest’s package ID e.g. `Microsoft.NET.Workload.Android.Manifest-6.0.200`. The “version” of a manifest package can then be a semantic version that may or may not have a relationship to the SDK band.
 
 > NOTE: Workloads are completely independent of SDK servicing version e.g. SDK 6.0.100 will get the exact same workload manifests as SDK 6.0.106.
 
@@ -119,15 +119,15 @@ Manifests may also provide logic to import workload packs automatically via a `W
 
 ## Packaging
 
-Manifests are packaged and distributed as NuGet packages. They will use the existing package type called `DotnetPlatform` so they cannot be accidentally used as a `PackageReference`. The manifest’s `sdk-manifest.json` and `WorkloadManifest.targets` are in the root folder of the NuGet. The ID of the NuGet is `{manifest-id}-{sdk-band}` and the version of the NuGet is the manifest version.
+Manifests are packaged and distributed as NuGet packages. The ID of the NuGet package is `{manifest-id}.Manifest-{sdk-band}` (for example, `Microsoft.NET.Workload.Android.Manifest-6.0.200`) and the version of the NuGet package is the manifest version. They will use the existing package type called `DotnetPlatform` so they cannot be accidentally used as a `PackageReference`. The manifest’s `workloadmanifest.json`, `WorkloadManifest.targets`, and any other files are in the `data/` folder of the NuGet package. This ensures that there's not confusion about whether a file in the root is part of the workload manifest or a file owned by NuGet. 
 
-As manifests are NuGets, they use the same distribution mechanisms as packs, allowing for a consistent experience. For example:
+As manifests are NuGet packages, they use the same distribution mechanisms as packs, allowing for a consistent experience. For example:
 * a preview update for a workload could be made available as a NuGet feed containing an updated manifest for a stable SDK band
 * manifests and packs could be copied to an air-gapped machine and set up as directory feed, making the full workload experience available offline
 
 ## Installation
 
-Manifests are installed to `dotnet/sdk/{sdk-band}-manifests/{manifest-id}/` in an extracted form. These are called the *installed manifests* (and targets).
+Manifests are installed to `dotnet/sdk-manifests/{sdk-band}/{manifest-id}/` in an extracted form. These are called the *installed manifests* (and targets).
 
 The dotnet SDK is expected to include baseline versions of the installed manifests and targets for all manifests that are known and supported.
 
@@ -145,7 +145,13 @@ To mantain installation coherence, any workload management operation (install, u
 
 ## Advertising
 
-The .NET tooling will automatically and opportunistically download updated versions of all manifests for the current SDK band and unpack them to `~/.dotnet/sdk-advertising/{sdk-band}/{manifest-id}/`. These user-local updated copies of the manifest are known as *advertising manifests.* The advertising manifests are used when listing workloads that are available to be installed, and for the build tooling to produce warnings that newer versions of installed components are available. They are **not** used in pack resolution or installation.
+The .NET tooling will automatically and opportunistically download updated versions of all manifests for the current SDK band and unpack them to `~/.dotnet/sdk-advertising/{sdk-band}/{manifest-id}/`. These user-local updated copies of the manifest are known as *advertising manifests.* The advertising manifests are used to notify that newer versions of installed components are available. They are **not** used in pack resolution or installation.
+
+By default, the .NET SDK will look for newer versions of workload manifests and update the advertising manifests when a `dotnet` CLI command is run which runs NuGet restore, and it has been at least 24 hours since the SDK checked for updated workload manifests.  This can be disabled by setting the `WORKLOAD_UPDATE_NOTIFY_DISABLE` environment variable to `true`, and the interval can be controlled with the `WORKLOAD_UPDATE_NOTIFY_INTERVAL_HOURS` environment variable.
+
+To explicitly update the advertising manifests without also updating workloads, the following command can be used: `dotnet workload update --advertising-manifests-only`
+
+If the advertising manifests indicate that workload updates are available, commands which check for updating workload manifests (except for the `dotnet run` command) will output a message after running notifying the user that workload updates are available.
 
 # Format
 
@@ -155,7 +161,7 @@ The toplevel is a JSON object, containing the following keys:
 
 | Key | Type | Value | Required |
 |--|--|--|--|
-| `version` | int | The version of the manifest. Must match the version of the NuGet package that contains the manifest. | Yes |
+| `version` | string | The (semantic) version of the manifest. Must match the version of the NuGet package that contains the manifest. | Yes |
 | `description` | string | Description of the content and/or purpose of the manifest. This is primarily for commenting and/or diagnostic purposes and is not expected to be surfaced in the UX. | No |
 | `depends-on` | object | Declares any dependency on other manifests | No |
 | `workloads` | object | Workload definitions keyed by workload ID. | No |
@@ -300,7 +306,7 @@ Here is a *hypothetical* example manifest. It's not prescriptive but demonstrate
 
 ```json5
 {
-    "version": 5,
+    "version": "5.0.0",
     "workloads": {
         // this is a dev workload that would typically be installed
         // by a developer getting started with this platform. it's
