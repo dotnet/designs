@@ -79,7 +79,6 @@ Use update-index to regenerate it:
 | 2021 | [Streamline Windows Forms application configuration and bootstrap](accepted/2021/winforms/streamline-application-bootstrap.md) | [Igor Velikorossov](https://github.com/RussKie) |
 | 2021 | [TFM for .NET nanoFramework](accepted/2021/nano-framework-tfm/nano-framework-tfm.md) | [Immo Landwerth](https://github.com/terrajobst), [Laurent Ellerbach](https://github.com/Ellerbach), [José Simões](https://github.com/josesimoes) |
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
-| 2022 | [Disable multi-level lookup by default](accepted/2022/disable-multi-level-lookup-by-default.md) | [Vitek Karas](https://github.com/vitek-karas) |
 
 ## Drafts
 
