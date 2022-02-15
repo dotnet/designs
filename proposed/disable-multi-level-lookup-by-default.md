@@ -51,6 +51,8 @@ This version will be determined by the `tfm` property in `.runtimeconfig.json`.
     * Applications targeting .NET 6 and below
         * keep existing behavior which is `DOTNET_MULTILEVEL_LOOKUP=1` by default.
         * env. variable `DOTNET_MULTILEVEL_LOOKUP` can be used to change the setting.
+    * If the `tfm` property is missing (SDK always writes it, so this should be
+      very rare) treat it as latest supported TFM - so fully disable MLL.
     * This behavior will be the same regardless of how the app was started
     (`dotnet` executable or `app` (apphost) executable).
 * SDK invocation
@@ -70,9 +72,10 @@ This version will be determined by the `tfm` property in `.runtimeconfig.json`.
     The output of `dotnet --info` is meant to be humanly readable text and
     it already includes for example links to install more SDKs so adding
     another message should have minimal risk of breaking anything.
-    `dotnet --list-runtimes` and `dotnet --list-sdks`
-    on the other hand are not formatted for humans and should not include
-    any additional message.
+    * Running `dotnet --list-runtimes` or `dotnet --list-sdks`
+    with .NET 7+ `dotnet` will also disable multi-level lookup. There will be
+    no message added to the output as these commands produce machine readable
+    output.
 * Native hosting APIs
     * All hosting API scenarios have `.runtimeconfig.json` available and so will
     act as applications - they will react to target framework version
@@ -99,20 +102,25 @@ Host should print out a message when enumerating runtimes and SDKs in
 `dotnet --info`. As mentioned above `dotnet --list-runtimes` and `dotnet --list-sdks`
 must not be affected.
 
-The message should only be shown when there's observable difference in behavior.
-For CLI commands that means when running the command with multi-level lookup on
-would end up using different version of SDK than when running it with
-multi-level lookup off.
-
 `dotnet --info` should print the message in all cases where it's running
 from a private install location (so the global one doesn't match the current).
+We will see if this is acceptable with the plan to completely remove
+the message when we fully drop support for multi-level lookup.
+
+For other CLI commands we should consider showing the message only when there's
+observable difference in behavior. For CLI commands that means when running
+the command with multi-level lookup on would end up using different version
+of SDK than when running it with multi-level lookup off. This will need
+investigation both on the UX side as well as performance side.
 
 We should look into UX around `dotnet run` and `dotnet test`, if these should
 also print out a message when targeting downlevel runtimes.
 
-We should also consider expanding the error message printed out by the host
-when it fails to find a framework and it is in a place where multi-level lookup
-might have caused a different behavior.
+If we fail to find SDK or framework the host will perform a check to see
+if enabling multi-level lookup would produce different results and if so
+it will show additional message describing the situation.
+We may consider always showing the message if the starting location is a
+private install (basically similar to `dotnet --info` behavior).
 
 ## Future removal of multi-level lookup
 
