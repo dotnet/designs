@@ -145,7 +145,7 @@ and can show the message always.
 Options:
 
 1. Only show the message in problematic places (like CLI commands) during
-   .NET 7 previews, but remove them for final release. 
+   .NET 7 previews, but remove them for final release.
 1. Require the user to set `DOTNET_MULTILEVEL_LOOKUP=0` - which will disable
    the message. Would go against our plans to completely remove the feature
    in the future as we would train users to set this anyway.
