@@ -12,7 +12,7 @@ Summary of significant changes:
 - Enable proxying to a local/private SDK via the `PATH` SDK.
 - Enable specifying a floor runtime version for an environment.
 
-Note: The two of those changes are more speculative (less likely to happen).
+Note: The last two of those changes are more speculative (less likely to happen).
 
 Let's start by considering some concrete customer scenarios to improve (some of which are overlapping).
 
