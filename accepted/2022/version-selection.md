@@ -26,6 +26,8 @@ Most devs would prefer a local environment that matches their lab environment. T
 
 Many repos (including .NET repos) follow a pattern of running a script (often run as part of the build) that downloads a specific patch of the .NET SDK, installs it into a private directory (often just off the root of the repo) and then runs the build and tests for the repo. This process has a lot of benefits, primarily that everyone working on the repo (at least on the same branch) uses the same SDK version (whether they have the SDK installed or not). That patterns also makes it very quick and convenient to build a repo on a new machine.
 
+Note: The standard script used by dotnet repos downloads private copy of SDK only if there is not one of the right version on your path (https://github.com/dotnet/runtime/blob/aec1f696a2bc54884dcbad589111d025267063f9/eng/common/tools.sh#L144-L145).
+
 You can see this pattern with the following example (in a disposable docker container). It is straightforward and fast.
 
 ```bash
