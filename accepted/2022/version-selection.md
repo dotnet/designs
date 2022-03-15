@@ -199,7 +199,7 @@ Feature characteristics:
 - The directory must contain an SDK installation. Otherwise, error, and direct user to the [dotnet-install script](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-install-script) help page.
 - Note: the `https://aka.ms/dotnet-download` download link isn't helpful in this case (we need a private, non-global, install for this scenario).
 - Can be in current directory or (grand-*)parent (same probing logic as `global.json`).
-- Updward directory probing terminates if either a `.dotnet` directory or a `global.json` file are found.
+- Upward directory probing terminates if either a `.dotnet` directory or a `global.json` file are found.
 - If `.dotnet` and `global.json` exist in the same directory, `.dotnet` wins; `global.json` version information is ignored, however other information may still be used.
 - No relationship to `nuget.config` and its probing logic. Open question of whether `nuget.config` probing should also terminate at `global.json`.
 
