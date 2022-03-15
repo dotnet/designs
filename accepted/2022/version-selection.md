@@ -161,14 +161,14 @@ Note: You may see [references to `DOTNET_INSTALL_DIR`](https://github.com/dotnet
 
 ### Multi-level lookup
 
-> Customer value: This feature satisfies the "intuitive version selection" customer scenario.
+> Customer value: This feature contributes to the "intuitive version selection" customer scenario.
 
 [Multi-level lookup](https://github.com/dotnet/runtime/blob/main/docs/design/features/multilevel-sharedfx-lookup.md) enables looking at both private and global .NET locations to find runtime and SDK components. It has utility in theory, but suffers from two big problems: it causes significant confusion for many people in practice, and it is only supported on Windows. It has never been requested to be enabled on macOS or Linux but has been requested many times to be disabled on Windows. [Multi-level lookup will be disabled](https://github.com/dotnet/core/issues/7131) starting with the .NET 7. We will not include the ability to re-enable the feature.
 
 ```json
 {
   "sdk": {
-    "version": "7.0.0"
+    "version": "7.0.100"
   }
 }
 ```
@@ -180,47 +180,51 @@ The primary value of the multi-level lookup is described by the following exampl
 - Multi-level lookup is used to find a .NET 6 runtime that is installed globally but not in the private location.
 - The app runs (via the globally installed .NET 6).
 
-It is simpler to install the .NET 6 runtime to the private location, resulting in much higher certainty that the desired versions are used. Multi-level lookup is best thought of as a [YOLO feature](https://en.wikipedia.org/wiki/YOLO_(aphorism)) and should have never been enabled by default (if it was needed at all).
+It is simpler to install the .NET 6 runtime to the private location, resulting in much higher certainty that the desired versions are used. Multi-level lookup is best thought of as a [YOLO feature](https://en.wikipedia.org/wiki/YOLO_(aphorism)) and should never have been enabled by default (if it was needed at all).
 
-### Convention location
+### Local `.dotnet`
 
-> Customer value: This feature satisfies the "Dev inner loop consistency with lab builds" customer scenario.
+> Customer value: This feature contributes to the "Dev inner loop consistency with lab builds" customer scenario.
 
-Note: This feature comes with significant cost and implementation complexity. We haven't decided if/when we will build it. We need more feedback to validate that it is valuable.
+Note: We haven't decided if/when we will build this feature.
 
-.NET Team build scripts implement a convention where a private .NET SDK is installed into the `.dotnet` directory at the repo root. The version is controlled via the [version in the `global.json` at repo root](https://github.com/dotnet/iot/blob/79b9c35b6b575917ab841cd1b499a840c6f15bd1/global.json#L11). Currently, this pattern is just a convention, which `dotnet` doesn't honor. You have to add the `.dotnet` directory to the `PATH` if you want to be able to type `dotnet` and use the private .NET installation. We will teach `dotnet` to recognize this pattern, and instead proxy the launch of the global `dotnet` to the private `.dotnet` location. One can think of this as the opposite behavior of multi-level lookup.
+.NET Team build scripts implement a convention where a private .NET SDK is installed into the `.dotnet` directory at the repo root. The version is controlled via the [version in the `global.json` at repo root](https://github.com/dotnet/iot/blob/79b9c35b6b575917ab841cd1b499a840c6f15bd1/global.json#L11). Currently, this pattern is just a convention, which `dotnet` doesn't honor. You have to add the `.dotnet` directory to the `PATH` if you want to be able to type `dotnet` and use the private .NET installation.
 
-There are two aspects we need to consider for this experience:
+We will teach `dotnet` to recognize this pattern and proxy the launch of the global `dotnet` to a local/private `.dotnet` location. One can think of this as the opposite behavior of multi-level lookup. This means that you can rely on your `PATH` copy of `dotnet` for convenience while using an isolated/private `dotnet`. It's a sort of version-manager-like feature.
 
-- Repos should be able to require the use of a private install.
-- This feature needs to be opt-in, per the principles stated earlier, and to ensure that the workspace is explicitly trusted by the user (similar to [VS Code Workspace Trust](https://code.visualstudio.com/docs/editor/workspace-trust)).
+Feature characteristics:
 
-"Convention location" characteristics:
-
+- User must opt-in to using the local `.dotnet` convention location feature.
 - Only supported for the `.dotnet` directory (not configurable to something else).
-- The directory must contain an SDK installation, otherwise error. The user will be directed to the [dotnet-install script](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-install-script) help page.
+- The directory must contain an SDK installation. Otherwise, error, and direct user to the [dotnet-install script](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-install-script) help page.
+- Note: the `https://aka.ms/dotnet-download` download link isn't helpful in this case (we need a private, non-global, install for this scenario).
 - Can be in current directory or (grand-*)parent (same probing logic as `global.json`).
-- The presence of `.dotnet` stops searches for `global.json`.
+- Updward directory probing terminates if either a `.dotnet` directory or a `global.json` file are found.
 - If `.dotnet` and `global.json` exist in the same directory, `.dotnet` wins; `global.json` version information is ignored, however other information may still be used.
-- `global.json` can require using the "convention location" feature, with a new `useLocal` boolean property (child of `sdk`). The `.dotnet` directory must exist at the same location.  
-- User must opt-in to using a convention location, even if it is required by `global.json`.
-- No relationship to `nuget.config`.
+- No relationship to `nuget.config` and its probing logic. Open question of whether `nuget.config` probing should also terminate at `global.json`.
 
 User opt-in characteristics:
 
-- `dotnet` will offer a new command to trust a repo: `dotnet workspace trust [repo-location]`.
-- It is an error if a `.dotnet` directory is found and this command has not been run.
-- Workspace trust data will be stored at `%USERPROFILE%/.dotnet/workspace` using a similar scheme as VS Code does with its `workspaceStorage`.
+- Set `DOTNET_USE_LOCAL=1` or pass `--use-local` via the CLI.
+- It is not an error to opt-in and for a `.dotnet` directory not to be found.
+- There is no searching for `.dotnet` in absence of opt-in.
 
-Overrides:
+Requiring using `global.json` opt-in:
 
-- User can override the need to trust a repo by setting `DOTNET_USE_LOCAL` to true.
-- If `DOTNET_USE_LOCAL=true` and `.dotnet` directory is not found, it is not an error.
-- User can override using a local `.dotnet` directory (even if `global.json` requires it) by setting `DOTNET_USE_LOCAL=false` or by passing `--ignore-local` as an argument to `dotnet`.
+- Some repos may want to force using a private runtime and desire to produce an error (with a helpful error message) in absence of a correct configuration.
+- `global.json` exposes a new boolean property (child of `sdk`): `requireUseLocal` .
+- The `.dotnet` directory must exist at the same location as `global.json`.
+- Opt-in is still required when `requireUserLocal` is set to `true`. Setting the value to `false` has no meaning.
+- User can override this setting by setting `DOTNET_USE_LOCAL=false` or by passing `--use-local false` as an argument to `dotnet`.
+- Users can also overide this setting by using the `--use-this` flag (described later).
+
+Implications for Visual Studio (and other IDEs), in order to enable this feature (like enable double click on a solution):
+
+- Must opt-in on behalf of users (via ENV or CLI) to enable using the feature, via a prompt.
+- By definition, the feature will result in using a different .NET SDK. Visual Studio would need to support running this way.
 
 Notes:
 
-- This experience as written doesn't define or validate the behavior in Visual Studio. That needs more consideration. In theory, it should be transparent to Visual Studio.
 - Apphost will not honor this value, nor does it consult `global.json` in any scenario. Same with the `dotnet myapp.dll` pattern.
 
 Considerations for the future:
@@ -237,7 +241,7 @@ SDK version selection is (currently) exclusively controlled via `global.json`. T
 {
   "sdk": {
     "version": "6.0.201",
-    "rollForward": "latestMajor",
+    "rollForward": "major",
     "allowPrerelease": false
   }
 }
@@ -247,27 +251,41 @@ This `global.json` example requires the 6.0.201 SDK or higher, and won't accept 
 
 ### Default SDK roll-forward behavior
 
-> Customer value: This feature satisfies the "intuitive version selection" and "Convenient and consistent infra builds"customer scenarios.
+> Customer value: This feature contributes to the "intuitive version selection" and "Convenient and consistent infra builds"customer scenarios.
 
-By default, SDK version selection does not roll-forward past a feature band. For example, the following `global.json` file requires the use of .NET 7.0.100 and will accept any version through 7.0.199. It will not allow for the use of 7.0.200 (if 7.0.1xx builds are absent).
+By default, SDK version selection does not roll-forward past a feature band. For example, the following `global.json` file requires the use of .NET 6.0.100 and will accept any version through 6.0.199. It will not allow for the use of 6.0.200 (if 6.0.1xx builds are absent).
 
 ```json
 {
   "sdk": {
-    "version": "7.0.100",
+    "version": "6.0.100",
   }
 }
 ```
 
-The feature bands have a reason to exist. With each feature band (`.200`, `.300`, ...), there is typically a significant update in a tools component like Roslyn, MSBuild, or NuGet. There may be compatibility breaks. However, if there are significant breaks, that's probably something that needs to resolve. The feature bands are not intended for intentional breaking changes.
+The feature bands have a reason to exist. With each feature band (`.200`, `.300`, ...), there is typically a significant update in a tools component like Roslyn, MSBuild, or NuGet. The feature bands are not intended for intentional breaking changes, but there may still be compatibility breaks. Note: If the breaks are significant, there will likely be an investigation and attention applied to resolving them (in full or in part).
 
-This default behavior is overly strict. Starting with .NET 7, the specified version will be treated as the floor version, with no ceiling. The example above would be equivalent to the following:
+This default behavior is overly strict. Starting with .NET 7, the specified version will be treated as the floor version, with no ceiling.
+
+For example, the following two `global.json` files would be equivalent.
+
+First:
+
+```json
+{
+  "sdk": {
+    "version": "7.0.100"
+  }
+}
+```
+
+Second:
 
 ```json
 {
   "sdk": {
     "version": "7.0.100",
-    "rollForward": "latestMajor",    
+    "rollForward": "major",    
   }
 }
 ```
@@ -305,24 +323,27 @@ The SDK has similar concepts (per an [earlier design](https://github.com/dotnet/
 
 That takes care of the roll-forward ENVs. Let's look at what the CLI offers for the runtime:
 
-- `--roll-forward` -- specifies roll-forward policy
+- `--roll-forward` -- specifies runtime roll-forward policy
 
 We can follow the same pattern again, by offering a mirror SDK variant:
 
--- `--sdk-roll-forward`
-
-It is reasonable to ask the question of whether we could simply use the existing runtime-oriented ENVs and CLI switches to also affect the SDK. There are multiple scenarios where users would want separate handling (like with `dotnet test` or `dotnet run`):
-
-- Roll-forward the SDK due to `global.json` pinning but retain runtime targeting as-is (as tested and expected).
-- Leave the SDK as-is (assume it works), but roll-forward the runtime from an end-of-life .NET version to a supported one.
-
-It is also reasonable to ask why we need `--roll-forward` switches for the CLI at all (for the SDK or the runtime). It is useful to specify a minimum version and roll forward policy (via the CLI or otherwise) when you want to enable your code to run in environments you don't control. This could be equally as true for scripts as apps.
+-- `--sdk-roll-forward` (default value is `major`)
 
 Note: The CLI doesn't offer a CLI affordance that matches `DOTNET_ROLL_FORWARD_TO_PRERELEASE`. We should wait for more feedback before adding pre-release-oriented switches to the CLI, for the runtime or SDK.
 
-### Host SDK selection
+### SDK version selection
 
 The host offers `--fx-version` to select a specific runtime. We will add support to the same thing for selecting an SDK with `--sdk-version`.
+
+### Ignore SDK version policies -- `--use-this`
+
+The SDK has version policies -- including `global.json` -- that you might just want to ignore. The following gesture is intended as the ultimate override. It will ignore `global.json` and any other SDK policies (ENVs or CLI params).
+
+```bash
+dotnet run --use-this
+```
+
+Whatever `dotnet` you are using to run the command, you will get to use it. The `latestMajor` roll-forward policy will be applied.
 
 ## Runtime version configuration
 
@@ -400,9 +421,17 @@ Note: The `Major` roll-forward policy is only applied when the requested major v
 
 Note: Assuming we enable this scenario, the .NET application framework teams (like ASP.NET Core) would need to focus more on binary upgrade compatibility.
 
-### Simplifying runtime roll-forward gestures
+### Support ranges
+
+Some folks have asked us for a way to state compatibility for a range of versions, for an app. It's a good scenario, but not a feature we've designed or invested in.
+
+## Simplifying roll-forward gestures
 
 The following changes don't directly contribute to the customer scenarios described earlier, but are intended to improve overall developer experience.
+
+Roll-forward gestures are harder to use than needed. There are a few simplifications we could make to make the experience more straightforward. 
+
+### Roll-forward CLI defaults
 
 The `--roll-forward` runtime switch currently requires a value. We have an opportunity to make this functionality simpler to use by offering a generally useful policy default when you specify the switch with no value. The obvious option is `Major`. This change would likely encourage the use of the roll-forward capability. The SDK doesn't need such an experience since it already implements the `LatestMajor` policy by default.
 
@@ -421,9 +450,41 @@ app --roll-forward Major -- --myarg 1234
 
 Note: If your app also accepts its own arguments, you can use `--` (it is an industry convention) to separate host from app arguments.
 
-### Support ranges
+This experience would also work with `dotnet`:
 
-Some folks have asked us for a way to state compatibility for a range of versions, for an app. It's a good scenario, but not a feature we've designed or invested in.
+```bash
+dotnet run --roll-forward
+```
+
+`--sdk-roll-forward` should work the same way and default to `Major` roll-forward when a value is not specified. This is demonstrated below.
+
+```bash
+dotnet run --sdk-roll-forward
+```
+
+### Simplifying upgrading SDK and Runtime versions together -- `use-latest`
+
+In the case that you are trying to upgrade an old project (with an old TFM and old `global.json`), then you need to use multiple gestures together, as you can see demonstrated:
+
+```bash
+dotnet run --roll-forward Major --sdk-roll-forward Major
+```
+
+That's OK, but also not fun and multiple concepts to reason about.
+
+Alternatively, we could offer that experience with one gesture: 
+
+```bash
+dotnet run --use-latest
+```
+
+It would be the equivalent of the following:
+
+```bash
+export DOTNET_ROLL_FORWARD_TO_PREVIEW=1
+export DOTNET_SDK_ROLL_FORWARD_TO_PRERELEASE=1
+dotnet run --roll-forward LatestMajor --sdk-roll-forward LatestMajor
+```
 
 ## Implemenation Plan
 
