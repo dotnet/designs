@@ -205,7 +205,7 @@ Feature characteristics:
 
 User opt-in characteristics:
 
-- Set `DOTNET_USE_LOCAL=1` or pass `--use-local` via the CLI.
+- Set `--use-local` via the CLI.
 - It is not an error to opt-in and for a `.dotnet` directory not to be found.
 - There is no searching for `.dotnet` in absence of opt-in.
 
@@ -215,17 +215,18 @@ Requiring using `global.json` opt-in:
 - `global.json` exposes a new boolean property (child of `sdk`): `requireUseLocal` .
 - The `.dotnet` directory must exist at the same location as `global.json`.
 - Opt-in is still required when `requireUserLocal` is set to `true`. Setting the value to `false` has no meaning.
-- User can override this setting by setting `DOTNET_USE_LOCAL=false` or by passing `--use-local false` as an argument to `dotnet`.
+- User can override this setting by passing `--use-local false` as an argument to `dotnet`.
 - Users can also overide this setting by using the `--use-this` flag (described later).
 
 Implications for Visual Studio (and other IDEs), in order to enable this feature (like enable double click on a solution):
 
-- Must opt-in on behalf of users (via ENV or CLI) to enable using the feature, via a prompt.
+- Must opt-in on behalf of users (via CLI) to enable using the feature, via a prompt.
 - By definition, the feature will result in using a different .NET SDK. Visual Studio would need to support running this way.
 
 Notes:
 
 - Apphost will not honor this value, nor does it consult `global.json` in any scenario. Same with the `dotnet myapp.dll` pattern.
+- CI environments are not encouraged to use this feature, but abs-path to `.dotnet/dotnet` or add `.dotnet` to the `PATH`.
 
 Considerations for the future:
 
@@ -485,6 +486,43 @@ export DOTNET_ROLL_FORWARD_TO_PREVIEW=1
 export DOTNET_SDK_ROLL_FORWARD_TO_PRERELEASE=1
 dotnet run --roll-forward LatestMajor --sdk-roll-forward LatestMajor
 ```
+
+### `dotnet run` experience
+
+`dotnet run` has a somewhat odd experience where it will build your code for you but not run it in absence of a missing runtime. `dotnet run` is intended as a high-productivity experience. It should auto-roll-forward your app for you in absense of the targeted runtime. If it does so, it should tell you.
+
+Today's experience:
+
+```bash
+root@59d103ada42c:/app# cat app.csproj | grep Target
+    <TargetFramework>net6.0</TargetFramework>
+root@59d103ada42c:/app# dotnet --version
+7.0.100-preview.2.22153.17
+root@59d103ada42c:/app# cat app.csproj | grep Target
+    <TargetFramework>net6.0</TargetFramework>
+root@59d103ada42c:/app# dotnet run
+It was not possible to find any compatible framework version
+The framework 'Microsoft.NETCore.App', version '6.0.0' (x64) was not found.
+  - The following frameworks were found:
+      7.0.0-preview.2.22152.2 at [/usr/share/dotnet/shared/Microsoft.NETCore.App]
+
+You can resolve the problem by installing the specified framework and/or SDK.
+
+The specified framework can be found at:
+  - https://aka.ms/dotnet-core-applaunch?framework=Microsoft.NETCore.App&framework_version=6.0.0&arch=x64&rid=debian.11-x64
+root@59d103ada42c:/app# dotnet run --roll-forward Major
+Hello, World!
+```
+
+Proposed experience:
+
+```bash
+root@59d103ada42c:/app# dotnet run
+Warning: .NET 6.0.0 was requested, but 7.0.1 was used.
+Hello, World!
+```
+
+Note: We may want to print the warning to STDERR to avoid poluting the output of the app.
 
 ## Implemenation Plan
 
