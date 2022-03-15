@@ -241,7 +241,7 @@ SDK version selection is (currently) exclusively controlled via `global.json`. T
 {
   "sdk": {
     "version": "6.0.201",
-    "rollForward": "major",
+    "rollForward": "latestMajor",
     "allowPrerelease": false
   }
 }
@@ -285,7 +285,7 @@ Second:
 {
   "sdk": {
     "version": "7.0.100",
-    "rollForward": "major",    
+    "rollForward": "latestMajor",    
   }
 }
 ```
@@ -343,7 +343,7 @@ The SDK has version policies -- including `global.json` -- that you might just w
 dotnet run --use-this
 ```
 
-Whatever `dotnet` you are using to run the command, you will get to use it. The `latestMajor` roll-forward policy will be applied.
+You will get whichever `dotnet` you are using (via `PATH` or abs-path). `global.json` will be ignored for version selection. The local `.dotnet` location will also be ignored.
 
 ## Runtime version configuration
 
