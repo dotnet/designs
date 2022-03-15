@@ -66,7 +66,7 @@ Ideally, there would be a way to lock a repo to a .NET version and location, usi
 The most problematic behaviors today are:
 
 - [Multi-level lookup](https://github.com/dotnet/sdk/issues/12353) can result in the global install location being used when a private location is intended.
-- `global.json` defaults to no roll-forward by default, for the specified SDK version. This results in very fragile environments, by default. Instead, the version specified should be a version floor by default.
+- `global.json` defaults to roll-forward on patch version for the specified SDK version (for example `6.0.100` -> `6.0.101`), by default. This results in fragile environments. Instead, the version specified should be a version floor by default.
 
 ## Convenient and consistent infra builds
 
@@ -81,7 +81,7 @@ At the time of writing (February 2022), the following .NET SDK versions are avai
 - `5.0.104`, `5.0.210`, `5.0.303`, `5.0.404`
 - `6.0.101`
 
-The .NET SDK has a concept of ["version compatibility bands"](https://docs.microsoft.com/dotnet/core/porting/versioning-sdk-msbuild-vs). Those are all the hundreds-based versions, like `2.1.3xx` and `2.1.4xx`. By default, if you specify `2.1.300` (or `2.1.317`), your builds requires a `2.1.3xx` SDK (at least as high as the version number specified), but will not work with `2.1.400` or higher versions. This behavior is what motivates (one could argue, requires) the GitHub team to maintain all these .NET SDK versions so that customer builds work, even out-of-support ones. It is easy to come to the conclusion that this is a problematic design, leading to unfortunate requirements on the part of service providers like GitHub.
+The .NET SDK has a concept of ["feature bands"](https://docs.microsoft.com/dotnet/core/porting/versioning-sdk-msbuild-vs) (which are a compatibility boundary for patches). Those are all the hundreds-based versions, like `2.1.3xx` and `2.1.4xx`. By default, if you specify `2.1.300` (or `2.1.317`), your builds requires a `2.1.3xx` SDK (at least as high as the version number specified), but will not work with `2.1.400` or higher versions. This behavior is what motivates (one could argue, requires) the GitHub team to maintain all these .NET SDK versions so that customer builds work, even out-of-support ones. It is easy to come to the conclusion that this is a problematic design, leading to unfortunate requirements on the part of service providers like GitHub.
 
 At the same time, GitHub offers the [`setup-dotnet`](https://github.com/actions/setup-dotnet) action for configuring the .NET SDK. You can grab any patch you want (including out-of-support ones), and it offers roll-forward capabilities for servicing.
 
@@ -278,12 +278,12 @@ The pre-.NET 7 "pinning" behavior becomes opt-in and can be achieved with the fo
 {
   "sdk": {
     "version": "7.0.100",
-    "rollForward": "feature",
+    "rollForward": "latestPatch",
   }
 }
 ```
 
-This change will only affect `global.json` files with a `version` of `7.0.0` or greater. It will not affect `global.json` files with `6.0.0` (for example) even if .NET 7 SDK is installed on the machine.
+This change will only affect `global.json` files with a `version` of `7.0.100` or greater. It will not affect `global.json` files with `6.0.100` (for example) even if .NET 7 SDK is installed on the machine.
 
 The complete set of [roll-forward options are defined in the `global.json` schema](https://docs.microsoft.com/dotnet/core/tools/global-json#rollforward).
 
