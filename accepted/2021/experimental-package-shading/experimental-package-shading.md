@@ -24,7 +24,13 @@ NuGet only allows a single version of each package to be resolved in the package
 
 To demonstrate this, consider an example where a project references package `Foo v2.0` and package `Bar`, and `Bar` depends on `Foo v1.0`:
 
-![block1](experimental-package-shading.md.1.png)
+```mermaid
+flowchart LR
+P[Project]
+P --> B[Bar]
+P --> |2.0| C2[Foo v2.0]
+B --> |1.0| C1[Foo v1.0]
+```
 
 The project *transitively* depends on `Foo v1.0` and directly depends on `Foo v2.0`. A project cannot depend on multiple versions of the same package, because this would cause conflicts and ambiguity. NuGet must *unify* the two differently versioned Foo dependencies to a single version in the context of that project.
 
@@ -32,7 +38,13 @@ The project *transitively* depends on `Foo v1.0` and directly depends on `Foo v2
 
 NuGet performs unification based on the dependency versions defined in the referencing packages or projects. Dependency versions may be exact, an explicit range, or a simple version that implicitly means "equal to or greater than". In the above example, the `v1.0` dependency means `>= v1.0`, so it is compatible with `v2.0`, and NuGet can unify them:
 
-![block2](experimental-package-shading.md.2.png)
+```mermaid
+flowchart LR
+P[Project]
+P --> B[Bar]
+P --> |2.0| C[Foo v2.0]
+B --> |1.0| C
+```
 
  ### Impact on package consumers
 
@@ -58,7 +70,13 @@ Shading makes a dependency immune to unification problems by giving it a new ide
 
 To demonstrate how shading works, we will start with our example from earlier. We have a project that depends directly on package `Foo v2.0` and transitively on `Foo v1.0` via a direct reference to package `Bar`.
 
-![block3](experimental-package-shading.md.3.png)
+```mermaid
+flowchart LR
+P[Project]
+P --> B[Bar]
+P --> |2.0| C2[Foo v2.0]
+B --> |1.0| C1[Foo v1.0]
+```
 
 Suppose that `Foo v2.0` has major API changes since `Foo v1.0` and has both added new APIs and removed old APIs. The author of the project has referenced `Foo v2.0` directly, because they want to use its cool new APIs, but they already depend on `Bar`, which internally uses the old `Foo v1.0` APIs that were removed in `Foo v2.0`. The author of the package `Bar` has not migrated to `Foo v2.0` because they depend on an advanced option from `Foo v1.0` that is not exposed in the new `Foo v2.0` APIs.
 
@@ -66,11 +84,43 @@ If NuGet has sufficient information to determine that these dependencies are not
 
 With **consumer-side shading**, at restore time NuGet would identify that the two versions of `Foo` were incompatible and that it needed to shade one of them. It would create a local copy of `Foo v2.0` renamed to some shaded name such as `Foo.Shaded.v2_0.Bar` and substitute it in place of `Foo v2.0`:
 
-![block4](experimental-package-shading.md.4.png)
+```mermaid
+flowchart LR
+P[Project]
+subgraph Bar
+   direction TB
+   Bar.dll
+end
+subgraph Foo
+   direction TB
+   Foo.dll
+end
+subgraph Foo.Shaded.v2_0.Bar
+   direction TB
+    Foo.Shaded.v2_0.Bar.dll
+end
+P --> Foo.Shaded.v2_0.Bar
+P --> Bar
+Bar --> |1.0| Foo
+```
 
 With **producer-side shading**, the author of `Bar` would anticipate this unification problem and shade their `Foo` dependency at the time they build their packages, embedding a renamed copy of the `Foo v1.0` assets in their package:
 
-![block5](experimental-package-shading.md.5.png)
+```mermaid
+flowchart LR
+P[Project]
+subgraph Bar
+   direction TB
+   Bar.dll
+   Foo.Shaded.v1_0.Bar.dll
+end
+subgraph Foo
+   direction TB
+   Foo.dll
+end
+P --> Bar
+P --> |2.0| Foo
+```
 
 ## Concerns
 
@@ -81,6 +131,7 @@ Loading multiple copies of the same library increases an app's download size and
 A major downside to shading is that an app will end up with multiple copies of the same library, even when those copies are compatible or identical. This is particularly problematic in mobile and WebAssembly where app size is important and significant effort has been invested in .NET to reduce app size. This solution should be considered an intermediate step towards a more complete, whole-app solution that is able to unify compatible shaded dependencies.
 
 Shading also prevents a consumer from updating a shaded dependency directly even when they have good reason to do so, for example a critical security update.
+
 ## User experience
 
 ### Package consumers
@@ -187,6 +238,7 @@ The shading tools will detect known unsafe patterns and warn when assets cannot 
 A particularly problematic case is when assets are not inherently unsafe, but are used by the consumer in an unsafe way. For example, types from a library with shaded dependencies may get serialized in a way that embeds a shaded shaded assembly's shaded ID into the serialization output. This is unlikely to occur in practice as  reflection based serialization of private fields is generally considered problematic, but it represents an example of the kinds of problems that cannot easily be detected automatically.
 
 There will also be challenges with assets and resources that contain assembly names, such as XAML files or linker descriptor files. We can add support for some asset/resource formats directly but a full general purpose system would need some kind of extensibility mechanism.
+
 ### Shading transitive references
 
 A project will only shade direct package references using producer-side shading. Although we could automatically shade transitive references of shaded references, there will be cases where a package author may _not_ actually want that, such as transitive references to out-of-band assemblies that are part of dotnet itself. Forcing a package author to unnecessarily shade transitive dependencies would increase the negative impact of producer-side package shading for no good reason.
@@ -197,21 +249,52 @@ We could build a mechanism for opting transitive references out of shading, but 
 
 To demonstrate this, consider a project that produces a package. The project has a shaded reference to package `Foo`, and `Foo` depends on package `Bar`, so the package project transitively depends on `Bar`.
 
-![block6](experimental-package-shading.md.6.png)
+```mermaid
+flowchart LR
+P[Package\nproject]
+Foo["Foo\n(shaded)"]
+Bar["Bar"]
+P --> |Shaded| Foo
+Foo --> Bar
+```
 
 Restoring, building and packing this will result in a package where the transitive reference to `Bar` from the project has become a direct dependency in the package. The shaded package `Foo` has been hidden from the dependency graph but the graph is otherwise unchanged.
 
-![block7](experimental-package-shading.md.7.png)
+```mermaid
+flowchart LR
+subgraph P[Package]
+   direction TB
+   Package.dll
+   Foo.Shaded.dll
+end
+P --> Bar
+```
 
 However, if the project adds a direct shaded reference to `Bar`, this will unify with the transitive reference from `Bar`, and `Foo` will depend on the shaded version of `Bar`.
 
-![block8](experimental-package-shading.md.8.png)
+```mermaid
+flowchart LR
+P[Package\nproject]
+Foo["Foo\n(shaded)"]
+Bar["Bar\n(shaded)"]
+P --> |Shaded| Foo
+P --> |Shaded| Bar
+Foo --> Bar
+```
 
 This unification is necessary so that the package project doesn't have two references to differently named copies of the same assembly, which would result in the same problems as shading public references. The package project would see multiple copies of the types from `Bar` with the exact same fully qualified names, which would cause compile errors. While it is possible to resolve this, it would substantially increase scope.
 
 Lastly, consider a case where the package project has a shaded reference to a package that's also a dependency of an unshaded reference.
 
-![block9](experimental-package-shading.md.9.png)
+```mermaid
+flowchart LR
+P[Package\nproject]
+Foo["Foo"]
+Bar["Bar\n(shaded)"]
+P --> Foo
+P --> |Shaded| Bar
+Foo --> Bar
+```
 
 This is **explicitly disallowed** at this time for the same reason as the previous example: the package project's direct and transitive references to `Bar` must unify. The only way to do this is by shading `Foo` so that its references to `Bar` can be updated to target the shaded version, and we require the developer do this explicitly so that all shading operations are clear and intentional.
 
