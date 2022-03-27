@@ -1478,6 +1478,15 @@ namespace System
 
 namespace System.Numerics
 {
+    public struct BigInteger
+        : IBinaryInteger<BigInteger>,
+          IMinMaxValue<BigInteger>,
+          ISignedNumberBase<BigInteger>,
+          ISpanFormattable,
+          ISpanParseable<BigInteger>
+    {
+    }
+
     public struct Vector<T> : IVector<Vector<T>, T>
     {
     }
@@ -1520,7 +1529,6 @@ There are several types which may benefit from some interface support. These inc
 * System.Range
 * System.Tuple
 * System.ValueTuple
-* System.Numerics.BigInteger
 * System.Numerics.Complex
 * System.Numerics.Matrix3x2
 * System.Numerics.Matrix4x4
