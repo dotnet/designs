@@ -242,22 +242,22 @@ interface "IVector<TSelf, TScalar>"
 "ITrigonometricFunctions<TSelf>"                <|-- "IFloatingPointIeee754<TSelf>"
 
 "IComparisonOperators<TSelf, TOther>"           <|-- "INumber<TSelf>"
-"IDecrementOperators<TSelf>"                    <|-- "INumber<TSelf>"
 "IDivisionOperators<TSelf, TOther, TResult>"    <|-- "INumber<TSelf>"
-"IIncrementOperators<TSelf>"                    <|-- "INumber<TSelf>"
 "IModulusOperators<TSelf, TOther, TResult>"     <|-- "INumber<TSelf>"
-"IMultiplicativeIdentity<TSelf, TResult>"       <|-- "INumber<TSelf>"
 "INumberBase<TSelf>"                            <|-- "INumber<TSelf>"
 "ISpanFormattable"                              <|-- "INumber<TSelf>"
 "ISpanParseable<TSelf>"                         <|-- "INumber<TSelf>"
-"IUnaryNegationOperators<TSelf, TResult>"       <|-- "INumber<TSelf>"
 
 "IAdditionOperators<TSelf, TOther, TResult>"    <|-- "INumberBase<TSelf>"
 "IAdditiveIdentity<TSelf, TResult>"             <|-- "INumberBase<TSelf>"
+"IDecrementOperators<TSelf>"                    <|-- "INumberBase<TSelf>"
 "IEqualityOperators<TSelf, TOther>"             <|-- "INumberBase<TSelf>"
+"IIncrementOperators<TSelf>"                    <|-- "INumberBase<TSelf>"
+"IMultiplicativeIdentity<TSelf, TResult>"       <|-- "INumberBase<TSelf>"
 "IMultiplyOperators<TSelf, TOther, TResult>"    <|-- "INumberBase<TSelf>"
 "ISubtractionOperators<TSelf, TOther, TResult>" <|-- "INumberBase<TSelf>"
 "IUnaryPlusOperators<TSelf, TResult>"           <|-- "INumberBase<TSelf>"
+"IUnaryNegationOperators<TSelf, TResult>"       <|-- "INumberBase<TSelf>"
 
 "INumberBase<TSelf>"                            <|-- "ISignedNumberBase<TSelf>"
 
@@ -685,27 +685,30 @@ namespace System
     public interface INumberBase<TSelf>
         : IAdditionOperators<TSelf, TSelf, TSelf>,
           IAdditiveIdentity<TSelf, TSelf>,
+          IDecrementOperators<TSelf>,
           IEqualityOperators<TSelf, TSelf>,     // implies IEquatable<TSelf>
+          IIncrementOperators<TSelf>,
+          IMultiplicativeIdentity<TSelf, TSelf>,
           IMultiplyOperators<TSelf, TSelf>,
           ISubtractionOperators<TSelf, TSelf, TSelf>,
-          IUnaryPlusOperators<TSelf, TSelf>
+          IUnaryPlusOperators<TSelf, TSelf>,
+          IUnaryNegationOperators<TSelf, TSelf>
         where TSelf : INumberBase<TSelf>
     {
+        // Alias for MultiplicativeIdentity
+        static abstract TSelf One { get; }
+
         // Alias for AdditiveIdentity
         static abstract TSelf Zero { get; }
     }
 
     public interface INumber<TSelf>
         : IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
-          IDecrementOperators<TSelf>,
           IDivisionOperators<TSelf, TSelf, TSelf>,
-          IIncrementOperators<TSelf>,
           IModulusOperators<TSelf, TSelf, TSelf>,
-          IMultiplicativeIdentity<TSelf, TSelf>,
           INumberBase<TSelf>,
           ISpanFormattable,                     // implies IFormattable
           ISpanParseable<TSelf>,                // implies IParseable<TSelf>
-          IUnaryNegationOperators<TSelf, TSelf>
         where TSelf : INumber<TSelf>
     {
         // For the Create methods, there is some concern over users implementing them. It is not necessarily trivial to take an arbitrary TOther
@@ -723,9 +726,6 @@ namespace System
 
         // There is an open question on whether properties like IsSigned, IsBinary, IsFixedWidth, Base/Radix, and others are beneficial
         // We could expose them for trivial checks or users could be required to check for the corresponding correct interfaces
-
-        // Alias for MultiplicativeIdentity
-        static abstract TSelf One { get; }
 
         // Abs mirrors Math.Abs and returns the same type. This can fail for MinValue of signed integer types
         // Swift has an associated type that can be used here, which would require an additional type parameter in .NET
