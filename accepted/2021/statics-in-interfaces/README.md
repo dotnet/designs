@@ -1280,6 +1280,10 @@ namespace System
           IMinMaxValue<byte>,
           IUnsignedNumberBase<byte>
     {
+        public const byte AdditiveIdentity = 0;
+        public const byte MultiplicativeIdentity = 1;
+        public const byte One = 1;
+        public const byte Zero = 0;
     }
 
     public struct Char
@@ -1338,6 +1342,14 @@ namespace System
         // The rest of the IEEE operations are missing.
 
         // Decimal and some other types likewise define "friendly" names for operators, should we expose them?
+
+        // Decimal exposes a member named MinusOne
+
+        public const decimal AdditiveIdentity = 0;
+        public const decimal MultiplicativeIdentity = 1;
+        public const decimal NegativeOne = 1;
+        public const decimal One = 1;
+        public const decimal Zero = 0;
     }
 
     public struct Double
@@ -1345,6 +1357,11 @@ namespace System
           IConvertible,
           IMinMaxValue<double>
     {
+        public const double AdditiveIdentity = 0;
+        public const double MultiplicativeIdentity = 1;
+        public const double NegativeOne = 1;
+        public const double One = 1;
+        public const double Zero = 0;
     }
 
     public class Enum
@@ -1374,6 +1391,11 @@ namespace System
           IMinMaxValue<short>,
           ISignedNumberBase<short>
     {
+        public const short AdditiveIdentity = 0;
+        public const short MultiplicativeIdentity = 1;
+        public const short NegativeOne = 1;
+        public const short One = 1;
+        public const short Zero = 0;
     }
 
     public struct Int32
@@ -1382,6 +1404,11 @@ namespace System
           IMinMaxValue<int>,
           ISignedNumberBase<int>
     {
+        public const int AdditiveIdentity = 0;
+        public const int MultiplicativeIdentity = 1;
+        public const int NegativeOne = 1;
+        public const int One = 1;
+        public const int Zero = 0;
     }
 
     public struct Int64
@@ -1390,6 +1417,11 @@ namespace System
           IMinMaxValue<long>,
           ISignedNumberBase<long>
     {
+        public const long AdditiveIdentity = 0;
+        public const long MultiplicativeIdentity = 1;
+        public const long NegativeOne = 1;
+        public const long One = 1;
+        public const long Zero = 0;
     }
 
     public struct IntPtr
@@ -1406,6 +1438,11 @@ namespace System
           IMinMaxValue<sbyte>,
           ISignedNumberBase<sbyte>
     {
+        public const sbyte AdditiveIdentity = 0;
+        public const sbyte MultiplicativeIdentity = 1;
+        public const sbyte NegativeOne = 1;
+        public const sbyte One = 1;
+        public const sbyte Zero = 0;
     }
 
     public struct Single
@@ -1413,6 +1450,11 @@ namespace System
           IConvertible,
           IMinMaxValue<float>
     {
+        public const float AdditiveIdentity = 0;
+        public const float MultiplicativeIdentity = 1;
+        public const float NegativeOne = 1;
+        public const float One = 1;
+        public const float Zero = 0;
     }
 
     public struct TimeOnly
@@ -1445,6 +1487,10 @@ namespace System
           IMinMaxValue<ushort>,
           IUnsignedNumberBase<ushort>
     {
+        public const ushort AdditiveIdentity = 0;
+        public const ushort MultiplicativeIdentity = 1;
+        public const ushort One = 1;
+        public const ushort Zero = 0;
     }
 
     public struct UInt32
@@ -1453,6 +1499,10 @@ namespace System
           IMinMaxValue<uint>,
           IUnsignedNumberBase<uint>
     {
+        public const uint AdditiveIdentity = 0;
+        public const uint MultiplicativeIdentity = 1;
+        public const uint One = 1;
+        public const uint Zero = 0;
     }
 
     public struct UInt64
@@ -1461,6 +1511,10 @@ namespace System
           IMinMaxValue<ulong>,
           IUnsignedNumberBase<ulong>
     {
+        public const ulong AdditiveIdentity = 0;
+        public const ulong MultiplicativeIdentity = 1;
+        public const ulong One = 1;
+        public const ulong Zero = 0;
     }
 
     public struct UIntPtr
