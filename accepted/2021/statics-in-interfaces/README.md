@@ -1537,6 +1537,17 @@ namespace System.Numerics
     {
     }
 
+    public struct Complex
+        : IAdditionOperators<Complex, double, Complex>,
+          IDivisionOperators<Complex, Complex, Complex>,
+          IDivisionOperators<Complex, double, Complex>,
+          IFormattable,
+          IMultiplyOperators<Complex, double, Complex>,
+          INumberBase<Complex>,
+          ISubtractionOperators<Complex, double, Complex>
+    {
+    }
+
     public struct Vector<T> : IVector<Vector<T>, T>
     {
     }
@@ -1579,7 +1590,6 @@ There are several types which may benefit from some interface support. These inc
 * System.Range
 * System.Tuple
 * System.ValueTuple
-* System.Numerics.Complex
 * System.Numerics.Matrix3x2
 * System.Numerics.Matrix4x4
 * System.Numerics.Plane
