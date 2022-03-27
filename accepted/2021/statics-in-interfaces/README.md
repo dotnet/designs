@@ -624,8 +624,6 @@ namespace System
         // Likewise the name IModulusOperators doesn't fit with the other names, so a better one is needed
 
         static abstract TResult operator %(TSelf left, TOther right);
-
-        static abstract TResult checked operator %(TSelf left, TOther right);
     }
 
     public interface IUnaryNegationOperators<TSelf, TResult>
@@ -640,8 +638,6 @@ namespace System
         where TSelf : IUnaryPlusOperators<TSelf, TResult>
     {
         static abstract TResult operator +(TSelf value);
-
-        static abstract TResult checked operator +(TSelf value);
     }
 
     public interface IBitwiseOperators<TSelf, TOther, TResult>
