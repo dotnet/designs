@@ -281,8 +281,10 @@ interface "IVector<TSelf, TScalar>"
 "ISubtractionOperators<TSelf, TOther, TResult>" <|-- "IVector<TSelf, TScalar>"
 "IUnaryNegationOperators<TSelf, TResult>"       <|-- "IVector<TSelf, TScalar>"
 
+class "BigInteger"
 class "Byte"
 class "Char"
+class "Complex"
 class "DateOnly"
 class "DateTime"
 class "DateTimeOffset"
@@ -312,6 +314,10 @@ class "Vector2"
 class "Vector3"
 class "Vector4"
 
+"IBinaryInteger<TSelf>"                         <|-- "BigInteger"
+"ISignedNumberBase<TSelf>"                      <|-- "BigInteger"
+"ValueType"                                     <|-- "BigInteger"
+
 "IBinaryInteger<TSelf>"                         <|-- "Byte"
 "IConvertible"                                  <|-- "Byte"
 "IMinMaxValue<TSelf>"                           <|-- "Byte"
@@ -323,6 +329,21 @@ class "Vector4"
 "IMinMaxValue<TSelf>"                           <|-- "Char"
 "IUnsignedNumberBase<TSelf>"                    <|-- "Char"
 "ValueType"                                     <|-- "Char"
+
+"IAdditionOperators<TSelf, TOther, TResult>"    <|-- "Complex"
+"IDivisionOperators<TSelf, TOther, TResult>"    <|-- "Complex"
+"IDivisionOperators<TSelf, TOther, TResult>"    <|-- "Complex"
+"IFormattable"                                  <|-- "Complex"
+"IExponentialFunctions<TSelf>"                  <|-- "Complex"
+"IHyperbolicFunctions<TSelf>"                   <|-- "Complex"
+"ILogarithmicFunctions<TSelf>"                  <|-- "Complex"
+"IMultiplyOperators<TSelf, TOther, TResult>"    <|-- "Complex"
+"INumberBase<TSelf>"                            <|-- "Complex"
+"IPowerFunctions<TSelf>"                        <|-- "Complex"
+"IRootFunctions<TSelf>"                         <|-- "Complex"
+"ITrigonometricFunctions<TSelf>"                <|-- "Complex"
+"ISubtractionOperators<TSelf, TOther, TResult>" <|-- "Complex"
+"ValueType"                                     <|-- "Complex"
 
 "IComparisonOperators<TSelf, TOther>"           <|-- "DateOnly"
 "IMinMaxValue<TSelf>"                           <|-- "DateOnly"
@@ -1530,7 +1551,6 @@ namespace System.Numerics
 {
     public struct BigInteger
         : IBinaryInteger<BigInteger>,
-          IMinMaxValue<BigInteger>,
           ISignedNumberBase<BigInteger>,
           ISpanFormattable,
           ISpanParseable<BigInteger>
@@ -1542,8 +1562,14 @@ namespace System.Numerics
           IDivisionOperators<Complex, Complex, Complex>,
           IDivisionOperators<Complex, double, Complex>,
           IFormattable,
+          // IExponentialFunctions<Complex>,
+          // IHyperbolicFunctions<Complex>,
+          // ILogarithmicFunctions<Complex>,
           IMultiplyOperators<Complex, double, Complex>,
           INumberBase<Complex>,
+          // IPowerFunctions<Complex>
+          // IRootFunctions<Complex>,
+          // ITrigonometricFunctions<Complex>,
           ISubtractionOperators<Complex, double, Complex>
     {
     }
