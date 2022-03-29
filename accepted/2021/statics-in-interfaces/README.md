@@ -756,9 +756,17 @@ namespace System
 
         static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
 
+        static abstract TSelf CopySign(TSelf x, TSelf y);
+
+        static abstract bool IsNegative(TSelf value);
+
         static abstract TSelf Max(TSelf x, TSelf y);
 
+        static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
+
         static abstract TSelf Min(TSelf x, TSelf y);
+
+        static abstract TSelf MinMagnitude(TSelf x, TSelf y);
 
         static abstract TSelf Parse(string s, NumberStyles style, IFormatProvider? provider);
 
@@ -906,6 +914,8 @@ namespace System
     {
         static abstract TSelf Cbrt(TSelf x);
 
+        static abstract TSelf Hypot(TSelf x, TSelf y);
+
         static abstract TSelf Sqrt(TSelf x);
 
         // The following methods are approved but not yet implemented in the libraries
@@ -1000,18 +1010,9 @@ namespace System
 
         static abstract TSelf BitDecrement(TSelf x);
 
-        // CopySign is likely more general purpose and may apply to any signed number type
-        // It may even be applicable to unsigned numbers where it simply returns x, for convenience
-
-        static abstract TSelf CopySign(TSelf x, TSelf y);
-
         static abstract TSelf FusedMultiplyAdd(TSelf x, TSelf y, TSelf z);
 
         static abstract TSelf IEEERemainder(TSelf x, TSelf y);
-
-        static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
-
-        static abstract TSelf MinMagnitude(TSelf x, TSelf y);
 
         // The following members are exposed on the floating-point types as constants today
         // This may be of concern when implementing the interface
@@ -1034,8 +1035,6 @@ namespace System
 
         static abstract bool IsNaN(TSelf value);
 
-        static abstract bool IsNegative(TSelf value);
-
         static abstract bool IsNegativeInfinity(TSelf value);
 
         static abstract bool IsNormal(TSelf value);
@@ -1047,8 +1046,6 @@ namespace System
         // The following methods are approved but not yet implemented in the libraries
 
         static abstract TSelf Compound(TSelf x, TSelf n);
-
-        static abstract TSelf Hypot(TSelf x, TSelf y);
 
         static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
 
