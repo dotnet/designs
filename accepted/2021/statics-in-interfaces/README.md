@@ -758,6 +758,8 @@ namespace System
 
         static abstract TSelf CopySign(TSelf x, TSelf y);
 
+        // IsEven, IsOdd, IsZero
+
         static abstract bool IsNegative(TSelf value);
 
         static abstract TSelf Max(TSelf x, TSelf y);
@@ -837,6 +839,20 @@ namespace System
         static abstract TSelf RotateRight(TSelf value, TSelf rotateAmount);
 
         static abstract TSelf TrailingZeroCount(TSelf value);
+
+        // These methods allow getting the underlying bytes that represent the binary integer
+
+        void CopyTo(Span<byte> destination);
+
+        void CopyTo(byte[] destination);
+
+        void CopyTo(byte[] destination, int startIndex);
+
+        nuint GetByteCount();
+
+        nuint GetBitLength();
+
+        bool TryCopyTo(Span<byte> destination);
     }
 
     public interface IExponentialFunctions<TSelf>
@@ -988,11 +1004,6 @@ namespace System
           ITrigonometricFunctions<TSelf>
         where TSelf : IFloatingPointIeee754<TSelf>
     {
-        // TODO: The Exponent and Signifcand need to be exposed here
-        // They should return INumber<TSelf> here and IBinaryNumber<TSelf> on IBinaryFloatingPointIeee754<TSelf>
-
-        // TODO: We may want to expose constants related to the subnormal and finite boundaries
-
         // The following constants are defined by System.Math and System.MathF today
 
         static abstract TSelf E { get; }
@@ -1016,6 +1027,8 @@ namespace System
 
         // The following members are exposed on the floating-point types as constants today
         // This may be of concern when implementing the interface
+
+        // TODO: We may want to expose constants related to the subnormal and finite boundaries
 
         static abstract TSelf Epsilon { get; }
 
@@ -1054,6 +1067,32 @@ namespace System
         static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
 
         static abstract TSelf MinNumber(TSelf x, TSelf y);
+
+        // These methods allow getting the underlying bytes that represent the IEEE 754 floating-point
+
+        void CopyExponentTo(Span<byte> destination);
+
+        void CopyExponentTo(byte[] destination);
+
+        void CopyExponentTo(byte[] destination, int startIndex);
+
+        nuint GetExponentByteCount();
+
+        nuint GetExponentBitLength();
+
+        bool TryCopyExponentTo(Span<byte> destination);
+
+        void CopySignificandTo(Span<byte> destination);
+
+        void CopySignificandTo(byte[] destination);
+
+        void CopySignificandTo(byte[] destination, int startIndex);
+
+        nuint GetSignificandByteCount();
+
+        nuint GetSignificandBitLength();
+
+        bool TryCopySignificandTo(Span<byte> destination);
 
         // The majority of the IEEE required operations are listed below
         // This doesn't include the recommended operations such as sin, cos, acos, etc
