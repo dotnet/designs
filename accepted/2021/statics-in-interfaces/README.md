@@ -798,6 +798,8 @@ namespace System.Numerics
 
         static abstract TSelf Sin(TSelf x);
 
+        static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
+
         static abstract TSelf Tan(TSelf x);
 
         // The following methods are approved but not yet implemented in the libraries
@@ -957,6 +959,10 @@ namespace System.Numerics
         // IEEE defines the result to be an integral type, but not the size
 
         static abstract int ILogB(TSelf x);
+
+        static abstract TSelf ReciprocalEstimate(TSelf x);
+
+        static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
 
         // IEEE defines n to be an integral type, but not the size
 
@@ -1959,6 +1965,8 @@ namespace System
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // Approved - NYI
         //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // Approved - NYI
         //   * TSelf MinNumber(TSelf, TSelf)                                                // Approved - NYI
+        //   * TSelf ReciprocalEstimate(TSelf)
+        //   * TSelf ReciprocalSqrtEstimate(TSelf)
         //   * TSelf ScaleB(TSelf, int)
         //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // Approved - NYI
         //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // Approved - NYI
@@ -2030,6 +2038,7 @@ namespace System
         //   * TSelf Cos(TSelf)
         //   * TSelf CosPi(TSelf)                                                           // Approved - NYI
         //   * TSelf Sin(TSelf)
+        //   * (TSelf, TSelf) SinCos(TSelf)
         //   * TSelf SinPi(TSelf)                                                           // Approved - NYI
         //   * TSelf Tan(TSelf)
         //   * TSelf TanPi(TSelf)                                                           // Approved - NYI
@@ -2170,6 +2179,8 @@ namespace System
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // Approved - NYI
         //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // Approved - NYI
         //   * TSelf MinNumber(TSelf, TSelf)                                                // Approved - NYI
+        //   * TSelf ReciprocalEstimate(TSelf)
+        //   * TSelf ReciprocalSqrtEstimate(TSelf)
         //   * TSelf ScaleB(TSelf, int)
         //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // Approved - NYI
         //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // Approved - NYI
@@ -2252,6 +2263,7 @@ namespace System
         //   * TSelf Cos(TSelf)
         //   * TSelf CosPi(TSelf)                                                           // Approved - NYI
         //   * TSelf Sin(TSelf)
+        //   * (TSelf, TSelf) SinCos(TSelf)
         //   * TSelf SinPi(TSelf)                                                           // Approved - NYI
         //   * TSelf Tan(TSelf)
         //   * TSelf TanPi(TSelf)                                                           // Approved - NYI
@@ -2996,6 +3008,8 @@ namespace System
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // Approved - NYI
         //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // Approved - NYI
         //   * TSelf MinNumber(TSelf, TSelf)                                                // Approved - NYI
+        //   * TSelf ReciprocalEstimate(TSelf)
+        //   * TSelf ReciprocalSqrtEstimate(TSelf)
         //   * TSelf ScaleB(TSelf, int)
         //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // Approved - NYI
         //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // Approved - NYI
@@ -3067,6 +3081,7 @@ namespace System
         //   * TSelf Cos(TSelf)
         //   * TSelf CosPi(TSelf)                                                           // Approved - NYI
         //   * TSelf Sin(TSelf)
+        //   * (TSelf, TSelf) SinCos(TSelf)
         //   * TSelf SinPi(TSelf)                                                           // Approved - NYI
         //   * TSelf Tan(TSelf)
         //   * TSelf TanPi(TSelf)                                                           // Approved - NYI
