@@ -1746,7 +1746,7 @@ namespace System
         public const decimal MinusOne = -1;                                                 // Existing - "Conflicts" with NegativeOne
         public const decimal MinValue = -79228162514264337593543950335m;                    // Existing
         public const decimal MultiplicativeIdentity = 1;                                    // ? Expose
-        public const decimal NegativeOne = -1                                               // ? Expose
+        public const decimal NegativeOne = -1;                                              // ? Expose
         public const decimal One = 1;                                                       // Existing
         public const decimal Zero = 0;                                                      // Existing
 
@@ -1851,7 +1851,7 @@ namespace System
         public const double MaxValue = 1.7976931348623157E+308;                             // Existing
         public const double MinValue = -1.7976931348623157E+308;                            // Existing
         public const double MultiplicativeIdentity = 1;                                     // ? Expose
-        public const double NegativeOne = -1                                                // ? Expose
+        public const double NegativeOne = -1;                                               // ? Expose
         public const double NegativeZero = -0.0;
         public const double One = 1;                                                        // ? Expose
         public const double Pi = Math.PI;
@@ -2894,7 +2894,7 @@ namespace System
         public const float MaxValue = 3.40282346638528859e+38f;                            // Existing
         public const float MinValue = -3.40282346638528859e+38f;                           // Existing
         public const float MultiplicativeIdentity = 1;                                     // ? Expose
-        public const float NegativeOne = -1                                                // ? Expose
+        public const float NegativeOne = -1;                                               // ? Expose
         public const float NegativeZero = -0.0f;
         public const float One = 1;                                                        // ? Expose
         public const float Pi = Math.PI;
