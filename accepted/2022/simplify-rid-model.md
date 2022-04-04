@@ -209,10 +209,6 @@ This means that we'll have two forms of RIDs:
 - A basic, default, form that is distro-agnostic and unversioned, like `linux-x64`, oriented on broad compatibility.
 - A specific, source-build, form, that is distro-specific and versioned, like `rhel.8-x64`, oriented on distro version specialization (and matching distro practices).
 
-Note: The source-build term is a poor term, used in this way. In the fullness of time, we want to move all builds to source-build, at which point this terminology would fail to make any sense. For now, we'll continue to use the term to mean "not Microsoft's build".
-
-The use of `rhel.8-x64` in the host RID list is a bit odd. That list is intended for NuGet asset probing, but (as described earlier), we don't expect there to be distro-specific NuGet packages. Distro-specific RIDs are primarily intended for restoring various packs. We may find that restoring RID-specific pack and NuGet package assets should be separated, in terms of how the RIDs are specified. For now, the doc will be left as-is, and assumes that one list controls both scenarios.
-
 Consider these two commands:
 
 ```bash
@@ -222,7 +218,7 @@ Consider these two commands:
 
 On a RHEL 8 machine (using a RH-provided .NET), those commands are intended to be equivalent, and to produce a RHEL 8 specific .NET app.
 
-However, for that to work, we would need to add `rhel.8-x64` to `runtimes.json`. Otherwise, NuGet won't be able to realize that `rhel.8-x64` should be treated as `linux-x64` for restoring NuGet assets. However, we want to freeze `runtimes.json`. That topic is left as an unresolved issue in this spec, at least for now.
+However, for that to work, we would need to add `rhel.8-x64` to `runtimes.json`. Otherwise, NuGet won't be able to realize that `rhel.8-x64` should be treated as `linux-x64` for restoring NuGet assets. To achieve that, we can augment the [existing scheme for generating `runtimes.json`](https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.NETCore.Platforms/src/runtimeGroups.props) by enabling a small additional file (like `runtime-rhel.props`) that is combined with the primary one. Such a file could be kept downstream or shared upstream.
 
 There are a few gaps that need to be resolved before we can deliver on this model, such as:
 
