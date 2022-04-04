@@ -197,9 +197,31 @@ For Red Hat, it makes sense to accept and support `linux-x64` assets, but not to
 
 **Host RID support** -- The Red Hat provided host would need to probe for assets that might be included in the app, much like was described earlier. It would use the following scheme, here specific to x64.
 
-- `rhel-x64`
+- `rhel.8-x64`
 - `linux-x64`
 - `unix`
+
+A source-built RID (here `rhel.8-x64`) will typically be distro-specific and versioned. Red Hat would naturally want to build .NET specifically and separately for RHEL versions, like RHEL7 and RHEL 8, since the packages available in each of their versioned Red Hat package feeds will be different. There might be other differences to account for as well. An unversioned RID (like `rhel-x64`) would not enable that.
+
+This means that we'll have two forms of RIDs:
+
+- A basic, default, form that is distro-agnostic and unversioned, like `linux-x64`, oriented on broad compatibility.
+- A specific, source-build, form, that is distro-specific and versioned, like `rhel.8-x64`, oriented on distro version specialization (and matching distro practices).
+
+Note: The source-build term is a poor term, used in this way. In the fullness of time, we want to move all builds to source-build, at which point this terminology would fail to make any sense. For now, we'll continue to use the term to mean "not Microsoft's build".
+
+The use of `rhel.8-x64` in the host RID list is a bit odd. That list is intended for NuGet asset probing, but (as described earlier), we don't expect there to be distro-specific NuGet packages. Distro-specific RIDs are primarily intended for restoring various packs. We may find that restoring RID-specific pack and NuGet package assets should be separated, in terms of how the RIDs are specified. For now, the doc will be left as-is, and assumes that one list controls both scenarios.
+
+Consider these two commands:
+
+```bash
+`dotnet build --self-contained`
+`dotnet build --self-contained -r rhel.8-x64`
+```
+
+On a RHEL 8 machine (using a RH-provided .NET), those commands are intended to be equivalent, and to produce a RHEL 8 specific .NET app.
+
+However, for that to work, we would need to add `rhel.8-x64` to `runtimes.json`. Otherwise, NuGet won't be able to realize that `rhel.8-x64` should be treated as `linux-x64` for restoring NuGet assets. However, we want to freeze `runtimes.json`. That topic is left as an unresolved issue in this spec, at least for now.
 
 There are a few gaps that need to be resolved before we can deliver on this model, such as:
 
