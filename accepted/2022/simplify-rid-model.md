@@ -46,7 +46,7 @@ Note: This topic area applies to other development platform, and is typically a 
 
 The following are the biggest problems we see:
 
-- We get requests to add new RIDs ([Asianux Server 8](https://github.com/dotnet/runtime/issues/2129), [CBL-Mariner], (https://github.com/dotnet/runtime/issues/65566)), with no end in sight.
+- We get requests to add new RIDs ([Asianux Server 8](https://github.com/dotnet/runtime/issues/2129), [CBL-Mariner](https://github.com/dotnet/runtime/issues/65566), [Anolis Linux](https://github.com/dotnet/runtime/pull/66132)), with no end in sight.
 - Existing RID authoring sometimes [doesn't work with new OS releases](https://github.com/dotnet/runtime/issues/65152).
 - Reasoning about [portable vs non-portable Linux RIDs](https://github.com/dotnet/runtime/pull/62942).
 - We have to read and process `runtime.json` at application startup, which has a (unmeasured) performance impact.
