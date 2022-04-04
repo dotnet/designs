@@ -112,7 +112,7 @@ The host and `runtimes.json` must remain compatible. The RIDs known by the host 
 
 This scheme doesn't explicitly define a CRT/libc version. Instead, we will define a minimum CRT/libc version, per major .NET version. That minimum CRT/libc version will form a contract and should be documented, per .NET version. Practically, it defines the oldest OS version that you can run an app on, for a given .NET version.
 
-For .NET 7:
+For .NET 7 (for all supported architectures):
 
 - For Windows, .NET will target the Windows 10 CRT.
 - For Linux with glibc, .NET will target CentOS 7.
