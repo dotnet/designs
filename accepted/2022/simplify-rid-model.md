@@ -13,7 +13,7 @@ Examples of triplets today are:
 - `win-x86`
 - `macos-arm64`
 - `linux-arm64`
-- `linux-x64-musl`
+- `linux-musl-x64`
 
 Note: A larger set of triplets are included near the end of the document.
 
