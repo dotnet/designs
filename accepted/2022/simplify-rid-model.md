@@ -8,6 +8,8 @@ Date: April 2022
 
 RIDs are (for the most part) modelled as a graph of [target triplet](https://wiki.osdev.org/Target_Triplet) symbols that describe legal combinations of operating system, chip architecture, and C-runtime, including an extensive fallback scheme. This graph is codified in [`runtime.json`](https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.NETCore.Platforms/src/runtime.json), which is describes the RID catalog. It is a massive (database in a) file. That's a lot of data to reason about, hard to edit correctly, and a bear to maintain.
 
+Note: `runtimes.json` is  a generated file, from [runtimeGroups.props](https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.NETCore.Platforms/src/runtimeGroups.props).
+
 Examples of triplets today are:
 
 - `win-x86`
@@ -21,22 +23,22 @@ The first three examples may seem like doubles and not triplets. For those examp
 
 Native code compilers will generate different code for each triplet, and triplets are incompatible with one another. That's not a .NET concept or design-point, but a reality of modern computing.
 
-The `runtimes.json` file is used for asset description, production, and selection. Code can be conditionally compiled in terms of RIDs, and NuGet packages may contain RID-specific code (often native dependencies). At restore-time, assets may be restored in terms of a specific RID. [SkiaSharp](https://nuget.info/packages/SkiaSharp/) is a good example of a package that contains RID-specific assets, in the `runtimes` folder. Each folder within `runtimes` is named as the appropriate RID. At runtime, the host must select the best-match assets from those same `runtime` folders if present (although no longer within a package).
+The `runtimes.json` file is used for asset description, production, and selection. Code can be conditionally compiled in terms of RIDs, and NuGet packages may contain RID-specific code (often native dependencies). At restore-time, assets may be restored in terms of a specific RID. [SkiaSharp](https://nuget.info/packages/SkiaSharp/) is a good example of a package that contains RID-specific assets, in the `runtimes` folder. Each folder within `runtimes` is named as the appropriate RID. At runtime, the host must select the best-match assets from those same `runtime` folders if present (no longer within a package, but retaining the same layout).
 
 RIDs can be thought of as making statements about native code, specifically:
 
 - I offer code of this RID.
-- I need code of this RID.
+- I request code of this RID.
 
 Often times, the RIDs being offered and asked for do not match (in terms of the actual string) but are compatible. The role of `runtimes.json` is determining whether two RIDs are compatible (and best-match). That's done via a graph walk of the nodes in that file.
 
-The current system is unnecessarily complex, expensive to maintain, makes it difficult to manage community needs, and costly/fragile at runtime. More simply, it is useful, but overshoots the needs we actually have.
+The current system is unnecessarily complex, expensive to maintain, makes it difficult to manage community needs, and costly/fragile at runtime. More simply, it is useful, but significantly overshoots our needs.
 
 Note: RIDs are almost entirely oriented around calling native code. However, the domain is broader, more generally oriented on native interop and calling [Foreign Function Interfaces (FFI)](https://en.wikipedia.org/wiki/Foreign_function_interface), including matching the environment. For example, we'd still likely need to use RIDs for interacting with another managed platform like Java, possibly with the use of native code or not.
 
 Note: RIDs are a close cousin to Target Framework Monikers (TFMs), however have less polished UX and don't describe the same concept (although they overlap).
 
-Note: This topic area applies to other development platform, and is typically a domain of more challenging UX. Whether .NET is better or worse off than other development platforms for native code targeting is hard to say.
+Note: This topic area applies to other development platforms, demonstrated by the following documents. It is universally a domain of more challenging UX and partial solutions.
 
 - https://peps.python.org/pep-0600/
 - https://peps.python.org/pep-0656/
@@ -56,6 +58,7 @@ The following are the biggest problems we see:
 
 - Ensure `runtimes.json` is correct.
 - Freeze `runtimes.json`.
+- New RIDs will only be added for [interchange across multiple platforms](https://github.com/dotnet/designs/pull/260#discussion_r843009872), which isn't expected.
 - Continue to use `runtimes.json` for all NuGet scenarios.
 - Disable using `runtimes.json` for all host scenarios, by default (starting with a TBD .NET version).
 - Enable a host compatibility mode that uses `runtimes.json` via MSBuild property (which writes to), `runtimeconfig.json`, and a host CLI argument.
@@ -73,7 +76,7 @@ Let's assume that an app is running on Alpine 3.16, the host will probe for the 
 - `linux-musl-x64`
 - `unix`
 
-Ubuntu would be similar:
+A glibc distro like Debian would be similar:
 
 - `linux-arm64`
 - `unix`
@@ -82,6 +85,10 @@ macOS would be similar:
 
 - `osx-arm64`
 - `unix`
+
+Note: The abstract `unix` RID is used for macOS and Linux, instead of a concrete RID for those OSes.
+
+Note: We may want to add `osx` to describe macOS-specific processor-agnostic managed code. If we find some scenarios that need it, we should add it. 
 
 Windows would similar:
 
@@ -96,8 +103,6 @@ More generally, the host will probe for:
 
 - This environment, RID triplet (OS-CRuntime-arch)
 - This environment, RID single (OS-only).
-
-Note: The abstract `unix` RID is used for macOS and Linux, instead of a concrete RID for those OSes.
 
 The host will implement "first one wins" probing logic for selecting a RID-specific asset.
 
@@ -115,8 +120,10 @@ This scheme doesn't explicitly define a CRT/libc version. Instead, we will defin
 For .NET 7 (for all supported architectures):
 
 - For Windows, .NET will target the Windows 10 CRT.
-- For Linux with glibc, .NET will target CentOS 7.
+- For Linux with glibc, .NET will target CentOS 7 (with glibc version `2.17`).
 - For Linux with musl, .NET will target the oldest supported Alpine version.
+
+Note: Source-build project will likely make different choices. For example, the IBM s390x project supports RHEL 8, not CentOS 7. glibc compatibility relationships are discussed later.
 
 For .NET 8, we'll continue with the model. However, we will no longer be able to use [CentOS 7 (due to EOL)](https://wiki.centos.org/About/Product), but will need to adopt another distro that provides us with an old enough glibc version such that we can offer broad compatibility.
 
@@ -192,7 +199,7 @@ We'll use Red Hat as an example of an organization that builds .NET from source,
 
 For Red Hat, it makes sense to accept and support `linux-x64` NuGet assets, but not to produce or offer them. Instead, Red Hat would want to produce `rhel-x64` runtime pack assets. It's easiest to describe this design-point in terms of concrete scenarios.
 
-**NuGet packages** -- NuGet authors will typically value breadth and efficiency. For example, a package like `SkiaSharp` might target `linux-x64`, but not `rhel-x64`. There is no technical reason for that package to include distro-specific assets. Also, if the author produced a `rhel-x64` asset, they would need to consider producing an `ubuntu-x64` and other similar assets for other distros, and that's not scalable. As a result, it makes sense for Red Hat to support `linux-x64`. There is no technical downside to Red Hat doing so.
+**NuGet packages** -- NuGet authors will typically value breadth and efficiency. For example, a package like `SkiaSharp` might target `linux-x64`, but not `rhel-x64`. There is no technical reason for that package to include distro-specific assets. Also, if the author produced a `rhel-x64` asset, they would need to consider producing an `ubuntu-x64` and other similar assets for other distros, and that's not scalable. The expectation is that the `rhel-x64` .NET supports `linux-x64` NuGet assets, enabling NuGet authors to target a minimal set of RIDs.
 
 **Runtime and host packs** -- The .NET SDK doesn't include all assets that are required for all scenarios, but instead relies on many assets being available on a NuGet feed (nuget.org or otherwise). That's a good design point for a variety of reasons. Runtime packs are a concrete scenario, which are used for building self-contained apps. Red Hat should be able to (A) build RHEL-specific runtime packages, (B) publish them to a feed of their choice, and (C) enable their users to download them by specifying a RHEL-specific RID as part of a typical .NET CLI workflow. RHEL-specific runtime packs would only be compatible with Red Hat Enterprise Linux family OSes. For example, the RHEL-specific runtime for RHEL 8 would only support the default OpenSSL version that is provided in the RHEL 8 package feed.
 
@@ -218,7 +225,9 @@ Consider these two commands:
 
 On a RHEL 8 machine (using a RH-provided .NET), those commands are intended to be equivalent, and to produce a RHEL 8 specific .NET app.
 
-However, for that to work, we would need to add `rhel.8-x64` to `runtimes.json`. Otherwise, NuGet won't be able to realize that `rhel.8-x64` should be treated as `linux-x64` for restoring NuGet assets. To achieve that, we can augment the [existing scheme for generating `runtimes.json`](https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.NETCore.Platforms/src/runtimeGroups.props) by enabling a small additional file (like `runtime-rhel.props`) that is combined with the primary one. Such a file could be kept downstream or shared upstream.
+The `rhel.8-x64` RID needs to be have a compatibility relationship with `linux-x64` for the purpose of NuGet, since the former will typically not to present in NuGet packages. Source-build users can [add new RIDs as part of the build](https://github.com/dotnet/runtime/pull/50818) to enable this scenario.
+
+This same technique can enable restoring `rhel.8-x64` NuGet assets if they exist. Those assets would not be restorable on other systems. If there are scenarios where RHEL 8 apps need to be composed on other systems, we can consider how to resolve that.
 
 There are a few gaps that need to be resolved before we can deliver on this model, such as:
 
