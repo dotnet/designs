@@ -152,7 +152,8 @@ The following table describes RIDs supported by the .NET host. It is exhaustive,
 |------------|----------------------|
 | unix       | All Unix-based OSes (macOS and Linux), versions, and architecture builds. |
 | win        | All Windows versions and architecture builds. |
-| linux-arm| All Linux glibc-based distros, for Arm32. |
+| linux-arm  | All Linux glibc-based distros, for Arm32. |
+| linux-armv6| All Linux glibc-based distros, for Armv6. |
 | linux-arm64| All Linux glibc-based distros, for Arm64. |
 | linux-x64  | All Linux glibc-based distros, for x64. |
 | linux-x86  | All Linux glibc-based distros, x86. |
@@ -163,6 +164,8 @@ The following table describes RIDs supported by the .NET host. It is exhaustive,
 | win-arm64  | All Windows versions, for Arm64. |
 | win-x64    | All Windows versions, for x64. |
 | win-x86    | All Windows versions, for x86. |
+
+Note: `linux-armv6` may or may not be supported. It is added for completeness.
 
 Note: Singles are for processor-agnostic managed code.
 
