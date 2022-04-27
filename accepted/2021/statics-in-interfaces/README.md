@@ -854,9 +854,9 @@ namespace System.Numerics
 
         // These methods allow getting the underlying bytes that represent the binary integer
 
-        long GetBitLength();
-
         int GetByteCount();
+
+        long GetShortestBitLength();
 
         bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten);
 
@@ -923,6 +923,32 @@ namespace System.Numerics
         static abstract TSelf Round(TSelf x, int digits, MidpointRounding mode);
 
         static abstract TSelf Truncate(TSelf x);
+
+        // These methods allow getting the underlying bytes that represent the IEEE 754 floating-point
+
+        long GetExponentShortestBitLength();
+
+        int GetExponentByteCount();
+
+        long GetSignificandShortestBitLength();
+
+        int GetSignificandByteCount();
+
+        bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten);
+
+        bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten);
+
+        int WriteExponentLittleEndian(byte[] destination);
+
+        int WriteExponentLittleEndian(byte[] destination, int startIndex);
+
+        int WriteExponentLittleEndian(Span<byte> destination);
+
+        int WriteSignificandLittleEndian(byte[] destination);
+
+        int WriteSignificandLittleEndian(byte[] destination, int startIndex);
+
+        int WriteSignificandLittleEndian(Span<byte> destination);
     }
 
     public interface IFloatingPointIeee754<TSelf>
@@ -1010,32 +1036,6 @@ namespace System.Numerics
         static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
 
         static abstract TSelf MinNumber(TSelf x, TSelf y);
-
-        // These methods allow getting the underlying bytes that represent the IEEE 754 floating-point
-
-        long GetExponentBitLength();
-
-        int GetExponentByteCount();
-
-        long GetSignificandBitLength();
-
-        int GetSignificandByteCount();
-
-        bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten);
-
-        bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten);
-
-        int WriteExponentLittleEndian(byte[] destination);
-
-        int WriteExponentLittleEndian(byte[] destination, int startIndex);
-
-        int WriteExponentLittleEndian(Span<byte> destination);
-
-        int WriteSignificandLittleEndian(byte[] destination);
-
-        int WriteSignificandLittleEndian(byte[] destination, int startIndex);
-
-        int WriteSignificandLittleEndian(Span<byte> destination);
 
         // The majority of the IEEE required operations are listed below
         // This doesn't include the recommended operations such as sin, cos, acos, etc
