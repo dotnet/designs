@@ -690,7 +690,7 @@ namespace System.Numerics
     public interface IUnaryPlusOperators<TSelf, TResult>
         where TSelf : IUnaryPlusOperators<TSelf, TResult>
     {
-        static abstract TResult operator +(TSelf value);
+        public static virtual TResult operator +(TSelf value) => value;
     }
 }
 
