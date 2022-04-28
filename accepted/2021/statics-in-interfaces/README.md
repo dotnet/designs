@@ -557,7 +557,7 @@ namespace System.Numerics
 
         static abstract TResult operator +(TSelf left, TOther right);
 
-        static abstract TResult operator checked +(TSelf left, TOther right);
+        public static virtual TResult operator checked +(TSelf left, TOther right) => left + right;
     }
 
     public interface IBitwiseOperators<TSelf, TOther, TResult>
@@ -594,7 +594,7 @@ namespace System.Numerics
     {
         static abstract TSelf operator --(TSelf value);
 
-        static abstract TSelf operator checked --(TSelf value);
+        public static virtual TSelf operator checked --(TSelf value) => --value;
     }
 
     public interface IDivisionOperators<TSelf, TOther, TResult>
@@ -602,7 +602,7 @@ namespace System.Numerics
     {
         static abstract TResult operator /(TSelf left, TOther right);
 
-        static abstract TResult operator checked /(TSelf left, TOther right);
+        public static virtual TResult operator checked /(TSelf left, TOther right) => left / right;
     }
 
     public interface IEqualityOperators<TSelf, TOther> : IEquatable<TOther>
@@ -631,7 +631,7 @@ namespace System.Numerics
 
         static abstract TSelf operator ++(TSelf value);
 
-        static abstract TSelf operator checked ++(TSelf value);
+        public static virtual TSelf operator checked ++(TSelf value) => ++value;
     }
 
     public interface IModulusOperators<TSelf, TOther, TResult>
@@ -657,7 +657,7 @@ namespace System.Numerics
 
         static abstract TResult operator *(TSelf left, TOther right);
 
-        static abstract TResult operator checked *(TSelf left, TOther right);
+        public static virtual TResult operator checked *(TSelf left, TOther right) => left * right;
     }
 
     public interface IShiftOperators<TSelf, TOther, TResult>
@@ -676,7 +676,7 @@ namespace System.Numerics
     {
         static abstract TResult operator -(TSelf left, TOther right);
 
-        static abstract TResult operator checked -(TSelf left, TOther right);
+        public static virtual TResult operator checked -(TSelf left, TOther right) => left - right;
     }
 
     public interface IUnaryNegationOperators<TSelf, TResult>
@@ -684,7 +684,7 @@ namespace System.Numerics
     {
         static abstract TResult operator -(TSelf value);
 
-        static abstract TResult operator checked -(TSelf value);
+        public static virtual TResult operator checked -(TSelf value) => -value;
     }
 
     public interface IUnaryPlusOperators<TSelf, TResult>
