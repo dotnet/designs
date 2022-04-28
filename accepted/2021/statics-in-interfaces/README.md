@@ -582,11 +582,11 @@ namespace System.Numerics
 
         static abstract bool operator <(TSelf left, TOther right);
 
-        static abstract bool operator <=(TSelf left, TOther right);
+        static abstract bool operator <=(TSelf left, TOther right);     // ? DIM
 
         static abstract bool operator >(TSelf left, TOther right);
 
-        static abstract bool operator >=(TSelf left, TOther right);
+        static abstract bool operator >=(TSelf left, TOther right);     // ? DIM
     }
 
     public interface IDecrementOperators<TSelf>
@@ -615,7 +615,7 @@ namespace System.Numerics
 
         static abstract bool operator ==(TSelf left, TOther right);
 
-        static abstract bool operator !=(TSelf left, TOther right);
+        static abstract bool operator !=(TSelf left, TOther right);     // ? DIM
     }
 
     public interface IIncrementOperators<TSelf>
