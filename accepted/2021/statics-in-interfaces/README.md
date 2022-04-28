@@ -728,23 +728,26 @@ The numeric interfaces build upon the base interfaces by defining the core abstr
 namespace System.Numerics
 {
     public interface IExponentialFunctions<TSelf>
-        where TSelf : IExponentialFunctions<TSelf>
+        where TSelf : IExponentialFunctions<TSelf>, INumberBase<TSelf>
     {
+        // These could have DIM implementations if they inherit
+        // IPowerFunctions and had access to the constant `E`
+
         static abstract TSelf Exp(TSelf x);
 
-        static abstract TSelf ExpM1(TSelf x);
+        public static virtual TSelf ExpM1(TSelf x) => Exp(x) - TSelf.One;
 
         static abstract TSelf Exp2(TSelf x);
 
-        static abstract TSelf Exp2M1(TSelf x);
+        public static virtual TSelf Exp2M1(TSelf x) => Exp2(x) - TSelf.One;
 
         static abstract TSelf Exp10(TSelf x);
 
-        static abstract TSelf Exp10M1(TSelf x);
+        public static virtual TSelf Exp10M1(TSelf x) => Exp10(x) - TSelf.One;
     }
 
     public interface IHyperbolicFunctions<TSelf>
-        where TSelf : IHyperbolicFunctions<TSelf>
+        where TSelf : IHyperbolicFunctions<TSelf>, INumberBase<TSelf>
     {
         static abstract TSelf Acosh(TSelf x);
 
@@ -760,31 +763,31 @@ namespace System.Numerics
     }
 
     public interface ILogarithmicFunctions<TSelf>
-        where TSelf : ILogarithmicFunctions<TSelf>
+        where TSelf : ILogarithmicFunctions<TSelf>, INumberBase<TSelf>
     {
         static abstract TSelf Log(TSelf x);
 
-        static abstract TSelf Log(TSelf x, TSelf newBase);
+        static abstract TSelf Log(TSelf x, TSelf newBase);      // ? DIM - Needs special floating-point handling for NaN, One, and Zero
 
         static abstract TSelf Log2(TSelf x);
 
         static abstract TSelf Log10(TSelf x);
 
-        static abstract TSelf LogP1(TSelf x);
+        public static virtual TSelf LogP1(TSelf x) => Log(x + TSelf.One);
 
-        static abstract TSelf Log2P1(TSelf x);
+        public static virtual TSelf Log2P1(TSelf x) => Log2(x + TSelf.One);
 
-        static abstract TSelf Log10P1(TSelf x);
+        public static virtual TSelf Log10P1(TSelf x) => Log10(x + TSelf.One);
     }
 
     public interface IPowerFunctions<TSelf>
-        where TSelf : IPowerFunctions<TSelf>
+        where TSelf : IPowerFunctions<TSelf>, INumberBase<TSelf>
     {
         static abstract TSelf Pow(TSelf x, TSelf y);
     }
 
     public interface IRootFunctions<TSelf>
-        where TSelf : IRootFunctions<TSelf>
+        where TSelf : IRootFunctions<TSelf>, INumberBase<TSelf>
     {
         static abstract TSelf Cbrt(TSelf x);
 
@@ -798,7 +801,7 @@ namespace System.Numerics
     }
 
     public interface ITrigonometricFunctions<TSelf>
-        where TSelf : ITrigonometricFunctions<TSelf>
+        where TSelf : ITrigonometricFunctions<TSelf>, INumberBase<TSelf>
     {
         static abstract TSelf Acos(TSelf x);
 
@@ -817,6 +820,7 @@ namespace System.Numerics
         static abstract TSelf Tan(TSelf x);
 
         // The following methods are approved but not yet implemented in the libraries
+        // These could be DIM if they had access to the constant 'Pi'
 
         static abstract TSelf AcosPi(TSelf x);
 
