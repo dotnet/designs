@@ -282,7 +282,9 @@ interface "IVector<TSelf, TScalar>"
 class "BigInteger"
 class "Byte"
 class "Char"
+class "CLong"
 class "Complex"
+class "CULong"
 class "DateOnly"
 class "DateTime"
 class "DateTimeOffset"
@@ -295,6 +297,7 @@ class "Int16"
 class "Int32"
 class "Int64"
 class "IntPtr"
+class "NFloat"
 class "Object"
 class "SByte"
 class "Single"
@@ -322,11 +325,21 @@ class "Vector4"
 "IUnsignedNumber<TSelf>"                        <|-- "Byte"
 "ValueType"                                     <|-- "Byte"
 
+"IBinaryInteger<TSelf>"                         <|-- "CLong"
+"IMinMaxValue<TSelf>"                           <|-- "CLong"
+"IUnsignedNumber<TSelf>"                        <|-- "CLong"
+"ValueType"                                     <|-- "CLong"
+
 "IBinaryInteger<TSelf>"                         <|-- "Char"
 "IConvertible"                                  <|-- "Char"
 "IMinMaxValue<TSelf>"                           <|-- "Char"
 "IUnsignedNumber<TSelf>"                        <|-- "Char"
 "ValueType"                                     <|-- "Char"
+
+"IBinaryInteger<TSelf>"                         <|-- "CULong"
+"IMinMaxValue<TSelf>"                           <|-- "CULong"
+"IUnsignedNumber<TSelf>"                        <|-- "CULong"
+"ValueType"                                     <|-- "CULong"
 
 "IAdditionOperators<TSelf, TOther, TResult>"    <|-- "Complex"
 "IDivisionOperators<TSelf, TOther, TResult>"    <|-- "Complex"
@@ -420,6 +433,11 @@ class "Vector4"
 "ISignedNumber<TSelf>"                          <|-- "IntPtr"
 "ISerializable"                                 <|-- "IntPtr"
 "ValueType"                                     <|-- "IntPtr"
+
+"IBinaryFloatingPointIeee754<TSelf>"            <|-- "NFloat"
+"IConvertible"                                  <|-- "NFloat"
+"IMinMaxValue<TSelf>"                           <|-- "NFloat"
+"ValueType"                                     <|-- "NFloat"
 
 "IBinaryInteger<TSelf>"                         <|-- "SByte"
 "IConvertible"                                  <|-- "SByte"
@@ -714,8 +732,6 @@ namespace System.Numerics
     {
         static abstract TSelf Exp(TSelf x);
 
-        // The following methods are approved but not yet implemented in the libraries
-
         static abstract TSelf ExpM1(TSelf x);
 
         static abstract TSelf Exp2(TSelf x);
@@ -753,8 +769,6 @@ namespace System.Numerics
         static abstract TSelf Log2(TSelf x);
 
         static abstract TSelf Log10(TSelf x);
-
-        // The following methods are approved but not yet implemented in the libraries
 
         static abstract TSelf LogP1(TSelf x);
 
@@ -1412,18 +1426,18 @@ namespace System
         // Implicitly Implemented interfaces
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
-        // * IBinaryNumber                                                                  // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
+        // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
         // * IComparable                                                                    // Existing
@@ -1532,18 +1546,18 @@ namespace System
         // Implicitly Implemented interfaces
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
-        //   * TSelf LeadingZeroCount(TSelf)
+        //   * int GetByteCount()
+        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * TSelf LeadingZeroCount(TSelf)                                                // ? Explicit
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
-        // * IBinaryNumber                                                                  // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
+        // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
         // * IComparable                                                                    // Existing
@@ -1790,11 +1804,23 @@ namespace System
         // * IFloatingPoint
         //   * TSelf Ceiling(TSelf)                                                         // * Existing
         //   * TSelf Floor(TSelf)                                                           // * Existing
+        //   * int GetExponentByteCount()                                                   // ? Explicit
+        //   * long GetExponentShortestBitLength()                                          // ? Explicit
+        //   * int GetSignificandByteCount()                                                // ? Explicit
+        //   * long GetSignificandShortestBitLength()                                       // ? Explicit
         //   * TSelf Round(TSelf)                                                           // * Existing
         //   * TSelf Round(TSelf, int)                                                      // * Existing
         //   * TSelf Round(TSelf, MidpointRounding)                                         // * Existing
         //   * TSelf Round(TSelf, int, MidpointRounding)                                    // * Existing
         //   * TSelf Truncate(TSelf)                                                        // * Existing
+        //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // ? Explicit
+        //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // ? Explicit
+        //   * int WriteExponentLittleEndian(byte[])                                        // ? Explicit
+        //   * int WriteExponentLittleEndian(byte[], int)                                   // ? Explicit
+        //   * int WriteExponentLittleEndian(Span<byte>)                                    // ? Explicit
+        //   * int WriteSignificandLittleEndian(byte[])                                     // ? Explicit
+        //   * int WriteSignificandLittleEndian(byte[], int)                                // ? Explicit
+        //   * int WriteSignificandLittleEndian(Span<byte>)                                 // ? Explicit
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * IIncrementOperators
@@ -1922,19 +1948,31 @@ namespace System
         //   * bool Equals(TSelf)                                                           // * Existing
         // * IExponentialFunctions
         //   * TSelf Exp(TSelf)
-        //   * TSelf ExpM1(TSelf)                                                           // Approved - NYI
-        //   * TSelf Exp2(TSelf)                                                            // Approved - NYI
-        //   * TSelf Exp2M1(TSelf)                                                          // Approved - NYI
-        //   * TSelf Exp10(TSelf)                                                           // Approved - NYI
-        //   * TSelf Exp10M1(TSelf)                                                         // Approved - NYI
+        //   * TSelf ExpM1(TSelf)
+        //   * TSelf Exp2(TSelf)
+        //   * TSelf Exp2M1(TSelf)
+        //   * TSelf Exp10(TSelf)
+        //   * TSelf Exp10M1(TSelf)
         // * IFloatingPoint
         //   * TSelf Ceiling(TSelf)
         //   * TSelf Floor(TSelf)
+        //   * int GetExponentByteCount()                                                   // ? Explicit
+        //   * long GetExponentShortestBitLength()                                          // ? Explicit
+        //   * int GetSignificandByteCount()                                                // ? Explicit
+        //   * long GetSignificandShortestBitLength()                                       // ? Explicit
         //   * TSelf Round(TSelf)
         //   * TSelf Round(TSelf, int)
         //   * TSelf Round(TSelf, MidpointRounding)
         //   * TSelf Round(TSelf, int, MidpointRounding)
         //   * TSelf Truncate(TSelf)
+        //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // ? Explicit
+        //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // ? Explicit
+        //   * int WriteExponentLittleEndian(byte[])                                        // ? Explicit
+        //   * int WriteExponentLittleEndian(byte[], int)                                   // ? Explicit
+        //   * int WriteExponentLittleEndian(Span<byte>)                                    // ? Explicit
+        //   * int WriteSignificandLittleEndian(byte[])                                     // ? Explicit
+        //   * int WriteSignificandLittleEndian(byte[], int)                                // ? Explicit
+        //   * int WriteSignificandLittleEndian(Span<byte>)                                 // ? Explicit
         // * IFloatingPointIeee754
         //   * TSelf E { get; }                                                             // ? Explicit
         //   * TSelf Epsilon { get; }                                                       // ? Explicit
@@ -1948,10 +1986,6 @@ namespace System
         //   * TSelf BitIncrement(TSelf)
         //   * TSelf Compound(TSelf, TSelf)                                                 // Approved - NYI
         //   * TSelf FusedMultiplyAdd(TSelf, TSelf, TSelf)
-        //   * long GetExponentBitLength()                                                  // Approved - NYI
-        //   * int GetExponentByteCount()                                                   // Approved - NYI
-        //   * long GetSignificandBitLength()                                               // Approved - NYI
-        //   * int GetSignificandByteCount()                                                // Approved - NYI
         //   * TSelf Ieee754Remainder(TSelf, TSelf)
         //   * int ILogB(TSelf)
         //   * bool IsFinite(TSelf)                                                         // * Existing
@@ -1961,21 +1995,13 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // * Existing
         //   * bool IsPositiveInfinity(TSelf)                                               // * Existing
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // Approved - NYI
-        //   * TSelf MaxNumber(TSelf, TSelf)                                                // Approved - NYI
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // Approved - NYI
-        //   * TSelf MinNumber(TSelf, TSelf)                                                // Approved - NYI
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MaxNumber(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf ReciprocalEstimate(TSelf)
         //   * TSelf ReciprocalSqrtEstimate(TSelf)
         //   * TSelf ScaleB(TSelf, int)
-        //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // Approved - NYI
-        //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // Approved - NYI
-        //   * int WriteExponentLittleEndian(byte[])                                        // Approved - NYI
-        //   * int WriteExponentLittleEndian(byte[], int)                                   // Approved - NYI
-        //   * int WriteExponentLittleEndian(Span<byte>)                                    // Approved - NYI
-        //   * int WriteSignificandLittleEndian(byte[])                                     // Approved - NYI
-        //   * int WriteSignificandLittleEndian(byte[], int)                                // Approved - NYI
-        //   * int WriteSignificandLittleEndian(Span<byte>)                                 // Approved - NYI
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * IHyperbolicFunctions
@@ -1988,11 +2014,11 @@ namespace System
         // * ILogarithmicFunctions
         //   * TSelf Log(TSelf)
         //   * TSelf Log(TSelf, TSelf)
-        //   * TSelf LogP1(TSelf)                                                           // Approved - NYI
+        //   * TSelf LogP1(TSelf)
         //   * TSelf Log2(TSelf)
-        //   * TSelf Log2P1(TSelf)                                                          // Approved - NYI
+        //   * TSelf Log2P1(TSelf)
         //   * TSelf Log10(TSelf)
-        //   * TSelf Log10P1(TSelf)                                                         // Approved - NYI
+        //   * TSelf Log10P1(TSelf)
         // * INumber
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
@@ -2136,19 +2162,31 @@ namespace System
         //   * bool Equals(TSelf)                                                           // * Existing
         // * IExponentialFunctions
         //   * TSelf Exp(TSelf)
-        //   * TSelf ExpM1(TSelf)                                                           // Approved - NYI
-        //   * TSelf Exp2(TSelf)                                                            // Approved - NYI
-        //   * TSelf Exp2M1(TSelf)                                                          // Approved - NYI
-        //   * TSelf Exp10(TSelf)                                                           // Approved - NYI
-        //   * TSelf Exp10M1(TSelf)                                                         // Approved - NYI
+        //   * TSelf ExpM1(TSelf)
+        //   * TSelf Exp2(TSelf)
+        //   * TSelf Exp2M1(TSelf)
+        //   * TSelf Exp10(TSelf)
+        //   * TSelf Exp10M1(TSelf)
         // * IFloatingPoint
         //   * TSelf Ceiling(TSelf)
         //   * TSelf Floor(TSelf)
+        //   * int GetExponentByteCount()                                                   // ? Explicit
+        //   * long GetExponentShortestBitLength()                                          // ? Explicit
+        //   * int GetSignificandByteCount()                                                // ? Explicit
+        //   * long GetSignificandShortestBitLength()                                       // ? Explicit
         //   * TSelf Round(TSelf)
         //   * TSelf Round(TSelf, int)
         //   * TSelf Round(TSelf, MidpointRounding)
         //   * TSelf Round(TSelf, int, MidpointRounding)
         //   * TSelf Truncate(TSelf)
+        //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // ? Explicit
+        //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // ? Explicit
+        //   * int WriteExponentLittleEndian(byte[])                                        // ? Explicit
+        //   * int WriteExponentLittleEndian(byte[], int)                                   // ? Explicit
+        //   * int WriteExponentLittleEndian(Span<byte>)                                    // ? Explicit
+        //   * int WriteSignificandLittleEndian(byte[])                                     // ? Explicit
+        //   * int WriteSignificandLittleEndian(byte[], int)                                // ? Explicit
+        //   * int WriteSignificandLittleEndian(Span<byte>)                                 // ? Explicit
         // * IFloatingPointIeee754
         //   * TSelf E { get; }
         //   * TSelf Epsilon { get; }                                                       // * Existing
@@ -2162,10 +2200,6 @@ namespace System
         //   * TSelf BitIncrement(TSelf)
         //   * TSelf Compound(TSelf, TSelf)                                                 // Approved - NYI
         //   * TSelf FusedMultiplyAdd(TSelf, TSelf, TSelf)
-        //   * long GetExponentBitLength()                                                  // Approved - NYI
-        //   * int GetExponentByteCount()                                                   // Approved - NYI
-        //   * long GetSignificandBitLength()                                               // Approved - NYI
-        //   * int GetSignificandByteCount()                                                // Approved - NYI
         //   * TSelf Ieee754Remainder(TSelf, TSelf)
         //   * int ILogB(TSelf)
         //   * bool IsFinite(TSelf)                                                         // * Existing
@@ -2175,21 +2209,13 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // * Existing
         //   * bool IsPositiveInfinity(TSelf)                                               // * Existing
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // Approved - NYI
-        //   * TSelf MaxNumber(TSelf, TSelf)                                                // Approved - NYI
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // Approved - NYI
-        //   * TSelf MinNumber(TSelf, TSelf)                                                // Approved - NYI
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MaxNumber(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf ReciprocalEstimate(TSelf)
         //   * TSelf ReciprocalSqrtEstimate(TSelf)
         //   * TSelf ScaleB(TSelf, int)
-        //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // Approved - NYI
-        //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // Approved - NYI
-        //   * int WriteExponentLittleEndian(byte[])                                        // Approved - NYI
-        //   * int WriteExponentLittleEndian(byte[], int)                                   // Approved - NYI
-        //   * int WriteExponentLittleEndian(Span<byte>)                                    // Approved - NYI
-        //   * int WriteSignificandLittleEndian(byte[])                                     // Approved - NYI
-        //   * int WriteSignificandLittleEndian(byte[], int)                                // Approved - NYI
-        //   * int WriteSignificandLittleEndian(Span<byte>)                                 // Approved - NYI
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * IHyperbolicFunctions
@@ -2205,11 +2231,11 @@ namespace System
         // * ILogarithmicFunctions
         //   * TSelf Log(TSelf)
         //   * TSelf Log(TSelf, TSelf)
-        //   * TSelf LogP1(TSelf)                                                           // Approved - NYI
+        //   * TSelf LogP1(TSelf)
         //   * TSelf Log2(TSelf)
-        //   * TSelf Log2P1(TSelf)                                                          // Approved - NYI
+        //   * TSelf Log2P1(TSelf)
         //   * TSelf Log10(TSelf)
-        //   * TSelf Log10P1(TSelf)                                                         // Approved - NYI
+        //   * TSelf Log10P1(TSelf)
         // * IModulusOperators
         //   * TSelf operator %(TSelf, TSelf)
         // * IMultiplyOperators
@@ -2348,18 +2374,18 @@ namespace System
         // Implicitly Implemented interfaces
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
-        // * IBinaryNumber                                                                  // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
+        // * IBinaryNumber                                                                  // ? Explicit
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
         // * IComparable                                                                    // Existing
@@ -2471,17 +2497,17 @@ namespace System
         // Implicitly Implemented interfaces
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
@@ -2594,17 +2620,17 @@ namespace System
         // Implicitly Implemented interfaces
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
@@ -2709,17 +2735,17 @@ namespace System
         //
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
@@ -2835,17 +2861,17 @@ namespace System
         // Implicitly Implemented interfaces
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
@@ -2965,19 +2991,31 @@ namespace System
         //   * bool Equals(TSelf)                                                           // * Existing
         // * IExponentialFunctions
         //   * TSelf Exp(TSelf)
-        //   * TSelf ExpM1(TSelf)                                                           // Approved - NYI
-        //   * TSelf Exp2(TSelf)                                                            // Approved - NYI
-        //   * TSelf Exp2M1(TSelf)                                                          // Approved - NYI
-        //   * TSelf Exp10(TSelf)                                                           // Approved - NYI
-        //   * TSelf Exp10M1(TSelf)                                                         // Approved - NYI
+        //   * TSelf ExpM1(TSelf)
+        //   * TSelf Exp2(TSelf)
+        //   * TSelf Exp2M1(TSelf)
+        //   * TSelf Exp10(TSelf)
+        //   * TSelf Exp10M1(TSelf)
         // * IFloatingPoint
         //   * TSelf Ceiling(TSelf)
         //   * TSelf Floor(TSelf)
+        //   * int GetExponentByteCount()                                                   // ? Explicit
+        //   * long GetExponentShortestBitLength()                                          // ? Explicit
+        //   * int GetSignificandByteCount()                                                // ? Explicit
+        //   * long GetSignificandShortestBitLength()                                       // ? Explicit
         //   * TSelf Round(TSelf)
         //   * TSelf Round(TSelf, int)
         //   * TSelf Round(TSelf, MidpointRounding)
         //   * TSelf Round(TSelf, int, MidpointRounding)
         //   * TSelf Truncate(TSelf)
+        //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // ? Explicit
+        //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // ? Explicit
+        //   * int WriteExponentLittleEndian(byte[])                                        // ? Explicit
+        //   * int WriteExponentLittleEndian(byte[], int)                                   // ? Explicit
+        //   * int WriteExponentLittleEndian(Span<byte>)                                    // ? Explicit
+        //   * int WriteSignificandLittleEndian(byte[])                                     // ? Explicit
+        //   * int WriteSignificandLittleEndian(byte[], int)                                // ? Explicit
+        //   * int WriteSignificandLittleEndian(Span<byte>)                                 // ? Explicit
         // * IFloatingPointIeee754
         //   * TSelf E { get; }                                                             // ? Explicit
         //   * TSelf Epsilon { get; }                                                       // ? Explicit
@@ -2991,10 +3029,6 @@ namespace System
         //   * TSelf BitIncrement(TSelf)
         //   * TSelf Compound(TSelf, TSelf)                                                 // Approved - NYI
         //   * TSelf FusedMultiplyAdd(TSelf, TSelf, TSelf)
-        //   * long GetExponentBitLength()                                                  // Approved - NYI
-        //   * int GetExponentByteCount()                                                   // Approved - NYI
-        //   * long GetSignificandBitLength()                                               // Approved - NYI
-        //   * int GetSignificandByteCount()                                                // Approved - NYI
         //   * TSelf Ieee754Remainder(TSelf, TSelf)
         //   * int ILogB(TSelf)
         //   * bool IsFinite(TSelf)                                                         // * Existing
@@ -3004,21 +3038,13 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // * Existing
         //   * bool IsPositiveInfinity(TSelf)                                               // * Existing
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // Approved - NYI
-        //   * TSelf MaxNumber(TSelf, TSelf)                                                // Approved - NYI
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // Approved - NYI
-        //   * TSelf MinNumber(TSelf, TSelf)                                                // Approved - NYI
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MaxNumber(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf ReciprocalEstimate(TSelf)
         //   * TSelf ReciprocalSqrtEstimate(TSelf)
         //   * TSelf ScaleB(TSelf, int)
-        //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // Approved - NYI
-        //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // Approved - NYI
-        //   * int WriteExponentLittleEndian(byte[])                                        // Approved - NYI
-        //   * int WriteExponentLittleEndian(byte[], int)                                   // Approved - NYI
-        //   * int WriteExponentLittleEndian(Span<byte>)                                    // Approved - NYI
-        //   * int WriteSignificandLittleEndian(byte[])                                     // Approved - NYI
-        //   * int WriteSignificandLittleEndian(byte[], int)                                // Approved - NYI
-        //   * int WriteSignificandLittleEndian(Span<byte>)                                 // Approved - NYI
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * IHyperbolicFunctions
@@ -3031,11 +3057,11 @@ namespace System
         // * ILogarithmicFunctions
         //   * TSelf Log(TSelf)
         //   * TSelf Log(TSelf, TSelf)
-        //   * TSelf LogP1(TSelf)                                                           // Approved - NYI
+        //   * TSelf LogP1(TSelf)
         //   * TSelf Log2(TSelf)
-        //   * TSelf Log2P1(TSelf)                                                          // Approved - NYI
+        //   * TSelf Log2P1(TSelf)
         //   * TSelf Log10(TSelf)
-        //   * TSelf Log10P1(TSelf)                                                         // Approved - NYI
+        //   * TSelf Log10P1(TSelf)
         // * INumber
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
@@ -3264,17 +3290,17 @@ namespace System
         // Implicitly Implemented interfaces
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
@@ -3384,17 +3410,17 @@ namespace System
         // Implicitly Implemented interfaces
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
@@ -3611,19 +3637,23 @@ namespace System
         //   * TSelf operator +(TSelf)
 
         // Implicitly Implemented interfaces
+        // * IMinMaxValue
+        //   * TSelf MaxValue { get; }                                                      // * Existing
+        //   * TSelf MinValue { get; }                                                      // * Existing
+        //
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
@@ -3637,9 +3667,6 @@ namespace System
         //   * bool Equals(TSelf)                                                           // * Existing
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
-        // * IMinMaxValue
-        //   * TSelf MaxValue { get; }                                                      // * Existing
-        //   * TSelf MinValue { get; }                                                      // * Existing
         // * INumber
         //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
@@ -3710,6 +3737,428 @@ namespace System.Numerics
 
     public struct Vector4 : IVector<Vector4, float>
     {
+    }
+}
+
+namespace System.Runtime.InteropServices
+{
+    public struct CLong
+        : IBinaryInteger<CLong>,
+          IMinMaxValue<CLong>,
+          ISignedNumber<CLong>
+    {
+        // Explicitly implemented interfaces
+        // * IAdditiveIdentity
+        //   * TSelf AdditiveIdentity { get; }
+        // * IMultiplicativeIdentity
+        //   * TSelf MultiplicativeIdentity { get; }
+        // * INumberBase
+        //   * One { get; }
+        //   * Zero { get; }
+        // * ISignedNumber
+        //   * TSelf NegativeOne { get; }
+
+        // Implicitly Implemented interfaces
+        // * IMinMaxValue
+        //   * TSelf MaxValue { get; }
+        //   * TSelf MinValue { get; }
+        //
+        // * IAdditionOperators
+        //   * TSelf operator +(TSelf, TSelf)
+        //   * TSelf operator checked +(TSelf, TSelf)
+        // * IBitwiseOperators
+        //   * TSelf operator &(TSelf, TSelf)
+        //   * TSelf operator |(TSelf, TSelf)
+        //   * TSelf operator ^(TSelf, TSelf)
+        //   * TSelf operator ~(TSelf)
+        // * IComparisonOperators
+        //   * bool operator <(TSelf, TSelf)
+        //   * bool operator <=(TSelf, TSelf)
+        //   * bool operator >(TSelf, TSelf)
+        //   * bool operator >=(TSelf, TSelf)
+        // * IDecrementOperators
+        //   * TSelf operator --(TSelf)
+        //   * TSelf operator checked --(TSelf)
+        // * IDivisionOperators
+        //   * TSelf operator /(TSelf, TSelf)
+        //   * TSelf operator checked /(TSelf, TSelf)
+        // * IIncrementOperators
+        //   * TSelf operator ++(TSelf)
+        //   * TSelf operator checked ++(TSelf)
+        // * IModulusOperators
+        //   * TSelf operator %(TSelf, TSelf)
+        // * IMultiplyOperators
+        //   * TSelf operator *(TSelf, TSelf)
+        //   * TSelf operator checked *(TSelf, TSelf)
+        // * IShiftOperators
+        //   * TSelf operator <<(TSelf, int)
+        //   * TSelf operator >>(TSelf, int)
+        //   * TSelf operator >>>(TSelf, int)
+        // * ISubtractionOperators
+        //   * TSelf operator -(TSelf, TSelf)
+        //   * TSelf operator checked -(TSelf, TSelf)
+        // * IUnaryNegationOperators
+        //   * TSelf operator -(TSelf)
+        //   * TSelf operator checked -(TSelf)
+        // * IUnaryPlusOperators
+        //   * TSelf operator +(TSelf)
+        //
+        // * IBinaryInteger
+        //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
+        //   * int GetShortestByteCount()                                                   // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * TSelf LeadingZeroCount(TSelf)
+        //   * TSelf PopCount(TSelf)
+        //   * TSelf RotateLeft(TSelf, int)
+        //   * TSelf RotateRight(TSelf, int)
+        //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
+        // * IBinaryNumber
+        //   * bool IsPow2(TSelf)
+        //   * TSelf Log2(TSelf)
+        // * IComparable
+        //   * int CompareTo(object?)
+        //   * int CompareTo(TSelf)
+        // * IEqualityOperators
+        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
+        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
+        // * IEquatable                                                                     // Existing
+        //   * bool Equals(TSelf)                                                           // * Existing
+        // * IFormattable
+        //   * string ToString(string?, IFormatProvider?)
+        // * INumber
+        //   * TSelf Abs(TSelf)
+        //   * TSelf Clamp(TSelf, TSelf, TSelf)
+        //   * TSelf CopySign(TSelf, TSelf)
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool IsNegative(TSelf)
+        //   * TSelf Max(TSelf, TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf Min(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
+        //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
+        //   * int Sign(TSelf)
+        //   * bool TryCreate(TOther, out TSelf)
+        //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
+        //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
+        // * IParsable
+        //   * TSelf Parse(string, IFormatProvider?)
+        //   * bool TryParse(string?, IFormatProvider?, out TSelf)
+        // * ISpanFormattable
+        //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)
+        // * ISpanParsable
+        //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
+        //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
+    }
+
+    public struct CULong
+        : IBinaryInteger<CULong>,
+          IMinMaxValue<CULong>,
+          IUnsignedNumber<CULong>
+    {
+        // Explicitly implemented interfaces
+        // * IAdditiveIdentity
+        //   * TSelf AdditiveIdentity { get; }
+        // * IMultiplicativeIdentity
+        //   * TSelf MultiplicativeIdentity { get; }
+        // * INumberBase
+        //   * One { get; }
+        //   * Zero { get; }
+
+        // Implicitly Implemented interfaces
+        // * IMinMaxValue
+        //   * TSelf MaxValue { get; }
+        //   * TSelf MinValue { get; }
+        //
+        // * IAdditionOperators
+        //   * TSelf operator +(TSelf, TSelf)
+        //   * TSelf operator checked +(TSelf, TSelf)
+        // * IBitwiseOperators
+        //   * TSelf operator &(TSelf, TSelf)
+        //   * TSelf operator |(TSelf, TSelf)
+        //   * TSelf operator ^(TSelf, TSelf)
+        //   * TSelf operator ~(TSelf)
+        // * IComparisonOperators
+        //   * bool operator <(TSelf, TSelf)
+        //   * bool operator <=(TSelf, TSelf)
+        //   * bool operator >(TSelf, TSelf)
+        //   * bool operator >=(TSelf, TSelf)
+        // * IDecrementOperators
+        //   * TSelf operator --(TSelf)
+        //   * TSelf operator checked --(TSelf)
+        // * IDivisionOperators
+        //   * TSelf operator /(TSelf, TSelf)
+        //   * TSelf operator checked /(TSelf, TSelf)
+        // * IIncrementOperators
+        //   * TSelf operator ++(TSelf)
+        //   * TSelf operator checked ++(TSelf)
+        // * IModulusOperators
+        //   * TSelf operator %(TSelf, TSelf)
+        // * IMultiplyOperators
+        //   * TSelf operator *(TSelf, TSelf)
+        //   * TSelf operator checked *(TSelf, TSelf)
+        // * IShiftOperators
+        //   * TSelf operator <<(TSelf, int)
+        //   * TSelf operator >>(TSelf, int)
+        //   * TSelf operator >>>(TSelf, int)
+        // * ISubtractionOperators
+        //   * TSelf operator -(TSelf, TSelf)
+        //   * TSelf operator checked -(TSelf, TSelf)
+        // * IUnaryNegationOperators
+        //   * TSelf operator -(TSelf)
+        //   * TSelf operator checked -(TSelf)
+        // * IUnaryPlusOperators
+        //   * TSelf operator +(TSelf)
+        //
+        // * IBinaryInteger
+        //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * TSelf LeadingZeroCount(TSelf)
+        //   * TSelf PopCount(TSelf)
+        //   * TSelf RotateLeft(TSelf, int)
+        //   * TSelf RotateRight(TSelf, int)
+        //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
+        // * IBinaryNumber
+        //   * bool IsPow2(TSelf)
+        //   * TSelf Log2(TSelf)
+        // * IComparable
+        //   * int CompareTo(object?)
+        //   * int CompareTo(TSelf)
+        // * IEqualityOperators
+        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
+        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
+        // * IEquatable                                                                     // Existing
+        //   * bool Equals(TSelf)                                                           // * Existing
+        // * IFormattable
+        //   * string ToString(string?, IFormatProvider?)
+        // * INumber
+        //   * TSelf Abs(TSelf)                                                             // ? Explicit
+        //   * TSelf Clamp(TSelf, TSelf, TSelf)
+        //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool IsNegative(TSelf)                                                       // ? Explicit
+        //   * TSelf Max(TSelf, TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf Min(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
+        //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
+        //   * int Sign(TSelf)
+        //   * bool TryCreate(TOther, out TSelf)
+        //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
+        //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
+        // * IParsable
+        //   * TSelf Parse(string, IFormatProvider?)
+        //   * bool TryParse(string?, IFormatProvider?, out TSelf)
+        // * ISpanFormattable
+        //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)
+        // * ISpanParsable
+        //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
+        //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
+    }
+
+    public struct NFloat
+        : IBinaryFloatingPointIeee754<NFloat>,
+          IMinMaxValue<NFloat>
+    {
+        // Explicitly implemented interfaces
+        // * IAdditiveIdentity
+        //   * TSelf AdditiveIdentity { get; }
+        // * IMultiplicativeIdentity
+        //   * TSelf MultiplicativeIdentity { get; }
+        // * INumberBase
+        //   * TSelf One { get; }
+        //   * TSelf Zero { get; }
+        // * ISignedNumber
+        //   * TSelf NegativeOne { get; }
+
+        // Implicitly implemented interfaces
+        // * IMinMaxValue
+        //   * TSelf MaxValue { get; }
+        //   * TSelf MinValue { get; }
+        //
+        // * IAdditionOperators
+        //   * TSelf operator +(TSelf, TSelf)
+        //   * TSelf operator checked +(TSelf, TSelf)
+        // * IBitwiseOperators
+        //   * TSelf operator &(TSelf, TSelf)
+        //   * TSelf operator |(TSelf, TSelf)
+        //   * TSelf operator ^(TSelf, TSelf)
+        //   * TSelf operator ~(TSelf)
+        // * IDecrementOperators
+        //   * TSelf operator --(TSelf)
+        //   * TSelf operator checked --(TSelf)
+        // * IDivisionOperators
+        //   * TSelf operator /(TSelf, TSelf)
+        //   * TSelf operator checked /(TSelf, TSelf)
+        // * IIncrementOperators
+        //   * TSelf operator ++(TSelf)
+        //   * TSelf operator checked ++(TSelf)
+        // * IModulusOperators
+        //   * TSelf operator %(TSelf, TSelf)
+        // * IMultiplyOperators
+        //   * TSelf operator *(TSelf, TSelf)
+        //   * TSelf operator checked *(TSelf, TSelf)
+        // * ISubtractionOperators
+        //   * TSelf operator -(TSelf, TSelf)
+        //   * TSelf operator checked -(TSelf, TSelf)
+        // * IUnaryNegationOperators
+        //   * TSelf operator -(TSelf)
+        //   * TSelf operator checked -(TSelf)
+        // * IUnaryPlusOperators
+        //   * TSelf operator +(TSelf)
+        //
+        // * IBinaryNumber
+        //   * bool IsPow2(TSelf)
+        //   * TSelf Log2(TSelf)
+        // * IComparable
+        //   * int CompareTo(object?)
+        //   * int CompareTo(TSelf)
+        // * IComparisonOperators
+        //   * bool operator <(TSelf, TSelf)
+        //   * bool operator <=(TSelf, TSelf)
+        //   * bool operator >(TSelf, TSelf)
+        //   * bool operator >=(TSelf, TSelf)
+        // * IEqualityOperators
+        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
+        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
+        // * IEquatable                                                                     // Existing
+        //   * bool Equals(TSelf)                                                           // * Existing
+        // * IExponentialFunctions
+        //   * TSelf Exp(TSelf)
+        //   * TSelf ExpM1(TSelf)
+        //   * TSelf Exp2(TSelf)
+        //   * TSelf Exp2M1(TSelf)
+        //   * TSelf Exp10(TSelf)
+        //   * TSelf Exp10M1(TSelf)
+        // * IFloatingPoint
+        //   * TSelf Ceiling(TSelf)
+        //   * TSelf Floor(TSelf)
+        //   * int GetExponentByteCount()                                                   // ? Explicit
+        //   * long GetExponentShortestBitLength()                                          // ? Explicit
+        //   * int GetSignificandByteCount()                                                // ? Explicit
+        //   * long GetSignificandShortestBitLength()                                       // ? Explicit
+        //   * TSelf Round(TSelf)
+        //   * TSelf Round(TSelf, int)
+        //   * TSelf Round(TSelf, MidpointRounding)
+        //   * TSelf Round(TSelf, int, MidpointRounding)
+        //   * TSelf Truncate(TSelf)
+        //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // ? Explicit
+        //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // ? Explicit
+        //   * int WriteExponentLittleEndian(byte[])                                        // ? Explicit
+        //   * int WriteExponentLittleEndian(byte[], int)                                   // ? Explicit
+        //   * int WriteExponentLittleEndian(Span<byte>)                                    // ? Explicit
+        //   * int WriteSignificandLittleEndian(byte[])                                     // ? Explicit
+        //   * int WriteSignificandLittleEndian(byte[], int)                                // ? Explicit
+        //   * int WriteSignificandLittleEndian(Span<byte>)                                 // ? Explicit
+        // * IFloatingPointIeee754
+        //   * TSelf E { get; }
+        //   * TSelf Epsilon { get; }
+        //   * TSelf NaN { get; }
+        //   * TSelf NegativeInfinity { get; }
+        //   * TSelf NegativeZero { get; }
+        //   * TSelf Pi { get; }
+        //   * TSelf PositiveInfinity { get; }
+        //   * TSelf Tau { get; }
+        //   * TSelf BitDecrement(TSelf)
+        //   * TSelf BitIncrement(TSelf)
+        //   * TSelf Compound(TSelf, TSelf)                                                 // Approved - NYI
+        //   * TSelf FusedMultiplyAdd(TSelf, TSelf, TSelf)
+        //   * TSelf Ieee754Remainder(TSelf, TSelf)
+        //   * int ILogB(TSelf)
+        //   * bool IsFinite(TSelf)
+        //   * bool IsInfinity(TSelf)
+        //   * bool IsNaN(TSelf)
+        //   * bool IsNegativeInfinity(TSelf)
+        //   * bool IsNormal(TSelf)
+        //   * bool IsPositiveInfinity(TSelf)
+        //   * bool IsSubnormal(TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MaxNumber(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinNumber(TSelf, TSelf)
+        //   * TSelf ReciprocalEstimate(TSelf)
+        //   * TSelf ReciprocalSqrtEstimate(TSelf)
+        //   * TSelf ScaleB(TSelf, int)
+        // * IFormattable
+        //   * string ToString(string?, IFormatProvider?)
+        // * IHyperbolicFunctions
+        //   * TSelf Acosh(TSelf)
+        //   * TSelf Asinh(TSelf)
+        //   * TSelf Atanh(TSelf)
+        //   * TSelf Cosh(TSelf)
+        //   * TSelf Sinh(TSelf)
+        //   * TSelf Tanh(TSelf)
+        // * ILogarithmicFunctions
+        //   * TSelf Log(TSelf)
+        //   * TSelf Log(TSelf, TSelf)
+        //   * TSelf LogP1(TSelf)
+        //   * TSelf Log2(TSelf)
+        //   * TSelf Log2P1(TSelf)
+        //   * TSelf Log10(TSelf)
+        //   * TSelf Log10P1(TSelf)
+        // * INumber
+        //   * TSelf Abs(TSelf)
+        //   * TSelf Clamp(TSelf, TSelf, TSelf)
+        //   * TSelf CopySign(TSelf, TSelf)
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool IsNegative(TSelf)
+        //   * TSelf Max(TSelf, TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf Min(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
+        //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
+        //   * int Sign(TSelf)
+        //   * bool TryCreate(TOther, out TSelf)
+        //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
+        //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
+        // * IParsable
+        //   * TSelf Parse(string, IFormatProvider?)
+        //   * bool TryParse(string?, IFormatProvider?, out TSelf)
+        // * IPowerFunctions
+        //   * TSelf Pow(TSelf, TSelf)
+        // * IRootFunctions
+        //   * TSelf Cbrt(TSelf)
+        //   * TSelf Hypot(TSelf, TSelf)                                                    // Approved - NYI
+        //   * TSelf Sqrt(TSelf)
+        //   * TSelf Root(TSelf, TSelf)                                                     // Approved - NYI
+        // * ISpanFormattable
+        //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)    // * Existing
+        // * ISpanParsable
+        //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
+        //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
+        // * ITrigonometricFunctions
+        //   * TSelf Acos(TSelf)
+        //   * TSelf AcosPi(TSelf)                                                          // Approved - NYI
+        //   * TSelf Asin(TSelf)
+        //   * TSelf AsinPi(TSelf)                                                          // Approved - NYI
+        //   * TSelf Atan(TSelf)
+        //   * TSelf AtanPi(TSelf)                                                          // Approved - NYI
+        //   * TSelf Atan2(TSelf, TSelf)
+        //   * TSelf Atan2Pi(TSelf, TSelf)                                                  // Approved - NYI
+        //   * TSelf Cos(TSelf)
+        //   * TSelf CosPi(TSelf)                                                           // Approved - NYI
+        //   * TSelf Sin(TSelf)
+        //   * (TSelf, TSelf) SinCos(TSelf)
+        //   * TSelf SinPi(TSelf)                                                           // Approved - NYI
+        //   * TSelf Tan(TSelf)
+        //   * TSelf TanPi(TSelf)                                                           // Approved - NYI
     }
 }
 
