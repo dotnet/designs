@@ -858,15 +858,37 @@ namespace System.Numerics
         // Returning int is currently what BitOperations does, however this can be cumbersome or prohibitive
         // in various algorithms where returning TSelf is better.
 
-        static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
+        public static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right)
+        {
+            TSelf quotient = left / right;
+            return (quotient, (left - (quotient * right)));
+        }
 
-        static abstract TSelf LeadingZeroCount(TSelf value);
+        public static virtual TSelf LeadingZeroCount(TSelf value)
+        {
+            TSelf bitCount = TSelf.Create(value.GetByteCount() * 8L);
+
+            if (value == Zero)
+            {
+                return TSelf.Create();
+            }
+
+            return (bitCount - TSelf.One) ^ Log2(value);
+        }
 
         static abstract TSelf PopCount(TSelf value);
 
-        static abstract TSelf RotateLeft(TSelf value, TSelf rotateAmount);
+        public static virtual TSelf RotateLeft(TSelf value, TSelf rotateAmount)
+        {
+            TSelf bitCount = TSelf.Create(value.GetByteCount() * 8L);
+            return (value << rotateAmount) | (value >> (bitCount - rotateAmount));
+        }
 
-        static abstract TSelf RotateRight(TSelf value, TSelf rotateAmount);
+        public static virtual TSelf RotateRight(TSelf value, TSelf rotateAmount)
+        {
+            TSelf bitCount = TSelf.Create(value.GetByteCount() * 8L);
+            return (value >> rotateAmount) | (value << (bitCount - rotateAmount));
+        }
 
         static abstract TSelf TrailingZeroCount(TSelf value);
 
@@ -874,15 +896,40 @@ namespace System.Numerics
 
         int GetByteCount();
 
-        long GetShortestBitLength();
+        long GetShortestBitLength()
+        {
+            long bitCount = (GetByteCount() * 8L);
+            return bitCount - long.Create(TSelf.LeadingZeroCount(this));
+        }
 
         bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten);
 
-        int WriteLittleEndian(byte[] destination);
+        int WriteLittleEndian(byte[] destination)
+        {
+            if (!TryWriteLittleEndian(destination, out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
 
-        int WriteLittleEndian(byte[] destination, int startIndex);
+        int WriteLittleEndian(byte[] destination, int startIndex)
+        {
+            if (!TryWriteLittleEndian(destination.AsSpan(startIndex), out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
 
-        int WriteLittleEndian(Span<byte> destination);
+        int WriteLittleEndian(Span<byte> destination)
+        {
+            if (!TryWriteLittleEndian(destination, out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
     }
 
     public interface IBinaryNumber<TSelf>
@@ -1004,9 +1051,9 @@ namespace System.Numerics
 
         static abstract int ILogB(TSelf x);
 
-        static abstract TSelf ReciprocalEstimate(TSelf x);
+        public static virtual TSelf ReciprocalEstimate(TSelf x) => TSelf.One / x;
 
-        static abstract TSelf ReciprocalSqrtEstimate(TSelf x);
+        public static virtual TSelf ReciprocalSqrtEstimate(TSelf x) => TSelf.One / TSelf.Sqrt(x);
 
         // IEEE defines n to be an integral type, but not the size
 
@@ -1043,17 +1090,75 @@ namespace System.Numerics
 
         static abstract bool IsSubnormal(TSelf value);
 
+        public static virtual TSelf MaxMagnitudeNumber(TSelf x, TSelf y)
+        {
+            TSelf ax = Abs(x);
+            TSelf ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        public static virtual TSelf MaxNumber(TSelf x, TSelf y)
+        {
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return y < x ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(y) ? x : y;
+        }
+
+        public static virtual TSelf MinMagnitudeNumber(TSelf x, TSelf y)
+        {
+            TSelf ax = Abs(x);
+            TSelf ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        public static virtual TSelf MinNumber(TSelf x, TSelf y)
+        {
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(x) ? x : y;
+        }
+
         // The following methods are approved but not yet implemented in the libraries
 
         static abstract TSelf Compound(TSelf x, TSelf n);
-
-        static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y);
-
-        static abstract TSelf MaxNumber(TSelf x, TSelf y);
-
-        static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y);
-
-        static abstract TSelf MinNumber(TSelf x, TSelf y);
 
         // The majority of the IEEE required operations are listed below
         // This doesn't include the recommended operations such as sin, cos, acos, etc
@@ -1198,8 +1303,15 @@ namespace System.Numerics
         // and convert it into an arbitrary TSelf. If you know the type of TOther, you may be able to optimize in a few ways. Otherwise, you
         // may have to fail and throw in the worst case.
 
-        static abstract TSelf Create<TOther>(TOther value)
-            where TOther : INumber<TOther>;
+        public static virtual TSelf CreateChecked<TOther>(TOther value)
+            where TOther : INumber<TOther>
+        {
+            if (!TryCreate(value, out TSelf result))
+            {
+                throw new OverflowException();
+            }
+            return result;
+        }
 
         static abstract TSelf CreateSaturating<TOther>(TOther value)
             where TOther : INumber<TOther>;
@@ -1214,11 +1326,41 @@ namespace System.Numerics
         // Swift has an associated type that can be used here, which would require an additional type parameter in .NET
         // However that would hinder the reusability of these interfaces in constraints
 
-        static abstract TSelf Abs(TSelf value);
+        public static TSelf Abs(TSelf value)
+        {
+            if (IsNegative(value))
+            {
+                return checked(-value);
+            }
+            return value;
+        }
 
-        static abstract TSelf Clamp(TSelf value, TSelf min, TSelf max);
+        public static TSelf Clamp(TSelf value, TSelf min, TSelf max)
+        {
+            if (min > max)
+            {
+                throw new ArgumentException("min cannot be greater than max");
+            }
 
-        static abstract TSelf CopySign(TSelf value, TSelf sign);
+            TSelf result = value;
+
+            result = Max(result, min);
+            result = Min(result, max);
+
+            return result;
+        }
+
+        public static TSelf CopySign(TSelf value, TSelf sign)
+        {
+            TSelf result = value;
+
+            if (IsNegative(value) != IsNegative(sign))
+            {
+                result = checked(-result);
+            }
+
+            return result;
+        }
 
         // IsEven, IsOdd, IsZero
 
@@ -1239,7 +1381,15 @@ namespace System.Numerics
         // Math only exposes this Sign for signed types, but it is well-defined for unsigned types
         // it can simply never return -1 and only 0 or 1 instead
 
-        static abstract int Sign(TSelf value);
+        public static virtual int Sign(TSelf value)
+        {
+            if (value != Zero)
+            {
+                IsNegative(value) ? -1 : +1;
+            }
+
+            return 0;
+        }
 
         static abstract bool TryCreate<TOther>(TOther value, out TSelf result)
             where TOther : INumber<TOther>;
