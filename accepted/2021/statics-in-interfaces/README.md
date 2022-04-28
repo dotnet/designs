@@ -1632,8 +1632,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
@@ -1760,8 +1764,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // ? Explicit
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // ? Explicit
         //   * int Sign(TSelf)
@@ -2032,8 +2040,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
         //   * int Sign(TSelf)
@@ -2179,10 +2191,6 @@ namespace System
         //   * TSelf FusedMultiplyAdd(TSelf, TSelf, TSelf)
         //   * TSelf Ieee754Remainder(TSelf, TSelf)
         //   * int ILogB(TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
-        //   * TSelf MaxNumber(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
-        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf ReciprocalEstimate(TSelf)
         //   * TSelf ReciprocalSqrtEstimate(TSelf)
         //   * TSelf ScaleB(TSelf, int)
@@ -2221,8 +2229,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MaxNumber(TSelf, TSelf)
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
         //   * int Sign(TSelf)
@@ -2394,10 +2406,6 @@ namespace System
         //   * TSelf FusedMultiplyAdd(TSelf, TSelf, TSelf)
         //   * TSelf Ieee754Remainder(TSelf, TSelf)
         //   * int ILogB(TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
-        //   * TSelf MaxNumber(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
-        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf ReciprocalEstimate(TSelf)
         //   * TSelf ReciprocalSqrtEstimate(TSelf)
         //   * TSelf ScaleB(TSelf, int)
@@ -2444,8 +2452,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MaxNumber(TSelf, TSelf)
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
         //   * int Sign(TSelf)
@@ -2606,8 +2618,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
@@ -2737,8 +2753,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
@@ -2868,8 +2888,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
@@ -2994,8 +3018,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
@@ -3125,8 +3153,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
@@ -3264,10 +3296,6 @@ namespace System
         //   * TSelf FusedMultiplyAdd(TSelf, TSelf, TSelf)
         //   * TSelf Ieee754Remainder(TSelf, TSelf)
         //   * int ILogB(TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
-        //   * TSelf MaxNumber(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
-        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf ReciprocalEstimate(TSelf)
         //   * TSelf ReciprocalSqrtEstimate(TSelf)
         //   * TSelf ScaleB(TSelf, int)
@@ -3306,8 +3334,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MaxNumber(TSelf, TSelf)
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
         //   * int Sign(TSelf)
@@ -3563,8 +3595,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
@@ -3691,8 +3727,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
@@ -3819,8 +3859,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
@@ -3943,8 +3987,12 @@ namespace System
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
@@ -4113,8 +4161,12 @@ namespace System.Runtime.InteropServices
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
         //   * int Sign(TSelf)
@@ -4234,8 +4286,12 @@ namespace System.Runtime.InteropServices
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
         //   * int Sign(TSelf)
@@ -4361,10 +4417,6 @@ namespace System.Runtime.InteropServices
         //   * TSelf FusedMultiplyAdd(TSelf, TSelf, TSelf)
         //   * TSelf Ieee754Remainder(TSelf, TSelf)
         //   * int ILogB(TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
-        //   * TSelf MaxNumber(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
-        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf ReciprocalEstimate(TSelf)
         //   * TSelf ReciprocalSqrtEstimate(TSelf)
         //   * TSelf ScaleB(TSelf, int)
@@ -4403,8 +4455,12 @@ namespace System.Runtime.InteropServices
         //   * bool IsSubnormal(TSelf)
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MaxNumber(TSelf, TSelf)
         //   * TSelf Min(TSelf, TSelf)
         //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
         //   * int Sign(TSelf)
