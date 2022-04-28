@@ -1074,72 +1074,6 @@ namespace System.Numerics
 
         static abstract TSelf PositiveInfinity { get; }
 
-        public static virtual TSelf MaxMagnitudeNumber(TSelf x, TSelf y)
-        {
-            TSelf ax = Abs(x);
-            TSelf ay = Abs(y);
-
-            if ((ax > ay) || IsNaN(ay))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? y : x;
-            }
-
-            return y;
-        }
-
-        public static virtual TSelf MaxNumber(TSelf x, TSelf y)
-        {
-            if (x != y)
-            {
-                if (!IsNaN(y))
-                {
-                    return y < x ? x : y;
-                }
-
-                return x;
-            }
-
-            return IsNegative(y) ? x : y;
-        }
-
-        public static virtual TSelf MinMagnitudeNumber(TSelf x, TSelf y)
-        {
-            TSelf ax = Abs(x);
-            TSelf ay = Abs(y);
-
-            if ((ax < ay) || IsNaN(ay))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? x : y;
-            }
-
-            return y;
-        }
-
-        public static virtual TSelf MinNumber(TSelf x, TSelf y)
-        {
-            if (x != y)
-            {
-                if (!IsNaN(y))
-                {
-                    return x < y ? x : y;
-                }
-
-                return x;
-            }
-
-            return IsNegative(x) ? x : y;
-        }
-
         // The following methods are approved but not yet implemented in the libraries
 
         static abstract TSelf Compound(TSelf x, TSelf n);
@@ -1399,6 +1333,39 @@ namespace System.Numerics
             return y;
         }
 
+        public static virtual TSelf MaxMagnitudeNumber(TSelf x, TSelf y)
+        {
+            TSelf ax = Abs(x);
+            TSelf ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        public static virtual TSelf MaxNumber(TSelf x, TSelf y)
+        {
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return y < x ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(y) ? x : y;
+        }
+
         public static virtual TSelf Min(TSelf x, TSelf y)
         {
             if (val1 != val2 && !IsNaN(val1))
@@ -1425,6 +1392,39 @@ namespace System.Numerics
             }
 
             return y;
+        }
+
+        public static virtual TSelf MinMagnitudeNumber(TSelf x, TSelf y)
+        {
+            TSelf ax = Abs(x);
+            TSelf ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        public static virtual TSelf MinNumber(TSelf x, TSelf y)
+        {
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(x) ? x : y;
         }
 
         static abstract TSelf Parse(string s, NumberStyles style, IFormatProvider? provider);
