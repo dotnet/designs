@@ -1092,22 +1092,8 @@ namespace System.Numerics
         //      TowardPositive
         //      TowardNegative
         //      Exact
-        //  TSelf NextUp(TSelf x);
-        //  TSelf NextDown(TSelf x);
-        //  TSelf Remainder(TSelf x, TSelf y);
-
-        // 5.3.3
-        //  TSelf ScaleB(TSelf x, TLogBFormat n);
-        //  TLogBFormat LogB(TSelf x);
 
         // 5.4.1
-        //  TSelf Addition(TSelf x, TSelf y);
-        //  TSelf Subtraction(TSelf x, TSelf y);
-        //  TSelf Multiplication(TSelf x, TSelf y);
-        //  TSelf Division(TSelf x, TSelf y);
-        //  TSelf SquareRoot(TSelf x);
-        //  TSelf FusedMultiplyAdd(TSelf x, TSelf y, TSelf z);
-        //  TSelf ConvertFromInt(TInt x);
         //  TInt ConvertToInteger(TSelf x);
         //      TiesToEven
         //      TowardZero
@@ -1120,20 +1106,9 @@ namespace System.Numerics
         //      ExactTowardNegative
         //      ExactTiesToAway
 
-        // 5.4.2
-        //  TOther ConvertFormat(TSelf x);
-        //  TSelf ConvertFromDecimalCharacter(string s);
-        //  string ConvertToDecimalCharacter(TSelf x, TFormat format);
-
         // 5.4.3
         //  TResult ConvertFromHexCharacter(string s);
         //  string ConvertToHexCharacter(TSelf x, TFormat format);
-
-        // 5.5.1
-        //  TSelf Copy(TSelf x);
-        //  TSelf Negate(TSelf x);
-        //  TSelf Abs(TSelf x);
-        //  TSelf CopySign(TSelf x, TSelf y);
 
         // 5.6.1
         //  bool Compare(TSelf x, TSelf y);
@@ -1168,12 +1143,7 @@ namespace System.Numerics
         // 5.7.2
         //  enum Class(TSelf x);
         //  bool IsSignMinus(TSelf x);
-        //  bool IsNormal(TSelf x);
-        //  bool IsFinite(TSelf x);
         //  bool IsZero(TSelf x);
-        //  bool IsSubnormal(TSelf x);
-        //  bool IsInfinite(TSelf x);
-        //  bool IsNaN(TSelf x);
         //  bool IsSignaling(TSelf x);
         //  bool IsCanonical(TSelf x);
         //  enum Radix(TSelf x);
@@ -1193,16 +1163,6 @@ namespace System.Numerics
         //  (TSelf, TSelf) AugmentedAddition(TSelf x, TSelf y);
         //  (TSelf, TSelf) AugmentedSubtraction(TSelf x, TSelf y);
         //  (TSelf, TSelf) AugmentedMultiplication(TSelf x, TSelf y);
-
-        // 9.6
-        //  TSelf Minimum(TSelf x, TSelf y);
-        //  TSelf MinimumNumber(TSelf x, TSelf y);
-        //  TSelf Maximum(TSelf x, TSelf y);
-        //  TSelf MaximumNumber(TSelf x, TSelf y);
-        //  TSelf MinimumMagnitude(TSelf x, TSelf y);
-        //  TSelf MinimumMagnitudeNumber(TSelf x, TSelf y);
-        //  TSelf MaximumMagnitude(TSelf x, TSelf y);
-        //  TSelf MaximumMagnitudeNumber(TSelf x, TSelf y);
 
         // 9.7
         //  TSelf GetPayload(TSelf x);
