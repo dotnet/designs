@@ -1074,22 +1074,6 @@ namespace System.Numerics
 
         static abstract TSelf PositiveInfinity { get; }
 
-        // The following methods are exposed on the floating-point types today
-
-        static abstract bool IsFinite(TSelf value);
-
-        static abstract bool IsInfinity(TSelf value);
-
-        static abstract bool IsNaN(TSelf value);
-
-        static abstract bool IsNegativeInfinity(TSelf value);
-
-        static abstract bool IsNormal(TSelf value);
-
-        static abstract bool IsPositiveInfinity(TSelf value);
-
-        static abstract bool IsSubnormal(TSelf value);
-
         public static virtual TSelf MaxMagnitudeNumber(TSelf x, TSelf y)
         {
             TSelf ax = Abs(x);
@@ -1364,15 +1348,84 @@ namespace System.Numerics
 
         // IsEven, IsOdd, IsZero
 
+        static abstract bool IsFinite(TSelf value);
+
+        static abstract bool IsInfinity(TSelf value);
+
+        static abstract bool IsNaN(TSelf value);
+
         static abstract bool IsNegative(TSelf value);
 
-        static abstract TSelf Max(TSelf x, TSelf y);
+        public static virtual bool IsNegativeInfinity(TSelf value) => IsNegative(value) && IsInfinity(value);
 
-        static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
+        static abstract bool IsNormal(TSelf value);
 
-        static abstract TSelf Min(TSelf x, TSelf y);
+        public static virtual bool IsPositive(TSelf value) => !IsNegative(value);
 
-        static abstract TSelf MinMagnitude(TSelf x, TSelf y);
+        public static virtual bool IsPositiveInfinity(TSelf value) => IsPositive(value) && IsInfinity(value);
+
+        static abstract bool IsSubnormal(TSelf value);
+
+        public static virtual TSelf Max(TSelf x, TSelf y)
+        {
+            if (val1 != val2)
+            {
+                if (!IsNaN(val1))
+                {
+                    return val2 < val1 ? val1 : val2;
+                }
+
+                return val1;
+            }
+
+            return IsNegative(val2) ? val1 : val2;
+        }
+
+        public static virtual TSelf MaxMagnitude(TSelf x, TSelf y)
+        {
+            TSelf ax = Abs(x);
+            TSelf ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ax))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        public static virtual TSelf Min(TSelf x, TSelf y)
+        {
+            if (val1 != val2 && !IsNaN(val1))
+            {
+                return val1 < val2 ? val1 : val2;
+            }
+
+            return IsNegative(val1) ? val1 : val2;
+        }
+
+        public static virtual TSelf MinMagnitude(TSelf x, TSelf y)
+        {
+            TSelf ax = Abs(x);
+            TSelf ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ax))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
 
         static abstract TSelf Parse(string s, NumberStyles style, IFormatProvider? provider);
 
