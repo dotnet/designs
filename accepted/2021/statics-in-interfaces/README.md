@@ -296,6 +296,7 @@ class "Half"
 class "Int16"
 class "Int32"
 class "Int64"
+class "Int128"
 class "IntPtr"
 class "NFloat"
 class "Object"
@@ -305,6 +306,7 @@ class "TimeSpan"
 class "UInt16"
 class "UInt32"
 class "UInt64"
+class "UInt128"
 class "UIntPtr"
 class "ValueType"
 class "Vector<T>"
@@ -428,6 +430,12 @@ class "Vector4"
 "ISignedNumber<TSelf>"                          <|-- "Int64"
 "ValueType"                                     <|-- "Int64"
 
+"IBinaryInteger<TSelf>"                         <|-- "Int128"
+"IConvertible"                                  <|-- "Int128"
+"IMinMaxValue<TSelf>"                           <|-- "Int128"
+"ISignedNumber<TSelf>"                          <|-- "Int128"
+"ValueType"                                     <|-- "Int128"
+
 "IBinaryInteger<TSelf>"                         <|-- "IntPtr"
 "IMinMaxValue<TSelf>"                           <|-- "IntPtr"
 "ISignedNumber<TSelf>"                          <|-- "IntPtr"
@@ -488,6 +496,12 @@ class "Vector4"
 "IMinMaxValue<TSelf>"                           <|-- "UInt64"
 "IUnsignedNumber<TSelf>"                        <|-- "UInt64"
 "ValueType"                                     <|-- "UInt64"
+
+"IBinaryInteger<TSelf>"                         <|-- "UInt128"
+"IConvertible"                                  <|-- "UInt128"
+"IMinMaxValue<TSelf>"                           <|-- "UInt128"
+"IUnsignedNumber<TSelf>"                        <|-- "UInt128"
+"ValueType"                                     <|-- "UInt128"
 
 "IBinaryInteger<TSelf>"                         <|-- "UIntPtr"
 "IMinMaxValue<TSelf>"                           <|-- "UIntPtr"
@@ -2910,6 +2924,133 @@ namespace System
         //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
     }
 
+    public struct Int128
+        : IBinaryInteger<Int128>,
+          IMinMaxValue<Int128>,
+          ISignedNumber<Int128>
+    {
+        // Explicitly implemented interfaces
+        // * IAdditiveIdentity
+        //   * TSelf AdditiveIdentity { get; }
+        // * IMultiplicativeIdentity
+        //   * TSelf MultiplicativeIdentity { get; }
+        // * INumberBase
+        //   * One { get; }
+        //   * Zero { get; }
+        // * ISignedNumber
+        //   * TSelf NegativeOne { get; }
+
+        // Implicitly Implemented interfaces
+        // * IMinMaxValue
+        //   * TSelf MaxValue { get; }
+        //   * TSelf MinValue { get; }
+        //
+        // * IAdditionOperators
+        //   * TSelf operator +(TSelf, TSelf)
+        //   * TSelf operator checked +(TSelf, TSelf)
+        // * IBitwiseOperators
+        //   * TSelf operator &(TSelf, TSelf)
+        //   * TSelf operator |(TSelf, TSelf)
+        //   * TSelf operator ^(TSelf, TSelf)
+        //   * TSelf operator ~(TSelf)
+        // * IComparisonOperators
+        //   * bool operator <(TSelf, TSelf)
+        //   * bool operator <=(TSelf, TSelf)
+        //   * bool operator >(TSelf, TSelf)
+        //   * bool operator >=(TSelf, TSelf)
+        // * IDecrementOperators
+        //   * TSelf operator --(TSelf)
+        //   * TSelf operator checked --(TSelf)
+        // * IDivisionOperators
+        //   * TSelf operator /(TSelf, TSelf)
+        //   * TSelf operator checked /(TSelf, TSelf)
+        // * IEqualityOperators
+        //   * bool operator ==(TSelf, TSelf)
+        //   * bool operator !=(TSelf, TSelf)
+        // * IIncrementOperators
+        //   * TSelf operator ++(TSelf)
+        //   * TSelf operator checked ++(TSelf)
+        // * IModulusOperators
+        //   * TSelf operator %(TSelf, TSelf)
+        // * IMultiplyOperators
+        //   * TSelf operator *(TSelf, TSelf)
+        //   * TSelf operator checked *(TSelf, TSelf)
+        // * IShiftOperators
+        //   * TSelf operator <<(TSelf, int)
+        //   * TSelf operator >>(TSelf, int)
+        //   * TSelf operator >>>(TSelf, int)
+        // * ISubtractionOperators
+        //   * TSelf operator -(TSelf, TSelf)
+        //   * TSelf operator checked -(TSelf, TSelf)
+        // * IUnaryNegationOperators
+        //   * TSelf operator -(TSelf)
+        //   * TSelf operator checked -(TSelf)
+        // * IUnaryPlusOperators
+        //   * TSelf operator +(TSelf)
+        //
+        // * IBinaryInteger
+        //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
+        //   * int GetByteCount()                                                           // ? Explicit
+        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * TSelf LeadingZeroCount(TSelf)
+        //   * TSelf PopCount(TSelf)
+        //   * TSelf RotateLeft(TSelf, int)
+        //   * TSelf RotateRight(TSelf, int)
+        //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
+        // * IBinaryNumber
+        //   * bool IsPow2(TSelf)
+        //   * TSelf Log2(TSelf)
+        // * IComparable
+        //   * int CompareTo(object?)
+        //   * int CompareTo(TSelf)
+        // * IEquatable
+        //   * bool Equals(TSelf)
+        // * IFormattable
+        //   * string ToString(string?, IFormatProvider?)
+        // * INumber
+        //   * TSelf Abs(TSelf)
+        //   * TSelf Clamp(TSelf, TSelf, TSelf)
+        //   * TSelf CopySign(TSelf, TSelf)
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool IsFinite(TSelf)                                                         // ? Explicit
+        //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsNaN(TSelf)                                                            // ? Explicit
+        //   * bool IsNegative(TSelf)
+        //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsPositive(TSelf)
+        //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * TSelf Max(TSelf, TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
+        //   * TSelf Min(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
+        //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
+        //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
+        //   * int Sign(TSelf)
+        //   * bool TryCreate(TOther, out TSelf)
+        //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
+        //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
+        // * IParsable
+        //   * TSelf Parse(string, IFormatProvider?)
+        //   * bool TryParse(string?, IFormatProvider?, out TSelf)
+        // * ISpanFormattable
+        //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)
+        // * ISpanParsable
+        //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
+        //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
+    }
+
     public struct IntPtr
         : IBinaryInteger<nint>,
           IMinMaxValue<nint>,
@@ -3820,17 +3961,17 @@ namespace System
         // Implicitly Implemented interfaces
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()                                                          // Approved - NYI
-        //   * int GetByteCount()                                                           // Approved - NYI
+        //   * long GetBitLength()
+        //   * int GetByteCount()
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // Approved - NYI
-        //   * int WriteLittleEndian(byte[])                                                // Approved - NYI
-        //   * int WriteLittleEndian(byte[], int)                                           // Approved - NYI
-        //   * int WriteLittleEndian(Span<byte>)                                            // Approved - NYI
+        //   * bool TryWriteLittleEndian(byte[], out int)
+        //   * int WriteLittleEndian(byte[])
+        //   * int WriteLittleEndian(byte[], int)
+        //   * int WriteLittleEndian(Span<byte>)
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
@@ -3876,6 +4017,132 @@ namespace System
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
         // * ISpanFormattable
         //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)    // * Existing - Optional Args
+        // * ISpanParsable
+        //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
+        //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
+    }
+
+    public struct UInt128
+        : IBinaryInteger<UInt128>,
+          IConvertible,
+          IMinMaxValue<UInt128>,
+          IUnsignedNumber<UInt128>
+    {
+        // Explicitly implemented interfaces
+        // * IAdditiveIdentity
+        //   * TSelf AdditiveIdentity { get; }
+        // * IMultiplicativeIdentity
+        //   * TSelf MultiplicativeIdentity { get; }
+        // * INumberBase
+        //   * One { get; }
+        //   * Zero { get; }
+
+        // Implicitly Implemented interfaces
+        // * IMinMaxValue
+        //   * TSelf MaxValue { get; }
+        //   * TSelf MinValue { get; }
+        //
+        // * IAdditionOperators
+        //   * TSelf operator +(TSelf, TSelf)
+        //   * TSelf operator checked +(TSelf, TSelf)
+        // * IBitwiseOperators
+        //   * TSelf operator &(TSelf, TSelf)
+        //   * TSelf operator |(TSelf, TSelf)
+        //   * TSelf operator ^(TSelf, TSelf)
+        //   * TSelf operator ~(TSelf)
+        // * IComparisonOperators
+        //   * bool operator <(TSelf, TSelf)
+        //   * bool operator <=(TSelf, TSelf)
+        //   * bool operator >(TSelf, TSelf)
+        //   * bool operator >=(TSelf, TSelf)
+        // * IDecrementOperators
+        //   * TSelf operator --(TSelf)
+        //   * TSelf operator checked --(TSelf)
+        // * IDivisionOperators
+        //   * TSelf operator /(TSelf, TSelf)
+        //   * TSelf operator checked /(TSelf, TSelf)
+        // * IEqualityOperators
+        //   * bool operator ==(TSelf, TSelf)
+        //   * bool operator !=(TSelf, TSelf)
+        // * IIncrementOperators
+        //   * TSelf operator ++(TSelf)
+        //   * TSelf operator checked ++(TSelf)
+        // * IModulusOperators
+        //   * TSelf operator %(TSelf, TSelf)
+        // * IMultiplyOperators
+        //   * TSelf operator *(TSelf, TSelf)
+        //   * TSelf operator checked *(TSelf, TSelf)
+        // * IShiftOperators
+        //   * TSelf operator <<(TSelf, int)
+        //   * TSelf operator >>(TSelf, int)
+        //   * TSelf operator >>>(TSelf, int)
+        // * ISubtractionOperators
+        //   * TSelf operator -(TSelf, TSelf)
+        //   * TSelf operator checked -(TSelf, TSelf)
+        // * IUnaryNegationOperators
+        //   * TSelf operator -(TSelf)
+        //   * TSelf operator checked -(TSelf)
+        // * IUnaryPlusOperators
+        //   * TSelf operator +(TSelf)
+        //
+        // * IBinaryInteger
+        //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
+        //   * long GetBitLength()
+        //   * int GetByteCount()
+        //   * TSelf LeadingZeroCount(TSelf)
+        //   * TSelf PopCount(TSelf)
+        //   * TSelf RotateLeft(TSelf, int)
+        //   * TSelf RotateRight(TSelf, int)
+        //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteLittleEndian(byte[], out int)
+        //   * int WriteLittleEndian(byte[])
+        //   * int WriteLittleEndian(byte[], int)
+        //   * int WriteLittleEndian(Span<byte>)
+        // * IBinaryNumber
+        //   * bool IsPow2(TSelf)
+        //   * TSelf Log2(TSelf)
+        // * IComparable
+        //   * int CompareTo(object?)
+        //   * int CompareTo(TSelf)
+        // * IEquatable
+        //   * bool Equals(TSelf)
+        // * IFormattable
+        //   * string ToString(string?, IFormatProvider?)
+        // * INumber
+        //   * TSelf Abs(TSelf)                                                             // ? Explicit
+        //   * TSelf Clamp(TSelf, TSelf, TSelf)
+        //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool IsFinite(TSelf)                                                         // ? Explicit
+        //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsNaN(TSelf)                                                            // ? Explicit
+        //   * bool IsNegative(TSelf)                                                       // ? Explicit
+        //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsPositive(TSelf)                                                       // ? Explicit
+        //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * TSelf Max(TSelf, TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
+        //   * TSelf Min(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
+        //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
+        //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
+        //   * int Sign(TSelf)
+        //   * bool TryCreate(TOther, out TSelf)
+        //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
+        //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
+        // * IParsable
+        //   * TSelf Parse(string, IFormatProvider?)
+        //   * bool TryParse(string?, IFormatProvider?, out TSelf)
+        // * ISpanFormattable
+        //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)
         // * ISpanParsable
         //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
         //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
