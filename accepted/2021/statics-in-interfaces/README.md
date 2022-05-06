@@ -863,7 +863,8 @@ namespace System.Numerics
 
     public interface IBinaryInteger<TSelf>
         : IBinaryNumber<TSelf>,
-          IShiftOperators<TSelf, TSelf, TSelf>
+          IShiftOperators<TSelf, TSelf, TSelf>,
+          IShiftOperators<TSelf, int, TSelf>
         where TSelf : IBinaryInteger<TSelf>
     {
         // We might want to support "big multiplication" for fixed width types
@@ -1592,6 +1593,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -1724,6 +1728,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -2578,6 +2585,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -2713,6 +2723,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -2848,6 +2861,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -2976,6 +2992,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -3098,6 +3117,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -3240,6 +3262,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -3682,6 +3707,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -3814,6 +3842,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -3946,6 +3977,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -4073,6 +4107,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -4193,6 +4230,9 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -4372,6 +4412,9 @@ namespace System.Runtime.InteropServices
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
@@ -4497,6 +4540,9 @@ namespace System.Runtime.InteropServices
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
         //   * TSelf operator <<(TSelf, int)
         //   * TSelf operator >>(TSelf, int)
         //   * TSelf operator >>>(TSelf, int)
