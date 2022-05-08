@@ -1461,9 +1461,13 @@ namespace System.Numerics
 
         static abstract bool IsCanonical(TSelf value);
 
+        static abstract bool IsEvenInteger(TSelf value);
+
         static abstract bool IsFinite(TSelf value);
 
         static abstract bool IsInfinity(TSelf value);
+
+        static abstract bool IsInteger(TSelf value);
 
         static abstract bool IsNaN(TSelf value);
 
@@ -1472,6 +1476,8 @@ namespace System.Numerics
         public static virtual bool IsNegativeInfinity(TSelf value) => IsNegative(value) && IsInfinity(value);
 
         static abstract bool IsNormal(TSelf value);
+
+        static abstract bool IsOddInteger(TSelf value);
 
         public static virtual bool IsPositive(TSelf value) => !IsNegative(value);
 
@@ -1717,12 +1723,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)                                                       // ? Explicit
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -1861,12 +1870,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)                                                       // ? Explicit
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -2146,12 +2158,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -2344,12 +2359,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // * Existing
         //   * bool IsInfinity(TSelf)                                                       // * Existing
+        //   * bool IsInteger(TSelf)
         //   * bool IsNaN(TSelf)                                                            // * Existing
         //   * bool IsNegative(TSelf)                                                       // * Existing
         //   * bool IsNegativeInfinity(TSelf)                                               // * Existing
         //   * bool IsNormal(TSelf)                                                         // * Existing
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // * Existing
         //   * bool IsSignalingNaN(TSelf)
@@ -2576,12 +2594,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // * Existing
         //   * bool IsInfinity(TSelf)                                                       // * Existing
+        //   * bool IsInteger(TSelf)
         //   * bool IsNaN(TSelf)                                                            // * Existing
         //   * bool IsNegative(TSelf)                                                       // * Existing
         //   * bool IsNegativeInfinity(TSelf)                                               // * Existing
         //   * bool IsNormal(TSelf)                                                         // * Existing
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // * Existing
         //   * bool IsSignalingNaN(TSelf)
@@ -2754,12 +2775,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -2901,12 +2925,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -3048,12 +3075,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -3187,12 +3217,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -3329,12 +3362,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -3476,12 +3512,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -3666,12 +3705,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // * Existing
         //   * bool IsInfinity(TSelf)                                                       // * Existing
+        //   * bool IsInteger(TSelf)
         //   * bool IsNaN(TSelf)                                                            // * Existing
         //   * bool IsNegative(TSelf)                                                       // * Existing
         //   * bool IsNegativeInfinity(TSelf)                                               // * Existing
         //   * bool IsNormal(TSelf)                                                         // * Existing
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // * Existing
         //   * bool IsSignalingNaN(TSelf)
@@ -3939,12 +3981,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)                                                       // ? Explicit
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -4083,12 +4128,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)                                                       // ? Explicit
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -4227,12 +4275,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)                                                       // ? Explicit
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -4365,12 +4416,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)                                                       // ? Explicit
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -4505,12 +4559,15 @@ namespace System
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)                                                       // ? Explicit
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -4691,12 +4748,15 @@ namespace System.Runtime.InteropServices
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -4828,12 +4888,15 @@ namespace System.Runtime.InteropServices
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
         //   * bool IsNegative(TSelf)                                                       // ? Explicit
         //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
@@ -5006,12 +5069,15 @@ namespace System.Runtime.InteropServices
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
         //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
         //   * bool IsFinite(TSelf)
         //   * bool IsInfinity(TSelf)
+        //   * bool IsInteger(TSelf)
         //   * bool IsNaN(TSelf)
         //   * bool IsNegative(TSelf)
         //   * bool IsNegativeInfinity(TSelf)
         //   * bool IsNormal(TSelf)
+        //   * bool IsOddInteger(TSelf)
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)
         //   * bool IsSignalingNaN(TSelf)
