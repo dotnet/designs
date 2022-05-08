@@ -1161,10 +1161,6 @@ namespace System.Numerics
 
         // 5.7.2
         //  enum Class(TSelf x);
-        //  bool IsSignMinus(TSelf x);
-        //  bool IsZero(TSelf x);
-        //  bool IsSignaling(TSelf x);
-        //  bool IsCanonical(TSelf x);
         //  enum Radix(TSelf x);
         //  bool TotalOrder(TSelf x, TSelf y);
         //  bool TotalOrderMag(TSelf x, TSelf y);
@@ -1463,7 +1459,7 @@ namespace System.Numerics
             throw new NotSupportedException();
         }
 
-        // IsEven, IsOdd, IsZero
+        static abstract bool IsCanonical(TSelf value);
 
         static abstract bool IsFinite(TSelf value);
 
@@ -1481,7 +1477,11 @@ namespace System.Numerics
 
         public static virtual bool IsPositiveInfinity(TSelf value) => IsPositive(value) && IsInfinity(value);
 
+        static abstract bool IsSignalingNaN(TSelf value);
+
         static abstract bool IsSubnormal(TSelf value);
+
+        static abstract bool IsZero(TSelf value);
 
         protected static abstract bool TryConvertFromChecked<TOther>(TOther value, out TSelf? result)
             where TOther : INumber<TOther>;
@@ -1716,6 +1716,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -1724,7 +1725,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -1857,6 +1860,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -1865,7 +1869,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -2139,6 +2145,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -2147,7 +2154,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -2334,6 +2343,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // * Existing
         //   * bool IsInfinity(TSelf)                                                       // * Existing
         //   * bool IsNaN(TSelf)                                                            // * Existing
@@ -2342,7 +2352,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // * Existing
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // * Existing
+        //   * bool IsSignalingNaN(TSelf)
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -2563,6 +2575,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // * Existing
         //   * bool IsInfinity(TSelf)                                                       // * Existing
         //   * bool IsNaN(TSelf)                                                            // * Existing
@@ -2571,7 +2584,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // * Existing
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // * Existing
+        //   * bool IsSignalingNaN(TSelf)
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -2738,6 +2753,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -2746,7 +2762,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -2882,6 +2900,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -2890,7 +2909,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3026,6 +3047,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -3034,7 +3056,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3162,6 +3186,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -3170,7 +3195,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3301,6 +3328,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -3309,7 +3337,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3445,6 +3475,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -3453,7 +3484,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3632,6 +3665,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // * Existing
         //   * bool IsInfinity(TSelf)                                                       // * Existing
         //   * bool IsNaN(TSelf)                                                            // * Existing
@@ -3640,7 +3674,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // * Existing
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // * Existing
+        //   * bool IsSignalingNaN(TSelf)
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3902,6 +3938,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -3910,7 +3947,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4043,6 +4082,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4051,7 +4091,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4184,6 +4226,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4192,7 +4235,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4319,6 +4364,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4327,7 +4373,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4456,6 +4504,7 @@ namespace System
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4464,7 +4513,9 @@ namespace System
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4639,6 +4690,7 @@ namespace System.Runtime.InteropServices
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4647,7 +4699,9 @@ namespace System.Runtime.InteropServices
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4773,6 +4827,7 @@ namespace System.Runtime.InteropServices
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4781,7 +4836,9 @@ namespace System.Runtime.InteropServices
         //   * bool IsNormal(TSelf)                                                         // ? Explicit
         //   * bool IsPositive(TSelf)                                                       // ? Explicit
         //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4931,15 +4988,6 @@ namespace System.Runtime.InteropServices
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * bool IsFinite(TSelf)
-        //   * bool IsInfinity(TSelf)
-        //   * bool IsNaN(TSelf)
-        //   * bool IsNegative(TSelf)
-        //   * bool IsNegativeInfinity(TSelf)
-        //   * bool IsNormal(TSelf)
-        //   * bool IsPositive(TSelf)
-        //   * bool IsPositiveInfinity(TSelf)
-        //   * bool IsSubnormal(TSelf)
         //   * TSelf Max(TSelf, TSelf)
         //   * TSelf MaxMagnitude(TSelf, TSelf)
         //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
@@ -4957,6 +5005,18 @@ namespace System.Runtime.InteropServices
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsFinite(TSelf)
+        //   * bool IsInfinity(TSelf)
+        //   * bool IsNaN(TSelf)
+        //   * bool IsNegative(TSelf)
+        //   * bool IsNegativeInfinity(TSelf)
+        //   * bool IsNormal(TSelf)
+        //   * bool IsPositive(TSelf)
+        //   * bool IsPositiveInfinity(TSelf)
+        //   * bool IsSignalingNaN(TSelf)
+        //   * bool IsSubnormal(TSelf)
+        //   * bool IsZero(TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
