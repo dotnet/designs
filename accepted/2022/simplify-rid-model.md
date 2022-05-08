@@ -58,7 +58,7 @@ The following are the biggest problems we see:
 
 - Ensure `runtimes.json` is correct.
 - Freeze `runtimes.json`.
-- New RIDs will only be added for [interchange across multiple platforms](https://github.com/dotnet/designs/pull/260#discussion_r843009872), which isn't expected.
+- New RIDs will only be added for [interchange between different distributions of .NET](https://github.com/dotnet/designs/pull/260#discussion_r843009872), which isn't expected.
 - Continue to use `runtimes.json` for all NuGet scenarios.
 - Disable using `runtimes.json` for all host scenarios, by default (starting with a TBD .NET version).
 - Enable a host compatibility mode that uses `runtimes.json` via MSBuild property (which writes to), `runtimeconfig.json`, and a host CLI argument.
