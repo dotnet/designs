@@ -892,6 +892,8 @@ namespace System.Numerics
 
         static abstract TSelf PopCount(TSelf value);
 
+        public static abstract TSelf ReverseEndianness(TSelf value);
+
         public static virtual TSelf RotateLeft(TSelf value, TSelf rotateAmount)
         {
             TSelf bitCount = TSelf.CreateChecked(value.GetByteCount() * 8L);
@@ -1734,6 +1736,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -1881,6 +1884,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)                                                // ? Explicit
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -2786,6 +2790,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -2936,6 +2941,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -3086,6 +3092,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -3228,6 +3235,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -3370,6 +3378,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -3523,6 +3532,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -3992,6 +4002,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -4139,6 +4150,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -4286,6 +4298,7 @@ namespace System
         //   * int GetByteCount()
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -4427,6 +4440,7 @@ namespace System
         //   * int GetByteCount()
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -4567,6 +4581,7 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -4712,6 +4727,7 @@ namespace System.Numerics
         //   * long GetShortestBitLength()                                                  // ? Explicit - BigInteger exposes `long GetBitLength()`
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -4940,6 +4956,7 @@ namespace System.Runtime.InteropServices
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
@@ -5080,6 +5097,7 @@ namespace System.Runtime.InteropServices
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
+        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
