@@ -1192,22 +1192,6 @@ namespace System.Numerics
           ISpanParsable<TSelf>                  // implies IParsable<TSelf>
         where TSelf : INumber<TSelf>
     {
-        // There is an open question on whether properties like IsSigned, IsBinary, IsFixedWidth, Base/Radix, and others are beneficial
-        // We could expose them for trivial checks or users could be required to check for the corresponding correct interfaces
-
-        // Abs mirrors Math.Abs and returns the same type. This can fail for MinValue of signed integer types
-        // Swift has an associated type that can be used here, which would require an additional type parameter in .NET
-        // However that would hinder the reusability of these interfaces in constraints
-
-        public static TSelf Abs(TSelf value)
-        {
-            if (IsNegative(value))
-            {
-                return checked(-value);
-            }
-            return value;
-        }
-
         public static TSelf Clamp(TSelf value, TSelf min, TSelf max)
         {
             if (min > max)
@@ -1250,42 +1234,6 @@ namespace System.Numerics
             return IsNegative(val2) ? val1 : val2;
         }
 
-        public static virtual TSelf MaxMagnitude(TSelf x, TSelf y)
-        {
-            TSelf ax = Abs(x);
-            TSelf ay = Abs(y);
-
-            if ((ax > ay) || IsNaN(ax))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? y : x;
-            }
-
-            return y;
-        }
-
-        public static virtual TSelf MaxMagnitudeNumber(TSelf x, TSelf y)
-        {
-            TSelf ax = Abs(x);
-            TSelf ay = Abs(y);
-
-            if ((ax > ay) || IsNaN(ay))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? y : x;
-            }
-
-            return y;
-        }
-
         public static virtual TSelf MaxNumber(TSelf x, TSelf y)
         {
             if (x != y)
@@ -1309,42 +1257,6 @@ namespace System.Numerics
             }
 
             return IsNegative(val1) ? val1 : val2;
-        }
-
-        public static virtual TSelf MinMagnitude(TSelf x, TSelf y)
-        {
-            TSelf ax = Abs(x);
-            TSelf ay = Abs(y);
-
-            if ((ax < ay) || IsNaN(ax))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? x : y;
-            }
-
-            return y;
-        }
-
-        public static virtual TSelf MinMagnitudeNumber(TSelf x, TSelf y)
-        {
-            TSelf ax = Abs(x);
-            TSelf ay = Abs(y);
-
-            if ((ax < ay) || IsNaN(ay))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? x : y;
-            }
-
-            return y;
         }
 
         public static virtual TSelf MinNumber(TSelf x, TSelf y)
@@ -1399,6 +1311,29 @@ namespace System.Numerics
           IUnaryNegationOperators<TSelf, TSelf>
         where TSelf : INumberBase<TSelf>
     {
+        // There is an open question on whether properties like IsSigned, IsBinary, IsFixedWidth, Base/Radix, and others are beneficial
+        // We could expose them for trivial checks or users could be required to check for the corresponding correct interfaces
+
+        // Abs mirrors Math.Abs and returns the same type. This can fail for MinValue of signed integer types
+        //
+        // Swift has an associated type that can be used here, which would require an additional type parameter in .NET
+        // However that would hinder the reusability of these interfaces in constraints
+        //
+        // Likewise, even complex numbers have an absolute value but its always a real number. We therefore moveed this down to
+        // `INumberBase`. The downside is it removes the ability to give it a default implementation since its no longer simply
+        // checking if the value is negative and inversing it.
+
+        static abstract TSelf Abs(TSelf value);
+        // {
+        //     // Provided as an example of the DIM implementation for `INumber<TSelf>` types
+        //
+        //     if (IsNegative(value))
+        //     {
+        //         return checked(-value);
+        //     }
+        //     return value;
+        // }
+
         // Alias for MultiplicativeIdentity
         static abstract TSelf One { get; }
 
@@ -1490,6 +1425,89 @@ namespace System.Numerics
         static abstract bool IsSubnormal(TSelf value);
 
         static abstract bool IsZero(TSelf value);
+
+        // Much like with Abs, since the comparison works over the absolute value this is well-defined for
+        // complex numbers and can be provided on `INumberBase`
+
+        static abstract TSelf MaxMagnitude(TSelf x, TSelf y);
+        // {
+        //     // Provided as an example of the DIM implementation for `INumber<TSelf>` types
+        //
+        //     TSelf ax = Abs(x);
+        //     TSelf ay = Abs(y);
+        //
+        //     if ((ax > ay) || IsNaN(ax))
+        //     {
+        //         return x;
+        //     }
+        //
+        //     if (ax == ay)
+        //     {
+        //         return IsNegative(x) ? y : x;
+        //     }
+        //
+        //     return y;
+        // }
+
+        static abstract TSelf MaxMagnitudeNumber(TSelf x, TSelf y)
+        // {
+        //     // Provided as an example of the DIM implementation for `INumber<TSelf>` types
+        //
+        //     TSelf ax = Abs(x);
+        //     TSelf ay = Abs(y);
+        //
+        //     if ((ax > ay) || IsNaN(ay))
+        //     {
+        //         return x;
+        //     }
+        //
+        //     if (ax == ay)
+        //     {
+        //         return IsNegative(x) ? y : x;
+        //     }
+        //
+        //     return y;
+        // }
+
+        static abtract TSelf MinMagnitude(TSelf x, TSelf y)
+        // {
+        //     // Provided as an example of the DIM implementation for `INumber<TSelf>` types
+        //
+        //     TSelf ax = Abs(x);
+        //     TSelf ay = Abs(y);
+        //
+        //     if ((ax < ay) || IsNaN(ax))
+        //     {
+        //         return x;
+        //     }
+        //
+        //     if (ax == ay)
+        //     {
+        //         return IsNegative(x) ? x : y;
+        //     }
+        //
+        //     return y;
+        // }
+
+        static abstract TSelf MinMagnitudeNumber(TSelf x, TSelf y)
+        // {
+        //     // Provided as an example of the DIM implementation for `INumber<TSelf>` types
+        //
+        //     TSelf ax = Abs(x);
+        //     TSelf ay = Abs(y);
+        //
+        //     if ((ax < ay) || IsNaN(ay))
+        //     {
+        //         return x;
+        //     }
+        //
+        //     if (ax == ay)
+        //     {
+        //         return IsNegative(x) ? x : y;
+        //     }
+        //
+        //     return y;
+        // }
 
         protected static abstract bool TryConvertFromChecked<TOther>(TOther value, out TSelf? result)
             where TOther : INumber<TOther>;
@@ -1704,16 +1722,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * INumber
-        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
@@ -1721,6 +1734,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -1739,6 +1753,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -1851,16 +1869,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing - Explicit
         // * INumber
-        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // ? Explicit
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // ? Explicit
@@ -1868,6 +1881,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // ? Explicit
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // ? Explicit
         // * INumberBase
+        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -1886,6 +1900,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -2139,16 +2157,11 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)                                               // * Existing
         //   * TSelf operator checked *(TSelf, TSelf)                                       // ? Explicit
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
@@ -2156,6 +2169,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -2174,6 +2188,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -2340,16 +2358,11 @@ namespace System
         //   * TSelf Log10(TSelf)
         //   * TSelf Log10P1(TSelf)
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
         //   * TSelf MaxNumber(TSelf, TSelf)
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
         //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
@@ -2357,6 +2370,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -2375,6 +2389,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -2575,16 +2593,11 @@ namespace System
         //   * TSelf operator *(TSelf, TSelf)
         //   * TSelf operator checked *(TSelf, TSelf)
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
         //   * TSelf MaxNumber(TSelf, TSelf)
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
         //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
@@ -2592,6 +2605,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -2610,6 +2624,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -2756,16 +2774,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
@@ -2773,6 +2786,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -2791,6 +2805,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -2906,16 +2924,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
@@ -2923,6 +2936,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -2941,6 +2955,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3056,16 +3074,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
@@ -3073,6 +3086,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -3091,6 +3105,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3198,16 +3216,11 @@ namespace System
         // * IFormattable
         //   * string ToString(string?, IFormatProvider?)
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
@@ -3215,6 +3228,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -3233,6 +3247,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3343,16 +3361,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
@@ -3360,6 +3373,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -3378,6 +3392,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3493,16 +3511,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
@@ -3510,6 +3523,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -3528,6 +3542,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3686,16 +3704,11 @@ namespace System
         //   * TSelf Log10(TSelf)
         //   * TSelf Log10P1(TSelf)
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
         //   * TSelf MaxNumber(TSelf, TSelf)
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
         //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
@@ -3703,6 +3716,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -3721,6 +3735,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)
         //   * bool IsSubnormal(TSelf)                                                      // * Existing
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -3962,16 +3980,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * INumber
-        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
@@ -3979,6 +3992,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -3997,6 +4011,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4109,16 +4127,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * INumber
-        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
@@ -4126,6 +4139,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -4144,6 +4158,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4256,16 +4274,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * INumber
-        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
@@ -4273,6 +4286,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -4291,6 +4305,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4397,16 +4415,11 @@ namespace System
         // * IFormattable
         //   * string ToString(string?, IFormatProvider?)
         // * INumber
-        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
@@ -4414,6 +4427,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
         // * INumberBase
+        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -4432,6 +4446,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4540,16 +4558,11 @@ namespace System
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
         // * INumber
-        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
@@ -4557,6 +4570,7 @@ namespace System
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
         // * INumberBase
+        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -4575,6 +4589,10 @@ namespace System
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4729,16 +4747,11 @@ namespace System.Runtime.InteropServices
         // * IFormattable
         //   * string ToString(string?, IFormatProvider?)
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
@@ -4746,6 +4759,7 @@ namespace System.Runtime.InteropServices
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -4764,6 +4778,10 @@ namespace System.Runtime.InteropServices
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -4869,16 +4887,11 @@ namespace System.Runtime.InteropServices
         // * IFormattable
         //   * string ToString(string?, IFormatProvider?)
         // * INumber
-        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
@@ -4886,6 +4899,7 @@ namespace System.Runtime.InteropServices
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
         // * INumberBase
+        //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -4904,6 +4918,10 @@ namespace System.Runtime.InteropServices
         //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
         //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -5050,16 +5068,11 @@ namespace System.Runtime.InteropServices
         //   * TSelf Log10(TSelf)
         //   * TSelf Log10P1(TSelf)
         // * INumber
-        //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
         //   * TSelf MaxNumber(TSelf, TSelf)
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
         //   * TSelf MinNumber(TSelf, TSelf)
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
@@ -5067,6 +5080,7 @@ namespace System.Runtime.InteropServices
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
         // * INumberBase
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
@@ -5085,6 +5099,10 @@ namespace System.Runtime.InteropServices
         //   * bool IsSignalingNaN(TSelf)
         //   * bool IsSubnormal(TSelf)
         //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
