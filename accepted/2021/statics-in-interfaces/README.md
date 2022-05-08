@@ -1402,6 +1402,8 @@ namespace System.Numerics
         // Alias for MultiplicativeIdentity
         static abstract TSelf One { get; }
 
+        static abstract int Radix { get; }
+
         // Alias for AdditiveIdentity
         static abstract TSelf Zero { get; }
 
