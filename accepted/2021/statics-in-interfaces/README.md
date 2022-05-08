@@ -874,14 +874,38 @@ namespace System.Numerics
         // We might want to support "big multiplication" for fixed width types
         // This would return a tuple (TSelf high, TSelf low) or similar, to match what we do for System.Math
 
-        // Returning int is currently what BitOperations does, however this can be cumbersome or prohibitive
-        // in various algorithms where returning TSelf is better.
-
         public static virtual (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right)
         {
             TSelf quotient = left / right;
             return (quotient, (left - (quotient * right)));
         }
+
+        // For `LeadingZeroCount`, `PopCount`, and `TrailingZeroCount` `System.Numerics.BitOperations`
+        // returns `int`
+        //
+        // This may require the developer to insert additional conversions from `int` to `TSelf`
+        // which might be problematic in some scenarios. Likewise, when it comes to "BigInteger"
+        // like types, there is no guarantee that the "bit count" is actually limited to `int`
+        //
+        // Returning `long` would reasonably handle the bit count issue, but there issue of
+        // converting back to `TSelf` still exists as there may be perf implications or other
+        // issues with doing that conversion.
+        //
+        // This might still overall be acceptable and will need to be decided on by API review
+        // as the reverse consideration also exists. That is, returning `int` is "natural" to
+        // C# and .NET code, so returning `TSelf` (such as for `BigInteger`) might also cause
+        // additional and unnecessary code to execute.
+        //
+        // The `rotateAmount` and `shiftAmount` parameters have similar considerations.
+        //
+        // Finally, variable sized types may return different results on different platforms.
+        // Consider for example `nint`, `nuint`, `CLong`, and `CULong` where `LeadingZeroCount(5)`
+        // returns a different result based on if we're on a 32-bit or 64-bit system. A user
+        // could likewise implement `BigInteger` such that it is represented via a `nuint[]`.
+        //
+        // In order to support such scenarios, we define these operations to be in terms of
+        // `GetByteCount() * 8L` bits. This is sufficient to explain how both fixed and variable
+        // width types behave and keeps the result deterministic for a given run.
 
         public static virtual TSelf LeadingZeroCount(TSelf value)
         {
@@ -912,6 +936,17 @@ namespace System.Numerics
         static abstract TSelf TrailingZeroCount(TSelf value);
 
         // These methods allow getting the underlying bytes that represent the binary integer
+        //
+        // There are two considerations for these APIs. The first is that a developer may only
+        // want a subset of the bits. For example, if converting a `BigInteger` to a `int`, then
+        // `GetShortestBitLength` + `IsNegative` lets you know if it should `throw` or `saturate`.
+        //
+        // The second consideration is that an API may contain more than `int.MaxValue` bytes, such
+        // as if it is backed by native memory.
+        //
+        // If we provided an API like `int WritePartialBytes(Span<byte> destination, int firstByte)`
+        // then we could get just the lowest `4-bytes` and make the overall conversion "much" cheaper
+        // while also allowing users to "chunk" particularly big data if that was appropriate.
 
         int GetByteCount();
 
@@ -972,9 +1007,6 @@ namespace System.Numerics
         // This interface is defined for convenience of viewing the IEEE requirements
         // it would not actually be defined until the .NET libraries requires it
 
-        // The majority of the IEEE required operations are listed below
-        // This doesn't include the recommended operations such as sin, cos, acos, etc
-
         // 5.3.2
         //  TSelf Quantize(TSelf x, TSelf y);
         //  TSelf Quantum(TSelf x);
@@ -989,11 +1021,19 @@ namespace System.Numerics
         //  bool SameQuantum(TSelf x, TSelf y);
     }
 
+    // `IFloatingPoint` doesn't cover all relevant concepts. It doesn't for example necessarily cover `IFixedPoint`
+    // nor does it cover types like `Rational` which don't "contain" any point. These types are more rare overall
+    // and so while it is somewhat unfortunate they aren't represented in the initially exposed interfaces, this
+    // might be acceptable.
+
     public interface IFloatingPoint<TSelf>
         : INumber<TSelf>,
           ISignedNumber<TSelf>
         where TSelf : IFloatingPoint<TSelf>
     {
+        // Rounding APIs might apply to more kinds than just "floating-point" types.
+        // Its possible we should define `IRoundFunctions<TSelf>` to contain them.
+
         static abstract TSelf Ceiling(TSelf x);
 
         static abstract TSelf Floor(TSelf x);
@@ -1045,13 +1085,31 @@ namespace System.Numerics
           ITrigonometricFunctions<TSelf>
         where TSelf : IFloatingPointIeee754<TSelf>
     {
-        // The following constants are defined by System.Math and System.MathF today
+        // The following members have named equivalents defined by System.Math, System.MathF, or
+        // the IEEE 754 floating-point types. Like with floating-point, some of the concepts might
+        // be more broadly applicable. While there are certainly types, like `decimal` that don't
+        // support them at the same time.
+        //
+        // This notably doesn't include anything covering the full subnormal or finite "boundaries".
+        // That is, there is while `Epsilon` covers the smallest subnormal magnitude and `MaxValue`
+        // covers the largest finite magnitude, there is nothing that covers the largest subnormal
+        // magnitude or the smallest finite magnitude.
 
         static abstract TSelf E { get; }
+
+        static abstract TSelf Epsilon { get; }
+
+        static abstract TSelf NaN { get; }
+
+        static abstract TSelf NegativeInfinity { get; }
+
+        static abstract TSelf NegativeZero { get; }
 
         static abstract TSelf Pi { get; }
 
         static abstract TSelf Tau { get; }
+
+        static abstract TSelf PositiveInfinity { get; }
 
         // The following methods are defined by System.Math and System.MathF today
         // Exposing them on the interfaces means they will become available as statics on the primitive types
@@ -1078,27 +1136,9 @@ namespace System.Numerics
 
         static abstract TSelf ScaleB(TSelf x, int n);
 
-        // The following members are exposed on the floating-point types as constants today
-        // This may be of concern when implementing the interface
-
-        // TODO: We may want to expose constants related to the subnormal and finite boundaries
-
-        static abstract TSelf Epsilon { get; }
-
-        static abstract TSelf NaN { get; }
-
-        static abstract TSelf NegativeInfinity { get; }
-
-        static abstract TSelf NegativeZero { get; }
-
-        static abstract TSelf PositiveInfinity { get; }
-
         // The following methods are approved but not yet implemented in the libraries
 
         static abstract TSelf Compound(TSelf x, TSelf n);
-
-        // The majority of the IEEE required operations are listed below
-        // This doesn't include the recommended operations such as sin, cos, acos, etc
 
         // TODO: There are a couple methods below not covered in the list above, we should
         // review these and determine if they should be implemented
@@ -1111,6 +1151,8 @@ namespace System.Numerics
         //      TowardPositive
         //      TowardNegative
         //      Exact
+        //
+        // These are covered by `Round(TSelf x, MidpointRounding mode)`
 
         // 5.4.1
         //  TInt ConvertToInteger(TSelf x);
@@ -1124,10 +1166,17 @@ namespace System.Numerics
         //      ExactTowardPositive
         //      ExactTowardNegative
         //      ExactTiesToAway
+        //
+        // These are minimally covered by the `Create` APIs. Likewise they are
+        // minimally covered under a two step rounding logic (`Round` + `Create`).
+        //
+        // A user can "emulate" `Exact` by checking `IsInteger` and throwing if false
 
         // 5.4.3
         //  TResult ConvertFromHexCharacter(string s);
         //  string ConvertToHexCharacter(TSelf x, TFormat format);
+        //
+        // These are approved, but not yet implemented, as `ToString` and `Parse`
 
         // 5.6.1
         //  bool Compare(TSelf x, TSelf y);
@@ -1153,17 +1202,47 @@ namespace System.Numerics
         //      QuietNotLess
         //      QuietGreaterUnordered
         //      QuietOrdered
+        //
+        // We don't support signaling NaN, but these are mostly covered by `<`, `>`,
+        // `<=`, and `>=`.
+        //
+        // The `unordered` are meant to return `true` if either input is `NaN`, which
+        // we don't support directly.
 
         // 5.7.1
         //  bool Is754Version1985
         //  bool Is754Version2008
         //  bool Is754Version2019
+        //
+        // This is a "static" query that could be exposed and implemented by the interface
 
         // 5.7.2
         //  enum Class(TSelf x);
-        //  enum Radix(TSelf x);
         //  bool TotalOrder(TSelf x, TSelf y);
         //  bool TotalOrderMag(TSelf x, TSelf y);
+        //
+        // Class is supposed to return one of the following enumeration values
+        //      signalingNaN
+        //      quietNaN
+        //      negativeInfinity
+        //      negativeNormal
+        //      negativeSubnormal
+        //      negativeZero
+        //      positiveZero
+        //      positiveSubnormal
+        //      positiveNormal
+        //      positiveInfinity
+        // It is meant to be a more efficient way to check kind than querying many
+        // individual `Is*` methods.
+        //
+        // `TotalOrder` is similar to `IComparable<TOther>.Compare` but as a static
+        // method. With `TotalOrderMag` doing the same but over the absolute values.
+        //
+        // There are some notable differences in that it returns `bool` not an integer
+        // and therefore doesn't check for equality, it only checks for `x < y`. However,
+        // it also treats `-0` as less than `+0`, not equal. It gives a well defined order
+        // for `NaN` as compared to other values (`-NaN` is lesser then everything and
+        // `+NaN` is greater than everything, including infinity).
 
         // 9.4
         //  TSelf Sum(TSelf[] x);
@@ -1173,16 +1252,29 @@ namespace System.Numerics
         //  (TSelf, TInt) ScaledProd(TSelf[] x);
         //  (TSelf, TInt) ScaledProdSum(TSelf[] x, TSelf[] y);
         //  (TSelf, TInt) ScaledProdDiff(TSelf[] x, TSelf[] y);
+        //
+        // These are reduction operations that operate over an array
+        // and so take in a `T[]` and return a `T` that approximates
+        // the result
+        //
+        // Scaled* return values `pr` and `sf` such that `ScaleB(pr, sf)`
+        // approximates the result
 
         // 9.5
         //  (TSelf, TSelf) AugmentedAddition(TSelf x, TSelf y);
         //  (TSelf, TSelf) AugmentedSubtraction(TSelf x, TSelf y);
         //  (TSelf, TSelf) AugmentedMultiplication(TSelf x, TSelf y);
+        //
+        // These methods perform the operation as if `roundTiesTowardZero`
+        // was active and returns both the correctly rounded result and
+        // the error caused by the rounding.
 
         // 9.7
         //  TSelf GetPayload(TSelf x);
         //  TSelf SetPayload(TSelf x);
         //  TSelf SetPayloadSignaling(TSelf x);
+        //
+        // These methods allow getting and setting the payload bits of a NaN
     }
 
     public interface INumber<TSelf>
@@ -1207,6 +1299,9 @@ namespace System.Numerics
             return result;
         }
 
+        // CopySign could theoretically move down since it is merely copying the signs
+        // from one value to the sign of another value.
+
         public static TSelf CopySign(TSelf value, TSelf sign)
         {
             TSelf result = value;
@@ -1218,6 +1313,9 @@ namespace System.Numerics
 
             return result;
         }
+
+        // `Max`, `MaxNumber`, `Min`, and `MinNumber` are only valid when there
+        // is a well defined order.
 
         public static virtual TSelf Max(TSelf x, TSelf y)
         {
@@ -1274,12 +1372,22 @@ namespace System.Numerics
             return IsNegative(x) ? x : y;
         }
 
+        // Parse could move down. There are some potential complexities in supporting parsing for types like
+        // `Complex`, however; and so we need to determine if that is desirable.
+
         static abstract TSelf Parse(string s, NumberStyles style, IFormatProvider? provider);
 
         static abstract TSelf Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider);
 
+        static abstract bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out TSelf result);
+
+        static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out TSelf result);
+
         // Math only exposes this Sign for signed types, but it is well-defined for unsigned types
         // it can simply never return -1 and only 0 or 1 instead
+        //
+        // It likely doesn't make sense for `Complex` because there isn't a single sign available and
+        // so the sign of imaginary numbers isn't well-defined.
 
         public static virtual int Sign(TSelf value)
         {
@@ -1290,10 +1398,6 @@ namespace System.Numerics
 
             return 0;
         }
-
-        static abstract bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out TSelf result);
-
-        static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out TSelf result);
     }
 
     public interface INumberBase<TSelf>
@@ -1311,9 +1415,6 @@ namespace System.Numerics
           IUnaryNegationOperators<TSelf, TSelf>
         where TSelf : INumberBase<TSelf>
     {
-        // There is an open question on whether properties like IsSigned, IsBinary, IsFixedWidth, Base/Radix, and others are beneficial
-        // We could expose them for trivial checks or users could be required to check for the corresponding correct interfaces
-
         // Abs mirrors Math.Abs and returns the same type. This can fail for MinValue of signed integer types
         //
         // Swift has an associated type that can be used here, which would require an additional type parameter in .NET
@@ -1395,6 +1496,29 @@ namespace System.Numerics
 
             throw new NotSupportedException();
         }
+
+        // The various `Is*` checks are fairly critical in writing generic algorithms as they are the only
+        // way to detect various edge cases today. Many of these will be implemented returning a constant
+        // true/false on the derived type and will be only available via a constrained generic.
+        //
+        // `IsCanonical` largely only makes sense for `decimal` like types where there are multiple ways
+        // to represent the "same" value.
+        //
+        // `IsEvenInteger` and `IsOddInteger` check that the value is even or odd. The `Integer` in the name
+        // is to help clarify that `2.4` returns `false` for both, while `IsEvenInteger` would return `true`
+        // for `2.0`.
+        //
+        // `IsNegative` nor `IsPositive` have "well-defined" behavior for complex numbers and so they may both
+        // return false.
+        //
+        // `IsZero` checks for both positive and negative zero
+        //
+        // Some APIs which we should likely also include are:
+        // * static abstract bool IsComplexNumber(TSelf value);
+        // * static abstract bool IsRealNumber(TSelf value);
+        //
+        // There may also be a reason to check for `IsFixedWith` or `IsSigned`, while whether its binary or
+        // decimal is exposed via `Radix`.
 
         static abstract bool IsCanonical(TSelf value);
 
