@@ -219,7 +219,6 @@ interface "ITrigonometricFunctions<TSelf>"
 interface "IUnaryNegationOperators<TSelf, TResult>"
 interface "IUnaryPlusOperators<TSelf, TResult>"
 interface "IUnsignedNumber<TSelf>"
-interface "IVector<TSelf, TScalar>"
 
 "IBinaryNumber<TSelf>"                          <|-- "IBinaryFloatingPointIeee754<TSelf>"
 "IFloatingPointIeee754<TSelf>"                  <|-- "IBinaryFloatingPointIeee754<TSelf>"
@@ -269,20 +268,6 @@ interface "IVector<TSelf, TScalar>"
 
 "IParsable<TSelf>"                              <|-- "ISpanParsable<TSelf>"
 
-"IAdditionOperators<TSelf, TOther, TResult>"    <|-- "IVector<TSelf, TScalar>"
-"IAdditiveIdentity<TSelf, TResult>"             <|-- "IVector<TSelf, TScalar>"
-"IBitwiseOperators<TSelf, TOther, TResult>"     <|-- "IVector<TSelf, TScalar>"
-"IComparisonOperators<TSelf, TOther>"           <|-- "IVector<TSelf, TScalar>"
-"IDecrementOperators<TSelf>"                    <|-- "IVector<TSelf, TScalar>"
-"IDivisionOperators<TSelf, TOther, TResult>"    <|-- "IVector<TSelf, TScalar>"
-"IIncrementOperators<TSelf>"                    <|-- "IVector<TSelf, TScalar>"
-"IModulusOperators<TSelf, TOther, TResult>"     <|-- "IVector<TSelf, TScalar>"
-"IMultiplicativeIdentity<TSelf, TResult>"       <|-- "IVector<TSelf, TScalar>"
-"IMultiplyOperators<TSelf, TOther, TResult>"    <|-- "IVector<TSelf, TScalar>"
-"ISpanFormattable"                              <|-- "IVector<TSelf, TScalar>"
-"ISubtractionOperators<TSelf, TOther, TResult>" <|-- "IVector<TSelf, TScalar>"
-"IUnaryNegationOperators<TSelf, TResult>"       <|-- "IVector<TSelf, TScalar>"
-
 class "BigInteger"
 class "Byte"
 class "Char"
@@ -313,13 +298,6 @@ class "UInt64"
 class "UInt128"
 class "UIntPtr"
 class "ValueType"
-class "Vector<T>"
-class "Vector64<T>"
-class "Vector128<T>"
-class "Vector256<T>"
-class "Vector2"
-class "Vector3"
-class "Vector4"
 
 "IBinaryInteger<TSelf>"                         <|-- "BigInteger"
 "ISignedNumber<TSelf>"                          <|-- "BigInteger"
@@ -349,16 +327,9 @@ class "Vector4"
 
 "IAdditionOperators<TSelf, TOther, TResult>"    <|-- "Complex"
 "IDivisionOperators<TSelf, TOther, TResult>"    <|-- "Complex"
-"IDivisionOperators<TSelf, TOther, TResult>"    <|-- "Complex"
-"IFormattable"                                  <|-- "Complex"
-"IExponentialFunctions<TSelf>"                  <|-- "Complex"
-"IHyperbolicFunctions<TSelf>"                   <|-- "Complex"
-"ILogarithmicFunctions<TSelf>"                  <|-- "Complex"
 "IMultiplyOperators<TSelf, TOther, TResult>"    <|-- "Complex"
 "INumberBase<TSelf>"                            <|-- "Complex"
-"IPowerFunctions<TSelf>"                        <|-- "Complex"
-"IRootFunctions<TSelf>"                         <|-- "Complex"
-"ITrigonometricFunctions<TSelf>"                <|-- "Complex"
+"ISignedNumber<TSelf>"                          <|-- "Complex"
 "ISubtractionOperators<TSelf, TOther, TResult>" <|-- "Complex"
 "ValueType"                                     <|-- "Complex"
 
@@ -514,20 +485,10 @@ class "Vector4"
 "ValueType"                                     <|-- "UIntPtr"
 
 "Object"                                        <|-- "ValueType"
-
-"IVector<TSelf, TScalar>"                       <|-- "Vector<T>"
-
-"IVector<TSelf, TScalar>"                       <|-- "Vector64<T>"
-"IVector<TSelf, TScalar>"                       <|-- "Vector128<T>"
-"IVector<TSelf, TScalar>"                       <|-- "Vector256<T>"
-
-"IVector<TSelf, TScalar>"                       <|-- "Vector2"
-"IVector<TSelf, TScalar>"                       <|-- "Vector3"
-"IVector<TSelf, TScalar>"                       <|-- "Vector4"
 @enduml
 -->
 
-![UML](http://www.plantuml.com/plantuml/svg/h9XBKzi-4C3l_XIPdFySU91_3mpJyg1ufZGPd73VE1j7hIobaWouqm_V6AY29MUZAEJ2x7hrq-gn3_5P6r2cAdd2X44rXnnx_VHIbajGCENOtw0_6v-xdyGZAiEyCLUeKJ7Wx3SO9iKbS3w5_6VRwFfN1QQJUoDL2SRulen0wTSH6VAvCofxcz8VbYr1ECpsHu_RilWocx5c6SCbAZ1IwLUp_thZeLcWMlszHrrninhd3tl4T8R2C5FRKPtM5qo0gc-u1CD4CP9Cc1GH_pyziKxvvkbAKw0YBBvNvNIZWNbY6eDMvLu7fZTkXsD_XRd24eLnp5qpziXqs1wxTuWpKuVvSlsybA8v3E0tbSYRC-tsfdKCX4N0GTtMIrHJoLbEJvcAe7tw9WjGp2pARRmx9kxW-G5uXTtVvQpYbTvnl-zMAhRaB8VGcst7r3jEvTrSzzC5wEwbZUGJAdftxgKqj4MsO7EpeyiPAmJE2CUpQceKv179PAnO8OKiqQXj9pzvYNiie7CQ7s_7Z7YbW-trjhK-OBxYM4oM0mVLfDRkrDJR-3lxSt0GbY3fi8mdnplTdQQ3RrS8BDaXa_iqvm3TiEkHFvgLj7eAccDXWHN6RKi-41rGL6BHYTFq1Er8K9MBFRZkGjUToI9X2Lrt2Lfuf3kmM2PHgwEPLC6EPNONkFtMxbV4_VUJBbenp2Geq7oeb-R2-qs24jv44RwuxGonxnJ5VUIG39hYlePsfIIxF9aSZDFM1RoYh3CqYNY9M4G8AQ904AHKV8nFmPrvEAdUz-nsR7S9Kb1_6hHFmTtnLj8A5Hvj5kM7QGEY0uu0kGFZGezercFYZy15jAe4Bg8O4BZe547W8eeCWKl5XtaNKRm8N4G22iNL--zTJ7KaS36PZS159YK2b-GSjExrBrZnzbRiMrLjq0gN2rX_QGA9uxELhy3WKF2wfHYp4Zt5S3xNQDPgp5a9V2tBQihNewv5LLhXQyLcLhW5FhT2AipXuBrqVFHU6foybqP6MN4u_O6viMBMMd76HC7NOkDzSo-iOjAUTjAUTzAUUEBC_FAljd6zNFF_7T2vencS-Bh3eq--ykXqqA5qv6D7_bki7Tmq40DX6BrlEIJYJ0-83k06tEWV2Mdq4SGYw_b00S-mVoRExDZNfXND2fRQ-Gf6Nm6_hr0Wjsnz1NgCAVARqud8elrbUhfepsPZ2nOYor9Oimb0M5a8AmjXZOMmnbgRr2RPJ_i_SEeyupAFYTEO94uJaJWs1d5usOxJw2LEKvOu3LJYrBN4yViMfsQzFiJscRprW7cRZUGjlpplMVLjz2wNzmym3pyoUIo0_EqD0VZxMa1vAg0yV7_pKe3vhGBiFM6t35l5Yx5LJc-gH9V-5o_CLl7oR9NT8cqLBzLMyO9jbRsoRHNRVNgRnKg9otbLt2eiBgKLbqyWVgoSiF_q3GxiWqj3ScbuyZGTWC-8H1uxEni0M7ZaiRGhpnX8Tgwni5-DXGVEKcdFg0jACml_z5YQ5Cn83keo38ySXf5KM08BUsANEqWi38c58R4m9HRsnEwla5WO4Wj3Oc58B8o9DVwMfqx3OwUXlKXBQccExH67n668F0o9XocoCFrcTNO2aQKjipGyTngxaw-t29z0vR73oLkNavVtiRp6dyS1GiTqDZh8Qm7aPMwVvmBAmo5xteRdUI_WF1LmNWeu3mVjURs7bBSlK1v_x9wyTKzByQRXf2zjmQKzDkpVqnPRscFJ5ZxjiM4JdxROqXwRzl5fZyqx-RWrut5Fpflv-37tTrPilZzw7AVtelvUeQiwla9NUto9RWBv6bqSsbjaxt-u8EyQqyFB-_F7s-id)
+![UML](http://www.plantuml.com/plantuml/svg/h9ZFKjiy4C3lVefCpd3u-2ZjWUcq12YP0PB1SU-Ait5KPCcLLe0xVVWcWR6mx2Xh1oxCIgkVzu-YNUcRGQRHvYBY4a4lMGg3uNYaye9fDXSmt35-FllgJyadqCWRQox1WEPCy3yCkP8Z9iISfOzrfQlVbc4hzrhfd24sRPaoRLvNn22MtghuxPFDPN71fC-iJJQuDOtlYmNVk34fG3DKshog7Grc4ro1Nlz_06C5hjSrbpt1U04IEPRLgbRj2owPBg-5OiXbDbLSuXW0FdywTSusrCSI8GCTqBYt-Nod0Zvp0oIl_Et0pSvmUFgNa6h8GQAdxgln9sveCVRtaE1OqcovUYcKt2I3YMihqqrEswsffI6WGKZKJLc0dYl1q_0dnv8KfrkLCSrnbU_ZtN5vnrv-Cc6XVLujhB2cOxplraEy43nbn9tjrfGTF-NjtERK1JCGc7uxd3Q8eq4ILXcj87s41K4pPcZrDlC4vPcsCjsfF5NFeCD9V50AmnhnYY-nOsHZdabO1E8RspbgblOuysQQPqgg753lsw39zdY2ZBL_niUxDLDX3LdVjFaQjP-EWvr_vt-FZsbdTFXaw4i-t6Y_Kf1t3WKMTIWcFittPysYEZZOoufgRKqGus348kTtHX-89jIrlkZ8wxj84I4Lshw9Qw-rxQTKJrWKBlq16lsNxiDwCOFjGazck6VeosmlNeVvtgnsXySpN93wC2FI3wq9RHnpz9OtGA7tSG5R_8ug4FSGnRzd1HbXYdyXwqg9kjpQF8pNMH8kSiwQ82bm6N880ebK8CYaiVmecuYN0pgfF3ntdLhP08dKUvBYHEvyzvBMAFglpQ6Qpo5HysM536e-dQI26JCONl3ihKySLaCbGYMCLamxuLR9p4agBmIyE3cfJLyoX8aKPMrWndDe34oMImFeXY7bEHDELdOktAehQVDA-67veX9kc5XMmbZYVsVlfVzFtajdfpNDao_lnIawd--tPQOI9_DVa3enhWKhvZ8JJjpujWb-DP3KZKhgLYLrinBFhiGpRFjeC2kBpSxmMdvYLNQvftTo0O8poDEb4VgxiKr1_PsJ_Fb_fTf1gkf048RHULRb7YGxq9awS_z2u818XEQh1Pn-h_zR9btLEUpf76RPdhUlIpP4nhQm_8JRZk6qPRZi6KwRzX0B5SA6lDWI5rlIOdjOUoyHEc-QJjkcux7I-yoXltC7eyZBCH-FXocy9e_7jijPeLOTNziRlZOsVCsFpxNhA1KQ8PvFVq2-FcNvNW3ypmrZ-FTh0V6rWFZo--Lh0VB30dIMdvQXLMR5Q9N_DzqBaLXbL9XMcPMdLMP5QfLPgLfbLh1McPQjLThJHySPAmMFmsOyLXWUImlFVm5yMxaUOtdDVNjjq2qvkkwSJhTNnXXjswm7GB1XosnwAXlLX2SN6vvNRDam6qlRE2gK9Xl-qspi_epDIbt2QSjm6aJ1AJ0u9cQqM1A3Ss9mIGmkYS4jCUFNc1YS4eDBOd1938w96GNNoEYM6Pr2erDgT8pDnBnkd8uRfyEfZ6wnqUd5vSgZLXlTGgVBnkbSBzT-bG2NRSEnrE0G6PnBnOrNZ8nkcT5fttGypHvTPvzOydbYoTTJCL_xTxx6p-U1aylLEchYwv29hzS5V2yWldtImTVx2huMCDyBcEy5p9TFFVZwqGdVVq1yVDdjlTMZSwz7jrj2kWL7zzXwlqVdsEWQMs_vw1vRR_he71jTO-jz7zrZctH-U0yEhydrvW_lsVNs3-yT7Dwpmrjs-EQBjINCVtzSThc_Rk_dumC0)
 
 ### Base Interfaces
 
@@ -750,6 +711,9 @@ namespace System.Numerics
     {
         // These could have DIM implementations if they inherit
         // IPowerFunctions and had access to the constant `E`
+        //
+        // Several of these are reserved by the current C standard
+        // for future implementation on `complex`
 
         static abstract TSelf Exp(TSelf x);
 
@@ -783,6 +747,9 @@ namespace System.Numerics
     public interface ILogarithmicFunctions<TSelf>
         where TSelf : ILogarithmicFunctions<TSelf>, INumberBase<TSelf>
     {
+        // Several of these are reserved by the current C standard
+        // for future implementation on `complex`
+
         static abstract TSelf Log(TSelf x);
 
         static abstract TSelf Log(TSelf x, TSelf newBase);      // ? DIM - Needs special floating-point handling for NaN, One, and Zero
@@ -821,6 +788,12 @@ namespace System.Numerics
     public interface ITrigonometricFunctions<TSelf>
         where TSelf : ITrigonometricFunctions<TSelf>, INumberBase<TSelf>
     {
+        // `Atan2` and `Atan2Pi` aren't commonly defined for `complex`
+        // but they do represent the `phase` or `angle` of `x + iy`
+        //
+        // The `*Pi` APIs are reserved by the current C standard
+        // for future implementation on `complex`
+
         static abstract TSelf Acos(TSelf x);
 
         static abstract TSelf Asin(TSelf x);
@@ -1674,71 +1647,6 @@ namespace System.Numerics
         where U : INumber<U>
     {
         static abstract T Convert(U value);
-    }
-}
-
-namespace System.Numerics
-{
-    public interface IVector<TSelf, TScalar>
-        : IAdditionOperators<TSelf, TSelf, TSelf>,
-          IAdditiveIdentity<TSelf, TSelf>,
-          IBitwiseOperators<TSelf, TSelf, TSelf>,
-          IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
-          IDivisionOperators<TSelf, TSelf, TSelf>,
-          IDivisionOperators<TSelf, TScalar, TSelf>,
-          IMultiplyOperators<TSelf, TSelf, TSelf>,
-          IMultiplicativeIdentity<TSelf, TSelf>,
-          IMultiplicativeIdentity<TSelf, TScalar>,
-          IMultiplyOperators<TSelf, TScalar, TSelf>,
-          IUnaryNegationOperators<TSelf, TSelf>,
-          ISpanFormattable,                     // implies IFormattable
-          ISubtractionOperators<TSelf, TSelf, TSelf>
-        where TSelf : IVector<TSelf, TScalar>
-    {
-        static abstract TSelf Create(TScalar value);
-        static abstract TSelf Create(TScalar[] values);
-        static abstract TSelf Create(TScalar[] values, int startIndex);
-        static abstract TSelf Create(ReadOnlySpan<TScalar> values);
-
-        static abstract int Count { get; }
-
-        static abstract TSelf One { get; }
-
-        static abstract TSelf Zero { get; }
-
-        TScalar this[int index] { get; }
-
-        static abstract TSelf Abs(TSelf value);
-        static abstract TSelf AndNot(TSelf left, TSelf right);
-        static abstract TSelf ConditionalSelect(TSelf condition, TSelf left, TSelf right);
-        static abstract TSelf Dot(TSelf left, TSelf right);
-        static abstract TSelf Max(TSelf left, TSelf right);
-        static abstract TSelf Min(TSelf left, TSelf right);
-        static abstract TSelf SquareRoot(TSelf value);
-
-        static abstract TSelf Equals(TSelf left, TSelf right);
-        static abstract TSelf GreaterThan(TSelf left, TSelf right);
-        static abstract TSelf GreaterThanOrEqual(TSelf left, TSelf right);
-        static abstract TSelf LessThan(TSelf left, TSelf right);
-        static abstract TSelf LessThanOrEqual(TSelf left, TSelf right);
-
-        static abstract bool EqualsAll(TSelf left, TSelf right);
-        static abstract bool GreaterThanAll(TSelf left, TSelf right);
-        static abstract bool GreaterThanOrEqualAll(TSelf left, TSelf right);
-        static abstract bool LessThanAll(TSelf left, TSelf right);
-        static abstract bool LessThanOrEqualAll(TSelf left, TSelf right);
-
-        static abstract bool EqualsAny(TSelf left, TSelf right);
-        static abstract bool GreaterThanAny(TSelf left, TSelf right);
-        static abstract bool GreaterThanOrEqualAny(TSelf left, TSelf right);
-        static abstract bool LessThanAny(TSelf left, TSelf right);
-        static abstract bool LessThanOrEqualAny(TSelf left, TSelf right);
-
-        void CopyTo(TScalar[] destination);
-        void CopyTo(TScalar[] destination, int startIndex);
-        void CopyTo(Span<TScalar> destination);
-
-        bool TryCopyTo(Span<TScalar> destination);
     }
 }
 ```
@@ -4738,43 +4646,227 @@ namespace System.Numerics
 {
     public struct BigInteger
         : IBinaryInteger<BigInteger>,
-          ISignedNumber<BigInteger>,
-          ISpanFormattable,
-          ISpanParsable<BigInteger>
+          ISignedNumber<BigInteger>
     {
+        // Explicitly implemented interfaces
+        // * IAdditiveIdentity
+        //   * TSelf AdditiveIdentity { get; }
+        // * IMultiplicativeIdentity
+        //   * TSelf MultiplicativeIdentity { get; }
+        //
+        // * IAdditionOperators
+        //   * TSelf operator +(TSelf, TSelf)
+        //   * TSelf operator checked +(TSelf, TSelf)
+        // * IBitwiseOperators
+        //   * TSelf operator &(TSelf, TSelf)
+        //   * TSelf operator |(TSelf, TSelf)
+        //   * TSelf operator ^(TSelf, TSelf)
+        //   * TSelf operator ~(TSelf)
+        // * IComparisonOperators
+        //   * bool operator <(TSelf, TSelf)
+        //   * bool operator <=(TSelf, TSelf)
+        //   * bool operator >(TSelf, TSelf)
+        //   * bool operator >=(TSelf, TSelf)
+        // * IDecrementOperators
+        //   * TSelf operator --(TSelf)
+        //   * TSelf operator checked --(TSelf)
+        // * IDivisionOperators
+        //   * TSelf operator /(TSelf, TSelf)
+        //   * TSelf operator checked /(TSelf, TSelf)
+        // * IEqualityOperators
+        //   * bool operator ==(TSelf, TSelf)
+        //   * bool operator !=(TSelf, TSelf)
+        // * IIncrementOperators
+        //   * TSelf operator ++(TSelf)
+        //   * TSelf operator checked ++(TSelf)
+        // * IModulusOperators
+        //   * TSelf operator %(TSelf, TSelf)
+        // * IMultiplyOperators
+        //   * TSelf operator *(TSelf, TSelf)
+        //   * TSelf operator checked *(TSelf, TSelf)
+        // * IShiftOperators
+        //   * TSelf operator <<(TSelf, TSelf)
+        //   * TSelf operator >>(TSelf, TSelf)
+        //   * TSelf operator >>>(TSelf, TSelf)
+        //   * TSelf operator <<(TSelf, int)
+        //   * TSelf operator >>(TSelf, int)
+        //   * TSelf operator >>>(TSelf, int)
+        // * ISubtractionOperators
+        //   * TSelf operator -(TSelf, TSelf)
+        //   * TSelf operator checked -(TSelf, TSelf)
+        // * IUnaryNegationOperators
+        //   * TSelf operator -(TSelf)
+        //   * TSelf operator checked -(TSelf)
+        // * IUnaryPlusOperators
+        //   * TSelf operator +(TSelf)
+
+        // Implicitly Implemented interfaces
+
+        // * INumberBase
+        //   * One { get; }                                                                 // * Existing
+        //   * Zero { get; }                                                                // * Existing
+        // * ISignedNumber
+        //   * TSelf NegativeOne { get; }                                                   // BigInteger exposes `BigInteger MinusOne { get; }`
+        //
+        // * IBinaryInteger
+        //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
+        //   * int GetByteCount()                                                           // ? Explicit - BigInteger exposes `int GetByteCount(bool isUnsigned = false)`
+        //   * long GetShortestBitLength()                                                  // ? Explicit - BigInteger exposes `long GetBitLength()`
+        //   * TSelf LeadingZeroCount(TSelf)
+        //   * TSelf PopCount(TSelf)
+        //   * TSelf RotateLeft(TSelf, int)
+        //   * TSelf RotateRight(TSelf, int)
+        //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit - BigInteger exposes `bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false)`
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
+        // * IBinaryNumber
+        //   * bool IsPow2(TSelf)                                                           // BigInteger expoes `bool IsPowerOfTwo { get; }`
+        //   * TSelf Log2(TSelf)
+        // * IComparable                                                                    // Existing
+        //   * int CompareTo(object?)                                                       // * Existing
+        //   * int CompareTo(TSelf)                                                         // * Existing
+        // * IEquatable                                                                     // Existing
+        //   * bool Equals(TSelf)                                                           // * Existing
+        // * IFormattable                                                                   // Existing
+        //   * string ToString(string?, IFormatProvider?)                                   // * Existing
+        // * INumber
+        //   * TSelf Clamp(TSelf, TSelf, TSelf)
+        //   * TSelf CopySign(TSelf, TSelf)
+        //   * TSelf Max(TSelf, TSelf)
+        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
+        //   * TSelf Min(TSelf, TSelf)
+        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
+        //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
+        //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
+        //   * int Sign(TSelf)                                                              // BigInteger exposes `int Sign { get; }`
+        //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
+        //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf Abs(TSelf)
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)
+        //   * bool IsEvenInteger(TSelf)                                                    // BigInteger exposes `bool IsEven { get; }`
+        //   * bool IsFinite(TSelf)                                                         // ? Explicit
+        //   * bool IsInfinity(TSelf)                                                       // ? Explicit
+        //   * bool IsInteger(TSelf)                                                        // ? Explicit
+        //   * bool IsNaN(TSelf)                                                            // ? Explicit
+        //   * bool IsNegative(TSelf)
+        //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsOddInteger(TSelf)
+        //                                                                                  // BigInteger exposes `bool IsOne { get; }`
+        //   * bool IsPositive(TSelf)
+        //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
+        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
+        //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsZero(TSelf)                                                           // BigInteger exposes `bool IsZero { get; }`
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
+        // * IParsable
+        //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
+        //   * bool TryParse(string?, IFormatProvider?, out TSelf)
+        // * ISpanFormattable
+        //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)    // * Existing - Optional Args
+        // * ISpanParsable
+        //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
+        //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
     }
 
     public struct Complex
         : IAdditionOperators<Complex, double, Complex>,
-          IDivisionOperators<Complex, Complex, Complex>,
           IDivisionOperators<Complex, double, Complex>,
-          IFormattable,
-          // IExponentialFunctions<Complex>,
-          // IHyperbolicFunctions<Complex>,
-          // ILogarithmicFunctions<Complex>,
           IMultiplyOperators<Complex, double, Complex>,
           INumberBase<Complex>,
-          // IPowerFunctions<Complex>
-          // IRootFunctions<Complex>,
-          // ITrigonometricFunctions<Complex>,
+          ISignedNumber<Complex>,
           ISubtractionOperators<Complex, double, Complex>
     {
-    }
+        // Explicitly implemented interfaces
+        // * IAdditiveIdentity
+        //   * TSelf AdditiveIdentity { get; }
+        // * IMultiplicativeIdentity
+        //   * TSelf MultiplicativeIdentity { get; }
+        // * INumberBase
+        //   * TSelf One { get; }
+        //   * TSelf Zero { get; }
+        // * ISignedNumber
+        //   * TSelf NegativeOne { get; }
+        //
+        // * IAdditionOperators
+        //   * TSelf operator +(TSelf, TSelf)
+        //   * TSelf operator checked +(TSelf, TSelf)
+        // * IDecrementOperators
+        //   * TSelf operator --(TSelf)
+        //   * TSelf operator checked --(TSelf)
+        // * IDivisionOperators
+        //   * TSelf operator /(TSelf, TSelf)
+        //   * TSelf operator checked /(TSelf, TSelf)
+        // * IIncrementOperators
+        //   * TSelf operator ++(TSelf)
+        //   * TSelf operator checked ++(TSelf)
+        // * IMultiplyOperators
+        //   * TSelf operator *(TSelf, TSelf)
+        //   * TSelf operator checked *(TSelf, TSelf)
+        // * ISubtractionOperators
+        //   * TSelf operator -(TSelf, TSelf)
+        //   * TSelf operator checked -(TSelf, TSelf)
+        // * IUnaryNegationOperators
+        //   * TSelf operator -(TSelf)
+        //   * TSelf operator checked -(TSelf)
+        // * IUnaryPlusOperators
+        //   * TSelf operator +(TSelf)
 
-    public struct Vector<T> : IVector<Vector<T>, T>
-    {
-    }
-
-    public struct Vector2 : IVector<Vector2, float>
-    {
-    }
-
-    public struct Vector3 : IVector<Vector3, float>
-    {
-    }
-
-    public struct Vector4 : IVector<Vector4, float>
-    {
+        // Implicitly implemented interfaces
+        // * IEqualityOperators
+        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
+        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
+        // * IEquatable                                                                     // Existing
+        //   * bool Equals(TSelf)                                                           // * Existing
+        // * IFormattable                                                                   // Existing
+        //   * string ToString(string?, IFormatProvider?)                                   // * Existing
+        // * INumberBase
+        //   * TSelf Abs(TSelf)
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsEvenInteger(TSelf)
+        //   * bool IsFinite(TSelf)                                                         // * Existing
+        //   * bool IsInfinity(TSelf)                                                       // * Existing
+        //   * bool IsInteger(TSelf)
+        //   * bool IsNaN(TSelf)                                                            // * Existing
+        //   * bool IsNegative(TSelf)                                                       // * Existing
+        //   * bool IsNegativeInfinity(TSelf)                                               // * Existing
+        //   * bool IsNormal(TSelf)                                                         // * Existing
+        //   * bool IsOddInteger(TSelf)
+        //   * bool IsPositive(TSelf)
+        //   * bool IsPositiveInfinity(TSelf)                                               // * Existing
+        //   * bool IsSignalingNaN(TSelf)
+        //   * bool IsSubnormal(TSelf)                                                      // * Existing
+        //   * bool IsZero(TSelf)
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
+        // * ISpanFormattable
+        //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)    // * Existing
     }
 }
 
@@ -5266,21 +5358,6 @@ namespace System.Runtime.InteropServices
         //   * TSelf TanPi(TSelf)                                                           // Approved - NYI
     }
 }
-
-namespace System.Runtime.Intrinsics
-{
-    public struct Vector64<T> : IVector<Vector64<T>, T>
-    {
-    }
-
-    public struct Vector128<T> : IVector<Vector128<T>, T>
-    {
-    }
-
-    public struct Vector256<T> : IVector<Vector256<T>, T>
-    {
-    }
-}
 ```
 
 ### Create and Conversion APIs explained
@@ -5660,6 +5737,147 @@ This leaves us with the `TryConvertFrom`/`TryConvertTo` pattern for the majority
 #### Why no `IConvertible<T, U>`, `IExplicitOperators<TSelf, TOther>`, or `IImplicitOperators<TSelf, TOther>`
 
 We could expose these, but they have the same general limitations as the `Create` APIs. Additionally, it vastly increases the number of interfaces implemented since there are 11 primitive integer types (`byte`, `char`, `short`, `int`, `long`, `nint`, `sbyte`, `ushort`, `uint`, `ulong`, and `nuint`), 3 primitive  floating-point types (`decimal`, `double`, and `float`), and some 6 other ABI primitive types (`Half`, `Int128`, `UInt128`, `NFloat`, `CLong`, and `CULong`). Supporting single-direction conversions for these requires at least 14 interfaces. Bi-directional doubles that to 24.
+
+### Future Considerations
+
+```
+namespace System.Numerics
+{
+    // IComplex and IVector would be nice to have but are not strictly required for .NET 7
+
+    public interface IComplex<TSelf, TScalar>
+        : IAdditionOperators<TSelf, TScalar, TSelf>,
+          IDivisionOperators<TSelf, TScalar, TSelf>,
+          IExponentialFunctions<TSelf>,
+          IHyperbolicFunctions<TSelf>,
+          ILogarithmicFunctions<TSelf>,
+          IMultiplyOperators<TSelf, TScalar, TComplex>,
+          INumberBase<TSelf>,
+          IPowerFunctions<TSelf>,
+          IRootFunctions<TSelf>,
+          ISubtractionOperators<TSelf, TScalar, TSelf>,
+          ITrigonometricFunctions<TSelf>
+    {
+        static abstract TScalar Imaginary { get; }
+
+        static abstract TScalar Magnitude { get; }
+
+        static abstract TScalar Phase { get; }
+
+        static abstract TScalar Real { get; }
+
+        new static abstract TScalar Abs(TSelf value);
+
+        static abstract TSelf Conjugate(TSelf value);
+
+        static abstract TSelf FromPolarCoordinates(TScalar magnitude, TScalar phase);
+
+        static abstract TSelf Log(TSelf x, TScalar newBase);
+
+        static abstract TSelf Pow(TSelf x, TScalar y);
+
+        static abstract TSelf Reciprocal(TSelf value);
+    }
+
+    public interface IVector<TSelf, TScalar>
+        : IAdditionOperators<TSelf, TSelf, TSelf>,
+          IAdditiveIdentity<TSelf, TSelf>,
+          IBitwiseOperators<TSelf, TSelf, TSelf>,
+          IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
+          IDivisionOperators<TSelf, TSelf, TSelf>,
+          IDivisionOperators<TSelf, TScalar, TSelf>,
+          IMultiplyOperators<TSelf, TSelf, TSelf>,
+          IMultiplicativeIdentity<TSelf, TSelf>,
+          IMultiplicativeIdentity<TSelf, TScalar>,
+          IMultiplyOperators<TSelf, TScalar, TSelf>,
+          IUnaryNegationOperators<TSelf, TSelf>,
+          ISpanFormattable,                     // implies IFormattable
+          ISubtractionOperators<TSelf, TSelf, TSelf>
+        where TSelf : IVector<TSelf, TScalar>
+    {
+        static abstract TSelf Create(TScalar value);
+        static abstract TSelf Create(TScalar[] values);
+        static abstract TSelf Create(TScalar[] values, int startIndex);
+        static abstract TSelf Create(ReadOnlySpan<TScalar> values);
+
+        static abstract TSelf AllBitsSet { get; }
+
+        static abstract int Count { get; }
+
+        static abstract TSelf One { get; }
+
+        static abstract TSelf Zero { get; }
+
+        TScalar this[int index] { get; }
+
+        static abstract TSelf Abs(TSelf value);
+        static abstract TSelf AndNot(TSelf left, TSelf right);
+        static abstract TSelf ConditionalSelect(TSelf condition, TSelf left, TSelf right);
+        static abstract TSelf Dot(TSelf left, TSelf right);
+        static abstract TSelf Max(TSelf left, TSelf right);
+        static abstract TSelf Min(TSelf left, TSelf right);
+        static abstract TSelf Sqrt(TSelf value);
+
+        static abstract TSelf Equals(TSelf left, TSelf right);
+        static abstract TSelf GreaterThan(TSelf left, TSelf right);
+        static abstract TSelf GreaterThanOrEqual(TSelf left, TSelf right);
+        static abstract TSelf LessThan(TSelf left, TSelf right);
+        static abstract TSelf LessThanOrEqual(TSelf left, TSelf right);
+
+        static abstract bool EqualsAll(TSelf left, TSelf right);
+        static abstract bool GreaterThanAll(TSelf left, TSelf right);
+        static abstract bool GreaterThanOrEqualAll(TSelf left, TSelf right);
+        static abstract bool LessThanAll(TSelf left, TSelf right);
+        static abstract bool LessThanOrEqualAll(TSelf left, TSelf right);
+
+        static abstract bool EqualsAny(TSelf left, TSelf right);
+        static abstract bool GreaterThanAny(TSelf left, TSelf right);
+        static abstract bool GreaterThanOrEqualAny(TSelf left, TSelf right);
+        static abstract bool LessThanAny(TSelf left, TSelf right);
+        static abstract bool LessThanOrEqualAny(TSelf left, TSelf right);
+
+        void CopyTo(TScalar[] destination);
+        void CopyTo(TScalar[] destination, int startIndex);
+        void CopyTo(Span<TScalar> destination);
+
+        bool TryCopyTo(Span<TScalar> destination);
+    }
+}
+
+namespace System.Numerics
+{
+    public struct Vector<T> : IVector<Vector<T>, T>
+    {
+    }
+
+    public struct Vector2 : IVector<Vector2, float>
+    {
+    }
+
+    public struct Vector3 : IVector<Vector3, float>
+    {
+    }
+
+    public struct Vector4 : IVector<Vector4, float>
+    {
+    }
+}
+
+namespace System.Runtime.Intrinsics
+{
+    public struct Vector64<T> : IVector<Vector64<T>, T>
+    {
+    }
+
+    public struct Vector128<T> : IVector<Vector128<T>, T>
+    {
+    }
+
+    public struct Vector256<T> : IVector<Vector256<T>, T>
+    {
+    }
+}
+```
 
 ### Pending Concepts
 
