@@ -76,6 +76,7 @@ Use update-index to regenerate it:
 | 2021 | [Make `System.Drawing.Common` only supported on Windows](accepted/2021/system-drawing-win-only/system-drawing-win-only.md) | [Santiago Fernandez Madero](https://github.com/safern) |
 | 2021 | [Objective-C interoperability](accepted/2021/objectivec-interop.md) | [Aaron Robinson](https://github.com/AaronRobinsonMSFT) |
 | 2021 | [Preview Features](accepted/2021/preview-features/preview-features.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Tanner Gooding](https://github.com/tannergooding), [David Wrighton](https://github.com/davidwrighton), [Mads Torgersen](https://github.com/MadsTorgersen), [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Streamline Windows Forms application configuration and bootstrap](accepted/2021/winforms/streamline-application-bootstrap.md) | [Igor Velikorossov](https://github.com/RussKie) |
 | 2021 | [TFM for .NET nanoFramework](accepted/2021/nano-framework-tfm/nano-framework-tfm.md) | [Immo Landwerth](https://github.com/terrajobst), [Laurent Ellerbach](https://github.com/Ellerbach), [José Simões](https://github.com/josesimoes) |
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
@@ -87,7 +88,6 @@ Use update-index to regenerate it:
 |----|-----|------|
 | 2021 | [Flexible HTTP APIs](accepted/2021/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
 | 2021 | [Improve UTF-8 support](accepted/2021/utf8/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
-| 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Tanner Gooding](https://github.com/tannergooding), [David Wrighton](https://github.com/davidwrighton), [Mads Torgersen](https://github.com/MadsTorgersen), [Immo Landwerth](https://github.com/terrajobst) |
 
 ## Proposals
 
