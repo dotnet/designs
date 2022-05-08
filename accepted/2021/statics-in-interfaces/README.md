@@ -206,6 +206,10 @@ interface "IMultiplicativeIdentity<TSelf, TResult>"
 interface "IMultiplyOperators<TSelf, TOther, TResult>"
 interface "INumber<TSelf>"
 interface "INumberBase<TSelf>"
+interface "INumberConverter<T, U>"
+interface "INumberConverterChecked<T, U>"
+interface "INumberConverterSaturating<T, U>"
+interface "INumberConverterTruncating<T, U>"
 interface "IPowerFunctions<TSelf>"
 interface "IRootFunctions<TSelf>"
 interface "IShiftOperators<TSelf, TOther, TResult>"
@@ -881,11 +885,11 @@ namespace System.Numerics
 
         public static virtual TSelf LeadingZeroCount(TSelf value)
         {
-            TSelf bitCount = TSelf.Create(value.GetByteCount() * 8L);
+            TSelf bitCount = TSelf.CreateChecked(value.GetByteCount() * 8L);
 
             if (value == Zero)
             {
-                return TSelf.Create();
+                return TSelf.CreateChecked();
             }
 
             return (bitCount - TSelf.One) ^ Log2(value);
@@ -895,13 +899,13 @@ namespace System.Numerics
 
         public static virtual TSelf RotateLeft(TSelf value, TSelf rotateAmount)
         {
-            TSelf bitCount = TSelf.Create(value.GetByteCount() * 8L);
+            TSelf bitCount = TSelf.CreateChecked(value.GetByteCount() * 8L);
             return (value << rotateAmount) | (value >> (bitCount - rotateAmount));
         }
 
         public static virtual TSelf RotateRight(TSelf value, TSelf rotateAmount)
         {
-            TSelf bitCount = TSelf.Create(value.GetByteCount() * 8L);
+            TSelf bitCount = TSelf.CreateChecked(value.GetByteCount() * 8L);
             return (value >> rotateAmount) | (value << (bitCount - rotateAmount));
         }
 
@@ -914,7 +918,7 @@ namespace System.Numerics
         long GetShortestBitLength()
         {
             long bitCount = (GetByteCount() * 8L);
-            return bitCount - long.Create(TSelf.LeadingZeroCount(this));
+            return bitCount - long.CreateChecked(TSelf.LeadingZeroCount(this));
         }
 
         bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten);
@@ -958,7 +962,7 @@ namespace System.Numerics
 
         static abstract bool IsPow2(TSelf value);
 
-        static abstract TSelf Log2(TSelf value);
+        static abstract TSelf Log2(TSelf value);        // "Conflicts" with ILogarithmicFunctions.Log2
     }
 
     public interface IDecimalFloatingPointIeee754<TSelf>
@@ -1192,26 +1196,6 @@ namespace System.Numerics
           ISpanParsable<TSelf>                  // implies IParsable<TSelf>
         where TSelf : INumber<TSelf>
     {
-        // For the Create methods, there is some concern over users implementing them. It is not necessarily trivial to take an arbitrary TOther
-        // and convert it into an arbitrary TSelf. If you know the type of TOther, you may be able to optimize in a few ways. Otherwise, you
-        // may have to fail and throw in the worst case.
-
-        public static virtual TSelf CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (!TryCreate(value, out TSelf result))
-            {
-                throw new OverflowException();
-            }
-            return result;
-        }
-
-        static abstract TSelf CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>;
-
-        static abstract TSelf CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>;
-
         // There is an open question on whether properties like IsSigned, IsBinary, IsFixedWidth, Base/Radix, and others are beneficial
         // We could expose them for trivial checks or users could be required to check for the corresponding correct interfaces
 
@@ -1419,9 +1403,6 @@ namespace System.Numerics
             return 0;
         }
 
-        static abstract bool TryCreate<TOther>(TOther value, out TSelf result)
-            where TOther : INumber<TOther>;
-
         static abstract bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out TSelf result);
 
         static abstract bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out TSelf result);
@@ -1447,6 +1428,78 @@ namespace System.Numerics
 
         // Alias for AdditiveIdentity
         static abstract TSelf Zero { get; }
+
+        public static TSelf CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            TSelf result;
+
+            if (TSelf.TryConvertFromChecked(value, out result))
+            {
+                return result;
+            }
+
+            if (TOther.TryConvertToChecked(value, out result))
+            {
+                return result;
+            }
+
+            throw new NotSupportedException();
+        }
+
+        static TSelf CreateSaturating<TOther>(TOther value)
+            where TOther : INumber<TOther>
+        {
+            TSelf result;
+
+            if (TSelf.TryConvertFromSaturating(value, out result))
+            {
+                return result;
+            }
+
+            if (TOther.TryConvertToSaturating(value, out result))
+            {
+                return result;
+            }
+
+            throw new NotSupportedException();
+        }
+
+        static TSelf CreateTruncating<TOther>(TOther value)
+            where TOther : INumber<TOther>
+        {
+            TSelf result;
+
+            if (TSelf.TryConvertFromTruncating(value, out result))
+            {
+                return result;
+            }
+
+            if (TOther.TryConvertToTruncating(value, out result))
+            {
+                return result;
+            }
+
+            throw new NotSupportedException();
+        }
+
+        protected static abstract bool TryConvertFromChecked<TOther>(TOther value, out TSelf? result)
+            where TOther : INumber<TOther>;
+
+        protected static abstract bool TryConvertFromSaturating<TOther>(TOther value, out TSelf? result)
+            where TOther : INumber<TOther>;
+
+        protected static abstract bool TryConvertFromTruncating<TOther>(TOther value, out TSelf? result)
+            where TOther : INumber<TOther>;
+
+        protected static abstract bool TryConvertToChecked<TOther>(TSelf value, out TOther? result)
+            where TOther : INumber<TOther>;
+
+        protected static abstract bool TryConvertToSaturating<TOther>(TSelf value, out TOther? result)
+            where TOther : INumber<TOther>;
+
+        protected static abstract bool TryConvertToTruncating<TOther>(TSelf value, out TOther? result)
+            where TOther : INumber<TOther>;
     }
 
     public interface ISignedNumber<TSelf>
@@ -1461,6 +1514,16 @@ namespace System.Numerics
         where TSelf : INumberBase<TSelf>, IUnsignedNumber<TSelf>
     {
         // It's not possible to check for lack of an interface in a constraint, so IUnsignedNumber<TSelf> is likely required
+    }
+}
+
+namespace System.Numerics
+{
+    public interface INumberConverter<T, U>
+        where T : INumber<T>
+        where U : INumber<U>
+    {
+        static abstract T Convert(U value);
     }
 }
 
@@ -1636,9 +1699,6 @@ namespace System
         //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -1659,9 +1719,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -1771,9 +1840,6 @@ namespace System
         //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -1794,9 +1860,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // ? Explicit
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // ? Explicit
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // ? Explicit
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // ? Explicit
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // ? Explicit
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)                          // ? Explicit
@@ -2047,9 +2122,6 @@ namespace System
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -2070,9 +2142,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -2236,9 +2317,6 @@ namespace System
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // * Existing
         //   * bool IsInfinity(TSelf)                                                       // * Existing
         //   * bool IsNaN(TSelf)                                                            // * Existing
@@ -2259,9 +2337,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -2459,9 +2546,6 @@ namespace System
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // * Existing
         //   * bool IsInfinity(TSelf)                                                       // * Existing
         //   * bool IsNaN(TSelf)                                                            // * Existing
@@ -2482,9 +2566,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -2628,9 +2721,6 @@ namespace System
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -2651,9 +2741,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -2766,9 +2865,6 @@ namespace System
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -2789,9 +2885,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -2904,9 +3009,6 @@ namespace System
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -2927,9 +3029,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -3034,9 +3145,6 @@ namespace System
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -3057,9 +3165,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -3167,9 +3284,6 @@ namespace System
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -3190,9 +3304,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -3305,9 +3428,6 @@ namespace System
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -3328,9 +3448,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -3486,9 +3615,6 @@ namespace System
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // * Existing
         //   * bool IsInfinity(TSelf)                                                       // * Existing
         //   * bool IsNaN(TSelf)                                                            // * Existing
@@ -3509,9 +3635,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -3750,9 +3885,6 @@ namespace System
         //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -3773,9 +3905,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -3885,9 +4026,6 @@ namespace System
         //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -3908,9 +4046,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -4020,9 +4167,6 @@ namespace System
         //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4043,9 +4187,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -4149,9 +4302,6 @@ namespace System
         //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4172,9 +4322,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -4280,9 +4439,6 @@ namespace System
         //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4303,9 +4459,18 @@ namespace System
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // * Existing
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // * Existing - Optional Args
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // * Existing
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // * Existing
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -4457,9 +4622,6 @@ namespace System.Runtime.InteropServices
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4480,9 +4642,18 @@ namespace System.Runtime.InteropServices
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -4585,9 +4756,6 @@ namespace System.Runtime.InteropServices
         //   * TSelf Abs(TSelf)                                                             // ? Explicit
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)                                                         // ? Explicit
         //   * bool IsInfinity(TSelf)                                                       // ? Explicit
         //   * bool IsNaN(TSelf)                                                            // ? Explicit
@@ -4608,9 +4776,18 @@ namespace System.Runtime.InteropServices
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -4754,9 +4931,6 @@ namespace System.Runtime.InteropServices
         //   * TSelf Abs(TSelf)
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
         //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
         //   * bool IsFinite(TSelf)
         //   * bool IsInfinity(TSelf)
         //   * bool IsNaN(TSelf)
@@ -4777,9 +4951,18 @@ namespace System.Runtime.InteropServices
         //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
         //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
         //   * int Sign(TSelf)
-        //   * bool TryCreate(TOther, out TSelf)
         //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
         //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
+        // * INumberBase
+        //   * TSelf CreateChecked(TOther)
+        //   * TSelf CreateSaturating(TOther)
+        //   * TSelf CreateTruncating(TOther)
+        //   * bool TryConvertFromChecked(TOther, out TSelf)
+        //   * bool TryConvertFromSaturating(TOther, out TSelf)
+        //   * bool TryConvertFromTruncating(TOther, out TSelf)
+        //   * bool TryConvertToChecked(TOther, out TSelf)
+        //   * bool TryConvertToSaturating(TOther, out TSelf)
+        //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -4829,6 +5012,384 @@ namespace System.Runtime.Intrinsics
     }
 }
 ```
+
+### Create and Conversion APIs explained
+
+For number creation and conversion, we have three different scenarios to consider.
+
+You have types like `Int32` which can know about other types in the same assembly, such as `Int64`. But which can't know about other types in deriving assemblies, such as `BigInteger`. This scenario is simple as you can directly check for the relevant types and do the conversions. It is possible to utilize things like `internal` to expose details allowing fast conversions and the biggest question ends up being whether to expose the conversions on type `A`, type `B`, or splitting between both.
+
+You have types like `BigInteger` which can know about other types in the same assembly, such as `Complex`, and types in its dependencies, such as `Int32` or `Int64`. It again can't know about other types in deriving assemblies or in completely unrelated assemblies. This scenario is likewise simple with the main difference is you likely don't have access to internals and both conversions need to be exposed on type `B`.
+
+Finally you have types that exist in two parallel assemblies where neither depends on the other. Imagine, for example, two standalone NuGet packages one providing a `Float128` and the other providing a `Rational` number type. This scenario is decently complex because the only way to get conversions is for one assembly to depend on the other (there-by becoming scenario 2) or for some third assembly to depend on both and provide the conversions itself.
+
+#### Scenario 1
+
+The first scenario leads to a design that looks like this.
+
+```csharp
+interface INumber<TSelf>
+    where TSelf : INumber<TSelf>
+{
+    public static TSelf Create<TOther>(TOther value)
+            where TOther : INumber<TOther>
+    {
+        if (!TryCreate(value, out TSelf result))
+        {
+            throw new NotSupportedException();
+        }
+        return result;
+    }
+
+    static abstract bool TryCreate<TOther>(TOther value, out TSelf? result)
+        where TOther : INumber<TOther>;
+}
+
+struct Int32 : INumber<int>
+{
+    public static bool TryCreate<TOther>(TOther value, out int result)
+        where TOther : INumber<TOther>
+    {
+        if (typeof(TOther) == typeof(int))
+        {
+            int actualValue = (int)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(long))
+        {
+            long actualValue = (long)(object)(value!);
+            result = (int)(actualValue);
+            return true;
+        }
+
+        return false;
+    }
+}
+
+struct Int64 : INumber<long>
+{
+    public static bool TryCreate<TOther>(TOther value, out long result)
+        where TOther : INumber<TOther>
+    {
+        if (typeof(TOther) == typeof(int))
+        {
+            int actualValue = (int)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(long))
+        {
+            long actualValue = (long)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        return false;
+    }
+}
+```
+
+It runs into the mentioned issues where the conversion fails if `TOther` is unrecognized, such as `BigInteger`:
+```csharp
+struct BigInteger : INumber<BigInteger>
+{
+    public static bool TryCreate<TOther>(TOther value, out BigInteger result)
+        where TOther : INumber<TOther>
+    {
+        if (typeof(TOther) == typeof(int))
+        {
+            int actualValue = (int)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(long))
+        {
+            long actualValue = (long)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(BigInteger))
+        {
+            BigInteger actualValue = (BigInteger)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        return false;
+    }
+}
+```
+
+There is also a nuance that this can cause "generic code explosion" and that the size of the methods become quite large, which can negatively impact JIT throughput, inlining, and other behavior.
+
+There is an additional problem where this actually happens 3 times. Once for `checked` (throw on overflow), once for `saturating` (clamp to Min/Max value), and once for `truncating` (take lowest n-bits).
+
+The code is used as follows:
+```csharp
+public static TResult Sum<T, TResult>(IEnumerable<T> values)
+    where T : INumber<T>
+    where TResult : INumber<TResult>
+{
+    TResult result = TResult.Zero;
+
+    foreach (var value in values)
+    {
+        result += TResult.Create(value);
+    }
+
+    return result;
+}
+```
+
+#### Scenario 2
+
+The second scenario needs to support `TOther` providing a conversion and so the design ends up changing a bit.
+
+```csharp
+interface INumber<TSelf>
+    where TSelf : INumber<TSelf>
+{
+    public static TSelf Create<TOther>(TOther value)
+            where TOther : INumber<TOther>
+    {
+        if (!TryCreate(value, out TSelf result))
+        {
+            throw new NotSupportedException();
+        }
+        return result;
+    }
+
+    public static bool TryCreate<TOther>(TOther value, out TSelf? result)
+        where TOther : INumber<TOther>
+    {
+        return TSelf.TryConvertFrom(value, out result)
+            || TOther.TryConvertTo(value, out result);
+    }
+
+
+}
+
+struct Int32 : INumber<int>
+{
+    protected static bool TryConvertFrom<TOther>(TOther value, out int result)
+        where TOther : INumber<TOther>
+    {
+        if (typeof(TOther) == typeof(int))
+        {
+            int actualValue = (int)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(long))
+        {
+            long actualValue = (long)(object)(value!);
+            result = (int)(actualValue);
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+
+    protected static bool TryConvertTo<TOther>(int value, out TOther? result)
+        where TOther : INumber<TOther>
+    {
+        if (typeof(TOther) == typeof(int))
+        {
+            int actualResult = value;
+            result = (TOther)(object)(actualResult);
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(long))
+        {
+            long actualResult = value;
+            result = (TOther)(object)(actualResult);
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+}
+
+struct Int64 : INumber<long>
+{
+    protected static bool TryConvertFrom<TOther>(TOther value, out long result)
+        where TOther : INumber<TOther>
+    {
+        if (typeof(TOther) == typeof(int))
+        {
+            int actualValue = (int)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(long))
+        {
+            long actualValue = (long)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+
+    protected static bool TryConvertTo<TOther>(long value, out TOther? result)
+        where TOther : INumber<TOther>
+    {
+        if (typeof(TOther) == typeof(int))
+        {
+            int actualResult = (int)(value);
+            result = (TOther)(object)(actualResult);
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(long))
+        {
+            long actualResult = value;
+            result = (TOther)(object)(actualResult);
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+}
+```
+
+This also then allows creating a `Int32` or `Int64` from a `BigInteger`:
+```csharp
+struct BigInteger : INumber<BigInteger>
+{
+    protected static bool TryConvertFrom<TOther>(TOther value, out BigInteger result)
+        where TOther : INumber<TOther>
+    {
+        if (typeof(TOther) == typeof(int))
+        {
+            int actualValue = (int)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(long))
+        {
+            long actualValue = (long)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(BigInteger))
+        {
+            BigInteger actualValue = (BigInteger)(object)(value!);
+            result = actualValue;
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+
+    protected static bool TryConvertTo<TOther>(BigInteger value, out TOther? result)
+        where TOther : INumber<TOther>
+    {
+        if (typeof(TOther) == typeof(int))
+        {
+            int actualResult = (int)(value);
+            result = (TOther)(object)(actualResult);
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(long))
+        {
+            long actualResult = (long)(value);
+            result = (TOther)(object)(actualResult);
+            return true;
+        }
+
+        if (typeof(TOther) == typeof(BigInteger))
+        {
+            BigInteger actualResult = value;
+            result = (TOther)(object)(actualResult);
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+}
+```
+
+There is still the downside that two types living in different assemblies can't convert between eachother. There is likewise a new downside in that the amount of code you have to write/maintain effectively doubles, with much of it being duplicate.
+
+The same nuance around "generic code explosion" still exists, as does the potential negative impact on JIT throughput, inlining, etc. Additionally, there is a nuance that `TryConvertFrom` and `TryConvertTo` must be "self-contained". That is, they cannot themselves defer to `TOther` for anything or they'll risk introducing a cycle in the logic and causing a `StackOverflowException`.
+
+The same additional problem where this actually happens 3 times. Once for `checked` (throw on overflow), once for `saturating` (clamp to Min/Max value), and once for `truncating` (take lowest n-bits) still exists.
+
+The usage code remains the same.
+```csharp
+public static TResult Sum<T, TResult>(IEnumerable<T> values)
+    where T : INumber<T>
+    where TResult : INumber<TResult>
+{
+    TResult result = TResult.Zero;
+
+    foreach (var value in values)
+    {
+        result += TResult.Create(value);
+    }
+
+    return result;
+}
+```
+
+#### Scenario 3
+
+This brings us to the third scenario and needing some way to allow conversion between types that know nothing of eachother.
+
+```csharp
+interface INumberConverter<T, U>
+    where T : INumber<T>
+    where U : INumber<U>
+{
+    static abstract T Convert(U value);
+}
+```
+
+This would allow the usage code to become:
+```csharp
+public static TResult Sum<T, TResult, TConverter>(IEnumerable<T> values)
+    where T : INumber<T>
+    where TResult : INumber<TResult>
+    where TConverter : INumberConverter<TResult, T>
+{
+    TResult result = TResult.Zero;
+
+    foreach (var value in values)
+    {
+        result += TConverter.Convert(value);
+    }
+
+    return result;
+}
+```
+
+There are upsides and downsides to this last approach. The consumer of the API is able to provide the conversion behavior and decide if it should `throw`, `saturate`, or `truncate` on `overflow`, which may be undesirable to the implementor. We could expose (instead of or in addition to `INumberConverter<T, U>`) `ICheckedNumberConverter<T, U>`, `ISaturatingNumberConverter<T, U>`, and `ITruncatingNumberConverter<T, U>` to allow enforcement of a conversion behavior.
+
+Since C#/.NET don't have higher kinded types or associated types, we can't expose some non-generic variant that defers to the generic variant. We likewise can't easily expose a way to get an instance of the "default" number converter.
+
+This leaves us with the `TryConvertFrom`/`TryConvertTo` pattern for the majority of scenarios, with the ability for that to "fallback" to `IBinaryInteger.TryWriteLittleEndian`, `IFloatingPoint.TryWriteExponentLittleEndian`, and `IFloatingPoint.TryWriteSignificandLittleEndian` for some subset of completely unknown types. It also leaves us with having `INumberConverter<T, U>` on top so that API implementors and consumers have a "path forward" when they are dealing with otherwise completely unrelated types.
+
+#### Why no `IConvertible<T, U>`, `IExplicitOperators<TSelf, TOther>`, or `IImplicitOperators<TSelf, TOther>`
+
+We could expose these, but they have the same general limitations as the `Create` APIs. Additionally, it vastly increases the number of interfaces implemented since there are 11 primitive integer types (`byte`, `char`, `short`, `int`, `long`, `nint`, `sbyte`, `ushort`, `uint`, `ulong`, and `nuint`), 3 primitive  floating-point types (`decimal`, `double`, and `float`), and some 6 other ABI primitive types (`Half`, `Int128`, `UInt128`, `NFloat`, `CLong`, and `CULong`). Supporting single-direction conversions for these requires at least 14 interfaces. Bi-directional doubles that to 24.
 
 ### Pending Concepts
 
