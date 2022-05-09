@@ -107,7 +107,7 @@ Jeff copies this code into his project and is now able to calculate the standard
 
 After thinking over the possible implementations, Jeff realizes that the only reliable way to implement this in .NET 5 is to define an interface with instance methods that users must then implement on their own types or to hardcode a list of types in their own library. They do not believe this to be as reusable or maintainable as hoped.
 
-Jeff learns that a future version of .NET will offer a new feature called static abstracts in interfaces. Such a feature will have the .NET Libraries expose a set of interfaces that allow Jeff to implement the desired method without requiring users types to take a dependency on types they declared.
+Jeff learns that a future version of .NET will offer a new feature called static abstracts in interfaces. Such a feature will have the .NET Libraries expose a set of interfaces that allow Jeff to implement the desired method without requiring users' types to take a dependency on types they declared.
 
 The .NET Libraries are exposing interfaces such as (NOTE: simplified names/examples are given below):
 ```csharp
@@ -490,7 +490,7 @@ class "ValueType"
 
 ### Base Interfaces
 
-The base interfaces each describe one or more core operations that are used to build up the core interfaces listed later. In many cases, such as for addition, subtraction, multiplication, and division, there is only a single operator per interface. This split is important in order for them to be reusable against downstream types, like `DateTime` where addition does not imply subtraction or `Matrix` where multiplication does not imply division. These interfaces are not expected to be used by many users and instead primarily by developers looking at defining their own abstractions, as such we are not concerned with adding simplifying interfaces like `IAdditionOperators<TSelf> : IAdditionOperators<TSelf, TSelf>`. Likewise, every interface added introduces increased size and startup overhead, so we need to strike a balance between expressiveness, exxtensibility, and cost.
+The base interfaces each describe one or more core operations that are used to build up the core interfaces listed later. In many cases, such as for addition, subtraction, multiplication, and division, there is only a single operator per interface. This split is important in order for them to be reusable against downstream types, like `DateTime` where addition does not imply subtraction or `Matrix` where multiplication does not imply division. These interfaces are not expected to be used by many users and instead primarily by developers looking at defining their own abstractions, as such we are not concerned with adding simplifying interfaces like `IAdditionOperators<TSelf> : IAdditionOperators<TSelf, TSelf>`. Likewise, every interface added introduces increased size and startup overhead, so we need to strike a balance between expressiveness, extensibility, and cost.
 
 Some of the code below assumes that https://github.com/dotnet/csharplang/issues/4665 is going to be accepted into the language. If it is not accepted or if the approved syntax differs, the declarations will need to be updated.
 
@@ -555,7 +555,7 @@ namespace System.Numerics
         // Given this takes two generic parameters, we could simply call it IComparable<TSelf, TOther>
 
         // This inherits from IEqualityOperators<TSelf, TOther> as even though IComparable<T> does not
-        // inherit from IEquatable<T>, the <= and >= operators as well as CompareTo iTSelf imply equality
+        // inherit from IEquatable<T>, the <= and >= operators as well as CompareTo itself imply equality
 
         static abstract bool operator <(TSelf left, TOther right);
 
