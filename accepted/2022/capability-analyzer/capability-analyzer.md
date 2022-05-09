@@ -1,6 +1,6 @@
 # Capability APIs
 
-**PM** [Immo Landwerth](https://github.com/terrajobst)
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 *This is a revamped version of a [previous draft](https://github.com/dotnet/designs/pull/111).*
 
