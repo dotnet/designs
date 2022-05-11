@@ -269,9 +269,7 @@ interface "IUnsignedNumber<TSelf>"
 class "BigInteger"
 class "Byte"
 class "Char"
-class "CLong"
 class "Complex"
-class "CULong"
 class "DateOnly"
 class "DateTime"
 class "DateTimeOffset"
@@ -307,21 +305,11 @@ class "ValueType"
 "IUnsignedNumber<TSelf>"                        <|-- "Byte"
 "ValueType"                                     <|-- "Byte"
 
-"IBinaryInteger<TSelf>"                         <|-- "CLong"
-"IMinMaxValue<TSelf>"                           <|-- "CLong"
-"IUnsignedNumber<TSelf>"                        <|-- "CLong"
-"ValueType"                                     <|-- "CLong"
-
 "IBinaryInteger<TSelf>"                         <|-- "Char"
 "IConvertible"                                  <|-- "Char"
 "IMinMaxValue<TSelf>"                           <|-- "Char"
 "IUnsignedNumber<TSelf>"                        <|-- "Char"
 "ValueType"                                     <|-- "Char"
-
-"IBinaryInteger<TSelf>"                         <|-- "CULong"
-"IMinMaxValue<TSelf>"                           <|-- "CULong"
-"IUnsignedNumber<TSelf>"                        <|-- "CULong"
-"ValueType"                                     <|-- "CULong"
 
 "IAdditionOperators<TSelf, TOther, TResult>"    <|-- "Complex"
 "IDivisionOperators<TSelf, TOther, TResult>"    <|-- "Complex"
@@ -486,7 +474,7 @@ class "ValueType"
 @enduml
 -->
 
-![UML](http://www.plantuml.com/plantuml/svg/h9ZFKjiy4C3lVefCpd3u-2ZjWUcq12YP0PB1SU-Ait5KPCcLLe0xVVWcWR6mx2Xh1oxCIgkVzu-YNUcRGQRHvYBY4a4lMGg3uNYaye9fDXSmt35-FllgJyadqCWRQox1WEPCy3yCkP8Z9iISfOzrfQlVbc4hzrhfd24sRPaoRLvNn22MtghuxPFDPN71fC-iJJQuDOtlYmNVk34fG3DKshog7Grc4ro1Nlz_06C5hjSrbpt1U04IEPRLgbRj2owPBg-5OiXbDbLSuXW0FdywTSusrCSI8GCTqBYt-Nod0Zvp0oIl_Et0pSvmUFgNa6h8GQAdxgln9sveCVRtaE1OqcovUYcKt2I3YMihqqrEswsffI6WGKZKJLc0dYl1q_0dnv8KfrkLCSrnbU_ZtN5vnrv-Cc6XVLujhB2cOxplraEy43nbn9tjrfGTF-NjtERK1JCGc7uxd3Q8eq4ILXcj87s41K4pPcZrDlC4vPcsCjsfF5NFeCD9V50AmnhnYY-nOsHZdabO1E8RspbgblOuysQQPqgg753lsw39zdY2ZBL_niUxDLDX3LdVjFaQjP-EWvr_vt-FZsbdTFXaw4i-t6Y_Kf1t3WKMTIWcFittPysYEZZOoufgRKqGus348kTtHX-89jIrlkZ8wxj84I4Lshw9Qw-rxQTKJrWKBlq16lsNxiDwCOFjGazck6VeosmlNeVvtgnsXySpN93wC2FI3wq9RHnpz9OtGA7tSG5R_8ug4FSGnRzd1HbXYdyXwqg9kjpQF8pNMH8kSiwQ82bm6N880ebK8CYaiVmecuYN0pgfF3ntdLhP08dKUvBYHEvyzvBMAFglpQ6Qpo5HysM536e-dQI26JCONl3ihKySLaCbGYMCLamxuLR9p4agBmIyE3cfJLyoX8aKPMrWndDe34oMImFeXY7bEHDELdOktAehQVDA-67veX9kc5XMmbZYVsVlfVzFtajdfpNDao_lnIawd--tPQOI9_DVa3enhWKhvZ8JJjpujWb-DP3KZKhgLYLrinBFhiGpRFjeC2kBpSxmMdvYLNQvftTo0O8poDEb4VgxiKr1_PsJ_Fb_fTf1gkf048RHULRb7YGxq9awS_z2u818XEQh1Pn-h_zR9btLEUpf76RPdhUlIpP4nhQm_8JRZk6qPRZi6KwRzX0B5SA6lDWI5rlIOdjOUoyHEc-QJjkcux7I-yoXltC7eyZBCH-FXocy9e_7jijPeLOTNziRlZOsVCsFpxNhA1KQ8PvFVq2-FcNvNW3ypmrZ-FTh0V6rWFZo--Lh0VB30dIMdvQXLMR5Q9N_DzqBaLXbL9XMcPMdLMP5QfLPgLfbLh1McPQjLThJHySPAmMFmsOyLXWUImlFVm5yMxaUOtdDVNjjq2qvkkwSJhTNnXXjswm7GB1XosnwAXlLX2SN6vvNRDam6qlRE2gK9Xl-qspi_epDIbt2QSjm6aJ1AJ0u9cQqM1A3Ss9mIGmkYS4jCUFNc1YS4eDBOd1938w96GNNoEYM6Pr2erDgT8pDnBnkd8uRfyEfZ6wnqUd5vSgZLXlTGgVBnkbSBzT-bG2NRSEnrE0G6PnBnOrNZ8nkcT5fttGypHvTPvzOydbYoTTJCL_xTxx6p-U1aylLEchYwv29hzS5V2yWldtImTVx2huMCDyBcEy5p9TFFVZwqGdVVq1yVDdjlTMZSwz7jrj2kWL7zzXwlqVdsEWQMs_vw1vRR_he71jTO-jz7zrZctH-U0yEhydrvW_lsVNs3-yT7Dwpmrjs-EQBjINCVtzSThc_Rk_dumC0)
+![UML](http://www.plantuml.com/plantuml/svg/h9XHKzim383VyojwVOQ7CSRsmEqs2epU3TeZxTxTL4qz7BkpPI2x_VYHmZd4JesIqfUUREcBB3cMd6y6cKPRY8HB1BrY6Go6uv4gDaopXO3XZl7JsLT_Ijw3HXxOd8C1pPdWVnbo9KTCY0NBxffA5tyimrRkfT85GmnzcJ9jdYrI42lFAdrvP6YMRfZqcCt9WDlG-BvSycePamreXagRPxM3mMo2Qz1F_xTWhC0dkz3i7iPBaCYnT5QjscTSCbrU2iMGotogkCGn07p-TEoS2jN74Y477T6uiSLYfm8-S0EaLVdRWPkTuV3qpo7JK814JzrNu_VSq6Bixo71iQJvSl6uKR9A1XENLcPLJjkzQQGXea58r5Mv0RrGWcVnHuubAKu_LSuqntNn5k-Qosls-8i92-tpQcc5DHtZVMq5yetW6QFkR6TJTdoKltE3gJDc83BzSZXLY8F1FAuoMaDs1qk2PihGwctc2SepRMMsKtcg7a37atYh5COrqZLVOSV8fZoNi8p4DxKBr2phSURDDC-LL0MWVck3phV74-IizJ4XtjbCXJLaVTEsrgJzT1pi_9t-EpoadT7naw4lUN-d_Kf1tZaKMDAXc8GqBpd-cp-8_wAifD7Mn3aEHYnoVcVqZcX2NUkBJho-YnWHGg7jcxZsMjj-IlM49V7I7wSHttGVrfCPQHTwCsCzGrzcU_7QR-rXjTi_dl62r8UPa5wq41eSS_IMDqAXzt4HNxoEAXxt2CM_PyKOSOf_8UjAIRhSsZoCrraIBdBEcJWfSXbo21A9NY08fB5yBv-8bmCwgTmtTnrRsIY9q7iIuqJiVDyaFQ7eRrkD2Z-79E6N5J8e_7II2MRCO7Z6yvS-SUY6IWGdZDQidgbEL06FJZvd21CfoiR0Z1SG34nMAmDO3qF62oPgMTc5gAqkf2sSyCFofHEkc5WvOIpnmybhwUFHQ-dakA5vzEMrE4Njn9jj9N7YPF4RibfC6_58kSn5BLPhg-Bh1kPDf-PDh-PDj-QUNtFFiUrtWLcvgPBlTVN4mbkdDzwi4GcrGvvkZF2_L3ksKHW8mZ2QKnKz83g03CZe7n4y6O6HLjyKyFPkVyRspjZR2d4RId8RPQvVIEpkg6NPxdUe2pP4niQmNB8XB3Q4nPQms18McyyIRcbEUfrx6WOUptPulBJn-036yy-6nwEwXqyjLxuUYVbw6EPhVdmkVS_cUdZUVFe1-NnZvti1y5zlfSBVhmN4rmBYo_NBzmBaXmNeS3WhGwlCYj4g_z-EBaHYbL5XMcLMdbQP5QbLPgLgbLd1McLQjbQfTnyjJAmKl0qeyLfXU2ejFFy2-67bbSgFrosc7uvkoT5jvtHyuw4l3jjcmoo2JLjcsnbFxn_kN6ouNx5jmsmgRVEDK9fi-gVPrd2QmuIwXEEMuT3-m2amE2PcLbKIWrDYS4eCJed1CJ7pl98Od1A3Ks9mIWoEYPbvjiZebXdTGgDRQdICpMouRPpE6wV3gOokiT7fmMM6tggDRg7JRUDqhfTJdat3QTjmAZKuHGR7Kl4A9KL6jypel6ywdcRVNMUVMF9zOidNKp5V-tS-ni_tYQUtTNNKnDSX4r_VDl2rWFZw6G1VNtVmjO3vMi1yBM2-VXx0rmyL-7u1yV5XT-wj7frxFRgyOAHhS7IFBVTxT8sDxh7rbe_kiUMcZwwnqJsstlVHWzXwvuVduF2UN6_-y9vTR__mti7XCJkyPwS5z0dK4kO_lrOwNX-Nv_ts0W00)
 
 ### Base Interfaces
 
@@ -870,7 +858,7 @@ namespace System.Numerics
         // The `rotateAmount` and `shiftAmount` parameters have similar considerations.
         //
         // Finally, variable sized types may return different results on different platforms.
-        // Consider for example `nint`, `nuint`, `CLong`, and `CULong` where `LeadingZeroCount(5)`
+        // Consider for example `nint` and `nuint` where `LeadingZeroCount(5)`
         // returns a different result based on if we're on a 32-bit or 64-bit system. A user
         // could likewise implement `BigInteger` such that it is represented via a `nuint[]`.
         //
@@ -5002,296 +4990,6 @@ namespace System.Numerics
 
 namespace System.Runtime.InteropServices
 {
-    public struct CLong
-        : IBinaryInteger<CLong>,
-          IMinMaxValue<CLong>,
-          ISignedNumber<CLong>
-    {
-        // Explicitly implemented interfaces
-        // * IAdditiveIdentity
-        //   * TSelf AdditiveIdentity { get; }
-        // * IMultiplicativeIdentity
-        //   * TSelf MultiplicativeIdentity { get; }
-        // * INumberBase
-        //   * One { get; }
-        //   * Zero { get; }
-        // * ISignedNumber
-        //   * TSelf NegativeOne { get; }
-
-        // Implicitly Implemented interfaces
-        // * IMinMaxValue
-        //   * TSelf MaxValue { get; }
-        //   * TSelf MinValue { get; }
-        //
-        // * IAdditionOperators
-        //   * TSelf operator +(TSelf, TSelf)
-        //   * TSelf operator checked +(TSelf, TSelf)
-        // * IBitwiseOperators
-        //   * TSelf operator &(TSelf, TSelf)
-        //   * TSelf operator |(TSelf, TSelf)
-        //   * TSelf operator ^(TSelf, TSelf)
-        //   * TSelf operator ~(TSelf)
-        // * IComparisonOperators
-        //   * bool operator <(TSelf, TSelf)
-        //   * bool operator <=(TSelf, TSelf)
-        //   * bool operator >(TSelf, TSelf)
-        //   * bool operator >=(TSelf, TSelf)
-        // * IDecrementOperators
-        //   * TSelf operator --(TSelf)
-        //   * TSelf operator checked --(TSelf)
-        // * IDivisionOperators
-        //   * TSelf operator /(TSelf, TSelf)
-        //   * TSelf operator checked /(TSelf, TSelf)
-        // * IIncrementOperators
-        //   * TSelf operator ++(TSelf)
-        //   * TSelf operator checked ++(TSelf)
-        // * IModulusOperators
-        //   * TSelf operator %(TSelf, TSelf)
-        // * IMultiplyOperators
-        //   * TSelf operator *(TSelf, TSelf)
-        //   * TSelf operator checked *(TSelf, TSelf)
-        // * IShiftOperators
-        //   * TSelf operator <<(TSelf, TSelf)
-        //   * TSelf operator >>(TSelf, TSelf)
-        //   * TSelf operator >>>(TSelf, TSelf)
-        //   * TSelf operator <<(TSelf, int)
-        //   * TSelf operator >>(TSelf, int)
-        //   * TSelf operator >>>(TSelf, int)
-        // * ISubtractionOperators
-        //   * TSelf operator -(TSelf, TSelf)
-        //   * TSelf operator checked -(TSelf, TSelf)
-        // * IUnaryNegationOperators
-        //   * TSelf operator -(TSelf)
-        //   * TSelf operator checked -(TSelf)
-        // * IUnaryPlusOperators
-        //   * TSelf operator +(TSelf)
-        //
-        // * IBinaryInteger
-        //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * int GetShortestByteCount()                                                   // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
-        //   * TSelf LeadingZeroCount(TSelf)
-        //   * TSelf PopCount(TSelf)
-        //   * TSelf RotateLeft(TSelf, int)
-        //   * TSelf RotateRight(TSelf, int)
-        //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
-        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
-        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
-        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
-        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
-        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
-        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
-        // * IBinaryNumber
-        //   * bool IsPow2(TSelf)
-        //   * TSelf Log2(TSelf)
-        // * IComparable
-        //   * int CompareTo(object?)
-        //   * int CompareTo(TSelf)
-        // * IEqualityOperators
-        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
-        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
-        // * IEquatable                                                                     // Existing
-        //   * bool Equals(TSelf)                                                           // * Existing
-        // * IFormattable
-        //   * string ToString(string?, IFormatProvider?)
-        // * INumber
-        //   * TSelf Clamp(TSelf, TSelf, TSelf)
-        //   * TSelf CopySign(TSelf, TSelf)
-        //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
-        //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
-        //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
-        //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
-        //   * int Sign(TSelf)
-        //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
-        //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
-        // * INumberBase
-        //   * TSelf Abs(TSelf)
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
-        //   * bool IsCanonical(TSelf)
-        //   * bool IsEvenInteger(TSelf)
-        //   * bool IsFinite(TSelf)                                                         // ? Explicit
-        //   * bool IsInfinity(TSelf)                                                       // ? Explicit
-        //   * bool IsInteger(TSelf)                                                        // ? Explicit
-        //   * bool IsNaN(TSelf)                                                            // ? Explicit
-        //   * bool IsNegative(TSelf)
-        //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
-        //   * bool IsNormal(TSelf)                                                         // ? Explicit
-        //   * bool IsOddInteger(TSelf)
-        //   * bool IsPositive(TSelf)
-        //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
-        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
-        //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
-        //   * bool IsZero(TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
-        //   * TSelf MinMagnitude(TSelf, TSelf)
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
-        //   * bool TryConvertFromChecked(TOther, out TSelf)
-        //   * bool TryConvertFromSaturating(TOther, out TSelf)
-        //   * bool TryConvertFromTruncating(TOther, out TSelf)
-        //   * bool TryConvertToChecked(TOther, out TSelf)
-        //   * bool TryConvertToSaturating(TOther, out TSelf)
-        //   * bool TryConvertToTruncating(TOther, out TSelf)
-        // * IParsable
-        //   * TSelf Parse(string, IFormatProvider?)
-        //   * bool TryParse(string?, IFormatProvider?, out TSelf)
-        // * ISpanFormattable
-        //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)
-        // * ISpanParsable
-        //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
-        //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
-    }
-
-    public struct CULong
-        : IBinaryInteger<CULong>,
-          IMinMaxValue<CULong>,
-          IUnsignedNumber<CULong>
-    {
-        // Explicitly implemented interfaces
-        // * IAdditiveIdentity
-        //   * TSelf AdditiveIdentity { get; }
-        // * IMultiplicativeIdentity
-        //   * TSelf MultiplicativeIdentity { get; }
-        // * INumberBase
-        //   * One { get; }
-        //   * Zero { get; }
-
-        // Implicitly Implemented interfaces
-        // * IMinMaxValue
-        //   * TSelf MaxValue { get; }
-        //   * TSelf MinValue { get; }
-        //
-        // * IAdditionOperators
-        //   * TSelf operator +(TSelf, TSelf)
-        //   * TSelf operator checked +(TSelf, TSelf)
-        // * IBitwiseOperators
-        //   * TSelf operator &(TSelf, TSelf)
-        //   * TSelf operator |(TSelf, TSelf)
-        //   * TSelf operator ^(TSelf, TSelf)
-        //   * TSelf operator ~(TSelf)
-        // * IComparisonOperators
-        //   * bool operator <(TSelf, TSelf)
-        //   * bool operator <=(TSelf, TSelf)
-        //   * bool operator >(TSelf, TSelf)
-        //   * bool operator >=(TSelf, TSelf)
-        // * IDecrementOperators
-        //   * TSelf operator --(TSelf)
-        //   * TSelf operator checked --(TSelf)
-        // * IDivisionOperators
-        //   * TSelf operator /(TSelf, TSelf)
-        //   * TSelf operator checked /(TSelf, TSelf)
-        // * IIncrementOperators
-        //   * TSelf operator ++(TSelf)
-        //   * TSelf operator checked ++(TSelf)
-        // * IModulusOperators
-        //   * TSelf operator %(TSelf, TSelf)
-        // * IMultiplyOperators
-        //   * TSelf operator *(TSelf, TSelf)
-        //   * TSelf operator checked *(TSelf, TSelf)
-        // * IShiftOperators
-        //   * TSelf operator <<(TSelf, TSelf)
-        //   * TSelf operator >>(TSelf, TSelf)
-        //   * TSelf operator >>>(TSelf, TSelf)
-        //   * TSelf operator <<(TSelf, int)
-        //   * TSelf operator >>(TSelf, int)
-        //   * TSelf operator >>>(TSelf, int)
-        // * ISubtractionOperators
-        //   * TSelf operator -(TSelf, TSelf)
-        //   * TSelf operator checked -(TSelf, TSelf)
-        // * IUnaryNegationOperators
-        //   * TSelf operator -(TSelf)
-        //   * TSelf operator checked -(TSelf)
-        // * IUnaryPlusOperators
-        //   * TSelf operator +(TSelf)
-        //
-        // * IBinaryInteger
-        //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
-        //   * TSelf LeadingZeroCount(TSelf)
-        //   * TSelf PopCount(TSelf)
-        //   * TSelf RotateLeft(TSelf, int)
-        //   * TSelf RotateRight(TSelf, int)
-        //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
-        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
-        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
-        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
-        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
-        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
-        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
-        // * IBinaryNumber
-        //   * bool IsPow2(TSelf)
-        //   * TSelf Log2(TSelf)
-        // * IComparable
-        //   * int CompareTo(object?)
-        //   * int CompareTo(TSelf)
-        // * IEqualityOperators
-        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
-        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
-        // * IEquatable                                                                     // Existing
-        //   * bool Equals(TSelf)                                                           // * Existing
-        // * IFormattable
-        //   * string ToString(string?, IFormatProvider?)
-        // * INumber
-        //   * TSelf Clamp(TSelf, TSelf, TSelf)
-        //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
-        //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
-        //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
-        //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
-        //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
-        //   * int Sign(TSelf)
-        //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
-        //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
-        // * INumberBase
-        //   * TSelf Abs(TSelf)                                                             // ? Explicit
-        //   * TSelf CreateChecked(TOther)
-        //   * TSelf CreateSaturating(TOther)
-        //   * TSelf CreateTruncating(TOther)
-        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
-        //   * bool IsEvenInteger(TSelf)
-        //   * bool IsFinite(TSelf)                                                         // ? Explicit
-        //   * bool IsInfinity(TSelf)                                                       // ? Explicit
-        //   * bool IsInteger(TSelf)                                                        // ? Explicit
-        //   * bool IsNaN(TSelf)                                                            // ? Explicit
-        //   * bool IsNegative(TSelf)                                                       // ? Explicit
-        //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
-        //   * bool IsNormal(TSelf)                                                         // ? Explicit
-        //   * bool IsOddInteger(TSelf)
-        //   * bool IsPositive(TSelf)                                                       // ? Explicit
-        //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
-        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
-        //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
-        //   * bool IsZero(TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
-        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
-        //   * bool TryConvertFromChecked(TOther, out TSelf)
-        //   * bool TryConvertFromSaturating(TOther, out TSelf)
-        //   * bool TryConvertFromTruncating(TOther, out TSelf)
-        //   * bool TryConvertToChecked(TOther, out TSelf)
-        //   * bool TryConvertToSaturating(TOther, out TSelf)
-        //   * bool TryConvertToTruncating(TOther, out TSelf)
-        // * IParsable
-        //   * TSelf Parse(string, IFormatProvider?)
-        //   * bool TryParse(string?, IFormatProvider?, out TSelf)
-        // * ISpanFormattable
-        //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)
-        // * ISpanParsable
-        //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
-        //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
-    }
-
     public struct NFloat
         : IBinaryFloatingPointIeee754<NFloat>,
           IMinMaxValue<NFloat>
@@ -5882,7 +5580,7 @@ This leaves us with the `TryConvertFrom`/`TryConvertTo` pattern for the majority
 
 #### Why no `IConvertible<T, U>`, `IExplicitOperators<TSelf, TOther>`, or `IImplicitOperators<TSelf, TOther>`
 
-We could expose these, but they have the same general limitations as the `Create` APIs. Additionally, it vastly increases the number of interfaces implemented since there are 11 primitive integer types (`byte`, `char`, `short`, `int`, `long`, `nint`, `sbyte`, `ushort`, `uint`, `ulong`, and `nuint`), 3 primitive  floating-point types (`decimal`, `double`, and `float`), and some 6 other ABI primitive types (`Half`, `Int128`, `UInt128`, `NFloat`, `CLong`, and `CULong`). Supporting single-direction conversions for these requires at least 14 interfaces. Bi-directional doubles that to 24.
+We could expose these, but they have the same general limitations as the `Create` APIs. Additionally, it vastly increases the number of interfaces implemented since there are 11 primitive integer types (`byte`, `char`, `short`, `int`, `long`, `nint`, `sbyte`, `ushort`, `uint`, `ulong`, and `nuint`), 3 primitive  floating-point types (`decimal`, `double`, and `float`), and some 4 other ABI primitive types (`Half`, `Int128`, `UInt128`, and `NFloat`). Supporting single-direction conversions for these requires at least 14 interfaces. Bi-directional doubles that to 24.
 
 ### Future Considerations
 
