@@ -1319,17 +1319,17 @@ namespace System.Numerics
 
         public static virtual TSelf Max(TSelf x, TSelf y)
         {
-            if (val1 != val2)
+            if (x != y)
             {
-                if (!IsNaN(val1))
+                if (!IsNaN(x))
                 {
-                    return val2 < val1 ? val1 : val2;
+                    return y < x ? x : y;
                 }
 
-                return val1;
+                return x;
             }
 
-            return IsNegative(val2) ? val1 : val2;
+            return IsNegative(y) ? x : y;
         }
 
         public static virtual TSelf MaxNumber(TSelf x, TSelf y)
@@ -1349,12 +1349,12 @@ namespace System.Numerics
 
         public static virtual TSelf Min(TSelf x, TSelf y)
         {
-            if (val1 != val2 && !IsNaN(val1))
+            if ((x != y) && !IsNaN(x))
             {
-                return val1 < val2 ? val1 : val2;
+                return x < y ? x : y;
             }
 
-            return IsNegative(val1) ? val1 : val2;
+            return IsNegative(x) ? x : y;
         }
 
         public static virtual TSelf MinNumber(TSelf x, TSelf y)
