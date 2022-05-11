@@ -909,10 +909,10 @@ namespace System.Numerics
 
         int GetByteCount();
 
-        long GetShortestBitLength()
+        int GetShortestBitLength()
         {
-            long bitCount = (GetByteCount() * 8L);
-            return bitCount - long.CreateChecked(TSelf.LeadingZeroCount(this));
+            int bitCount = checked(GetByteCount() * 8);
+            return bitCount - int.CreateChecked(TSelf.LeadingZeroCount(this));
         }
 
         bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten);
@@ -1038,11 +1038,11 @@ namespace System.Numerics
 
         // These methods allow getting the underlying bytes that represent the IEEE 754 floating-point
 
-        long GetExponentShortestBitLength();
+        int GetExponentShortestBitLength();
 
         int GetExponentByteCount();
 
-        long GetSignificandShortestBitLength();
+        int GetSignificandShortestBitLength();
 
         int GetSignificandByteCount();
 
@@ -1764,7 +1764,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -1915,7 +1915,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)                                                // ? Explicit
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -2201,9 +2201,9 @@ namespace System
         //   * TSelf Ceiling(TSelf)                                                         // * Existing
         //   * TSelf Floor(TSelf)                                                           // * Existing
         //   * int GetExponentByteCount()                                                   // ? Explicit
-        //   * long GetExponentShortestBitLength()                                          // ? Explicit
+        //   * int GetExponentShortestBitLength()                                           // ? Explicit
         //   * int GetSignificandByteCount()                                                // ? Explicit
-        //   * long GetSignificandShortestBitLength()                                       // ? Explicit
+        //   * int GetSignificandShortestBitLength ()                                       // ? Explicit
         //   * TSelf Round(TSelf)                                                           // * Existing
         //   * TSelf Round(TSelf, int)                                                      // * Existing
         //   * TSelf Round(TSelf, MidpointRounding)                                         // * Existing
@@ -2385,9 +2385,9 @@ namespace System
         //   * TSelf Ceiling(TSelf)
         //   * TSelf Floor(TSelf)
         //   * int GetExponentByteCount()                                                   // ? Explicit
-        //   * long GetExponentShortestBitLength()                                          // ? Explicit
+        //   * int GetExponentShortestBitLength()                                           // ? Explicit
         //   * int GetSignificandByteCount()                                                // ? Explicit
-        //   * long GetSignificandShortestBitLength()                                       // ? Explicit
+        //   * int GetSignificandShortestBitLength()                                        // ? Explicit
         //   * TSelf Round(TSelf)
         //   * TSelf Round(TSelf, int)
         //   * TSelf Round(TSelf, MidpointRounding)
@@ -2620,9 +2620,9 @@ namespace System
         //   * TSelf Ceiling(TSelf)
         //   * TSelf Floor(TSelf)
         //   * int GetExponentByteCount()                                                   // ? Explicit
-        //   * long GetExponentShortestBitLength()                                          // ? Explicit
+        //   * int GetExponentShortestBitLength()                                           // ? Explicit
         //   * int GetSignificandByteCount()                                                // ? Explicit
-        //   * long GetSignificandShortestBitLength()                                       // ? Explicit
+        //   * int GetSignificandShortestBitLength()                                        // ? Explicit
         //   * TSelf Round(TSelf)
         //   * TSelf Round(TSelf, int)
         //   * TSelf Round(TSelf, MidpointRounding)
@@ -2848,7 +2848,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -3001,7 +3001,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -3155,7 +3155,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -3301,7 +3301,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -3447,7 +3447,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -3604,7 +3604,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -3770,9 +3770,9 @@ namespace System
         //   * TSelf Ceiling(TSelf)
         //   * TSelf Floor(TSelf)
         //   * int GetExponentByteCount()                                                   // ? Explicit
-        //   * long GetExponentShortestBitLength()                                          // ? Explicit
+        //   * int GetExponentShortestBitLength()                                           // ? Explicit
         //   * int GetSignificandByteCount()                                                // ? Explicit
-        //   * long GetSignificandShortestBitLength()                                       // ? Explicit
+        //   * int GetSignificandShortestBitLength()                                        // ? Explicit
         //   * TSelf Round(TSelf)
         //   * TSelf Round(TSelf, int)
         //   * TSelf Round(TSelf, MidpointRounding)
@@ -4085,7 +4085,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -4236,7 +4236,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -4386,7 +4386,7 @@ namespace System
         // Implicitly Implemented interfaces
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()
+        //   * int GetShortestBitLength()
         //   * int GetByteCount()
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
@@ -4531,7 +4531,7 @@ namespace System
         //
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
-        //   * long GetBitLength()
+        //   * int GetShortestBitLength()
         //   * int GetByteCount()
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
@@ -4676,7 +4676,7 @@ namespace System
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit
-        //   * long GetShortestBitLength()                                                  // ? Explicit
+        //   * int GetShortestBitLength()                                                   // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -4825,7 +4825,7 @@ namespace System.Numerics
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()                                                           // ? Explicit - BigInteger exposes `int GetByteCount(bool isUnsigned = false)`
-        //   * long GetShortestBitLength()                                                  // ? Explicit - BigInteger exposes `long GetBitLength()`
+        //   * int GetShortestBitLength()                                                   // ? Explicit - BigInteger exposes `long GetBitLength()`
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
@@ -5068,9 +5068,9 @@ namespace System.Runtime.InteropServices
         //   * TSelf Ceiling(TSelf)
         //   * TSelf Floor(TSelf)
         //   * int GetExponentByteCount()                                                   // ? Explicit
-        //   * long GetExponentShortestBitLength()                                          // ? Explicit
+        //   * int GetExponentShortestBitLength()                                           // ? Explicit
         //   * int GetSignificandByteCount()                                                // ? Explicit
-        //   * long GetSignificandShortestBitLength()                                       // ? Explicit
+        //   * int GetSignificandShortestBitLength()                                        // ? Explicit
         //   * TSelf Round(TSelf)
         //   * TSelf Round(TSelf, int)
         //   * TSelf Round(TSelf, MidpointRounding)
