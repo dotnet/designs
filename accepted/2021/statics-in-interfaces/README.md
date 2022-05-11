@@ -205,9 +205,6 @@ interface "IMultiplyOperators<TSelf, TOther, TResult>"
 interface "INumber<TSelf>"
 interface "INumberBase<TSelf>"
 interface "INumberConverter<T, U>"
-interface "INumberConverterChecked<T, U>"
-interface "INumberConverterSaturating<T, U>"
-interface "INumberConverterTruncating<T, U>"
 interface "IPowerFunctions<TSelf>"
 interface "IRootFunctions<TSelf>"
 interface "IShiftOperators<TSelf, TOther, TResult>"
@@ -245,19 +242,19 @@ interface "IUnsignedNumber<TSelf>"
 "ITrigonometricFunctions<TSelf>"                <|-- "IFloatingPointIeee754<TSelf>"
 
 "IComparisonOperators<TSelf, TOther>"           <|-- "INumber<TSelf>"
-"IDivisionOperators<TSelf, TOther, TResult>"    <|-- "INumber<TSelf>"
 "IModulusOperators<TSelf, TOther, TResult>"     <|-- "INumber<TSelf>"
 "INumberBase<TSelf>"                            <|-- "INumber<TSelf>"
-"ISpanFormattable"                              <|-- "INumber<TSelf>"
-"ISpanParsable<TSelf>"                          <|-- "INumber<TSelf>"
 
 "IAdditionOperators<TSelf, TOther, TResult>"    <|-- "INumberBase<TSelf>"
 "IAdditiveIdentity<TSelf, TResult>"             <|-- "INumberBase<TSelf>"
 "IDecrementOperators<TSelf>"                    <|-- "INumberBase<TSelf>"
+"IDivisionOperators<TSelf, TOther, TResult>"    <|-- "INumberBase<TSelf>"
 "IEqualityOperators<TSelf, TOther>"             <|-- "INumberBase<TSelf>"
 "IIncrementOperators<TSelf>"                    <|-- "INumberBase<TSelf>"
 "IMultiplicativeIdentity<TSelf, TResult>"       <|-- "INumberBase<TSelf>"
 "IMultiplyOperators<TSelf, TOther, TResult>"    <|-- "INumberBase<TSelf>"
+"ISpanFormattable"                              <|-- "INumberBase<TSelf>"
+"ISpanParsable<TSelf>"                          <|-- "INumberBase<TSelf>"
 "ISubtractionOperators<TSelf, TOther, TResult>" <|-- "INumberBase<TSelf>"
 "IUnaryPlusOperators<TSelf, TResult>"           <|-- "INumberBase<TSelf>"
 "IUnaryNegationOperators<TSelf, TResult>"       <|-- "INumberBase<TSelf>"
@@ -474,7 +471,7 @@ class "ValueType"
 @enduml
 -->
 
-![UML](http://www.plantuml.com/plantuml/svg/h9XHKzim383VyojwVOQ7CSRsmEqs2epU3TeZxTxTL4qz7BkpPI2x_VYHmZd4JesIqfUUREcBB3cMd6y6cKPRY8HB1BrY6Go6uv4gDaopXO3XZl7JsLT_Ijw3HXxOd8C1pPdWVnbo9KTCY0NBxffA5tyimrRkfT85GmnzcJ9jdYrI42lFAdrvP6YMRfZqcCt9WDlG-BvSycePamreXagRPxM3mMo2Qz1F_xTWhC0dkz3i7iPBaCYnT5QjscTSCbrU2iMGotogkCGn07p-TEoS2jN74Y477T6uiSLYfm8-S0EaLVdRWPkTuV3qpo7JK814JzrNu_VSq6Bixo71iQJvSl6uKR9A1XENLcPLJjkzQQGXea58r5Mv0RrGWcVnHuubAKu_LSuqntNn5k-Qosls-8i92-tpQcc5DHtZVMq5yetW6QFkR6TJTdoKltE3gJDc83BzSZXLY8F1FAuoMaDs1qk2PihGwctc2SepRMMsKtcg7a37atYh5COrqZLVOSV8fZoNi8p4DxKBr2phSURDDC-LL0MWVck3phV74-IizJ4XtjbCXJLaVTEsrgJzT1pi_9t-EpoadT7naw4lUN-d_Kf1tZaKMDAXc8GqBpd-cp-8_wAifD7Mn3aEHYnoVcVqZcX2NUkBJho-YnWHGg7jcxZsMjj-IlM49V7I7wSHttGVrfCPQHTwCsCzGrzcU_7QR-rXjTi_dl62r8UPa5wq41eSS_IMDqAXzt4HNxoEAXxt2CM_PyKOSOf_8UjAIRhSsZoCrraIBdBEcJWfSXbo21A9NY08fB5yBv-8bmCwgTmtTnrRsIY9q7iIuqJiVDyaFQ7eRrkD2Z-79E6N5J8e_7II2MRCO7Z6yvS-SUY6IWGdZDQidgbEL06FJZvd21CfoiR0Z1SG34nMAmDO3qF62oPgMTc5gAqkf2sSyCFofHEkc5WvOIpnmybhwUFHQ-dakA5vzEMrE4Njn9jj9N7YPF4RibfC6_58kSn5BLPhg-Bh1kPDf-PDh-PDj-QUNtFFiUrtWLcvgPBlTVN4mbkdDzwi4GcrGvvkZF2_L3ksKHW8mZ2QKnKz83g03CZe7n4y6O6HLjyKyFPkVyRspjZR2d4RId8RPQvVIEpkg6NPxdUe2pP4niQmNB8XB3Q4nPQms18McyyIRcbEUfrx6WOUptPulBJn-036yy-6nwEwXqyjLxuUYVbw6EPhVdmkVS_cUdZUVFe1-NnZvti1y5zlfSBVhmN4rmBYo_NBzmBaXmNeS3WhGwlCYj4g_z-EBaHYbL5XMcLMdbQP5QbLPgLgbLd1McLQjbQfTnyjJAmKl0qeyLfXU2ejFFy2-67bbSgFrosc7uvkoT5jvtHyuw4l3jjcmoo2JLjcsnbFxn_kN6ouNx5jmsmgRVEDK9fi-gVPrd2QmuIwXEEMuT3-m2amE2PcLbKIWrDYS4eCJed1CJ7pl98Od1A3Ks9mIWoEYPbvjiZebXdTGgDRQdICpMouRPpE6wV3gOokiT7fmMM6tggDRg7JRUDqhfTJdat3QTjmAZKuHGR7Kl4A9KL6jypel6ywdcRVNMUVMF9zOidNKp5V-tS-ni_tYQUtTNNKnDSX4r_VDl2rWFZw6G1VNtVmjO3vMi1yBM2-VXx0rmyL-7u1yV5XT-wj7frxFRgyOAHhS7IFBVTxT8sDxh7rbe_kiUMcZwwnqJsstlVHWzXwvuVduF2UN6_-y9vTR__mti7XCJkyPwS5z0dK4kO_lrOwNX-Nv_ts0W00)
+![UML](http://www.plantuml.com/plantuml/svg/h9ZVKzi-3C3VyrVq-WmFNxwCxO7RRVnWz6xG7cdthgPgwisnEzi1ijiVlwHm2LPILqtXXPCjVIB9ZgJqYtLWN9x9I2Y7PWa93eQZIvsjmS1Sud3B-ldqCzrIZsYSQDbSeKKZG8e_u8HMbo3b799VljBrxnnS9_T6cmoSQ_io0MDVB6AKIs8LlpwoRHQlGNbCkjdYUXfV5mjHXJ5Uem6dZNrHEnfCnsw5flp_W3QNhhHhcptYQ87A2LVKLftQ5qA1AMwa1YTKEj7btWWHFtuuhPrggu_AbHHDGEC-p-PR5ToJiCYBYbm7ORUcW-XVOM8mG-M8EbKJZy8oSqpka1IkuFbo_RpMgZeCa3UvIgepxVR6EuQ01kEWRelIjRcM8Wa_SgHOUVgkKp32hR9Tl3kXxk3v1yWSk_Vr8fUvtJFVT-MIM4kH0FTcrpR5dezgtrooTG4M0zklnQb270rcH6MYdz244_YWjGjhn2knT7j65OjKuI8GMvpFdO6aHxsP6f5gfJDqPjVbc6rA0wRGyHYAzsmcChTiVTiLQzHTcGPR_yx_7X_pwcFuhUnFFjHfMgNPDuS3Y_Oev9H6uobPt007ErcHDr8480J6QJ1qAdb7DAEdz4L7PEPXPeJHvFeUN7UVwwvIFM5HkEs6QSmtdS3wCWEjkZSprA_xChkRrs6nqsvtU3vtDQG-p8ZrehMXjCpnfvy0XSuXWOm5AD4-tnS4GsOWnYT7xKoO51ZRQmINn9_i0wGUXJb46gdtYeuv4FD9nU5vef-xZ5OG8D5lupwaFSVQ88anXp9zOax1EqabYfbk7qNFgGBniqr0xPym4WdM3eON8dsT6OVrKk6m5YvNqEnKrLNYSorVWSEnaeMtC1KPjXR6owL5ronZ8ZAGZQppkMoihbMUrSAtN2nguHRaiXPAn_yxUolzV_9MEZlrD4y-lHKdhWdhVjDLQd4y_ub98yPUFcAXKjc8LMnLVkk5cU_KpFTgvhir8txDY6ERx_DfiQuEdqxuh2Ri7M-VmOqGQeUe6O_GFupD4VW_AR8V_wzKEqXL68R2C3hlgjo3k0ETgJFtBnGEYbG8trt0oNlvlMroa-xsyCXZsHvtgqisHCQci3oo8ImsXCMMiDWI5fjtIbvfjYATMw43hxj5l3tQU5o0yVYpuNdRRl6fvShNFH5VTq9ypO_FfMzjhgt1n_SVa2_lAhuN0FzpEnJ-VYqWlXOGNvvVlXSWFon0cyDP6HfbLen6-NzBkHA9KMQ5QPHPUHfbLgH6cPMgKMO5QvHPsHgblNsqCBbIy7HOYSSAmsDfuVaNmBULwnMMrotcPODkoT5XvdIy_T0NjscpNW31XYcpwQsizmzlBhQyhzWmOJQMjlEDK9fi-AVPs70wXsbr2OSfmxNzWKjWS4lCMLLC34w9mIKnk2G6jyISvyN4u9GON1A3Is9mJCpPOesCRfdHAJGwfKR7s1p1redJSU9qs9NH9JOwBbpEq6krqIrqkaoSplLoxcVJS9as74iD3f71kLHSeSJ8w9OPdUPDnztitdNs4qi-drZoTLVCr_wTh_7p-S39RLqzQkBh8HDVRnluMa1y_JI1hzSTV2rWlXOmNmkOhvy7yFL31Ru-G7nUx2w3Le-knKkt2qQw1KVts7g_H-VOw1fRR_de7bjl-kWS6rrZwtqVNMERTNvu3mwloVNc3-_PzVOFxnqSthF3MtRuvXEe9Sn_VwrqkZslhyVz3G00)
 
 ### Base Interfaces
 
@@ -1285,7 +1282,6 @@ namespace System.Numerics
         : IComparisonOperators<TSelf, TSelf>,   // implies IEqualityOperators<TSelf, TSelf>
           IModulusOperators<TSelf, TSelf, TSelf>,
           INumberBase<TSelf>,
-          ISpanParsable<TSelf>                  // implies IParsable<TSelf>
         where TSelf : INumber<TSelf>
     {
         public static TSelf Clamp(TSelf value, TSelf min, TSelf max)
@@ -1414,6 +1410,7 @@ namespace System.Numerics
           IMultiplicativeIdentity<TSelf, TSelf>,
           IMultiplyOperators<TSelf, TSelf>,
           ISpanFormattable,                     // implies IFormattable
+          ISpanParsable<TSelf>                  // implies IParsable<TSelf>
           ISubtractionOperators<TSelf, TSelf, TSelf>,
           IUnaryPlusOperators<TSelf, TSelf>,
           IUnaryNegationOperators<TSelf, TSelf>
