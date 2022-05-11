@@ -1671,10 +1671,14 @@ namespace System.Numerics
 namespace System.Numerics
 {
     public interface INumberConverter<T, U>
-        where T : INumber<T>
-        where U : INumber<U>
+        where T : INumberBase<T>
+        where U : INumberBase<U>
     {
-        static abstract T Convert(U value);
+        static abstract T ConvertChecked(U value);
+
+        static abstract T ConvertSaturating(U value);
+
+        static abstract T ConvertTruncating(U value);
     }
 }
 ```
@@ -5164,11 +5168,11 @@ Finally you have types that exist in two parallel assemblies where neither depen
 The first scenario leads to a design that looks like this.
 
 ```csharp
-interface INumber<TSelf>
-    where TSelf : INumber<TSelf>
+interface INumberBase<TSelf>
+    where TSelf : INumberBase<TSelf>
 {
-    public static TSelf Create<TOther>(TOther value)
-            where TOther : INumber<TOther>
+    public static TSelf CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
     {
         if (!TryCreate(value, out TSelf result))
         {
@@ -5177,14 +5181,14 @@ interface INumber<TSelf>
         return result;
     }
 
-    static abstract bool TryCreate<TOther>(TOther value, out TSelf? result)
-        where TOther : INumber<TOther>;
+    static abstract bool TryCreateTruncating<TOther>(TOther value, out TSelf? result)
+        where TOther : INumberBase<TOther>;
 }
 
-struct Int32 : INumber<int>
+struct Int32 : INumberBase<int>
 {
-    public static bool TryCreate<TOther>(TOther value, out int result)
-        where TOther : INumber<TOther>
+    public static bool TryCreateTruncating<TOther>(TOther value, out int result)
+        where TOther : INumberBase<TOther>
     {
         if (typeof(TOther) == typeof(int))
         {
@@ -5204,10 +5208,10 @@ struct Int32 : INumber<int>
     }
 }
 
-struct Int64 : INumber<long>
+struct Int64 : INumberBase<long>
 {
-    public static bool TryCreate<TOther>(TOther value, out long result)
-        where TOther : INumber<TOther>
+    public static bool TryCreateTruncating<TOther>(TOther value, out long result)
+        where TOther : INumberBase<TOther>
     {
         if (typeof(TOther) == typeof(int))
         {
@@ -5230,10 +5234,10 @@ struct Int64 : INumber<long>
 
 It runs into the mentioned issues where the conversion fails if `TOther` is unrecognized, such as `BigInteger`:
 ```csharp
-struct BigInteger : INumber<BigInteger>
+struct BigInteger : INumberBase<BigInteger>
 {
-    public static bool TryCreate<TOther>(TOther value, out BigInteger result)
-        where TOther : INumber<TOther>
+    public static bool TryCreateTruncating<TOther>(TOther value, out BigInteger result)
+        where TOther : INumberBase<TOther>
     {
         if (typeof(TOther) == typeof(int))
         {
@@ -5268,14 +5272,14 @@ There is an additional problem where this actually happens 3 times. Once for `ch
 The code is used as follows:
 ```csharp
 public static TResult Sum<T, TResult>(IEnumerable<T> values)
-    where T : INumber<T>
-    where TResult : INumber<TResult>
+    where T : INumberBase<T>
+    where TResult : INumberBase<TResult>
 {
     TResult result = TResult.Zero;
 
     foreach (var value in values)
     {
-        result += TResult.Create(value);
+        result += TResult.CreateTruncating(value);
     }
 
     return result;
@@ -5287,11 +5291,11 @@ public static TResult Sum<T, TResult>(IEnumerable<T> values)
 The second scenario needs to support `TOther` providing a conversion and so the design ends up changing a bit.
 
 ```csharp
-interface INumber<TSelf>
-    where TSelf : INumber<TSelf>
+interface INumberBase<TSelf>
+    where TSelf : INumberBase<TSelf>
 {
-    public static TSelf Create<TOther>(TOther value)
-            where TOther : INumber<TOther>
+    public static TSelf CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
     {
         if (!TryCreate(value, out TSelf result))
         {
@@ -5300,20 +5304,24 @@ interface INumber<TSelf>
         return result;
     }
 
-    public static bool TryCreate<TOther>(TOther value, out TSelf? result)
-        where TOther : INumber<TOther>
+    public static bool TryCreateTruncating<TOther>(TOther value, out TSelf? result)
+        where TOther : INumberBase<TOther>
     {
-        return TSelf.TryConvertFrom(value, out result)
-            || TOther.TryConvertTo(value, out result);
+        return TSelf.TryConvertFromTruncating(value, out result)
+            || TOther.TryConvertToTruncating(value, out result);
     }
 
+    static bool TryConvertFromTruncating<TOther>(TOther value, out TSelf result)
+        where TOther : INumberBase<TOther>;
 
+    static bool TryConvertToTruncating<TOther>(TSelf value, out TOther result)
+        where TOther : INumberBase<TOther>;
 }
 
-struct Int32 : INumber<int>
+struct Int32 : INumberBase<int>
 {
-    protected static bool TryConvertFrom<TOther>(TOther value, out int result)
-        where TOther : INumber<TOther>
+    protected static bool TryConvertFromTruncating<TOther>(TOther value, out int result)
+        where TOther : INumberBase<TOther>
     {
         if (typeof(TOther) == typeof(int))
         {
@@ -5333,8 +5341,8 @@ struct Int32 : INumber<int>
         return false;
     }
 
-    protected static bool TryConvertTo<TOther>(int value, out TOther? result)
-        where TOther : INumber<TOther>
+    protected static bool TryConvertToTruncating<TOther>(int value, out TOther? result)
+        where TOther : INumberBase<TOther>
     {
         if (typeof(TOther) == typeof(int))
         {
@@ -5355,10 +5363,10 @@ struct Int32 : INumber<int>
     }
 }
 
-struct Int64 : INumber<long>
+struct Int64 : INumberBase<long>
 {
-    protected static bool TryConvertFrom<TOther>(TOther value, out long result)
-        where TOther : INumber<TOther>
+    protected static bool TryConvertFromTruncating<TOther>(TOther value, out long result)
+        where TOther : INumberBase<TOther>
     {
         if (typeof(TOther) == typeof(int))
         {
@@ -5378,8 +5386,8 @@ struct Int64 : INumber<long>
         return false;
     }
 
-    protected static bool TryConvertTo<TOther>(long value, out TOther? result)
-        where TOther : INumber<TOther>
+    protected static bool TryConvertToTruncating<TOther>(long value, out TOther? result)
+        where TOther : INumberBase<TOther>
     {
         if (typeof(TOther) == typeof(int))
         {
@@ -5403,10 +5411,10 @@ struct Int64 : INumber<long>
 
 This also then allows creating a `Int32` or `Int64` from a `BigInteger`:
 ```csharp
-struct BigInteger : INumber<BigInteger>
+struct BigInteger : INumberBase<BigInteger>
 {
-    protected static bool TryConvertFrom<TOther>(TOther value, out BigInteger result)
-        where TOther : INumber<TOther>
+    protected static bool TryConvertFromTruncating<TOther>(TOther value, out BigInteger result)
+        where TOther : INumberBase<TOther>
     {
         if (typeof(TOther) == typeof(int))
         {
@@ -5433,8 +5441,8 @@ struct BigInteger : INumber<BigInteger>
         return false;
     }
 
-    protected static bool TryConvertTo<TOther>(BigInteger value, out TOther? result)
-        where TOther : INumber<TOther>
+    protected static bool TryConvertToTruncating<TOther>(BigInteger value, out TOther? result)
+        where TOther : INumberBase<TOther>
     {
         if (typeof(TOther) == typeof(int))
         {
@@ -5472,8 +5480,8 @@ The same additional problem where this actually happens 3 times. Once for `check
 The usage code remains the same.
 ```csharp
 public static TResult Sum<T, TResult>(IEnumerable<T> values)
-    where T : INumber<T>
-    where TResult : INumber<TResult>
+    where T : INumberBase<T>
+    where TResult : INumberBase<TResult>
 {
     TResult result = TResult.Zero;
 
@@ -5492,25 +5500,29 @@ This brings us to the third scenario and needing some way to allow conversion be
 
 ```csharp
 interface INumberConverter<T, U>
-    where T : INumber<T>
-    where U : INumber<U>
+    where T : INumberBase<T>
+    where U : INumberBase<U>
 {
-    static abstract T Convert(U value);
+    static abstract T ConvertChecked(U value);
+
+    static abstract T ConvertSaturating(U value);
+
+    static abstract T ConvertTruncating(U value);
 }
 ```
 
 This would allow the usage code to become:
 ```csharp
 public static TResult Sum<T, TResult, TConverter>(IEnumerable<T> values)
-    where T : INumber<T>
-    where TResult : INumber<TResult>
+    where T : INumberBase<T>
+    where TResult : INumberBase<TResult>
     where TConverter : INumberConverter<TResult, T>
 {
     TResult result = TResult.Zero;
 
     foreach (var value in values)
     {
-        result += TConverter.Convert(value);
+        result += TConverter.ConvertTruncating(value);
     }
 
     return result;
