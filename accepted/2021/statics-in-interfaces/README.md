@@ -1692,12 +1692,8 @@ namespace System
           IMinMaxValue<byte>,
           IUnsignedNumber<byte>
     {
-        public const byte AdditiveIdentity = 0;                                             // ? Expose
         public const byte MaxValue = 255;                                                   // Existing
         public const byte MinValue = 0;                                                     // Existing
-        public const byte MultiplicativeIdentity = 1;                                       // ? Expose
-        public const byte One = 1;                                                          // ? Expose
-        public const byte Zero = 0;                                                         // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
@@ -1843,12 +1839,8 @@ namespace System
           IMinMaxValue<char>,
           IUnsignedNumber<char>
     {
-        public const short AdditiveIdentity = 0;                                             // ? Expose
         public const short MaxValue = 65535;                                                 // Existing
         public const short MinValue = 0;                                                     // Existing
-        public const short MultiplicativeIdentity = 1;                                       // ? Expose
-        public const short One = 1;                                                          // ? Expose
-        public const short Zero = 0;                                                         // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
@@ -2148,12 +2140,9 @@ namespace System
 
         // Decimal exposes a member named MinusOne
 
-        public const decimal AdditiveIdentity = 0;                                          // ? Expose
         public const decimal MaxValue = 79228162514264337593543950335m;                     // Existing
         public const decimal MinusOne = -1;                                                 // Existing - "Conflicts" with NegativeOne
         public const decimal MinValue = -79228162514264337593543950335m;                    // Existing
-        public const decimal MultiplicativeIdentity = 1;                                    // ? Expose
-        public const decimal NegativeOne = -1;                                              // ? Expose
         public const decimal One = 1;                                                       // Existing
         public const decimal Zero = 0;                                                      // Existing
 
@@ -2297,17 +2286,12 @@ namespace System
           IConvertible,
           IMinMaxValue<double>
     {
-        public const double AdditiveIdentity = 0;                                           // ? Expose
         public const double E = Math.E;
         public const double MaxValue = 1.7976931348623157E+308;                             // Existing
         public const double MinValue = -1.7976931348623157E+308;                            // Existing
-        public const double MultiplicativeIdentity = 1;                                     // ? Expose
-        public const double NegativeOne = -1;                                               // ? Expose
         public const double NegativeZero = -0.0;
-        public const double One = 1;                                                        // ? Expose
         public const double Pi = Math.PI;
         public const double Tau = Math.Tau;
-        public const double Zero = 0;                                                       // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
@@ -2773,13 +2757,8 @@ namespace System
           IMinMaxValue<short>,
           ISignedNumber<short>
     {
-        public const short AdditiveIdentity = 0;                                        // ? Expose
         public const short MaxValue = 32767;                                            // Existing
         public const short MinValue = -32768;                                           // Existing
-        public const short MultiplicativeIdentity = 1;                                  // ? Expose
-        public const short NegativeOne = -1;                                            // ? Expose
-        public const short One = 1;                                                     // ? Expose
-        public const short Zero = 0;                                                    // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
@@ -2926,13 +2905,8 @@ namespace System
           IMinMaxValue<int>,
           ISignedNumber<int>
     {
-        public const int AdditiveIdentity = 0;                                        // ? Expose
         public const int MaxValue = 2147483647;                                       // Existing
         public const int MinValue = -2147483648;                                      // Existing
-        public const int MultiplicativeIdentity = 1;                                  // ? Expose
-        public const int NegativeOne = -1;                                            // ? Expose
-        public const int One = 1;                                                     // ? Expose
-        public const int Zero = 0;                                                    // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
@@ -3080,13 +3054,8 @@ namespace System
           IMinMaxValue<long>,
           ISignedNumber<long>
     {
-        public const long AdditiveIdentity = 0;                                        // ? Expose
         public const long MaxValue = 9223372036854775807;                              // Existing
         public const long MinValue = -9223372036854775808;                             // Existing
-        public const long MultiplicativeIdentity = 1;                                  // ? Expose
-        public const long NegativeOne = -1;                                            // ? Expose
-        public const long One = 1;                                                     // ? Expose
-        public const long Zero = 0;                                                    // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
@@ -3529,13 +3498,8 @@ namespace System
           IMinMaxValue<sbyte>,
           ISignedNumber<sbyte>
     {
-        public const sbyte AdditiveIdentity = 0;                                        // ? Expose
         public const sbyte MaxValue = 127;                                              // Existing
         public const sbyte MinValue = -128;                                             // Existing
-        public const sbyte MultiplicativeIdentity = 1;                                  // ? Expose
-        public const sbyte NegativeOne = -1;                                            // ? Expose
-        public const sbyte One = 1;                                                     // ? Expose
-        public const sbyte Zero = 0;                                                    // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
@@ -3682,17 +3646,12 @@ namespace System
           IConvertible,
           IMinMaxValue<float>
     {
-        public const float AdditiveIdentity = 0;                                           // ? Expose
         public const float E = MathF.E;
         public const float MaxValue = 3.40282346638528859e+38f;                            // Existing
         public const float MinValue = -3.40282346638528859e+38f;                           // Existing
-        public const float MultiplicativeIdentity = 1;                                     // ? Expose
-        public const float NegativeOne = -1;                                               // ? Expose
         public const float NegativeZero = -0.0f;
-        public const float One = 1;                                                        // ? Expose
         public const float Pi = Math.PI;
         public const float Tau = Math.Tau;
-        public const float Zero = 0;                                                       // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
@@ -4013,12 +3972,8 @@ namespace System
           IMinMaxValue<ushort>,
           IUnsignedNumber<ushort>
     {
-        public const short AdditiveIdentity = 0;                                             // ? Expose
         public const short MaxValue = 65535;                                                 // Existing
         public const short MinValue = 0;                                                     // Existing
-        public const short MultiplicativeIdentity = 1;                                       // ? Expose
-        public const short One = 1;                                                          // ? Expose
-        public const short Zero = 0;                                                         // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
@@ -4164,12 +4119,8 @@ namespace System
           IMinMaxValue<uint>,
           IUnsignedNumber<uint>
     {
-        public const uint AdditiveIdentity = 0;                                             // ? Expose
         public const uint MaxValue = 4294967295;                                            // Existing
         public const uint MinValue = 0;                                                     // Existing
-        public const uint MultiplicativeIdentity = 1;                                       // ? Expose
-        public const uint One = 1;                                                          // ? Expose
-        public const uint Zero = 0;                                                         // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
@@ -4315,12 +4266,8 @@ namespace System
           IMinMaxValue<ulong>,
           IUnsignedNumber<ulong>
     {
-        public const ulong AdditiveIdentity = 0;                                             // ? Expose
         public const ulong MaxValue = 18446744073709551615;                                  // Existing
         public const ulong MinValue = 0;                                                     // Existing
-        public const ulong MultiplicativeIdentity = 1;                                       // ? Expose
-        public const ulong One = 1;                                                          // ? Expose
-        public const ulong Zero = 0;                                                         // ? Expose
 
         // Explicitly implemented interfaces
         // * IAdditiveIdentity
