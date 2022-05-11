@@ -892,8 +892,6 @@ namespace System.Numerics
 
         static abstract TSelf PopCount(TSelf value);
 
-        public static abstract TSelf ReverseEndianness(TSelf value);
-
         public static virtual TSelf RotateLeft(TSelf value, TSelf rotateAmount)
         {
             TSelf bitCount = TSelf.CreateChecked(value.GetByteCount() * 8L);
@@ -929,7 +927,36 @@ namespace System.Numerics
             return bitCount - long.CreateChecked(TSelf.LeadingZeroCount(this));
         }
 
+        bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten);
+
         bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten);
+
+        int WriteBigEndian(byte[] destination)
+        {
+            if (!TryWriteBigEndian(destination, out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
+
+        int WriteBigEndian(byte[] destination, int startIndex)
+        {
+            if (!TryWriteBigEndian(destination.AsSpan(startIndex), out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
+
+        int WriteBigEndian(Span<byte> destination)
+        {
+            if (!TryWriteBigEndian(destination, out int bytesWritten))
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            return bytesWritten;
+        }
 
         int WriteLittleEndian(byte[] destination)
         {
@@ -1031,15 +1058,31 @@ namespace System.Numerics
 
         int GetSignificandByteCount();
 
+        bool TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten);
+
         bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten);
 
+        bool TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten);
+
         bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten);
+
+        int WriteExponentBigEndian(byte[] destination);
+
+        int WriteExponentBigEndian(byte[] destination, int startIndex);
+
+        int WriteExponentBigEndian(Span<byte> destination);
 
         int WriteExponentLittleEndian(byte[] destination);
 
         int WriteExponentLittleEndian(byte[] destination, int startIndex);
 
         int WriteExponentLittleEndian(Span<byte> destination);
+
+        int WriteSignificandBigEndian(byte[] destination);
+
+        int WriteSignificandBigEndian(byte[] destination, int startIndex);
+
+        int WriteSignificandBigEndian(Span<byte> destination);
 
         int WriteSignificandLittleEndian(byte[] destination);
 
@@ -1736,11 +1779,14 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -1884,11 +1930,14 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)                                                // ? Explicit
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -2172,11 +2221,19 @@ namespace System
         //   * TSelf Round(TSelf, MidpointRounding)                                         // * Existing
         //   * TSelf Round(TSelf, int, MidpointRounding)                                    // * Existing
         //   * TSelf Truncate(TSelf)                                                        // * Existing
+        //   * bool TryWriteExponentBigEndian(byte[], out int)                              // ? Explicit
         //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // ? Explicit
+        //   * bool TryWriteSignificandBigEndian(byte[], out int)                           // ? Explicit
         //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // ? Explicit
+        //   * int WriteExponentBigEndian(byte[])                                           // ? Explicit
+        //   * int WriteExponentBigEndian(byte[], int)                                      // ? Explicit
+        //   * int WriteExponentBigEndian(Span<byte>)                                       // ? Explicit
         //   * int WriteExponentLittleEndian(byte[])                                        // ? Explicit
         //   * int WriteExponentLittleEndian(byte[], int)                                   // ? Explicit
         //   * int WriteExponentLittleEndian(Span<byte>)                                    // ? Explicit
+        //   * int WriteSignificandBigEndian(byte[])                                        // ? Explicit
+        //   * int WriteSignificandBigEndian(byte[], int)                                   // ? Explicit
+        //   * int WriteSignificandBigEndian(Span<byte>)                                    // ? Explicit
         //   * int WriteSignificandLittleEndian(byte[])                                     // ? Explicit
         //   * int WriteSignificandLittleEndian(byte[], int)                                // ? Explicit
         //   * int WriteSignificandLittleEndian(Span<byte>)                                 // ? Explicit
@@ -2348,11 +2405,19 @@ namespace System
         //   * TSelf Round(TSelf, MidpointRounding)
         //   * TSelf Round(TSelf, int, MidpointRounding)
         //   * TSelf Truncate(TSelf)
+        //   * bool TryWriteExponentBigEndian(byte[], out int)                              // ? Explicit
         //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // ? Explicit
+        //   * bool TryWriteSignificandBigEndian(byte[], out int)                           // ? Explicit
         //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // ? Explicit
+        //   * int WriteExponentBigEndian(byte[])                                           // ? Explicit
+        //   * int WriteExponentBigEndian(byte[], int)                                      // ? Explicit
+        //   * int WriteExponentBigEndian(Span<byte>)                                       // ? Explicit
         //   * int WriteExponentLittleEndian(byte[])                                        // ? Explicit
         //   * int WriteExponentLittleEndian(byte[], int)                                   // ? Explicit
         //   * int WriteExponentLittleEndian(Span<byte>)                                    // ? Explicit
+        //   * int WriteSignificandBigEndian(byte[])                                        // ? Explicit
+        //   * int WriteSignificandBigEndian(byte[], int)                                   // ? Explicit
+        //   * int WriteSignificandBigEndian(Span<byte>)                                    // ? Explicit
         //   * int WriteSignificandLittleEndian(byte[])                                     // ? Explicit
         //   * int WriteSignificandLittleEndian(byte[], int)                                // ? Explicit
         //   * int WriteSignificandLittleEndian(Span<byte>)                                 // ? Explicit
@@ -2575,11 +2640,19 @@ namespace System
         //   * TSelf Round(TSelf, MidpointRounding)
         //   * TSelf Round(TSelf, int, MidpointRounding)
         //   * TSelf Truncate(TSelf)
+        //   * bool TryWriteExponentBigEndian(byte[], out int)                              // ? Explicit
         //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // ? Explicit
+        //   * bool TryWriteSignificandBigEndian(byte[], out int)                           // ? Explicit
         //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // ? Explicit
+        //   * int WriteExponentBigEndian(byte[])                                           // ? Explicit
+        //   * int WriteExponentBigEndian(byte[], int)                                      // ? Explicit
+        //   * int WriteExponentBigEndian(Span<byte>)                                       // ? Explicit
         //   * int WriteExponentLittleEndian(byte[])                                        // ? Explicit
         //   * int WriteExponentLittleEndian(byte[], int)                                   // ? Explicit
         //   * int WriteExponentLittleEndian(Span<byte>)                                    // ? Explicit
+        //   * int WriteSignificandBigEndian(byte[])                                        // ? Explicit
+        //   * int WriteSignificandBigEndian(byte[], int)                                   // ? Explicit
+        //   * int WriteSignificandBigEndian(Span<byte>)                                    // ? Explicit
         //   * int WriteSignificandLittleEndian(byte[])                                     // ? Explicit
         //   * int WriteSignificandLittleEndian(byte[], int)                                // ? Explicit
         //   * int WriteSignificandLittleEndian(Span<byte>)                                 // ? Explicit
@@ -2790,15 +2863,17 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
-        // * IBinaryNumber                                                                  // ? Explicit
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
         // * IComparable                                                                    // Existing
@@ -2941,11 +3016,14 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -3092,11 +3170,14 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -3235,11 +3316,14 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -3378,11 +3462,14 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -3532,11 +3619,14 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -3700,11 +3790,19 @@ namespace System
         //   * TSelf Round(TSelf, MidpointRounding)
         //   * TSelf Round(TSelf, int, MidpointRounding)
         //   * TSelf Truncate(TSelf)
+        //   * bool TryWriteExponentBigEndian(byte[], out int)                              // ? Explicit
         //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // ? Explicit
+        //   * bool TryWriteSignificandBigEndian(byte[], out int)                           // ? Explicit
         //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // ? Explicit
+        //   * int WriteExponentBigEndian(byte[])                                           // ? Explicit
+        //   * int WriteExponentBigEndian(byte[], int)                                      // ? Explicit
+        //   * int WriteExponentBigEndian(Span<byte>)                                       // ? Explicit
         //   * int WriteExponentLittleEndian(byte[])                                        // ? Explicit
         //   * int WriteExponentLittleEndian(byte[], int)                                   // ? Explicit
         //   * int WriteExponentLittleEndian(Span<byte>)                                    // ? Explicit
+        //   * int WriteSignificandBigEndian(byte[])                                        // ? Explicit
+        //   * int WriteSignificandBigEndian(byte[], int)                                   // ? Explicit
+        //   * int WriteSignificandBigEndian(Span<byte>)                                    // ? Explicit
         //   * int WriteSignificandLittleEndian(byte[])                                     // ? Explicit
         //   * int WriteSignificandLittleEndian(byte[], int)                                // ? Explicit
         //   * int WriteSignificandLittleEndian(Span<byte>)                                 // ? Explicit
@@ -4002,11 +4100,14 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -4150,11 +4251,14 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -4298,14 +4402,17 @@ namespace System
         //   * int GetByteCount()
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)
-        //   * int WriteLittleEndian(byte[])
-        //   * int WriteLittleEndian(byte[], int)
-        //   * int WriteLittleEndian(Span<byte>)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
@@ -4440,14 +4547,17 @@ namespace System
         //   * int GetByteCount()
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteLittleEndian(byte[], out int)
-        //   * int WriteLittleEndian(byte[])
-        //   * int WriteLittleEndian(byte[], int)
-        //   * int WriteLittleEndian(Span<byte>)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
+        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
+        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
+        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
@@ -4581,11 +4691,14 @@ namespace System
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -4727,12 +4840,15 @@ namespace System.Numerics
         //   * long GetShortestBitLength()                                                  // ? Explicit - BigInteger exposes `long GetBitLength()`
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
-        //   * int WriteLittleEndian(byte[])                                                // ? Explicit - BigInteger exposes `bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false)`
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit - BigInteger exposes `bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false)`
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
+        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
         // * IBinaryNumber
@@ -4956,11 +5072,14 @@ namespace System.Runtime.InteropServices
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -5097,11 +5216,14 @@ namespace System.Runtime.InteropServices
         //   * long GetShortestBitLength()                                                  // ? Explicit
         //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
-        //   * TSelf ReverseEndianness(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
+        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
         //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
+        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
+        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
+        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
         //   * int WriteLittleEndian(byte[])                                                // ? Explicit
         //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
         //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
@@ -5256,11 +5378,19 @@ namespace System.Runtime.InteropServices
         //   * TSelf Round(TSelf, MidpointRounding)
         //   * TSelf Round(TSelf, int, MidpointRounding)
         //   * TSelf Truncate(TSelf)
+        //   * bool TryWriteExponentBigEndian(byte[], out int)                              // ? Explicit
         //   * bool TryWriteExponentLittleEndian(byte[], out int)                           // ? Explicit
+        //   * bool TryWriteSignificandBigEndian(byte[], out int)                           // ? Explicit
         //   * bool TryWriteSignificandLittleEndian(byte[], out int)                        // ? Explicit
+        //   * int WriteExponentBigEndian(byte[])                                           // ? Explicit
+        //   * int WriteExponentBigEndian(byte[], int)                                      // ? Explicit
+        //   * int WriteExponentBigEndian(Span<byte>)                                       // ? Explicit
         //   * int WriteExponentLittleEndian(byte[])                                        // ? Explicit
         //   * int WriteExponentLittleEndian(byte[], int)                                   // ? Explicit
         //   * int WriteExponentLittleEndian(Span<byte>)                                    // ? Explicit
+        //   * int WriteSignificandBigEndian(byte[])                                        // ? Explicit
+        //   * int WriteSignificandBigEndian(byte[], int)                                   // ? Explicit
+        //   * int WriteSignificandBigEndian(Span<byte>)                                    // ? Explicit
         //   * int WriteSignificandLittleEndian(byte[])                                     // ? Explicit
         //   * int WriteSignificandLittleEndian(byte[], int)                                // ? Explicit
         //   * int WriteSignificandLittleEndian(Span<byte>)                                 // ? Explicit
