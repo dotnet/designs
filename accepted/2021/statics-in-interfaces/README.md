@@ -1541,7 +1541,7 @@ namespace System.Numerics
 
         static abstract bool IsOddInteger(TSelf value);
 
-        public static virtual bool IsPositive(TSelf value) => !IsNegative(value);
+        static abstract bool IsPositive(TSelf value);
 
         public static virtual bool IsPositiveInfinity(TSelf value) => IsPositive(value) && IsInfinity(value);
 
