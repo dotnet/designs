@@ -1899,71 +1899,65 @@ namespace System
         //   * TSelf operator checked -(TSelf)
         // * IUnaryPlusOperators
         //   * TSelf operator +(TSelf)
-
-        // Implicitly Implemented interfaces
+        //
         // * IBinaryInteger
         //   * (TSelf, TSelf) DivRem(TSelf, TSelf)
         //   * int GetByteCount()
-        //   * int GetShortestBitLength()                                                   // ? Explicit
-        //   * TSelf LeadingZeroCount(TSelf)                                                // ? Explicit
+        //   * int GetShortestBitLength()
+        //   * TSelf LeadingZeroCount(TSelf)
         //   * TSelf PopCount(TSelf)
         //   * TSelf RotateLeft(TSelf, int)
         //   * TSelf RotateRight(TSelf, int)
         //   * TSelf TrailingZeroCount(TSelf)
-        //   * bool TryWriteBigEndian(byte[], out int)                                      // ? Explicit
-        //   * bool TryWriteLittleEndian(byte[], out int)                                   // ? Explicit
-        //   * int WriteBigEndian(byte[])                                                   // ? Explicit
-        //   * int WriteBigEndian(byte[], int)                                              // ? Explicit
-        //   * int WriteBigEndian(Span<byte>)                                               // ? Explicit
-        //   * int WriteLittleEndian(byte[])                                                // ? Explicit
-        //   * int WriteLittleEndian(byte[], int)                                           // ? Explicit
-        //   * int WriteLittleEndian(Span<byte>)                                            // ? Explicit
+        //   * bool TryWriteBigEndian(byte[], out int)
+        //   * bool TryWriteLittleEndian(byte[], out int)
+        //   * int WriteBigEndian(byte[])
+        //   * int WriteBigEndian(byte[], int)
+        //   * int WriteBigEndian(Span<byte>)
+        //   * int WriteLittleEndian(byte[])
+        //   * int WriteLittleEndian(byte[], int)
+        //   * int WriteLittleEndian(Span<byte>)
         // * IBinaryNumber
         //   * bool IsPow2(TSelf)
         //   * TSelf Log2(TSelf)
-        // * IComparable                                                                    // Existing
-        //   * int CompareTo(object?)                                                       // * Existing
-        //   * int CompareTo(TSelf)                                                         // * Existing
-        // * IEquatable                                                                     // Existing
-        //   * bool Equals(TSelf)                                                           // * Existing
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing - Explicit
         // * INumber
         //   * TSelf Clamp(TSelf, TSelf, TSelf)
-        //   * TSelf CopySign(TSelf, TSelf)                                                 // ? Explicit
+        //   * TSelf CopySign(TSelf, TSelf)
         //   * TSelf Max(TSelf, TSelf)
-        //   * TSelf MaxNumber(TSelf, TSelf)                                                // ? Explicit
+        //   * TSelf MaxNumber(TSelf, TSelf)
         //   * TSelf Min(TSelf, TSelf)
-        //   * TSelf MinNumber(TSelf, TSelf)                                                // ? Explicit
-        //   * TSelf Parse(string, NumberStyles, IFormatProvider?)                          // ? Explicit
-        //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)              // ? Explicit
+        //   * TSelf MinNumber(TSelf, TSelf)
+        //   * TSelf Parse(string, NumberStyles, IFormatProvider?)
+        //   * TSelf Parse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?)
         //   * int Sign(TSelf)
-        //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)            // ? Explicit
-        //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf) // ? Explicit
+        //   * bool TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)
+        //   * bool TryParse(ReadOnlySpan<char>, NumberStyles, IFormatProvider?, out TSelf)
         // * INumberBase
-        //   * TSelf Abs(TSelf)                                                             // ? Explicit
+        //   * TSelf Abs(TSelf)
         //   * TSelf CreateChecked(TOther)
         //   * TSelf CreateSaturating(TOther)
         //   * TSelf CreateTruncating(TOther)
-        //   * bool IsCanonical(TSelf)                                                      // ? Explicit
+        //   * bool IsCanonical(TSelf)
         //   * bool IsEvenInteger(TSelf)
-        //   * bool IsFinite(TSelf)                                                         // ? Explicit
-        //   * bool IsInfinity(TSelf)                                                       // ? Explicit
-        //   * bool IsInteger(TSelf)                                                        // ? Explicit
-        //   * bool IsNaN(TSelf)                                                            // ? Explicit
-        //   * bool IsNegative(TSelf)                                                       // ? Explicit
-        //   * bool IsNegativeInfinity(TSelf)                                               // ? Explicit
-        //   * bool IsNormal(TSelf)                                                         // ? Explicit
+        //   * bool IsFinite(TSelf)
+        //   * bool IsInfinity(TSelf)
+        //   * bool IsInteger(TSelf)
+        //   * bool IsNaN(TSelf)
+        //   * bool IsNegative(TSelf)
+        //   * bool IsNegativeInfinity(TSelf)
+        //   * bool IsNormal(TSelf)
         //   * bool IsOddInteger(TSelf)
-        //   * bool IsPositive(TSelf)                                                       // ? Explicit
-        //   * bool IsPositiveInfinity(TSelf)                                               // ? Explicit
-        //   * bool IsSignalingNaN(TSelf)                                                   // ? Explicit
-        //   * bool IsSubnormal(TSelf)                                                      // ? Explicit
+        //   * bool IsPositive(TSelf)
+        //   * bool IsPositiveInfinity(TSelf)
+        //   * bool IsSignalingNaN(TSelf)
+        //   * bool IsSubnormal(TSelf)
         //   * bool IsZero(TSelf)
-        //   * TSelf MaxMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
-        //   * TSelf MinMagnitude(TSelf, TSelf)                                             // ? Explicit
-        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)                                       // ? Explicit
+        //   * TSelf MaxMagnitude(TSelf, TSelf)
+        //   * TSelf MaxMagnitudeNumber(TSelf, TSelf)
+        //   * TSelf MinMagnitude(TSelf, TSelf)
+        //   * TSelf MinMagnitudeNumber(TSelf, TSelf)
         //   * bool TryConvertFromChecked(TOther, out TSelf)
         //   * bool TryConvertFromSaturating(TOther, out TSelf)
         //   * bool TryConvertFromTruncating(TOther, out TSelf)
@@ -1971,13 +1965,20 @@ namespace System
         //   * bool TryConvertToSaturating(TOther, out TSelf)
         //   * bool TryConvertToTruncating(TOther, out TSelf)
         // * IParsable
-        //   * TSelf Parse(string, IFormatProvider?)                                        // ? Explicit
-        //   * bool TryParse(string?, IFormatProvider?, out TSelf)                          // ? Explicit
+        //   * TSelf Parse(string, IFormatProvider?)
+        //   * bool TryParse(string?, IFormatProvider?, out TSelf)
         // * ISpanFormattable                                                               // Existing
         //   * bool TryFormat(Span<char>, out int, ReadOnlySpan<char>, IFormatProvider?)    // * Existing - Explicit
         // * ISpanParsable
-        //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)                            // ? Explicit
-        //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)               // ? Explicit
+        //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
+        //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
+
+        // Implicitly Implemented interfaces
+        // * IComparable                                                                    // Existing
+        //   * int CompareTo(object?)                                                       // * Existing
+        //   * int CompareTo(TSelf)                                                         // * Existing
+        // * IEquatable                                                                     // Existing
+        //   * bool Equals(TSelf)                                                           // * Existing
     }
 
     public struct DateOnly
