@@ -1,46 +1,24 @@
-# Add Hardware Accelerated `Vector512<T>` in .NET
+# Upgrade `Vector` API SIMD Acceleration Capability in .NET
 
-(This document is a draft and WIP)
+**Owner** [Anthony Canino](https://github.com/anthonycanino) 
 
-<!--
-Provide the primary contacts here. Linking to the GitHub profiles is useful
-because it allows tagging folks on GitHub and discover alternative modes of
-communication, such as email or Twitter, if the person chooses to disclose that
-information.
+.NET support for SIMD acceleration through `Vector<T>` API allows developers to transparently harness the power of advanced SIMD ISAs without expert-level knowledge of low-level hardware details and optimization techniques. Given its variable length nature, `Vector<T>` allows to adapt to the most performant SIMD ISA implementation available for the platform. However, internal .NET libraries use `Vector<T>` as a fallback SIMD code path, where hand-optimized intrinsic code paths, e.g, SSE or AVX2, provide more performance due to `Vector<T>` platform-agnostic API. 
 
-The bolded roles makes it easier for people to understand who the driver of the
-proposal is (PM) and who can be asked for technical questions (Dev). At
-Microsoft, these roles happen to match to job titles too, but that's irrelevant.
--->
+This is problematic for a number of reasons:
 
-**Owner** [John Doe](https://github.com/johndoe) | [Jane Doe](https://github.com/janedoe)
+  1. As new SIMD ISAs release, .NET developers must write additional SIMD code paths *per optimized library*, increasing code complexity and maintainence burden. At best, much time has to be dedicated to these libraires; At worst, libraries do not get upgraded for latest hardware advancements.
 
-.NET support for SIMD acceleration through `Vector128<T>` and `Vector256<T>` APIs allows developers to transparently harness the power of advanced SIMD ISAs without expert-level knowledge of low-level hardware details and optimization techniques. Current and future processors expose new 512-bit SIMD ISAs --- Intel XX microarchecture and onward are powered by AVX512 and its various extenions --- which are not currently utilized by the .NET platform. We propose that a hardware accelerated `Vector512<T>` API be added to the .NET runtime and JIT compiler which allows developers to harness the power of the 512-bit SIMD ISAs in a programable manner similar to the existing `Vector128<T>` and `Vector256<T>` APIs. Furthermore, we propose that the `Vector<T>` API be extended to automatically select the most performant vector width for a given platform without requiring the developer to adjust their exhisting code. 
+  2. Hand-optimized intrinsics lock software into a specific ISA, often with fixed thresholds for determining when to select a SIMD accelerated codepath for performance gains. In a JIT environment where we can glean performance characteristics of the underlying platform, intrinsics prevent adapting to the most _performant_ SIMD ISA available for a given _workload_.
 
-<!--
-Provide a broad problem statement here. This might include some history and the
-description of the current state of the product. The goal is to give the reader
-the ability to judge how (and how well) your feature will address the problem.
-It might also give rise to tweaks or even alternative solutions that could move
-your proposal in a different direction -- and that's a good thing. After all, if
-the direction needs to change it's best identified when your proposal is still
-being reviewed as opposed to after much of it has already been implemented. So
-it's in your best interest to ensure the reader has enough context to properly
-critique your idea.
+In this design document, we propose to extend `Vector<T>` to serve as a vessel for frictionless SIMD adoption, both internal to .NET libraries, and to external .NET developers. As a realization of this goal, we propose the following:
 
-Your problem statement should be followed by the solution you're proposing to
-solve it. Don't describe specific user scenarios here but provide enough
-information so that the reader can get an overview of what you have in mind.
-It's very much desirable to make the readers curious and come up with questions.
-That puts them in the right state of mind to read the following sections
-actively.
+  1. Upgrading `Vector<T>` to serve as a sufficiently powerful interface for writing both internal hardware accelerated libraries and external developer code. 
 
-Ensure your first paragraph is a short summary of the problem and the proposed
-solution so that readers can gain a quick understanding and decide whether your
-proposal is relevant to them and thus worth spending time on. It's usually best
-to write the first paragraph last because that means you already know the punch
-line and can do a better job stating it succinctly.
--->
+  2. Introducing `Vector512<T>`, analogous to `Vector128<T>` and `Vector256<T>` but for 512-bit SIMD ISA generation. 
+
+  3. Allowing for `Vector<T>` to select the best available `VectorXX` for the platform, with support for dynamically selecting the vector width based on information available at runtime, e.g,. the size of the `Span` being vectorized.
+
+(Updated edits end here)
 
 ## Scenarios and User Experience
 
@@ -279,20 +257,13 @@ the look & feel of it. Less is more.
 
 ### Goals
 
-1. `Vector512<T>` should expose at a minimum the same API operations that `Vector128<T>` and `Vector256<T>` expose.
+1. `Vector<T>` should allow to generate code that reaches some threshold of hand-optimized intrinsics. 
 
-2. 
+2. In combination with the JIT, `Vector<T>` written code should allow to adapt to the best performance of underlying platform, i.e., the JIT may generate multiple codepaths and thresholds that select at runtime which SIMD ISA to use.
 
+3. `Vector512<T>` should expose at a minimum the same API operations that `Vector128<T>` and `Vector256<T>` expose.
 
 ### Non-Goals
-
-<!--
-Provide a bullet point list of aspects that your feature does not need to do.
-The goal of this section is to cover problems that people might think you're
-trying to solve but deliberately would like to scope out. You'll likely add
-bullets to this section based on early feedback and reviews where requirements
-are brought that you need to scope out.
--->
 
 ## Stakeholders and Reviewers
 
