@@ -316,32 +316,29 @@ class "ValueType"
 "ISubtractionOperators<TSelf, TOther, TResult>" <|-- "Complex"
 "ValueType"                                     <|-- "Complex"
 
-"IComparisonOperators<TSelf, TOther>"           <|-- "DateOnly"
-"IMinMaxValue<TSelf>"                           <|-- "DateOnly"
+"IComparable"                                   <|-- "DateOnly"
+"IComparable<T>"                                <|-- "DateOnly"
+"IEquatable<T>"                                 <|-- "DateOnly"
 "ISpanFormattable"                              <|-- "DateOnly"
 "ISpanParsable<TSelf>"                          <|-- "DateOnly"
 "ValueType"                                     <|-- "DateOnly"
 
-"IAdditionOperators<TSelf, TOther, TResult>"    <|-- "DateTime"
-"IAdditiveIdentity<TSelf, TResult>"             <|-- "DateTime"
-"IComparisonOperators<TSelf, TOther>"           <|-- "DateTime"
+"IComparable"                                   <|-- "DateTime"
+"IComparable<T>"                                <|-- "DateTime"
 "IConvertible"                                  <|-- "DateTime"
-"IMinMaxValue<TSelf>"                           <|-- "DateTime"
+"IEquatable<T>"                                 <|-- "DateTime"
 "ISerializable"                                 <|-- "DateTime"
 "ISpanFormattable"                              <|-- "DateTime"
 "ISpanParsable<TSelf>"                          <|-- "DateTime"
-"ISubtractionOperators<TSelf, TOther, TResult>" <|-- "DateTime"
 "ValueType"                                     <|-- "DateTime"
 
-"IAdditionOperators<TSelf, TOther, TResult>"    <|-- "DateTimeOffset"
-"IAdditiveIdentity<TSelf, TResult>"             <|-- "DateTimeOffset"
-"IComparisonOperators<TSelf, TOther>"           <|-- "DateTimeOffset"
+"IComparable"                                   <|-- "DateTimeOffset"
+"IComparable<T>"                                <|-- "DateTimeOffset"
 "IDeserializationCallback"                      <|-- "DateTimeOffset"
-"IMinMaxValue<TSelf>"                           <|-- "DateTimeOffset"
+"IEquatable<T>"                                 <|-- "DateTimeOffset"
 "ISerializable"                                 <|-- "DateTimeOffset"
 "ISpanFormattable"                              <|-- "DateTimeOffset"
 "ISpanParsable<TSelf>"                          <|-- "DateTimeOffset"
-"ISubtractionOperators<TSelf, TOther, TResult>" <|-- "DateTimeOffset"
 "ValueType"                                     <|-- "DateTimeOffset"
 
 "IConvertible"                                  <|-- "Decimal"
@@ -361,7 +358,9 @@ class "ValueType"
 "IFormattable"                                  <|-- "Enum"
 "ValueType"                                     <|-- "Enum"
 
-"IComparisonOperators<TSelf, TOther>"           <|-- "Guid"
+"IComparable"                                   <|-- "Guid"
+"IComparable<T>"                                <|-- "Guid"
+"IEquatable<T>"                                 <|-- "Guid"
 "ISpanFormattable"                              <|-- "Guid"
 "ISpanParsable<TSelf>"                          <|-- "Guid"
 "ValueType"                                     <|-- "Guid"
@@ -416,25 +415,18 @@ class "ValueType"
 "IMinMaxValue<TSelf>"                           <|-- "Single"
 "ValueType"                                     <|-- "Single"
 
-"IComparisonOperators<TSelf, TOther>"           <|-- "TimeOnly"
-"IMinMaxValue<TSelf>"                           <|-- "TimeOnly"
+"IComparable"                                   <|-- "TimeOnly"
+"IComparable<T>"                                <|-- "TimeOnly"
+"IEquatable<T>"                                 <|-- "TimeOnly"
 "ISpanFormattable"                              <|-- "TimeOnly"
 "ISpanParsable<TSelf>"                          <|-- "TimeOnly"
-"ISubtractionOperators<TSelf, TOther, TResult>" <|-- "TimeOnly"
 "ValueType"                                     <|-- "TimeOnly"
 
-"IAdditionOperators<TSelf, TOther, TResult>"    <|-- "TimeSpan"
-"IAdditiveIdentity<TSelf, TResult>"             <|-- "TimeSpan"
-"IComparisonOperators<TSelf, TOther>"           <|-- "TimeSpan"
-"IDivisionOperators<TSelf, TOther, TResult>"    <|-- "TimeSpan"
-"IMinMaxValue<TSelf>"                           <|-- "TimeSpan"
-"IMultiplicativeIdentity<TSelf, TResult>"       <|-- "TimeSpan"
-"IMultiplyOperators<TSelf, TOther, TResult>"    <|-- "TimeSpan"
+"IComparable"                                   <|-- "TimeSpan"
+"IComparable<T>"                                <|-- "TimeSpan"
+"IEquatable<T>"                                 <|-- "TimeSpan"
 "ISpanFormattable"                              <|-- "TimeSpan"
 "ISpanParsable<TSelf>"                          <|-- "TimeSpan"
-"ISubtractionOperators<TSelf, TOther, TResult>" <|-- "TimeSpan"
-"IUnaryNegationOperators<TSelf, TResult>"       <|-- "TimeSpan"
-"IUnaryPlusOperators<TSelf, TResult>"           <|-- "TimeSpan"
 "ValueType"                                     <|-- "TimeSpan"
 
 "IBinaryInteger<TSelf>"                         <|-- "UInt16"
@@ -510,7 +502,7 @@ namespace System.Numerics
         where TSelf : IAdditionOperators<TSelf, TOther, TResult>
     {
         // An additive identity is not exposed here as it may be problematic for cases like
-        // DateTime that implements both IAdditionOperators<DateTime, DateTime> and IAdditionOperators<DateTime, TimeSpan>
+        // Complex that implements both IAdditionOperators<Complex, Complex, Complex> and IAdditionOperators<Complex, double, Complex>
         // This would require overloading by return type and may be problematic for some scenarios where TOther might not have an additive identity
 
         // We can't assume TOther + TSelf is valid as not everything is commutative
@@ -2022,42 +2014,18 @@ namespace System
     }
 
     public struct DateTime
-        : IAdditionOperators<DateTime, TimeSpan, DateTime>,
-          IAdditiveIdentity<DateTime, TimeSpan>,
-          IComparisonOperators<DateTime, DateTime>,
+        : IComparable,
+          IComparable<DateTime>,
           IConvertible,
-          IMinMaxValue<DateTime>,
+          IEquatable<DateTime>,
           ISerializable,
           ISpanFormattable,
-          ISpanParsable<DateTime>,
-          ISubtractionOperators<DateTime, TimeSpan, DateTime>,
-          ISubtractionOperators<DateTime, DateTime, TimeSpan>
+          ISpanParsable<DateTime>
     {
-        public static readonly DateTime MaxValue;                                           // Existing
-        public static readonly DateTime MinValue;                                           // Existing
-
-        // Explicitly Implemented interfaces
-        // * IAdditiveIdentity
-        //   * TSelf AdditiveIdentity { get; }
-        // * IMinMaxValue
-        //   * TSelf MaxValue { get; }
-        //   * TSelf MinValue { get; }
-
         // Implicitly Implemented interfaces
-        // * IAdditionOperators
-        //   * TSelf operator +(TSelf, TSelf)                                               // * Existing
-        //   * TSelf operator checked +(TSelf, TSelf)
         // * IComparable                                                                    // Existing
         //   * int CompareTo(object?)                                                       // * Existing
         //   * int CompareTo(TSelf)                                                         // * Existing
-        // * IComparisonOperators
-        //   * bool operator <(TSelf, TSelf)                                                // * Existing
-        //   * bool operator <=(TSelf, TSelf)                                               // * Existing
-        //   * bool operator >(TSelf, TSelf)                                                // * Existing
-        //   * bool operator >=(TSelf, TSelf)                                               // * Existing
-        // * IEqualityOperators
-        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
-        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
         // * IEquatable                                                                     // Existing
         //   * bool Equals(TSelf)                                                           // * Existing
         // * IFormattable                                                                   // Existing
@@ -2070,50 +2038,21 @@ namespace System
         // * ISpanParsable
         //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
         //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
-        // * ISubtractionOperators
-        //   * TSelf operator -(TSelf, TSelf)                                               // * Existing
-        //   * TSelf operator checked -(TSelf, TSelf)
     }
 
     public struct DateTimeOffset
-        : IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
-          IAdditiveIdentity<DateTimeOffset, TimeSpan>,
-          IComparisonOperators<DateTimeOffset, DateTimeOffset>,
+        : IComparable,
+          IComparable<DateTimeOffset>,
           IDeserializationCallback,
-          IMinMaxValue<DateTimeOffset>,
+          IEquatable<DateTimeOffset>,
           ISerializable,
           ISpanFormattable,
-          ISpanParsable<DateTimeOffset>,
-          ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
-          ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>
+          ISpanParsable<DateTimeOffset>
     {
-        // TODO: DateTimeOffset defines an implicit conversion to DateTime, should that be modeled in the interfaces?
-
-        public static readonly DateTimeOffset MaxValue;                                     // Existing
-        public static readonly DateTimeOffset MinValue;                                     // Existing
-
-        // Explicitly Implemented interfaces
-        // * IAdditiveIdentity
-        //   * TSelf AdditiveIdentity { get; }
-        // * IMinMaxValue
-        //   * TSelf MaxValue { get; }
-        //   * TSelf MinValue { get; }
-
         // Implicitly Implemented interfaces
-        // * IAdditionOperators
-        //   * TSelf operator +(TSelf, TSelf)                                               // * Existing
-        //   * TSelf operator checked +(TSelf, TSelf)
         // * IComparable                                                                    // Existing
         //   * int CompareTo(object?)                                                       // * Existing
         //   * int CompareTo(TSelf)                                                         // * Existing
-        // * IComparisonOperators
-        //   * bool operator <(TSelf, TSelf)                                                // * Existing
-        //   * bool operator <=(TSelf, TSelf)                                               // * Existing
-        //   * bool operator >(TSelf, TSelf)                                                // * Existing
-        //   * bool operator >=(TSelf, TSelf)                                               // * Existing
-        // * IEqualityOperators
-        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
-        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
         // * IEquatable                                                                     // Existing
         //   * bool Equals(TSelf)                                                           // * Existing
         // * IFormattable                                                                   // Existing
@@ -2126,9 +2065,6 @@ namespace System
         // * ISpanParsable
         //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
         //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
-        // * ISubtractionOperators
-        //   * TSelf operator -(TSelf, TSelf)                                               // * Existing
-        //   * TSelf operator checked -(TSelf, TSelf)
     }
 
     public struct Decimal
@@ -2514,7 +2450,9 @@ namespace System
     }
 
     public struct Guid
-        : IComparisonOperators<Guid, Guid>,
+        : IComparable
+          IComparable<Guid>,
+          IEquatable<Guid>,
           ISpanFormattable,
           ISpanParsable<Guid>
     {
@@ -2522,14 +2460,6 @@ namespace System
         // * IComparable                                                                    // Existing
         //   * int CompareTo(object?)                                                       // * Existing
         //   * int CompareTo(TSelf)                                                         // * Existing
-        // * IComparisonOperators
-        //   * bool operator <(TSelf, TSelf)                                                // * Existing
-        //   * bool operator <=(TSelf, TSelf)                                               // * Existing
-        //   * bool operator >(TSelf, TSelf)                                                // * Existing
-        //   * bool operator >=(TSelf, TSelf)                                               // * Existing
-        // * IEqualityOperators
-        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
-        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
         // * IEquatable                                                                     // Existing
         //   * bool Equals(TSelf)                                                           // * Existing
         // * IFormattable                                                                   // Existing
@@ -3866,28 +3796,16 @@ namespace System
     }
 
     public struct TimeOnly
-        : IComparisonOperators<TimeOnly, TimeOnly>,
-          IMinMaxValue<TimeOnly>,
+        : IComparable,
+          IComparable<TimeOnly>,
+          IEquatable<TimeOnly>,
           ISpanFormattable,
-          ISpanParsable<TimeOnly>,
-          ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>
+          ISpanParsable<TimeOnly>
     {
         // Implicitly Implemented interfaces
-        // * IMinMaxValue
-        //   * TSelf MaxValue { get; }
-        //   * TSelf MinValue { get; }
-        //
         // * IComparable                                                                    // Existing
         //   * int CompareTo(object?)                                                       // * Existing
         //   * int CompareTo(TSelf)                                                         // * Existing
-        // * IComparisonOperators
-        //   * bool operator <(TSelf, TSelf)                                                // * Existing
-        //   * bool operator <=(TSelf, TSelf)                                               // * Existing
-        //   * bool operator >(TSelf, TSelf)                                                // * Existing
-        //   * bool operator >=(TSelf, TSelf)                                               // * Existing
-        // * IEqualityOperators
-        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
-        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
         // * IEquatable                                                                     // Existing
         //   * bool Equals(TSelf)                                                           // * Existing
         // * IFormattable                                                                   // Existing
@@ -3903,56 +3821,20 @@ namespace System
     }
 
     public struct TimeSpan
-        : IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>,
-          IAdditiveIdentity<TimeSpan, TimeSpan>,
-          IComparisonOperators<TimeSpan, TimeSpan>,
-          IDivisionOperators<TimeSpan, double, TimeSpan>,
-          IDivisionOperators<TimeSpan, TimeSpan, double>,
-          IMinMaxValue<TimeSpan>,
-          IMultiplicativeIdentity<TimeSpan, double>,
-          IMultiplyOperators<TimeSpan, double, TimeSpan>,
+        : IComparable,
+          IComparable<TimeSpan>,
+          IEquatable<TimeSpan>,
           ISpanFormattable,
-          ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>,
-          IUnaryNegationOperators<TimeSpan, TimeSpan>
-          IUnaryPlusOperators<TimeSpan, TimeSpan>
+          ISpanParsable<TimeSpan>
     {
-        public static readonly TimeSpan MaxValue;                                           // Existing
-        public static readonly TimeSpan MinValue;                                           // Existing
-
-        // Explicitly Implemented interfaces
-        // * IAdditiveIdentity
-        //   * TSelf AdditiveIdentity { get; }
-        // * IMinMaxValue
-        //   * TSelf MaxValue { get; }
-        //   * TSelf MinValue { get; }
-        // * IMultiplicativeIdentity
-        //   * TSelf MultiplicativeIdentity { get; }
-
         // Implicitly Implemented interfaces
-        // * IAdditionOperators
-        //   * TSelf operator +(TSelf, TSelf)                                               // * Existing
-        //   * TSelf operator checked +(TSelf, TSelf)
         // * IComparable                                                                    // Existing
         //   * int CompareTo(object?)                                                       // * Existing
         //   * int CompareTo(TSelf)                                                         // * Existing
-        // * IComparisonOperators
-        //   * bool operator <(TSelf, TSelf)                                                // * Existing
-        //   * bool operator <=(TSelf, TSelf)                                               // * Existing
-        //   * bool operator >(TSelf, TSelf)                                                // * Existing
-        //   * bool operator >=(TSelf, TSelf)                                               // * Existing
-        // * IDivisionOperators
-        //   * TSelf operator /(TSelf, TSelf)                                               // * Existing
-        //   * TSelf operator checked /(TSelf, TSelf)
-        // * IEqualityOperators
-        //   * bool operator ==(TSelf, TSelf)                                               // * Existing
-        //   * bool operator !=(TSelf, TSelf)                                               // * Existing
         // * IEquatable                                                                     // Existing
         //   * bool Equals(TSelf)                                                           // * Existing
         // * IFormattable                                                                   // Existing
         //   * string ToString(string?, IFormatProvider?)                                   // * Existing
-        // * IMultiplyOperators
-        //   * TSelf operator *(TSelf, TSelf)                                               // * Existing
-        //   * TSelf operator checked *(TSelf, TSelf)
         // * IParsable
         //   * TSelf Parse(string, IFormatProvider?)                                        // * Existing
         //   * bool TryParse(string?, IFormatProvider?, out TSelf)
@@ -3961,14 +3843,6 @@ namespace System
         // * ISpanParsable
         //   * TSelf Parse(ReadOnlySpan<char>, IFormatProvider?)
         //   * bool TryParse(ReadOnlySpan<char>, IFormatProvider?, out TSelf)
-        // * ISubtractionOperators
-        //   * TSelf operator -(TSelf, TSelf)                                               // * Existing
-        //   * TSelf operator checked -(TSelf, TSelf)
-        // * IUnaryNegationOperators
-        //   * TSelf operator -(TSelf)                                                      // * Existing
-        //   * TSelf operator checked -(TSelf)
-        // * IUnaryPlusOperators
-        //   * TSelf operator +(TSelf)                                                      // * Existing
     }
 
     public struct UInt16
