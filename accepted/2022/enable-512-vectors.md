@@ -18,9 +18,165 @@ In this design document, we propose to extend `Vector<T>` to serve as a vessel f
 
   3. Allowing for `Vector<T>` to select the best available `VectorXX` for the platform, with support for dynamically selecting the vector width based on information available at runtime, e.g,. the size of the `Span` being vectorized.
 
-(Updated edits end here)
-
 ## Scenarios and User Experience
+
+### `Vector<T>` as an SIMD optimization template
+
+The following code snippet --- taken from the fallback optimization path of UTF16 to ASCII narrowing --- posses problems as the _sole_ SIMD optimization pathway in the ASCIIUtility library. Namely, the check on whether we should vectorize or not will create different performance characteristics depending upon the size the JIT chooses for `Vector<T>`. If `Vector256` is choosen, then buffers with 64 elements and above will be optimized; if `Vector128` is chosen, then buffers of 32 elements and above will be optimized. 
+
+
+```C#
+nuint currentOffset = 0;
+uint SizeOfVector = (uint)Unsafe.SizeOf<Vector<byte>>(); // JIT will make this a const
+
+// Only bother vectorizing if we have enough data to do so.
+if (elementCount >= 2 * SizeOfVector)
+{
+  // ...
+
+  Vector<ushort> maxAscii = new Vector<ushort>(0x007F);
+
+  nuint finalOffsetWhereCanLoop = elementCount - 2 * SizeOfVector;
+  do
+  {
+      Vector<ushort> utf16VectorHigh = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset);
+      Vector<ushort> utf16VectorLow = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count);
+
+      if (Vector.GreaterThanAny(Vector.BitwiseOr(utf16VectorHigh, utf16VectorLow), maxAscii))
+      {
+          break; // found non-ASCII data
+      }
+
+      // TODO: Is the below logic also valid for big-endian platforms?
+      Vector<byte> asciiVector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
+      Unsafe.WriteUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset, asciiVector);
+
+      currentOffset += SizeOfVector;
+  } while (currentOffset <= finalOffsetWhereCanLoop);
+
+  // ...
+}
+```
+
+This prevents `Vector<T>` from consistent behavior both internal to .NET libraries and for external .NET developers. Partciularly with the addition of `Vector512`, workloads that previously would have been optimized would no longer clear the threshold. To aid `Vector<T>` is a single generic SIMD framework, we propose to add a `Vectorize` intrinsic that instructs the JIT to generate _multiple_ SIMD acceleration pathways. 
+
+For example, in the following snippet:
+
+```C#
+nuint currentOffset = 0;
+
+// Only bother vectorizing if we have enough data to do so.
+if (Vectorize.IfGreater(elementCount, 2 * Unsafe.Sizeof<Vector<byte>>()))
+{
+  // ...
+
+  Vector<ushort> maxAscii = new Vector<ushort>(0x007F);
+
+  nuint finalOffsetWhereCanLoop = elementCount - 2 * SizeOfVector;
+  do
+  {
+      Vector<ushort> utf16VectorHigh = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset);
+      Vector<ushort> utf16VectorLow = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count);
+
+      if (Vector.GreaterThanAny(Vector.BitwiseOr(utf16VectorHigh, utf16VectorLow), maxAscii))
+      {
+          break; // found non-ASCII data
+      }
+
+      // TODO: Is the below logic also valid for big-endian platforms?
+      Vector<byte> asciiVector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
+      Unsafe.WriteUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset, asciiVector);
+
+      currentOffset += SizeOfVector;
+  } while (currentOffset <= finalOffsetWhereCanLoop);
+
+
+  // ...
+}
+```
+
+the JIT to generate would generate the following depending upon the availability of the SIMD ISA of the platform:
+
+```C#
+// Only bother vectorizing if we have enough data to do so.
+if (elementCount >= 2 * Vector512<byte>.Count)
+{
+  // Execute a Vector512 pathway
+  Vector512<ushort> maxAscii = new Vector512<ushort>(0x007F);
+
+  // ...
+}
+else if (elementCount >= 2 * Vector256<byte>.Count)
+{
+  // Execute a Vector512 pathway
+  Vector256<ushort> maxAscii = new Vector256<ushort>(0x007F);
+
+  // ...
+}
+else if (elementCount >= 2 * Vector128<byte>.Count)
+{
+  // Execute a Vector512 pathway
+  Vector128<ushort> maxAscii = new Vector128<ushort>(0x007F);
+
+  // ...
+}
+```
+
+In this way, we can collapse multiple SIMD ISA checks into a single "template" SIMD ISA code which the JIT may expand. We use a new `Vectorize` intrinsic that allows backward compatability with `Vector<T>`, i.e., a `Vectorize` JIT intrinsic instructs the JIT that the code inside its block is a template for multiple vector sizes. If `Vectorize` is not present, `Vector<T>` will generate as a single vector size chosen by the JIT.
+
+### Additional `Vector<T>` Methods for Near-Intrinsic Performance
+
+```C#
+public int SumVector(ReadOnlySpan<int> source)
+{
+  Vector<int> vresult = Vector256<int>.Zero;
+  for (int i = 0; i < source.Length; i += Vector256<int>.Count)
+  {
+    vresult += new Vector<int>(source.Slice(i));
+  }
+
+  int result = 0;
+  for (int i = 0; i < Vector<int>.Count; i++)
+  {
+    result += vresult[i];
+  }
+
+  // Handle tail
+  int rem = source.Length % Vector<int>.Count;
+  for (int i = 0; i < rem; i++)
+  {
+    result += source[(source.Length - rem)+i];
+  }
+
+  return result;
+}
+```
+
+The reduction loop will cost much of the performance gain from the vectorized loop. If we use fixed size vectors and hardware intrinsics, we can perform the reduction via horizontal adds, but this locks us to specific SIMD ISAs. Instead, we propose adding methods in these cases, i.e.,
+
+```C#
+public int SumVector(ReadOnlySpan<int> source)
+{
+  Vector<int> vresult = Vector256<int>.Zero;
+  for (int i = 0; i < source.Length; i += Vector256<int>.Count)
+  {
+    vresult += new Vector<int>(source.Slice(i));
+  }
+
+  int result = Vector.ReduceAdd(vresult);
+
+  // Handle tail
+  int rem = source.Length % Vector<int>.Count;
+  for (int i = 0; i < rem; i++)
+  {
+    result += source[(source.Length - rem)+i];
+  }
+
+  return result;
+}
+```
+
+which will handle the necessary reduction per platform. 
 
 ### Vector512<T> Usage
 
@@ -76,196 +232,30 @@ public int SumVector512T(ReadOnlySpan<int> source)
 
 We expect developers who manually write `Vector128<T>` and `Vector256<T>` code to use `Vector512<T>` with minimal effort.
 
-### Variable Length `Vector<T>` Width Selection
-
-Developers who use the variable width vector API, i.e., `Vector<T>`, should transparently benefit from the most performant underlying SIMD implementation. In platforms where that happens to be 512-bit vectors, we propose that `Vector<T>` select `Vector512` for its code generation, much as `Vector<T>` selects `Vector256` when `AVX` is available, and `Vector128` if `SSE` is available etc.
-
-However, developers often encode some threshold checks to decide when to execute vectorized code versus fallback to a scalar implementation because the latter may be more performant for smaller array/span sizes. For example, in the following code, we will only execute the vectorized code if the number of elements in the span is greater than twice the `Vector<T>` width:
-
-
-```C#
-public int SumVectorT(ReadOnlySpan<int> source)
-{
-  if (source.Length >= Vector<int>.Count * 2)
-  {
-    Vector<int> vresult = Vector<int>.Zero;
-    for (int i = 0; i < source.Length; i += Vector<int>.Count)
-    {
-      vresult += new Vector<int>(source.Slice(i));
-    }
-
-    int result = ReduceVectorT(vresult);
-
-    // Handle tail
-    int rem = source.Length % Vector<int>.Count;
-    for (int i = 0; i < rem; i++)
-    {
-      result += source[(source.Length - rem)+i];
-    }
-
-    return result;
-  }
-
-  int result = 0;
-  for (int i = 0; i < source.Length; i++)
-  {
-    result += source[i];
-  }
-  return result;
-}
-```
-
-If we change the underlying `Vector<T>` width to 512-bit vectors, this would create an unexpected performance regression on spans with 32 - 63 elements as they would have been vectorized when the underlying width was 256-bit vectors.
-
-Given the variable length / transparent nature of `Vector<T>` to the developer, we propose to let the compiler generate multiple `Vector<T>` code paths when a method is annotated with the `VectorPaths` attribute. For example,
-
-```C#
-#[VectorPaths]
-public int SumVectorT(ReadOnlySpan<int> source)
-{
-  if (source.Length >= Vector<int>.Count * 2)
-  {
-    Vector<int> vresult = Vector<int>.Zero;
-    for (int i = 0; i < source.Length; i += Vector<int>.Count)
-    {
-      vresult += new Vector<int>(source.Slice(i));
-    }
-
-    int result = ReduceVectorT(vresult);
-
-    // Handle tail
-    int rem = source.Length % Vector<int>.Count;
-    for (int i = 0; i < rem; i++)
-    {
-      result += source[(source.Length - rem)+i];
-    }
-
-    return result;
-  }
-
-  int result = 0;
-  for (int i = 0; i < source.Length; i++)
-  {
-    result += source[i];
-  }
-  return result;
-}
-```
-
-would tell the compiler to conceptually generate code along these lines:
-
-```C#
-public int SumVectorT(ReadOnlySpan<int> source)
-{
-  if (source.Length >= Vector512<int>.Count * 2)
-  {
-    Vector512<int> vresult = Vector512<int>.Zero;
-    for (int i = 0; i < source.Length; i += Vector512<int>.Count)
-    {
-      vresult += new Vector512<int>(source.Slice(i));
-    }
-
-    int result = ReduceVector512T(vresult);
-
-    // Handle tail
-    int rem = source.Length % Vector512<int>.Count;
-    for (int i = 0; i < rem; i++)
-    {
-      result += source[(source.Length - rem)+i];
-    }
-
-    return result;
-  }
-  else if (source.Length >= Vector256<int>.Count * 2)
-  {
-    Vector256<int> vresult = Vector256<int>.Zero;
-    for (int i = 0; i < source.Length; i += Vector256<int>.Count)
-    {
-      vresult += new Vector256<int>(source.Slice(i));
-    }
-
-    int result = ReduceVector256T(vresult);
-
-    // Handle tail
-    int rem = source.Length % Vector256<int>.Count;
-    for (int i = 0; i < rem; i++)
-    {
-      result += source[(source.Length - rem)+i];
-    }
-
-    return result;
-
-  }
-  else if (source.Length >= Vector128<int>.Count * 2)
-  {
-    Vector128<int> vresult = Vector128<int>.Zero;
-    for (int i = 0; i < source.Length; i += Vector128<int>.Count)
-    {
-      vresult += new Vector128<int>(source.Slice(i));
-    }
-
-    int result = ReduceVector128T(vresult);
-
-    // Handle tail
-    int rem = source.Length % Vector128<int>.Count;
-    for (int i = 0; i < rem; i++)
-    {
-      result += source[(source.Length - rem)+i];
-    }
-
-    return result;
-
-  }
-
-  int result = 0;
-  for (int i = 0; i < source.Length; i++)
-  {
-    result += source[i];
-  }
-  return result;
-}
-```
-
-As it currently stands, `Vector<T>` generates vectorized code where the developer need not concern themselves with even the length of the vector, i.e., future ISAs could be 1024-bit, 2049-bit etc. We propose that the compiler fill some of the edge case gaps related to `Vector<T>` to allow it to truly grow into a vessel for transparent SIMD code generation without requireing the developer manually rewrite their code when new SIMD ISAs and hardware are released.
-
-<!--
-Provide examples of how a user would use your feature. Pick typical scenarios
-first and more advanced scenarios later.
-
-Ensure to include the "happy path" which covers what you expect will satisfy the
-vast majority of your customer's needs. Then, go into more details and allow
-covering more advanced scenarios. Well designed features will have a progressive
-curve, meaning the effort is proportional to how advanced the scenario is. By
-listing easy things first and more advanced scenarios later, you allow your
-readers to follow this curve. That makes it easier to judge whether your feature
-has the right balance.
-
-Make sure your scenarios are written in such a way that they cover sensible end-
-to-end scenarios for the customer. Often, your feature will only cover one
-aspect of an end-to-end scenario, but your description should lead up to your
-feature and (if it's not the end result) mention what the next steps are. This
-allows readers to understand the larger picture and how your feature fits in.
-
-If you design APIs or command line tools, ensure to include some sample code on
-how your feature will be invoked. If you design UI, ensure to include some
-mock-ups. Do not strive for completeness here -- the goal of this section isn't
-to provide a specification but to give readers an impression of your feature and
-the look & feel of it. Less is more.
--->
+(Updated edits end here)
 
 ## Requirements
 
 ### Goals
 
-1. `Vector<T>` should allow to generate code that reaches some threshold of hand-optimized intrinsics. 
+1. `Vector<T>` should allow to generate code that reaches performance within some threshold of hand-optimized intrinsics. 
 
 2. In combination with the JIT, `Vector<T>` written code should allow to adapt to the best performance of underlying platform, i.e., the JIT may generate multiple codepaths and thresholds that select at runtime which SIMD ISA to use.
 
 3. `Vector512<T>` should expose at a minimum the same API operations that `Vector128<T>` and `Vector256<T>` expose.
 
+4. `Vector<T>` API surface should include sufficiently expressive methods to reach the first goal above. This may incldue 
+
 ### Non-Goals
 
 ## Stakeholders and Reviewers
+
+[Tanner Gooding]() 
+
+[Bruce Forstall]() 
+
+[Drew Kersnar]() 
+
 
 <!--
 We noticed that even in the cases where we have specs, we sometimes surprise key
@@ -280,22 +270,13 @@ early drafts).
 
 ## Design
 
-<!--
-This section will likely have various subheadings. The structure is completely
-up to you and your engineering team. It doesn't need to be complete; the goal is
-to provide enough information so that the engineering team can build the
-feature.
+### New `Vector<T>` API Methods
 
-If you're building an API, you should include the API surface, for example
-assembly names, type names, method signatures etc. If you're building command
-line tools, you likely want to list all commands and options. If you're building
-UI, you likely want to show the screens and intended flow.
+### `Vector<T>` Codegen Improvements
 
-In many cases embedding the information here might not be viable because the
-document format isn't text (for instance, because it's an Excel document or in a
-PowerPoint deck). Add links here. Ideally, those documents live next to this
-document.
--->
+### `Vector512<T>` API Methods
+
+### `Internals Upgrades for Vector512<T>`
 
 ## Q & A
 
