@@ -66,7 +66,7 @@ For example, in the following snippet:
 nuint currentOffset = 0;
 
 // Only bother vectorizing if we have enough data to do so.
-if (Vectorize.IfGreater(elementCount, 2 * Unsafe.Sizeof<Vector<byte>>()))
+if (Vectorize.If(elementCount >= 2 * Unsafe.Sizeof<Vector<byte>>())
 {
   // ...
 
@@ -123,62 +123,6 @@ else if (elementCount >= 2 * Vector128<byte>.Count)
 ```
 
 In this way, we can collapse multiple SIMD ISA checks into a single "template" SIMD ISA code which the JIT may expand. We use a new `Vectorize` intrinsic that allows backward compatability with `Vector<T>`, i.e., a `Vectorize` JIT intrinsic instructs the JIT that the code inside its block is a template for multiple vector sizes. If `Vectorize` is not present, `Vector<T>` will generate as a single vector size chosen by the JIT.
-
-### Vector Methods for Tail Processing
-
-```C#
-public int SumVector(ReadOnlySpan<int> source)
-{
-  Vector<int> vresult = Vector<int>.Zero;
-
-  int lastBlockIndex = source.Length - (source.Length % Vector<int>.Count);
-  int i = 0;
-
-  for (i; i < lastBlockIndex; i += Vector<int>.Count)
-  {
-    vresult += new Vector<int>(source.Slice(i));
-  }
-
-  int result = 0;
-  for (int j = 0; j < Vector<int>.Count; j++)
-  {
-    result += vresult[j];
-  }
-
-  // Handle tail
-  while (i < source.Length)
-  {
-    result += source[(source.Length - rem)+i];
-  }
-
-  return result;
-}
-```
-
-With the addition of more powerful masking capability (in the specific case, opmask registers for EVEX), we can use the mask registers to collapse the vector body and vector tail prcoessing into a single loop, eases the burden on the developer.
-
-We propose to extend the `Vector` API constructors with an optional index and length:
-
-```C#
-public int SumVector(ReadOnlySpan<int> source)
-{
-  Vector<int> vresult = Vector256<int>.Zero;
-  for (int i = 0; i < source.Length; i += Vector256<int>.Count)
-  {
-    vresult += new Vector<int>(source.Slice(i), i, source.Length);
-  }
-
-  int result = 0;
-  for (int i = 0; i < Vector<int>.Count; i++)
-  {
-    result += vresult[i];
-  }
-
-  return result;
-}
-```
-
-which will allow the JIT to create a mask based on the remaining elements and the vector length. This will allow to perform a partial load and update into a vector register using the opmask registers. 
 
 ### Additional `Vector<T>` Methods for Near-Intrinsic Performance
 
@@ -341,15 +285,112 @@ early drafts).
 
 ## Design
 
+### `Vector<T>` Codegen Improvements
+
+#### `Vectorize` Code Block
+
+- The presence of `Vectorize.If` in conditional of an `if` statement drives the expansion.
+
+- `Vectorize.If` method accepts a boolean expression as a parameter. The boolean expression must contain a reference to `Vector`, as the `Vector` will be replaced per arm as discussed below. If no reference to `Vector` is found, the JIT will throw an `OperationNotSupportedException`.
+
+- When the JIT encounters a `Vectorize.If` intrinsic in a conditional block, the JIT will:
+
+  - Clone the if statement and body with the `Vectorize`, creating an arm for each available vector length on the platform. 
+
+  - In each cloned arm any `Vector<T>` operations will be translated to `VectorXX<T>` operations, where XX represents the vector length for that arm.
+
+  - Any remaining `else if` and `else` arms remain in place.
+
+  - The following example demonstrates the expansion:
+
+    ```C#
+    void unsafe foo(Span<int> sp)
+    {
+      if (Vectorize.If(X >= Vector<int>.Count))
+      {
+        int blocks = sp.Length / Vector<int>.Count;
+        for (int i = 0; i < blocks; i ++)
+        {
+          Vector<int> v = new Vector<int>(sp.Slice(i * Vector<int>.Count));
+          // ...
+        }              
+      }
+      else
+      {
+        for (int i = 0; i < sp.Length; i++)
+        {
+          // ...
+        }
+      }
+    }
+    ```
+
+    expands to
+
+    ```C#
+    void unsafe foo(Span<int> sp)
+    {
+      if (X >= Vector512<int>.Count)
+      {
+        int blocks = sp.Length / Vector512<int>.Count;
+        for (int i = 0; i < blocks; i ++)
+        {
+          Vector512<int> v = new Vector512<int>(sp.Slice(i * Vector512<int>.Count));
+          // ...
+        }
+      }
+      else if (X >= Vector256<int>.Count)
+      {
+        int blocks = sp.Length / Vector256<int>.Count;
+        for (int i = 0; i < blocks; i ++)
+        {
+          Vector256<int> v = new Vector256<int>(sp.Slice(i * Vector256<int>.Count));
+          // ...
+        }
+      }
+      else if (X >= Vector128<int>.Count)
+      {
+        int blocks = sp.Length / Vector128<int>.Count;
+        for (int i = 0; i < blocks; i ++)
+        {
+          Vector128<int> v = new Vector128<int>(sp.Slice(i * Vector128<int>.Count));
+          // ...
+        }
+      }
+      else
+      {
+        for (int i = 0; i < sp.Length; i++)
+        {
+          // ...
+        }
+      }
+    }
+    ```
+
+- If the JIT encounters a `Vectorize` outside of a the `if` conditional, the JIT will throw a `OperationNotSupportedException`.
+
+- If the JIT encounters `Vectorize` in multiple arms of the conditional, the JIT will throw a
+`OperationNotSupportedException`.
+
+- Any fixed length VectorXX will not be adjusted in any way if present in a `Vectorize` block.
+
+- Nested `Vectorize` is allowed. Expansion should begin at the nested most block.
+
 ### New `Vector<T>` API Methods
 
-### `Vector<T>` Codegen Improvements
+We propose that `Vector<T>` be extended with methods that help faciliate its use as a cross platform generic variable length vector to help reduce situations that require casting `Vector` to a fixed-length vector for hand optimization with ISA-specific intrincis. 
+
+One such case is a reduction of the elements of the vector, which requires hand optimization per vector size.
+
+We propose the following methods:
+
+- `ReduceXX`, where `XX` is the reduction operation, e.g., `Add`, where the JIT will generate performant reduction code for the ISA.
+
+(Anthony: Discuss APIs for trailing / tail elements)
 
 ### `Vector512<T>` API Methods
 
 The `Vector512<T>` API surface should be defined as the same API that `Vector128` and `Vector256` expose, with the types and operations adjusted for the 512-bit vector length. 
-
-
 
 ### `Internals Upgrades for Vector512<T>`
 
@@ -370,8 +411,6 @@ As we propose to develop `Vector512<T>` as an instantiation of the `AVX512` ISA 
 `EVEX` encoding allows for more features than just emitting `AVX512` family of instructions; however, as a first pass, we propose to implement the mininum EVEX encoding to generate the instructions for the `Vector512<T>` API surface above. This represents an "MVP" for 512-bit vectors and EVEX encoding in RyuJIT. 
 
 In the following section, we detail the additional features of `EVEX` encoding that we plan to incorporate into RyuJIT to realize the full power of AVX512, but these will be added after the MVP. 
-
-(Anthony: I don't know if I want to say this, but this is what MSFT will want. We want to get the full power of EVEX in ASAP.)
 
 ### Further Internal Upgrades Specific to `AVX512`/`EVEX` for Additional Optimizations
 
