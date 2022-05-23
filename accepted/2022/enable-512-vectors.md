@@ -6,7 +6,7 @@
 
 This is problematic for a number of reasons:
 
-  1. As new SIMD ISAs release, .NET developers must write additional SIMD code paths *per optimized library*, increasing code complexity and maintainence burden. At best, much time has to be dedicated to these libraires; at worst, libraries do not get upgraded for latest hardware advancements.
+  1. As new SIMD ISAs release, .NET developers must write additional SIMD code paths *per optimized library*, increasing code complexity and maintenance burden. At best, much time has to be dedicated to these libraries; at worst, libraries do not get upgraded for latest hardware advancements.
 
   2. Hand-optimized intrinsics lock software into a specific ISA, often with fixed thresholds for determining when to select a SIMD accelerated codepath for performance gains. In a JIT environment where we can glean performance characteristics of the underlying platform, intrinsics prevent adapting to the most _performant_ SIMD ISA available for a given _workload_.
 
@@ -22,7 +22,7 @@ In this design document, we propose to extend `Vector<T>` to serve as a vessel f
 
 ### `Vector<T>` as an SIMD optimization template
 
-The following code snippet --- taken from the fallback optimization path of UTF16 to ASCII narrowing --- posses problems as the _sole_ SIMD optimization pathway in the `ASCIIUtility` library. Namely, the check on whether we should vectorize or not will create different performance characteristics depending upon the size the JIT chooses for `Vector<T>`. If `Vector256` is choosen, then buffers with 64 elements and above will be optimized; if `Vector128` is chosen, then buffers of 32 elements and above will be optimized. 
+The following code snippet --- taken from the fallback optimization path of UTF16 to ASCII narrowing --- posses problems as the _sole_ SIMD optimization pathway in the `ASCIIUtility` library. Namely, the check on whether we should vectorize or not will create different performance characteristics depending upon the size the JIT chooses for `Vector<T>`. If `Vector256` is chosen, then buffers with 64 elements and above will be optimized; if `Vector128` is chosen, then buffers of 32 elements and above will be optimized. 
 
 
 ```C#
@@ -58,7 +58,7 @@ if (elementCount >= 2 * SizeOfVector)
 }
 ```
 
-This prevents the JIT from generating code from `Vector<T>` with consistent performance behavior, both internal to .NET libraries and for external .NET developers. Partciularly with the addition of `Vector512`, workloads that previously would have been optimized would no longer clear the threshold. To aid `Vector<T>` to act as a single generic SIMD framework, we propose to add a `Vectorize.If` intrinsic that instructs the JIT to generate _multiple_ SIMD acceleration pathways. 
+This prevents the JIT from generating code from `Vector<T>` with consistent performance behavior, both internal to .NET libraries and for external .NET developers. Particularly with the addition of `Vector512`, workloads that previously would have been optimized would no longer clear the threshold. To aid `Vector<T>` to act as a single generic SIMD framework, we propose to add a `Vectorize.If` intrinsic that instructs the JIT to generate _multiple_ SIMD acceleration pathways. 
 
 For example, in the following snippet:
 
@@ -122,7 +122,7 @@ else if (elementCount >= 2 * Vector128<byte>.Count)
 }
 ```
 
-In this way, we can collapse multiple SIMD ISA checks into a single "template" SIMD ISA code which the JIT may expand. We use a new `Vectorize.If` intrinsic that allows backward compatability with `Vector<T>`, i.e., a `Vectorize.If` JIT intrinsic instructs the JIT that the code inside its block is a template for multiple vector sizes. If `Vectorize.If` is not present, `Vector<T>` will select the best ISA for the platform determined by the JIT.
+In this way, we can collapse multiple SIMD ISA checks into a single "template" SIMD ISA code which the JIT may expand. We use a new `Vectorize.If` intrinsic that allows backward compatibility with `Vector<T>`, i.e., a `Vectorize.If` JIT intrinsic instructs the JIT that the code inside its block is a template for multiple vector sizes. If `Vectorize.If` is not present, `Vector<T>` will select the best ISA for the platform determined by the JIT.
 
 ### Additional `Vector<T>` Methods for Near-Intrinsic Performance
 
@@ -188,7 +188,7 @@ which will generate code to handle the necessary reduction per platform.
 
 ### Vector512<T> Usage
 
-Exhisting code that utilizes `Vector256<T>` to perform vectorized sum over a span might look something like the following snippet (assuming the addition of a `ReduceAdd` method as described above):
+Existing code that utilizes `Vector256<T>` to perform vectorized sum over a span might look something like the following snippet (assuming the addition of a `ReduceAdd` method as described above):
 
 ```C#
 public int SumVector256(ReadOnlySpan<int> source)
@@ -261,17 +261,10 @@ We expect developers who manually write `Vector128<T>` and `Vector256<T>` code t
 ### Non-Goals
 
 
-1. For the JIT to generate alternative SIMD pathways given a `Vectorize` and `Vector<T>` code block, it should not rely on autovectorization techniques or advanced analysis. `Vectorize` is meant to serve as a hint to treat `Vector<T>` as a template for multiple ISAs given some thresholds.
+1. For the JIT to generate alternative SIMD pathways given a `Vectorize` and `Vector<T>` code block, it should not rely on auto vectorization techniques or advanced analysis. `Vectorize` is meant to serve as a hint to treat `Vector<T>` as a template for multiple ISAs given some thresholds.
 
 
 ## Stakeholders and Reviewers
-
-[Tanner Gooding]() 
-
-[Bruce Forstall]() 
-
-[Drew Kersnar]() 
-
 
 <!--
 We noticed that even in the cases where we have specs, we sometimes surprise key
@@ -378,7 +371,7 @@ early drafts).
 
 ### New `Vector<T>` API Methods
 
-We propose that `Vector<T>` be extended with methods that help faciliate its use as a cross platform generic variable length vector to help reduce situations that require casting `Vector` to a fixed-length vector for hand optimization with ISA-specific intrincis. 
+We propose that `Vector<T>` be extended with methods that help facilitate its use as a cross platform generic variable length vector to help reduce situations that require casting `Vector` to a fixed-length vector for hand optimization with ISA-specific intrincis. 
 
 One such case is a reduction of the elements of the vector, which requires hand optimization per vector size.
 
@@ -408,7 +401,7 @@ Adding 512 bit width vectors to `RyuJIT` largely consists of the following (gene
 
 As we propose to develop `Vector512<T>` as an instantiation of the `AVX512` ISA for x86/x64 architecture, most of the initial modification will take place in the xarch porition of the JIT, particularly in the lowering, code gen, and emitting stages. Adding the `EVEX` prefix to the xarch emitter (which allows to generate AVX512 family of instructions) will consume most of the initial work. 
 
-`EVEX` encoding allows for more features than just emitting `AVX512` family of instructions; however, as a first pass, we propose to implement the mininum EVEX encoding to generate the instructions for the `Vector512<T>` API surface above. This represents an "MVP" for 512-bit vectors and EVEX encoding in RyuJIT. 
+`EVEX` encoding allows for more features than just emitting `AVX512` family of instructions; however, as a first pass, we propose to implement the minimum EVEX encoding to generate the instructions for the `Vector512<T>` API surface above. This represents an "MVP" for 512-bit vectors and EVEX encoding in RyuJIT. 
 
 In the following section, we detail the additional features of `EVEX` encoding that we plan to incorporate into RyuJIT to realize the full power of AVX512, but these will be added after the MVP. 
 
@@ -420,27 +413,27 @@ Once the framework for `EVEX` encoding is implemented in the xarch code emitter,
 
 - Embedded broadcasts and explicit rounding control.
 
-- `AVX512VL` which extends much of the exhisting AVX512 instructions and capabilities, e.g., embedded broadcast, to 128-bit and 256-bit vector registers.
+- `AVX512VL` which extends much of the existing AVX512 instructions and capabilities, e.g., embedded broadcast, to 128-bit and 256-bit vector registers.
 
-As `EVEX` capability will be part of the xarch code emitter, most of the work to realize the aformentioned features will involve:
+As `EVEX` capability will already be part of the xarch code emitter, most of the work to realize the aforementioned features will involve:
 
 1. Introduction of a masked register type to the runtime.
 
-2. Define an API associated with the masked register type, e.g., `KMask8`, which reprents an 8-bit mask value to be assigned a mask register.
+2. Define an API associated with the masked register type, e.g., `KMask8`, which represents an 8-bit mask value to be assigned a mask register.
 
 3. Expand the register allocator to allocate mask registers for the masked register types, whether generated by the JIT or programmatically declared via the API and intrinsics.
 
-4. Extend instruction descriptors to encode the the presence of: (1) opmask register; (2) embedded broadcasti; and (3) explicit rounding.
+4. Extend instruction descriptors to encode the the presence of: (1) an opmask register; (2) embedded broadcasting; and (3) explicit rounding.
 
 5. Add the additional code paths to decide whether to emit VEX or EVEX prefix for 128-bit, 256-bit, or 512-bit vector instructions given the features in (4) above.
 
 These upgrades will allow the following optimizations:
 
-- Folding of a scalar load, SIMD broadcast, then SIMD opertion into a single embedded load, for 128-bit, 256-bit, and 512-bit vector lengths.
+- Folding of a scalar load, SIMD broadcast, then SIMD operation into a single embedded load, for 128-bit, 256-bit, and 512-bit vector lengths.
 
 - Accelerated processing of trailing elements with an opmask that performs a partial load and partial operation on a vector register.
 
-- Accelerated scalar operations, e.g., computation of approximate recipriocals, conversion of double float to unsigned long, with 
+- Accelerated scalar operations, e.g., computation of approximate reciprocals, conversion of double float to unsigned long.
 
 ## Q & A
 
