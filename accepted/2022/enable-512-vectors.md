@@ -2,11 +2,11 @@
 
 **Owner** [Anthony Canino](https://github.com/anthonycanino) 
 
-.NET support for SIMD acceleration through `Vector<T>` API allows developers to transparently harness the power of advanced SIMD ISAs without expert-level knowledge of low-level hardware details and optimization techniques. Given its variable length nature, `Vector<T>` allows to adapt to the most performant SIMD ISA implementation available for the platform. However, internal .NET libraries use `Vector<T>` as a fallback SIMD code path, where hand-optimized intrinsic code paths, e.g, SSE or AVX2, provide more performance due to `Vector<T>` platform-agnostic API. 
+.NET support for SIMD acceleration through `Vector<T>` API allows developers to transparently harness the power of advanced SIMD ISAs without expert-level knowledge of low-level hardware details and optimization techniques. Given its variable-length nature, `Vector<T>` allows to adapt to the most performant SIMD ISA implementation available for the platform. However, internal .NET libraries use `Vector<T>` as a fallback SIMD code path, where hand-optimized intrinsic code paths, e.g, SSE or AVX2, provide more performance due to `Vector<T>` platform-agnostic API. 
 
 This is problematic for a number of reasons:
 
-  1. As new SIMD ISAs release, .NET developers must write additional SIMD code paths *per optimized library*, increasing code complexity and maintainence burden. At best, much time has to be dedicated to these libraires; At worst, libraries do not get upgraded for latest hardware advancements.
+  1. As new SIMD ISAs release, .NET developers must write additional SIMD code paths *per optimized library*, increasing code complexity and maintainence burden. At best, much time has to be dedicated to these libraires; at worst, libraries do not get upgraded for latest hardware advancements.
 
   2. Hand-optimized intrinsics lock software into a specific ISA, often with fixed thresholds for determining when to select a SIMD accelerated codepath for performance gains. In a JIT environment where we can glean performance characteristics of the underlying platform, intrinsics prevent adapting to the most _performant_ SIMD ISA available for a given _workload_.
 
@@ -22,7 +22,7 @@ In this design document, we propose to extend `Vector<T>` to serve as a vessel f
 
 ### `Vector<T>` as an SIMD optimization template
 
-The following code snippet --- taken from the fallback optimization path of UTF16 to ASCII narrowing --- posses problems as the _sole_ SIMD optimization pathway in the ASCIIUtility library. Namely, the check on whether we should vectorize or not will create different performance characteristics depending upon the size the JIT chooses for `Vector<T>`. If `Vector256` is choosen, then buffers with 64 elements and above will be optimized; if `Vector128` is chosen, then buffers of 32 elements and above will be optimized. 
+The following code snippet --- taken from the fallback optimization path of UTF16 to ASCII narrowing --- posses problems as the _sole_ SIMD optimization pathway in the `ASCIIUtility` library. Namely, the check on whether we should vectorize or not will create different performance characteristics depending upon the size the JIT chooses for `Vector<T>`. If `Vector256` is choosen, then buffers with 64 elements and above will be optimized; if `Vector128` is chosen, then buffers of 32 elements and above will be optimized. 
 
 
 ```C#
@@ -58,7 +58,7 @@ if (elementCount >= 2 * SizeOfVector)
 }
 ```
 
-This prevents `Vector<T>` from consistent behavior both internal to .NET libraries and for external .NET developers. Partciularly with the addition of `Vector512`, workloads that previously would have been optimized would no longer clear the threshold. To aid `Vector<T>` is a single generic SIMD framework, we propose to add a `Vectorize` intrinsic that instructs the JIT to generate _multiple_ SIMD acceleration pathways. 
+This prevents the JIT from generating code from `Vector<T>` with consistent performance behavior, both internal to .NET libraries and for external .NET developers. Partciularly with the addition of `Vector512`, workloads that previously would have been optimized would no longer clear the threshold. To aid `Vector<T>` to act as a single generic SIMD framework, we propose to add a `Vectorize.If` intrinsic that instructs the JIT to generate _multiple_ SIMD acceleration pathways. 
 
 For example, in the following snippet:
 
@@ -122,11 +122,11 @@ else if (elementCount >= 2 * Vector128<byte>.Count)
 }
 ```
 
-In this way, we can collapse multiple SIMD ISA checks into a single "template" SIMD ISA code which the JIT may expand. We use a new `Vectorize` intrinsic that allows backward compatability with `Vector<T>`, i.e., a `Vectorize` JIT intrinsic instructs the JIT that the code inside its block is a template for multiple vector sizes. If `Vectorize` is not present, `Vector<T>` will generate as a single vector size chosen by the JIT.
+In this way, we can collapse multiple SIMD ISA checks into a single "template" SIMD ISA code which the JIT may expand. We use a new `Vectorize.If` intrinsic that allows backward compatability with `Vector<T>`, i.e., a `Vectorize.If` JIT intrinsic instructs the JIT that the code inside its block is a template for multiple vector sizes. If `Vectorize.If` is not present, `Vector<T>` will select the best ISA for the platform determined by the JIT.
 
 ### Additional `Vector<T>` Methods for Near-Intrinsic Performance
 
-In the following examples:
+In the following example:
 
 ```C#
 public int SumVector(ReadOnlySpan<int> source)
@@ -184,11 +184,11 @@ public int SumVector(ReadOnlySpan<int> source)
 }
 ```
 
-which will handle the necessary reduction per platform. 
+which will generate code to handle the necessary reduction per platform. 
 
 ### Vector512<T> Usage
 
-Exhisting code that utilizes `Vector256<T>` to perform vectorized sum over a span might look something like the following snippet, where `ReduceVector256<T>` is a method that elides the details of a sum reduction of the elements in the vector:
+Exhisting code that utilizes `Vector256<T>` to perform vectorized sum over a span might look something like the following snippet (assuming the addition of a `ReduceAdd` method as described above):
 
 ```C#
 public int SumVector256(ReadOnlySpan<int> source)
@@ -215,7 +215,7 @@ public int SumVector256(ReadOnlySpan<int> source)
 }
 ```
 
-Like the above snippet, the `Vector256512<T>` API would function in much the same way, with most of the `Vector256` API simply replaced by `Vector512` methods:
+Like the above snippet, the `Vector512<T>` API would function in much the same way, with most of the `Vector256` API simply replaced by `Vector512` methods:
 
 
 ```C#
@@ -263,6 +263,7 @@ We expect developers who manually write `Vector128<T>` and `Vector256<T>` code t
 
 1. For the JIT to generate alternative SIMD pathways given a `Vectorize` and `Vector<T>` code block, it should not rely on autovectorization techniques or advanced analysis. `Vectorize` is meant to serve as a hint to treat `Vector<T>` as a template for multiple ISAs given some thresholds.
 
+
 ## Stakeholders and Reviewers
 
 [Tanner Gooding]() 
@@ -289,13 +290,13 @@ early drafts).
 
 #### `Vectorize` Code Block
 
-- The presence of `Vectorize.If` in conditional of an `if` statement drives the expansion.
+- The presence of `Vectorize.If` in the conditional of an `if` statement drives the expansion, which creates a `Vectorize` code block.
 
-- `Vectorize.If` method accepts a boolean expression as a parameter. The boolean expression must contain a reference to `Vector`, as the `Vector` will be replaced per arm as discussed below. If no reference to `Vector` is found, the JIT will throw an `OperationNotSupportedException`.
+- The `Vectorize.If` intrinsic accepts a boolean expression as a parameter. The boolean expression must contain a reference to `Vector`, as the `Vector` will be replaced per arm as discussed below and allows the selection of alternative code paths. If no reference to `Vector` is found, the JIT will throw an `OperationNotSupportedException`.
 
 - When the JIT encounters a `Vectorize.If` intrinsic in a conditional block, the JIT will:
 
-  - Clone the if statement and body with the `Vectorize`, creating an arm for each available vector length on the platform. 
+  - Clone the if condition and associated arm with the `Vectorize.If`, creating an arm for each available vector length on the platform. 
 
   - In each cloned arm any `Vector<T>` operations will be translated to `VectorXX<T>` operations, where XX represents the vector length for that arm.
 
@@ -306,7 +307,7 @@ early drafts).
     ```C#
     void unsafe foo(Span<int> sp)
     {
-      if (Vectorize.If(X >= Vector<int>.Count))
+      if (Vectorize.If(sp.Length >= Vector<int>.Count))
       {
         int blocks = sp.Length / Vector<int>.Count;
         for (int i = 0; i < blocks; i ++)
@@ -330,7 +331,7 @@ early drafts).
     ```C#
     void unsafe foo(Span<int> sp)
     {
-      if (X >= Vector512<int>.Count)
+      if (sp.Length >= Vector512<int>.Count)
       {
         int blocks = sp.Length / Vector512<int>.Count;
         for (int i = 0; i < blocks; i ++)
@@ -339,7 +340,7 @@ early drafts).
           // ...
         }
       }
-      else if (X >= Vector256<int>.Count)
+      else if (sp.Length >= Vector256<int>.Count)
       {
         int blocks = sp.Length / Vector256<int>.Count;
         for (int i = 0; i < blocks; i ++)
@@ -348,7 +349,7 @@ early drafts).
           // ...
         }
       }
-      else if (X >= Vector128<int>.Count)
+      else if (sp.Length >= Vector128<int>.Count)
       {
         int blocks = sp.Length / Vector128<int>.Count;
         for (int i = 0; i < blocks; i ++)
@@ -367,14 +368,13 @@ early drafts).
     }
     ```
 
-- If the JIT encounters a `Vectorize` outside of a the `if` conditional, the JIT will throw a `OperationNotSupportedException`.
+- If the JIT encounters a `Vectorize.If` outside of an `if` conditional, the JIT will throw an `OperationNotSupportedException`.
 
-- If the JIT encounters `Vectorize` in multiple arms of the conditional, the JIT will throw a
-`OperationNotSupportedException`.
+- If the JIT encounters `Vectorize.If` in multiple arms of the conditional, the JIT will throw an `OperationNotSupportedException`.
 
-- Any fixed length VectorXX will not be adjusted in any way if present in a `Vectorize` block.
+- Any fixed length VectorXX will not be adjusted in any way if present in a `Vectorize.If` block.
 
-- Nested `Vectorize` is allowed. Expansion should begin at the nested most block.
+- Nested `Vectorize.If` is allowed. Expansion begins at the most nested block.
 
 ### New `Vector<T>` API Methods
 
