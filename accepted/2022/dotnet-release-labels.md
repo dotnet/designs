@@ -72,7 +72,7 @@ In some views, we can only show one label. In those cases, we will show the most
 - show support status label, if
   - support status is "Preview"
   - support status is "Go Live"
-  - support status is (Maintence or  EOL)
+  - support status is (Maintenance or  EOL)
 - else show release type
 
 Note: "latest" will never be shown as a single most relevant label. Doing so might mislead users.
@@ -93,19 +93,19 @@ Now (May 2022):
 
 - .NET Core 3.1 (LTS)
 - .NET 5 (EOL)
-- .NET 6 (LTS; Latest)
+- .NET 6 (LTS, Latest)
 - .NET 7 (Preview, STS)
 
 Just before .NET 7 GA (October, 2022):
 
 - .NET Core 3.1 (Maintenance; LTS)
 - .NET 5 (EOL)
-- .NET 6 (LTS; Latest)
-- .NET 7 (Go-Live; Preview, STS)
+- .NET 6 (LTS, Latest)
+- .NET 7 (Go-Live, Preview, STS)
 
 At .NET 7 GA (November 2022):
 
-- .NET Core 3.1 (Maintenance; LTS)
+- .NET Core 3.1 (Maintenance, LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
 - .NET 7 (STS, Latest)
@@ -116,7 +116,7 @@ Just before .NET 8 GA (October 2023):
 - .NET 5 (EOL)
 - .NET 6 (LTS)
 - .NET 7 (STS, Latest)
-- .NET 8 (Go-Live; Preview)
+- .NET 8 (Go-Live, Preview)
 
 At .NET 8 GA (November 2023):
 
@@ -124,7 +124,7 @@ At .NET 8 GA (November 2023):
 - .NET 5 (EOL)
 - .NET 6 (LTS)
 - .NET 7 (Maintenance, STS)
-- .NET 8 (LTS; Latest)
+- .NET 8 (LTS, Latest)
 
 +6 months (May, 2024):
 
@@ -132,7 +132,7 @@ At .NET 8 GA (November 2023):
 - .NET 5 (EOL)
 - .NET 6 (Maintenance; LTS)
 - .NET 7 (EOL)
-- .NET 8 (LTS; Latest)
+- .NET 8 (LTS, Latest)
 - .NET 9 (Preview, STS)
 
 At .NET 9 GA (November 2024):
@@ -219,3 +219,5 @@ The array would look like the following:
 ```
 
 Based on [release-index.json](https://github.com/dotnet/core/blob/77017a2110cd00ce997c7840c2542d7a5ec323a5/release-notes/releases-index.json#L15-L26).
+
+Switching from `current` to `sts` is a breaking change. This string doesn't appear anywhere currently since .NET 5 is EOL. .NET 7 is the next short-term release. We should switch to `sts` .NET 7 as a new descriptor. That makes the change a little less breaking.
