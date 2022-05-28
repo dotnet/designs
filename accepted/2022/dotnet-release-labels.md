@@ -6,10 +6,10 @@ We started out .NET Core with a clean slate and the opportunity to align with mo
 
 Today, we have a few release timeframes:
 
-- Pre-release
+- Pre-release (previews and release candidates)
 - Full support
 - Maintenance
-- End of support
+- End of life/support
 
 For stable releases (post-GA), we have two support durations:
 
@@ -41,24 +41,48 @@ Various projects use various terms to describe release types and support timefra
 - [Red Hat Enterprise Linux (RHEL)](https://access.redhat.com/support/policy/updates/errata/) releases have "Full", "Maintenance", and "Extended life" support phases. Each RHEL release is LTS.
 - [Ubuntu](https://wiki.ubuntu.com/Releases) releases have "Current" and "Extended Security" support phases. Release are either regular (with no additional label) or LTS. Every two years, there are 3 regular releases and one LTS release. All currently-supported releases are considered "Current".
 
-## Proposed labels
-
 The industry examples demonstrate that we are using the "LTS" label correctly and the "Current" label incorrectly. The Ubuntu/Canonical model is the closest to our practice.
 
-Labels:
+## Proposed labels
 
-- **Preview** -- Indicates a release is in preview and unsupported. Includes release candidates.
+New labels are proposed for a variety of purposes.
+
+**Release-type (support duration) labels:**
+
+- **STS** -- Indicates a release is supported for the Short Term Support (STS) timeframe (18 months) and currently actively supported.
+- **LTS** -- Indicates a release is supported for the Long Term Support (STS) timeframe (3 years) and currently actively supported.
+
+**Release support status labels:**
+
+- **Preview** -- Indicates a release is in preview and (unless "Go-Live") is unsupported.
 - **Go-Live** -- Indicates a preview or release candidate is supported in production.
-- **Latest** -- Indicates that a release is the latest actively supported .NET release (not a Preview or Release Candidate).
-- **LTS** -- Indicates a release is supported for the LTS timeframe (3 years) and currently actively supported.
 - **Maintenance** -- Indicates that a release is within 6 months of remaining support, with security fixes only.
 - **EOL** -- Indicates that the support has ended ("end of life").
+
+**Other labels:**
+
+- **Latest** -- Indicates that a release is the latest actively supported .NET release (not a Preview or Release Candidate).
 
 Notes:
  - The **Current** label will no longer be used.
  - There will be no specific label for the shorter non-LTS releases.
 
-These labels will show up in multiple places, including the [.NET Download pages](https://dotnet.microsoft.com/download/dotnet), [release notes](https://github.com/dotnet/core/blob/main/releases.md), [releases.json](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json), and Visual Studio.
+In some views, we can only show one label. In those cases, we will show the most relevant label, which will use the following algorithm:
+
+- show support status label, if
+  - support status is "Preview"
+  - support status is "Go Live"
+  - support status is (Maintence or  EOL)
+- else show release type
+
+Note: "latest" will never be shown as a single most relevant label. Doing so might mislead users.
+
+These labels will show up in multiple places, including:
+
+- [.NET Download pages](https://dotnet.microsoft.com/download/dotnet)
+- [Release notes](https://github.com/dotnet/core/blob/main/releases.md)
+- [releases.json](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json)
+- Visual Studio
 
 ## In practice
 
@@ -70,28 +94,28 @@ Now (May 2022):
 - .NET Core 3.1 (LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS; Latest)
-- .NET 7 (Preview)
+- .NET 7 (Preview, STS)
 
 Just before .NET 7 GA (October, 2022):
 
 - .NET Core 3.1 (Maintenance; LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS; Latest)
-- .NET 7 (Go-Live; Preview)
+- .NET 7 (Go-Live; Preview, STS)
 
 At .NET 7 GA (November 2022):
 
 - .NET Core 3.1 (Maintenance; LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Latest)
+- .NET 7 (STS, Latest)
 
 Just before .NET 8 GA (October 2023):
 
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Latest)
+- .NET 7 (STS, Latest)
 - .NET 8 (Go-Live; Preview)
 
 At .NET 8 GA (November 2023):
@@ -99,7 +123,7 @@ At .NET 8 GA (November 2023):
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Maintenance)
+- .NET 7 (Maintenance, STS)
 - .NET 8 (LTS; Latest)
 
 +6 months (May, 2024):
@@ -109,7 +133,7 @@ At .NET 8 GA (November 2023):
 - .NET 6 (Maintenance; LTS)
 - .NET 7 (EOL)
 - .NET 8 (LTS; Latest)
-- .NET 9 (Preview)
+- .NET 9 (Preview, STS)
 
 At .NET 9 GA (November 2024):
 
@@ -118,12 +142,80 @@ At .NET 9 GA (November 2024):
 - .NET 6 (EOL)
 - .NET 7 (EOL)
 - .NET 8 (LTS)
-- .NET 9 (Latest)
+- .NET 9 (STS, Latest)
 
-In some views, we can only show one label. In those cases, we will show the most relevant label, which is the first one shown in each example.
+Notes:
 
-For the [download page](https://dotnet.microsoft.com/en-us/download/dotnet) on the .NET website, the key difference from past practice is the following:
-
-- .NET 7 will show a blank status after .NET 7 GA (but it will have a "Maintenance" status after .NET 8 GA)
+- Release type is not displayed for EOL releases, since it isn't relevant.
+- The most relevant label is listed first, for cases where only one label can be shown.
 
 A given presentation (like Visual Studio) can print long-form or alternate versions of these labels. That's out of scope of this document.
+
+## Affect on `releases.json`
+
+`releases.json` is a file (and schema) that the .NET Team publishes to enable programatic access to the catalog of .NET releases.
+
+It is composed of two files:
+
+- Singular [`releases-index.json`](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json) file that describes all the major/minor releases, at a high-level.
+- Release-specific [`releases.json`](https://github.com/dotnet/core/blob/main/release-notes/6.0/releases.json) file that describes each of the patch releases for each major/minor .NET release.
+
+These files include labels. We have a strong desire to not break the current usage patterns, or as little as possible. They already display the most relevant tag per the scheme proposed in this document. We, however, need to adopt `sts` in place of `current`.
+
+`release-index.json` currently displays the most relevant tag. We only need to change it to display `sts` instead of current`.
+
+For example, this historical use of [`release-index.json` uses the `current` label](https://github.com/dotnet/core/blob/8db1474a58ce69dfca707511e0354ff9ba492437/release-notes/releases-index.json#L23):
+
+```json
+{
+    "channel-version": "5.0",
+    "latest-release": "5.0.11",
+    "latest-release-date": "2021-10-12",
+    "security": true,
+    "latest-runtime": "5.0.11",
+    "latest-sdk": "5.0.402",
+    "product": ".NET",
+    "support-phase": "current",
+    "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/5.0/releases.json"
+},
+```
+
+`releases.json` users the [same scheme in its header](https://github.com/dotnet/core/blob/8db1474a58ce69dfca707511e0354ff9ba492437/release-notes/5.0/releases.json#L7), as demonstrated below:
+
+```json
+{
+  "channel-version": "5.0",
+  "latest-release": "5.0.11",
+  "latest-release-date": "2021-10-12",
+  "latest-runtime": "5.0.11",
+  "latest-sdk": "5.0.402",
+  "support-phase": "current",
+  "lifecycle-policy": "https://dotnet.microsoft.com/platform/support/policy/",
+  "releases": [
+    {
+```
+
+Going forward, we'll make two changes:
+
+- `sts` will be used in place of `current`.
+- A new string array property will be added with all the support labels, with the most-relevant first.
+
+The array would look like the following:
+
+```json
+{
+    "channel-version": "6.0",
+    "latest-release": "6.0.5",
+    "latest-release-date": "2022-05-10",
+    "security": true,
+    "latest-runtime": "6.0.5",
+    "latest-sdk": "6.0.300",
+    "product": ".NET",
+    "support-phase": "lts",
+    "support-labels: ["lts", "latest"],
+    "eol-date": "2024-11-12",
+    "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json"
+},
+```
+
+Based on [release-index.json](https://github.com/dotnet/core/blob/77017a2110cd00ce997c7840c2542d7a5ec323a5/release-notes/releases-index.json#L15-L26).
