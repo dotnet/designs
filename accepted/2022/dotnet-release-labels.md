@@ -78,7 +78,7 @@ In some views, we can only show one label. In those cases, we will show the most
   - support status is (Maintenance or  EOL)
 - else show release type
 
-For example, the `support-phase` propery in `releases-index.json` and `releases.json` will apply this algorithm.
+For example, the `support-phase` property in `releases-index.json` and `releases.json` will apply this algorithm.
 
 These labels will show up in multiple places, including:
 
@@ -154,7 +154,7 @@ Notes:
 
 A given presentation (like Visual Studio) can print long-form or alternate versions of these labels. That's out of scope of this document.
 
-## Affect on `releases.json`
+## Effect on `releases.json`
 
 `releases.json` is a family of files (and schema) that the .NET Team publishes to enable programatic access to the catalog of .NET releases.
 
