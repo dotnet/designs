@@ -59,13 +59,16 @@ New labels are proposed for a variety of purposes.
 - **Maintenance** -- Indicates that a release is within 6 months of remaining support, with security fixes only.
 - **EOL** -- Indicates that the support has ended ("end of life").
 
-**Other labels:**
+**Other proposed labels:**
 
 - **Latest** -- Indicates that a release is the latest actively supported .NET release (not a Preview or Release Candidate).
+- **TILL202212** -- Indicates that a release is supported until a particular month.
+
+Note: "Other proposed labels" are labels that were proposed and that may or may not get used. They are good ideas, so they are being documented. Various pages and viewers of support information can use these labels even if Microsoft chooses not to.
 
 Notes:
- - The **Current** label will no longer be used.
- - There will be no specific label for the shorter non-LTS releases.
+ - The **Current** label will no longer be used and will be replaced with **STS**.
+ - Labels can use whatever casing makes sense for the artifact. For example, `releases.json` will use all lower-case.
 
 In some views, we can only show one label. In those cases, we will show the most relevant label, which will use the following algorithm:
 
@@ -75,7 +78,7 @@ In some views, we can only show one label. In those cases, we will show the most
   - support status is (Maintenance or  EOL)
 - else show release type
 
-Note: "latest" will never be shown as a single most relevant label. Doing so might mislead users.
+For example, the `support-phase` propery in `releases-index.json` and `releases.json` will apply this algorithm.
 
 These labels will show up in multiple places, including:
 
@@ -153,16 +156,16 @@ A given presentation (like Visual Studio) can print long-form or alternate versi
 
 ## Affect on `releases.json`
 
-`releases.json` is a file (and schema) that the .NET Team publishes to enable programatic access to the catalog of .NET releases.
+`releases.json` is a family of files (and schema) that the .NET Team publishes to enable programatic access to the catalog of .NET releases.
 
-It is composed of two files:
+There are two forms of files:
 
 - Singular [`releases-index.json`](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json) file that describes all the major/minor releases, at a high-level.
 - Release-specific [`releases.json`](https://github.com/dotnet/core/blob/main/release-notes/6.0/releases.json) file that describes each of the patch releases for each major/minor .NET release.
 
 These files include labels. We have a strong desire to not break the current usage patterns, or as little as possible. They already display the most relevant tag per the scheme proposed in this document. We, however, need to adopt `sts` in place of `current`.
 
-`release-index.json` currently displays the most relevant tag. We only need to change it to display `sts` instead of current`.
+`release-index.json` currently displays the most relevant tag.
 
 For example, this historical use of [`release-index.json` uses the `current` label](https://github.com/dotnet/core/blob/8db1474a58ce69dfca707511e0354ff9ba492437/release-notes/releases-index.json#L23):
 
@@ -195,12 +198,21 @@ For example, this historical use of [`release-index.json` uses the `current` lab
     {
 ```
 
-Going forward, we'll make two changes:
+Going forward, we'll make the following changes:
 
-- `sts` will be used in place of `current`.
-- A new string array property will be added with all the support labels, with the most-relevant first.
+- `sts` will be used in place of `current`. This is a breaking change.
+- The `support-phase` property will follow the algorithm described earlier.
+- A new `release-type` property will be added that will have one of two values: `lts` or `sts`.
 
-The array would look like the following:
+We cannot change the existing `support-phase` property significantly, due to compatibility. It will go through the following progression:
+
+`preview` -> `go-live` -> [`lts` | `sts`] -> `maintenance` -> `eol`
+
+The new `release-type` property will be set as either `lts` or `sts` and will not change, even after EOL.
+
+When `release-type` == `support-phase`, that means "active" of "full" support. All other states are self-descriptive.
+
+The new format will look like the following:
 
 ```json
 {
@@ -212,7 +224,7 @@ The array would look like the following:
     "latest-sdk": "6.0.300",
     "product": ".NET",
     "support-phase": "lts",
-    "support-labels: ["lts", "latest"],
+    "release-type": "lts"
     "eol-date": "2024-11-12",
     "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json"
 },
@@ -220,4 +232,14 @@ The array would look like the following:
 
 Based on [release-index.json](https://github.com/dotnet/core/blob/77017a2110cd00ce997c7840c2542d7a5ec323a5/release-notes/releases-index.json#L15-L26).
 
-Switching from `current` to `sts` is a breaking change. This string doesn't appear anywhere currently since .NET 5 is EOL. .NET 7 is the next short-term release. We should switch to `sts` .NET 7 as a new descriptor. That makes the change a little less breaking.
+When .NET 6 has 6 months of support left, the support phase property will change to the following value:
+
+```json
+    "support-phase": "maintenance",
+```
+
+This approach follows established practice.
+
+## Breaking change
+
+Switching from `current` to `sts` is a breaking change. This string doesn't appear anywhere currently since .NET 5 is EOL. .NET 7 is the next short-term release, and is currenlty several months away from being a stable release, at which point `support-phase` == `sts`. As a result, the change is not immediately breaking and enables readers multiple months to react.
