@@ -50,7 +50,7 @@ New labels are proposed for a variety of purposes.
 **Release-type (support duration) labels:**
 
 - **STS** -- Indicates a release is supported for the Short Term Support (STS) timeframe (18 months) and currently actively supported.
-- **LTS** -- Indicates a release is supported for the Long Term Support (STS) timeframe (3 years) and currently actively supported.
+- **LTS** -- Indicates a release is supported for the Long Term Support (LTS) timeframe (3 years) and currently actively supported.
 
 **Release support status labels:**
 
