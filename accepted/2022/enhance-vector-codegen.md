@@ -205,7 +205,7 @@ public static unsafe nuint NarrowUtf16ToAscii_Stub(char* pUtf16Buffer, byte* pAs
 }
 ```
 
-that will sample add recompile `NarrowUtf16ToAscii` to select a larger vector size for `Vector<T>` if the average workload to the method is determined to be worth the cost.
+that will sample and recompile `NarrowUtf16ToAscii` to select a larger vector size for `Vector<T>` if the average workload to the method is determined to be worth the cost.
 
 ### Additional `Vector<T>` Methods for Near-Intrinsic Performance
 
@@ -219,7 +219,7 @@ that will sample add recompile `NarrowUtf16ToAscii` to select a larger vector si
 
 2. In combination with the JIT, `Vector<T>` written code should allow to adapt to the best performance of underlying platform, i.e., the JIT may generate multiple codepaths and thresholds that select at runtime which SIMD ISA to use.
 
-3. `Vector<T>` API surface should include sufficiently expressive methods to reach the first goal above. 
+3. `Vector<T>` API surface should include sufficiently expressive methods to reach the first goal above. These methods allow to use `Vector<T>` generically without explicit knowledge of vector length or intrinsics.
 
 ### Non-Goals
 
@@ -329,9 +329,10 @@ early drafts).
 
 - Nested `Vectorize.If` is allowed. Expansion begins at the most nested block.
 
-#### 2. PGO Codegen from `Vector<T>` 
+#### 2. PGO Codegen from `Vector<T>` and `#[Vectorize]`
 
-##### Detecting Sample Points
+In order to perform profile guided optimization for methods annotated with `#[Vectorize]`, the JIT must detect which method parameters to sample and what thresholds should trigger recompilation based on those sample points.
+##### Detecting Sample Points and Thresholds
 
 The presence of a `#[Vectorize]` attribute instructs the JIT to perform a dependence analysis upon first encountering the method to determine what method parameters to sample.
 
