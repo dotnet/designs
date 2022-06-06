@@ -16,43 +16,53 @@ In this design document, we propose to extend `Vector<T>` to serve as a vessel f
 
   2. Allowing for `Vector<T>` to select the best available `VectorXX` for the platform, with support for dynamically selecting the vector width based on information available at runtime, e.g,. the size of the `Span` being vectorized.
 
+
+We detail two alternative designs to achieve the aforementioned goals: (1) a templated approach, where the JIT treats `Vector<T>` as a template to statically generate alternative vectorized code paths per-available SIMD ISA that select for the size of the workload at runtime, and (2) a profile-guided optimization approach where the JIT dynamically selects the most performant SIMD ISA for `Vector<T>` at runtime per-method, with the capability to re-compile a `Vector<T>` method as needed. 
+
 ## Scenarios and User Experience
 
-### `Vector<T>` as an SIMD optimization template
+### `Vector<T>` as an SIMD Optimization Interface
+
+#### 1. Templated Codegen from `Vector<T>`
 
 The following code snippet --- taken from the fallback optimization path of UTF16 to ASCII narrowing --- posses problems as the _sole_ SIMD optimization pathway in the `ASCIIUtility` library. Namely, the check on whether we should vectorize or not will create different performance characteristics depending upon the size the JIT chooses for `Vector<T>`. If `Vector256` is chosen, then buffers with 64 elements and above will be optimized; if `Vector128` is chosen, then buffers of 32 elements and above will be optimized. 
 
 
 ```C#
-nuint currentOffset = 0;
-uint SizeOfVector = (uint)Unsafe.SizeOf<Vector<byte>>(); // JIT will make this a const
-
-// Only bother vectorizing if we have enough data to do so.
-if (elementCount >= 2 * SizeOfVector)
+public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
 {
   // ...
 
-  Vector<ushort> maxAscii = new Vector<ushort>(0x007F);
+  nuint currentOffset = 0;
+  uint SizeOfVector = (uint)Unsafe.SizeOf<Vector<byte>>(); // JIT will make this a const
 
-  nuint finalOffsetWhereCanLoop = elementCount - 2 * SizeOfVector;
-  do
+  // Only bother vectorizing if we have enough data to do so.
+  if (elementCount >= 2 * SizeOfVector)
   {
-      Vector<ushort> utf16VectorHigh = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset);
-      Vector<ushort> utf16VectorLow = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count);
+    // ...
 
-      if (Vector.GreaterThanAny(Vector.BitwiseOr(utf16VectorHigh, utf16VectorLow), maxAscii))
-      {
-          break; // found non-ASCII data
-      }
+    Vector<ushort> maxAscii = new Vector<ushort>(0x007F);
 
-      // TODO: Is the below logic also valid for big-endian platforms?
-      Vector<byte> asciiVector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
-      Unsafe.WriteUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset, asciiVector);
+    nuint finalOffsetWhereCanLoop = elementCount - 2 * SizeOfVector;
+    do
+    {
+        Vector<ushort> utf16VectorHigh = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset);
+        Vector<ushort> utf16VectorLow = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count);
 
-      currentOffset += SizeOfVector;
-  } while (currentOffset <= finalOffsetWhereCanLoop);
+        if (Vector.GreaterThanAny(Vector.BitwiseOr(utf16VectorHigh, utf16VectorLow), maxAscii))
+        {
+            break; // found non-ASCII data
+        }
 
-  // ...
+        // TODO: Is the below logic also valid for big-endian platforms?
+        Vector<byte> asciiVector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
+        Unsafe.WriteUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset, asciiVector);
+
+        currentOffset += SizeOfVector;
+    } while (currentOffset <= finalOffsetWhereCanLoop);
+
+    // ...
+  }
 }
 ```
 
@@ -61,129 +71,145 @@ This prevents the JIT from generating code from `Vector<T>` with consistent perf
 For example, in the following snippet:
 
 ```C#
-nuint currentOffset = 0;
-
-// Only bother vectorizing if we have enough data to do so.
-if (Vectorize.If(elementCount >= 2 * Unsafe.Sizeof<Vector<byte>>())
+public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
 {
   // ...
 
-  Vector<ushort> maxAscii = new Vector<ushort>(0x007F);
+  nuint currentOffset = 0;
 
-  nuint finalOffsetWhereCanLoop = elementCount - 2 * SizeOfVector;
-  do
+  // Only bother vectorizing if we have enough data to do so.
+  if (Vectorize.If(elementCount >= 2 * Unsafe.Sizeof<Vector<byte>>())
   {
-      Vector<ushort> utf16VectorHigh = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset);
-      Vector<ushort> utf16VectorLow = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count);
+    // ...
 
-      if (Vector.GreaterThanAny(Vector.BitwiseOr(utf16VectorHigh, utf16VectorLow), maxAscii))
-      {
-          break; // found non-ASCII data
-      }
+    Vector<ushort> maxAscii = new Vector<ushort>(0x007F);
 
-      // TODO: Is the below logic also valid for big-endian platforms?
-      Vector<byte> asciiVector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
-      Unsafe.WriteUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset, asciiVector);
+    nuint finalOffsetWhereCanLoop = elementCount - 2 * SizeOfVector;
+    do
+    {
+        Vector<ushort> utf16VectorHigh = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset);
+        Vector<ushort> utf16VectorLow = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count);
 
-      currentOffset += SizeOfVector;
-  } while (currentOffset <= finalOffsetWhereCanLoop);
+        if (Vector.GreaterThanAny(Vector.BitwiseOr(utf16VectorHigh, utf16VectorLow), maxAscii))
+        {
+            break; // found non-ASCII data
+        }
+
+        // TODO: Is the below logic also valid for big-endian platforms?
+        Vector<byte> asciiVector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
+        Unsafe.WriteUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset, asciiVector);
+
+        currentOffset += SizeOfVector;
+    } while (currentOffset <= finalOffsetWhereCanLoop);
 
 
-  // ...
+    // ...
+  }
 }
 ```
 
 the JIT to generate would generate the following depending upon the availability of the SIMD ISA of the platform:
 
 ```C#
-// Only bother vectorizing if we have enough data to do so.
-if (elementCount >= 2 * Vector512<byte>.Count)
+public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
 {
-  // Execute a Vector512 pathway
-  Vector512<ushort> maxAscii = new Vector512<ushort>(0x007F);
-
   // ...
-}
-else if (elementCount >= 2 * Vector256<byte>.Count)
-{
-  // Execute a Vector512 pathway
-  Vector256<ushort> maxAscii = new Vector256<ushort>(0x007F);
 
-  // ...
-}
-else if (elementCount >= 2 * Vector128<byte>.Count)
-{
-  // Execute a Vector512 pathway
-  Vector128<ushort> maxAscii = new Vector128<ushort>(0x007F);
+  // Only bother vectorizing if we have enough data to do so.
+  if (elementCount >= 2 * Vector512<byte>.Count)
+  {
+    // Execute a Vector512 pathway
+    Vector512<ushort> maxAscii = new Vector512<ushort>(0x007F);
 
-  // ...
+    // ...
+  }
+  else if (elementCount >= 2 * Vector256<byte>.Count)
+  {
+    // Execute a Vector512 pathway
+    Vector256<ushort> maxAscii = new Vector256<ushort>(0x007F);
+
+    // ...
+  }
+  else if (elementCount >= 2 * Vector128<byte>.Count)
+  {
+    // Execute a Vector512 pathway
+    Vector128<ushort> maxAscii = new Vector128<ushort>(0x007F);
+
+    // ...
+  }
 }
 ```
 
 In this way, we can collapse multiple SIMD ISA checks into a single "template" SIMD ISA code which the JIT may expand. We use a new `Vectorize.If` intrinsic that allows backward compatibility with `Vector<T>`, i.e., a `Vectorize.If` JIT intrinsic instructs the JIT that the code inside its block is a template for multiple vector sizes. If `Vectorize.If` is not present, `Vector<T>` will select the best ISA for the platform determined by the JIT.
 
+#### 2. PGO Codegen from `Vector<T>`
+
+We propose to introduce a `#[Vectorize]` attribute which instructs to JIT to dynamically profile a method to select an optimal length for `Vector<T>`. Returning to the example above, the presence of `#[Vectorize]`:
+
+```C#
+#[Vectorize]
+public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
+{
+  // ...
+  nuint currentOffset = 0;
+  uint SizeOfVector = (uint)Unsafe.SizeOf<Vector<byte>>(); // JIT will make this a const
+
+  // Only bother vectorizing if we have enough data to do so.
+  if (elementCount >= 2 * SizeOfVector)
+  {
+    // ...
+
+    Vector<ushort> maxAscii = new Vector<ushort>(0x007F);
+
+    nuint finalOffsetWhereCanLoop = elementCount - 2 * SizeOfVector;
+    do
+    {
+        Vector<ushort> utf16VectorHigh = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset);
+        Vector<ushort> utf16VectorLow = Unsafe.ReadUnaligned<Vector<ushort>>(pUtf16Buffer + currentOffset + Vector<ushort>.Count);
+
+        if (Vector.GreaterThanAny(Vector.BitwiseOr(utf16VectorHigh, utf16VectorLow), maxAscii))
+        {
+            break; // found non-ASCII data
+        }
+
+        // TODO: Is the below logic also valid for big-endian platforms?
+        Vector<byte> asciiVector = Vector.Narrow(utf16VectorHigh, utf16VectorLow);
+        Unsafe.WriteUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset, asciiVector);
+
+        currentOffset += SizeOfVector;
+    } while (currentOffset <= finalOffsetWhereCanLoop);
+
+
+    // ...
+  }
+}
+```
+
+will enable PGO for the `NarrowUtf16ToAscii` method, and roughly create a stub like so:
+
+```C#
+#[Vectorize]
+public static unsafe nuint NarrowUtf16ToAscii_Stub(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
+{
+  nuint averageElementCountSample = Sample(elementCount, elementCountGlobalSample);
+  if (averageElementCountSample >= 2 * Unsafe.SizeOf<Vector512<byte>>())
+  {
+    // Recompile NarrowUtf16ToAscii with Vector<T> length set to Vector512
+  }
+  else if (averageElementCountSample >= 2 * Unsafe.SizeOf<Vector256<byte>>())
+  {
+    // Recompile NarrowUtf16ToAscii with Vector<T> length set to Vector512
+  }
+
+  NarrowUtf16ToAscii(pUtf16Buffer, pAsciiBuffer, elementCount);
+}
+```
+
+that will sample add recompile `NarrowUtf16ToAscii` to select a larger vector size for `Vector<T>` if the average workload to the method is determined to be worth the cost.
+
 ### Additional `Vector<T>` Methods for Near-Intrinsic Performance
 
-In the following example:
-
-```C#
-public int SumVector(ReadOnlySpan<int> source)
-{
-  Vector<int> vresult = Vector<int>.Zero;
-
-  int lastBlockIndex = source.Length - (source.Length % Vector<int>.Count);
-  int i = 0;
-
-  for (i; i < lastBlockIndex; i += Vector<int>.Count)
-  {
-    vresult += new Vector<int>(source.Slice(i));
-  }
-
-  int result = 0;
-  for (int j = 0; j < Vector<int>.Count; j++)
-  {
-    result += vresult[j];
-  }
-
-  // Handle tail
-  while (i < source.Length)
-  {
-    result += source[(source.Length - rem)+i];
-  }
-
-  return result;
-}
-```
-
-The reduction loop will cost much of the performance gain from the vectorized loop. If we use fixed size vectors and hardware intrinsics, we can perform the reduction via horizontal adds, but this locks us to specific SIMD ISAs. Instead, we propose adding methods in these cases, i.e.,
-
-```C#
-public int SumVector(ReadOnlySpan<int> source)
-{
-  Vector<int> vresult = Vector256<int>.Zero;
-
-  int lastBlockIndex = source.Length - (source.Length % Vector<int>.Count);
-  int i = 0;
-
-  for (i; i < lastBlockIndex; i += Vector256<int>.Count)
-  {
-    vresult += new Vector<int>(source.Slice(i));
-  }
-
-  result += vresult.ReduceAdd();
-
-  // Handle tail
-  while (i < source.Length)
-  {
-    result += source[(source.Length - rem)+i];
-  }
-
-  return result;
-}
-```
-
-which will generate code to handle the necessary reduction per platform. 
-
+(TODO: Revisit this once we have some idea of APIs required to mitigate `MoveMask`)
 
 ## Requirements
 
@@ -196,9 +222,6 @@ which will generate code to handle the necessary reduction per platform.
 3. `Vector<T>` API surface should include sufficiently expressive methods to reach the first goal above. 
 
 ### Non-Goals
-
-
-1. For the JIT to generate alternative SIMD pathways given a `Vectorize` and `Vector<T>` code block, it should not rely on auto vectorization techniques or advanced analysis. `Vectorize` is meant to serve as a hint to treat `Vector<T>` as a template for multiple ISAs given some thresholds.
 
 
 ## Stakeholders and Reviewers
@@ -218,7 +241,7 @@ early drafts).
 
 ### `Vector<T>` Codegen Improvements
 
-#### `Vectorize` Code Block
+#### 1. Templated Codegen from `Vectorize.If` Code Block
 
 - The presence of `Vectorize.If` in the conditional of an `if` statement drives the expansion, which creates a `Vectorize` code block.
 
@@ -306,17 +329,199 @@ early drafts).
 
 - Nested `Vectorize.If` is allowed. Expansion begins at the most nested block.
 
+#### 2. PGO Codegen from `Vector<T>` 
+
+##### Detecting Sample Points
+
+The presence of a `#[Vectorize]` attribute instructs the JIT to perform a dependence analysis upon first encountering the method to determine what method parameters to sample.
+
+- If an `if` statement's boolean condition contains a reference to a `Vector<T>.Count`, we mark all variables used in the condition as sinks.
+
+- Vector memory operations (Load, Write, `new`) input (source) are traced through the Use-Def chain. If the chain reaches a parameter, it is marked as possible sample parameter.
+
+  - If the parameter is one whose type has a queryable size, e.g., `Span` we mark it for sampling.
+
+  - Raw pointers are not marked for sampling. (TODO: Anyway to handle this).
+
+- Sinks are traced through use-def chains to reach a source.
+
+- Valid sources are method parameters only.
+
+- A source must either be a primitive value whose sink is used in an if statement, or a memory type with a size that can be checked at runtime, i.e., raw pointers cannot be sources.
+
+- The presence of an `if` sink/source will take precedence over the presence of `Vector` memory sinks, and will serve as the primary threshold check for sampling.
+
+- If no `if` sink/source is established, the default threshold check will be (2 * vector size). 
+
+
+For example, in the following method, the result of `span.Slice` is used as a argument to a `Vector` creation. The expression is marked as a sink:
+
+```C#
+#[Vectorize]
+public int SumVector(ReadOnlySpan<int> span) // <-- Source
+{
+  Vector<int> vresult = Vector<int>.Zero;
+
+  int lastBlockIndex = span.Length - (span.Length % Vector<int>.Count);
+  int i = 0;
+
+  for (i; i < lastBlockIndex; i += Vector<int>.Count)
+  {
+    vresult += new Vector<int>(span.Slice(i));  // <-- Sink
+  }
+
+  int result = 0;
+  for (int j = 0; j < Vector<int>.Count; j++)
+  {
+    result += vresult[j];
+  }
+
+  // Handle tail
+  while (i < span.Length)
+  {
+    result += span[(span.Length - rem)+i];
+  }
+
+  return result;
+}
+```
+
+will result in `span` being selected as a source for sampling, with a pseudo-code defined stub:
+
+```C#
+public int SumVector_Stub(ReadOnlySpan<int> span)
+{
+  int averageSpanLength = Sample(span.Length, spanLengthGlobal);
+  if (averageSpanLength >= 2 * Vector512<int>.Count )
+  {
+    // Recompile
+  }
+  // ...
+  SumVector(span);
+}
+```
+
+In the following sample
+
+```C#
+#[Vectorize]
+public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
+{
+  // ...
+  nuint currentOffset = 0;
+  uint SizeOfVector = (uint)Unsafe.SizeOf<Vector<byte>>(); // JIT will make this a const
+
+  // Only bother vectorizing if we have enough data to do so.
+  if (elementCount >= 4 * SizeOfVector) // <-- Sink
+  {
+    // ...
+    
+  }
+}
+```
+
+will result in the following stub
+
+```C#
+#[Vectorize]
+public static unsafe nuint NarrowUtf16ToAscii_Stub(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
+{
+  int averageElementCount = Sample(elementCount, elementCountGlobalSample);
+  if (averageSpanLength >= 4 * Vector512<byte>.Count)
+  {
+    // Recompile
+  }
+  NarrowUtf16ToAscii(pUtf16Buffer, pAsciiBuffer, elementCount);
+}
+```
+
+(TODO: Maybe one more complex example)
+
+#### 3. Codegen Design for Both
+
+Both proposals create 
+
+##### Transitive Method Codegen
+
+As both proposals allow `Vector<T>` to be specialized per-method, we cannot simply pass `Vector<T>` as an argument to helper methods as before. To address this issue, we propose an additional `[Vectorizeable]` attribute which allows to JIT to specialize the method per selected vector width if used in a `Vectorize.If` or `[Vectorize]`. 
+
+```C#
+#[Vectorize]
+public int SumVector(ReadOnlySpan<int> span) // <-- Source
+{
+  Vector<int> vresult = Vector<int>.Zero;
+
+  int lastBlockIndex = span.Length - (span.Length % Vector<int>.Count);
+  int i = 0;
+
+  for (i; i < lastBlockIndex; i += Vector<int>.Count)
+  {
+    vresult += new Vector<int>(span.Slice(i));  // <-- Sink
+  }
+
+  int result = ReduceVector(vresult);
+
+  // Handle tail
+  while (i < span.Length)
+  {
+    result += span[(span.Length - rem)+i];
+  }
+
+  return result;
+}
+
+#[Vectorizeable]
+public int ReduceVector(Vector<int> vec)
+{
+  int result = 0;
+  for (int i = 0; i < Vector<int>.Count; i++)
+  {
+    result += vec.GetElement(i);
+  }
+  return result;
+}
+
+```
+
+will allow the JIT to specialize `ReduceVector` per selected `Vector<T>` vector length. For example, the JIT may create the following
+
+```C#
+#[Vectorizeable]
+public int ReduceVector_Vector128(Vector128<int> vec)
+{
+  int result = 0;
+  for (int i = 0; i < Vector128<int>.Count; i++)
+  {
+    result += vec.GetElement(i);
+  }
+  return result;
+}
+
+#[Vectorizeable]
+public int ReduceVector_Vector256(Vector256<int> vec)
+{
+  int result = 0;
+  for (int i = 0; i < Vector256<int>.Count; i++)
+  {
+    result += vec.GetElement(i);
+  }
+  return result;
+}
+```
+
+which it will select per vector length selected for `SumVector`.
+
+The JIT will transitively specialize methods marked `#[Vectorizeable]`. Methods that accept `Vector<T>` as a parameter or return a `Vector<T>` _must_ be marked as `#[Vectorizeable]` if used within a `Vectorize.If`, `#[Vectorize]`, or `#[Vectorizeable]` context.
+
+#### Challenges for `Vector<T>`
+
+(TODO: Discuss ABI boundary / field issues etc)
+
+
+
 ### New `Vector<T>` API Methods
 
-We propose that `Vector<T>` be extended with methods that help facilitate its use as a cross platform generic variable length vector to help reduce situations that require casting `Vector` to a fixed-length vector for hand optimization with ISA-specific intrincis. 
-
-One such case is a reduction of the elements of the vector, which requires hand optimization per vector size.
-
-We propose the following methods:
-
-- `ReduceXX`, where `XX` is the reduction operation, e.g., `Add`, where the JIT will generate performant reduction code for the ISA.
-
-(Anthony: Discuss APIs for trailing / tail elements)
+(TODO: Revisit this once we have some idea of APIs required to mitigate `MoveMask`)
 
 ## Q & A
 
