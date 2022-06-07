@@ -125,15 +125,21 @@ public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBu
   }
   else if (elementCount >= 2 * Vector256<byte>.Count)
   {
-    // Execute a Vector512 pathway
+    // Execute a Vector256 pathway
     Vector256<ushort> maxAscii = new Vector256<ushort>(0x007F);
 
     // ...
   }
   else if (elementCount >= 2 * Vector128<byte>.Count)
   {
-    // Execute a Vector512 pathway
+    // Execute a Vector128 pathway
     Vector128<ushort> maxAscii = new Vector128<ushort>(0x007F);
+
+    // ...
+  }
+  else 
+  {
+    Vector1<ushort> maxAscii = new Vector1<ushort>(0x007F);
 
     // ...
   }
@@ -142,9 +148,11 @@ public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBu
 
 In this way, we can collapse multiple SIMD ISA checks into a single "template" SIMD ISA code which the JIT may expand. We use a new `Vectorize.If` intrinsic that allows backward compatibility with `Vector<T>`, i.e., a `Vectorize.If` JIT intrinsic instructs the JIT that the code inside its block is a template for multiple vector sizes. If `Vectorize.If` is not present, `Vector<T>` will select the best ISA for the platform determined by the JIT.
 
+Note that `Vectorize.If` includes a fallback path where no vectorization is performed (which we represent as `Vector1`). This is consistent with the philosophy that `Vector<T>` allow a developer to express their algorithm from a single source, and let the JIT handle the underlying implementation which reduces developer burden and maintaince costs.
+
 #### 2. PGO Codegen from `Vector<T>`
 
-We propose to introduce a `#[Vectorize]` attribute which instructs to JIT to dynamically profile a method to select an optimal length for `Vector<T>`. Returning to the example above, the presence of `#[Vectorize]`:
+We propose to introduce a `#[Vectorize]` attribute which instructs the JIT to dynamically profile a method to select an optimal length for `Vector<T>`. Returning to the example above, we add `#[Vectorize]` to the `NarrowUtf16ToAscii` method like so:
 
 ```C#
 #[Vectorize]
@@ -185,7 +193,7 @@ public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBu
 }
 ```
 
-will enable PGO for the `NarrowUtf16ToAscii` method, and roughly create a stub like so:
+which will enable PGO for the `NarrowUtf16ToAscii` method, and roughly create a stub:
 
 ```C#
 #[Vectorize]
@@ -199,13 +207,19 @@ public static unsafe nuint NarrowUtf16ToAscii_Stub(char* pUtf16Buffer, byte* pAs
   else if (averageElementCountSample >= 2 * Unsafe.SizeOf<Vector256<byte>>())
   {
     // Recompile NarrowUtf16ToAscii with Vector<T> length set to Vector512
+  } 
+  else if (averageElementCountSample < 2 * Unsafe.SizeOf<Vector128<byte>>())
+  {
+    // Recompile NarrowUtf16ToAscii with Vector<T> length to to Vector1
   }
 
   NarrowUtf16ToAscii(pUtf16Buffer, pAsciiBuffer, elementCount);
 }
 ```
 
-that will sample and recompile `NarrowUtf16ToAscii` to select a larger vector size for `Vector<T>` if the average workload to the method is determined to be worth the cost.
+that will sample and recompile `NarrowUtf16ToAscii` to select a larger vector size for `Vector<T>` if the average workload to the method is determined to be worth the cost. 
+
+Philosophically, both approaches allow the developer to focus less on the implementation of the underlying SIMD algorithm and more on its behavior. 
 
 ### Additional `Vector<T>` Methods for Near-Intrinsic Performance
 
@@ -232,7 +246,7 @@ public static int IndexOf(ref byte searchSpace, int searchSpaceLength, ref byte 
 
 1. `Vector<T>` should allow to generate code that reaches performance within some threshold of hand-optimized intrinsics. 
 
-2. In combination with the JIT, `Vector<T>` written code should allow to adapt to the best performance of underlying platform, i.e., the JIT may generate multiple codepaths and thresholds that select at runtime which SIMD ISA to use.
+2. In combination with the JIT, `Vector<T>` written code should allow to adapt to the best performance of underlying platform, i.e., the JIT may generate multiple codepaths and thresholds that select at runtime which SIMD ISA to use, be it through static templated expansion or dynamic method recompilation.
 
 3. `Vector<T>` API surface should include sufficiently expressive methods to reach the first goal above. These methods allow to use `Vector<T>` generically without explicit knowledge of vector length or intrinsics.
 
@@ -268,8 +282,6 @@ early drafts).
 
   - In each cloned arm any `Vector<T>` operations will be translated to `VectorXX<T>` operations, where XX represents the vector length for that arm.
 
-  - Any remaining `else if` and `else` arms remain in place.
-
   - The following example demonstrates the expansion:
 
     ```C#
@@ -283,13 +295,6 @@ early drafts).
           Vector<int> v = new Vector<int>(sp.Slice(i * Vector<int>.Count));
           // ...
         }              
-      }
-      else
-      {
-        for (int i = 0; i < sp.Length; i++)
-        {
-          // ...
-        }
       }
     }
     ```
@@ -328,8 +333,10 @@ early drafts).
       }
       else
       {
-        for (int i = 0; i < sp.Length; i++)
+        int blocks = sp.Length / Vector1<int>.Count;
+        for (int i = 0; i < blocks; i ++)
         {
+          Vector1<int> v = new Vector1<int>(sp.Slice(i * Vector1<int>.Count));
           // ...
         }
       }
@@ -338,7 +345,7 @@ early drafts).
 
 - If the JIT encounters a `Vectorize.If` outside of an `if` conditional, the JIT will throw an `OperationNotSupportedException`.
 
-- If the JIT encounters `Vectorize.If` in multiple arms of the conditional, the JIT will throw an `OperationNotSupportedException`.
+- If the JIT encounters `Vectorize.If` with `else if` or `else` arms, the JIT will throw an `OperationNotSupportedException`.
 
 - Any fixed length VectorXX will not be adjusted in any way if present in a `Vectorize.If` block.
 
@@ -351,7 +358,7 @@ In order to perform profile guided optimization for methods annotated with `#[Ve
 
 The presence of a `#[Vectorize]` attribute instructs the JIT to perform a dependence analysis upon first encountering the method to determine what method parameters to sample.
 
-- If an `if` statement's boolean condition contains a reference to a `Vector<T>.Count`, we mark all variables used in the condition as sinks.
+- If an `if` statement's boolean condition contains a reference to a `Vector<T>.Count` or `Unsafe.SizeOf<<Vector<T>>>`, we mark all variables used in the condition as sinks.
 
 - Vector memory operations (Load, Write, `new`) input (source) are traced through the Use-Def chain. If the chain reaches a parameter, it is marked as possible sample parameter.
 
@@ -417,7 +424,9 @@ public int SumVector_Stub(ReadOnlySpan<int> span)
 }
 ```
 
-In the following sample
+<br/>
+
+In the following sample, and `if` conditional contains a sink:
 
 ```C#
 #[Vectorize]
@@ -436,7 +445,7 @@ public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBu
 }
 ```
 
-will result in the following stub
+which will result in `elementCount` being selected as a source, with a threshold defined based on the `if` conditional:
 
 ```C#
 #[Vectorize]
@@ -451,7 +460,7 @@ public static unsafe nuint NarrowUtf16ToAscii_Stub(char* pUtf16Buffer, byte* pAs
 }
 ```
 
-(TODO: Maybe one more complex example)
+
 
 #### 3. Codegen Design for Both
 
@@ -529,9 +538,47 @@ The JIT will transitively specialize methods marked `#[Vectorizeable]`. Methods 
 
 #### Challenges for `Vector<T>`
 
-(TODO: Discuss ABI boundary / field issues etc)
+Currently, `Vector<T>` implementation is determined per-process, and both the templated and pgo approach offer a way to perform per-method implemenation. This poses problems when a `Vector<T>` type flows is created outside but flows into a `Vectorize.If` or `#[Vectorize]` boundary.
 
+Consider the following example, where we create a `Vector<int>` field initialized with some `startVal` but then proceed to use it in the `SumVector` method.
 
+```C#
+class Foo()
+{
+  Vector<int> _mvector;
+
+  public Foo(int startVal)
+  {
+    _mvector = new Vector<int>(startVal);
+  }
+
+  #[Vectorize]
+  public int SumVector(ReadOnlySpan<int> span) // <-- Source
+  {
+    Vector<int> vresult = _mvector;
+
+    int lastBlockIndex = span.Length - (span.Length % Vector<int>.Count);
+    int i = 0;
+
+    for (i; i < lastBlockIndex; i += Vector<int>.Count)
+    {
+      vresult += new Vector<int>(span.Slice(i));  // <-- Sink
+    }
+
+    int result = ReduceVector(vresult);
+
+    // Handle tail
+    while (i < span.Length)
+    {
+      result += span[(span.Length - rem)+i];
+    }
+
+    return result;
+  }
+}
+```
+
+It's possible that `_mvector` was created using `Vector128` as its underlying implementation, but the JIT selects `Vector256` for `SumVector`. To address this issue, when performing templated/pgo codegen with `Vectorize.If` and `#[Vectorize]` , any uses of `Vector<T>` must be defined from within the "Vectorization" scope, i.e., inside the `Vectorize.If` code block, or inside a `#[Vectorize]` and `#[Vectorizeable]` method.
 
 ### New `Vector<T>` API Methods
 
