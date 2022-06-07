@@ -211,6 +211,21 @@ that will sample and recompile `NarrowUtf16ToAscii` to select a larger vector si
 
 (TODO: Revisit this once we have some idea of APIs required to mitigate `MoveMask`)
 
+### A Complete Example
+
+We refer to the current implementation of `IndexOf` in `SpanHelper.Byte.cs` (https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/SpanHelpers.Byte.cs#L15) to illustrate the benefit of the proposed `Vector<T>` improvements.
+
+In the following code snippet, we collapse the existing implemention into a single code path using `Vector<T>` new APIs, and let the JIT determine the most performant SIMD ISA at runtime with the `#[Vectorize]` attribute.
+
+(The example should use the `#[Vectorize]`, a single `Vector<T>` code path, and ideally handle trailing elements with the trailing element API).
+
+```C#
+public static int IndexOf(ref byte searchSpace, int searchSpaceLength, ref byte value, int valueLength)
+{
+  // TODO
+}
+```
+
 ## Requirements
 
 ### Goals
@@ -439,8 +454,6 @@ public static unsafe nuint NarrowUtf16ToAscii_Stub(char* pUtf16Buffer, byte* pAs
 (TODO: Maybe one more complex example)
 
 #### 3. Codegen Design for Both
-
-Both proposals create 
 
 ##### Transitive Method Codegen
 
