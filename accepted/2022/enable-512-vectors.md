@@ -85,7 +85,7 @@ public Vector512<int> SumVector512(ReadOnlySpan<int> source)
   for (int i = 0; i < source.Length;; i += Vector512<int>.Count)
   {
     Vector512<int> v1 = new Vector512<int>(source.Slice(i));
-    KMask512<int> mask = v1.GreaterThan(0) & v1.NotEqual(5);
+    KMask512<int> mask = v1.KGreaterThan(0) & v1.KNotEquals(5);
     vresult = Vector512.Add(vresult, v1, mask);
   }
 
@@ -115,7 +115,7 @@ public Vector512<int> SumTwoVector512(ReadOnlySpan<int> s1, ReadOnlySpan<int> s2
     Vector512<int> v1 = new Vector512<int>(s1.Slice(i));
     Vector512<int> v2 = new Vector512<int>(s2.Slice(i));
 
-    KMask512<int> mask = v1.LessThan(v2);
+    KMask512<int> mask = v1.KLessThan(v2);
     
     vresult = Vector512.Add(vresult, v1, mask);
   }
@@ -184,7 +184,7 @@ early drafts).
 
 The `Vector512<T>` API surface should be defined as the same API that `Vector128` and `Vector256` expose, with the types and operations adjusted for the 512-bit vector length. 
 
-#### `KMask<T>` API Methods
+#### `KMask<T>` Type and API Methods
 
 `KMask<T>` is meant to provide an API for working with conditional SIMD processing. Like `Vector<T>`, `KMask<T>` is defined generically, where its type parameter `T` represents the type of the elements that the condition applies to within a SIMD vector. This allows to both consider conditions as a "boolean" logic, but also perform lower-level processing and vector element selection typically seen in vectorized code.
 
@@ -246,8 +246,40 @@ The following lists the new classes we propose;
 | `KMask512<T>` | `Vector512<T>` | 
 | `KMask<T>`    | `Vector<T>`    |  
 
+The following lists the methods for `KMask<T>` API that allow for combining `KMask<T> into complex conditions, e.g., boolean logic:
+
+| Method  |
+| ------ | 
+| `KMask<T> KMask<T>.And(KMask<T>, KMask<T>)`  | 
+| `KMask<T> KMask<T>.Or(KMask<T>, KMask<T>)`  | 
+| `KMask<T> KMask<T>.Not(KMask<T>, KMask<T>)`  | 
+| `KMask<T> KMask<T>.Xor(KMask<T>, KMask<T>)`  | 
+
+We detail the changes to `Vector` API which return `KMask` types in the following subsection.
+
 #### Conditional Processing API Methods
 
+As `KMask<T>` allows to build conditional logic over SIMD `Vector`, we propose the following additions to the `Vector` API that allow to related one vector to another:
+
+| Method  |
+| ------ | 
+| `KMask<T> Vector<T>.KEquals(Vector<T> v1, Vector<T> v2)`  | 
+| `KMask<T> Vector<T>.KNotEquals(Vector<T> v1, Vector<T> v2)`  | 
+| `KMask<T> Vector<T>.KGreaterThan(Vector<T> v1, Vector<T> v2)`  | 
+| `KMask<T> Vector<T>.KGreaterThanEquals(Vector<T> v1, Vector<T> v2)`  | 
+| `KMask<T> Vector<T>.KLessThan(Vector<T> v1, Vector<T> v2)`          | 
+| `KMask<T> Vector<T>.KLessThanEquals(Vector<T> v1, Vector<T> v2)`    |  
+
+We overload each method to make it easier to compare vectors against constants:
+
+| Method  |
+| ------ | 
+| `KMask<T> Vector<T>.KEquals(Vector<T> v1, T val)`  | 
+| `KMask<T> Vector<T>.KNotEquals(Vector<T> v1, T val)`  | 
+| `KMask<T> Vector<T>.KGreaterThan(Vector<T> v1, T val)`  | 
+| `KMask<T> Vector<T>.KGreaterThanEquals(Vector<T> v1, T val)`  | 
+| `KMask<T> Vector<T>.KLessThan(Vector<T> v1, T val)`          | 
+| `KMask<T> Vector<T>.KLessThanEquals(Vector<T> v1, T val)`    |  
 
 ### Internals Upgrades for EVEX/AVX512 Enabling
 
@@ -304,8 +336,6 @@ In the following section, we detail the additional features of `EVEX` encoding t
 3. Introduce fallback JIT compiler pass that will allow `KMask<T>` to degenerate into `Vector<T>` and less efficient operations but still allow for the `KMask<T>` API to be used on all architectures.
 
 4. Extend the `xarch` emitter to use `EVEX` encoding for opmask registers when using the for the conditional `Vector` API.
-
-#### Additional Capabilities Through EVEX
 
 ## Q & A
 
