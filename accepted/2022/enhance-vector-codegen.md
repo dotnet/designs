@@ -193,13 +193,13 @@ public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBu
 }
 ```
 
-which will enable PGO for the `NarrowUtf16ToAscii` method, and roughly create a stub:
+which will enable PGO for the `NarrowUtf16ToAscii` method. This will create the following _conceptual_ stub (actual implementation will adhere to existing PGO infrastructure).
 
 ```C#
 #[Vectorize]
 public static unsafe nuint NarrowUtf16ToAscii_Stub(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
 {
-  nuint averageElementCountSample = Sample(elementCount, elementCountGlobalSample);
+  nuint averageElementCountSample = Probe(elementCount);
   if (averageElementCountSample >= 2 * Unsafe.SizeOf<Vector512<byte>>())
   {
     // Recompile NarrowUtf16ToAscii with Vector<T> length set to Vector512
@@ -354,13 +354,13 @@ early drafts).
 #### 2. PGO Codegen from `Vector<T>` and `#[Vectorize]`
 
 In order to perform profile guided optimization for methods annotated with `#[Vectorize]`, the JIT must detect which method parameters to sample and what thresholds should trigger recompilation based on those sample points.
-##### Detecting Sample Points and Thresholds
+##### Detecting Instrumentation Points and Thresholds
 
 The presence of a `#[Vectorize]` attribute instructs the JIT to perform a dependence analysis upon first encountering the method to determine what method parameters to sample.
 
 - If an `if` statement's boolean condition contains a reference to a `Vector<T>.Count` or `Unsafe.SizeOf<<Vector<T>>>`, we mark all variables used in the condition as sinks.
 
-- Vector memory operations (Load, Write, `new`) input (source) are traced through the Use-Def chain. If the chain reaches a parameter, it is marked as possible sample parameter.
+- Vector memory operations (Load, Write, `new`) input (source) are traced through the Use-Def chain. If the chain reaches a parameter, it is marked as possible instrumentation parameter.
 
   - If the parameter is one whose type has a queryable size, e.g., `Span` we mark it for sampling.
 
@@ -409,7 +409,7 @@ public int SumVector(ReadOnlySpan<int> span) // <-- Source
 }
 ```
 
-will result in `span` being selected as a source for sampling, with a pseudo-code defined stub:
+will result in `span` being selected as a source for sampling. The JIT will _conceptually_ perform the following sampling and recompling --- we elide implementation details for now, which we recognize must fit into the existing PGO architecture (no actual "stub" will exist, instead the recompile logic will take place inside RyuJIT during a Tier1 compile check etc. )
 
 ```C#
 public int SumVector_Stub(ReadOnlySpan<int> span)

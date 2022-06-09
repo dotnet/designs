@@ -1,6 +1,10 @@
 # Enable EVEX and Vector512 in RyuJIT
 
-(TODO: Fill in)
+.NET support for SIMD acceleration through its Vector APIS (`Vector<T>`, `Vector64`, `Vector128`, and `Vector256`) allow developers to harness the power of SIMD hardware acceleration without expert-level knowledge of underlying and complex instruction set architectures and extensive platform-dependent intrinsics. 
+
+We introduce `Vector512` API that continues the trend of Vector API in .NET for 512-bit wide SIMD acceleration. In addition, we expose a new `KMask` API, which allows for a more declarative and programmer-friendly method for conditional SIMD operations.
+
+One such realization of 512-bit SIMD acceleration is the `AVX512` family of instruction sets for `X86` architecture which this proposal addresses for implementation details; however, `Vector512` and `KMask` 
 
 **Owner** [Anthony Canino](https://github.com/anthonycanino) 
 
@@ -65,23 +69,98 @@ public int SumVector512(ReadOnlySpan<int> source)
 
 We expect developers who manually write `Vector128<T>` and `Vector256<T>` code to use `Vector512<T>` with minimal effort.
 
+### KMask Usage
+
+
+For each `Vector` API, we introduce a corresponding `KMask`, which abstracts away low-level bit-masking and instead allows to express conditional SIMD processing as boolean logic over `Vector` APIs.
+
+For example, in the following snippet `SumVector512`, we perform a conditional add of `Vector512` vector elements if the source Vector `v1` element is greater than 0 and not equal to 5:
+
+
+```C#
+public Vector512<int> SumVector512(ReadOnlySpan<int> source)
+{
+  Vector512<int> vresult = Vector512<int>.Zero;
+
+  for (int i = 0; i < source.Length;; i += Vector512<int>.Count)
+  {
+    Vector512<int> v1 = new Vector512<int>(source.Slice(i));
+    KMask512<int> mask = v1.GreaterThan(0) & v1.NotEqual(5);
+    vresult = Vector512.Add(vresult, v1, mask);
+  }
+
+  return vresult;
+}
+```
+
+Note that the `KMask` is built directly expressing the condition of the source vector `v1`. This roughly translates to a scalar loop...
+
+```C#
+for (int i = 0; i < source.Length; i++)
+{
+  if (source[i] > 0 && source[i] != 5)
+    result[i] += source[i];
+}
+```
+
+Importantly, this conditional logic is not limited to comparing `Vector` against constants. In the following example, we perform a conditional add if the elements of `v1` are less than `v2`, i.e., `v2`:
+
+```C#
+public Vector512<int> SumTwoVector512(ReadOnlySpan<int> s1, ReadOnlySpan<int> s2)
+{
+  Vector512<int> vresult = Vector<int>.Zero;
+
+  for (int i = 0; i < s1.Length;; i += Vector512<int>.Count)
+  {
+    Vector512<int> v1 = new Vector512<int>(s1.Slice(i));
+    Vector512<int> v2 = new Vector512<int>(s2.Slice(i));
+
+    KMask512<int> mask = v1.LessThan(v2);
+    
+    vresult = Vector512.Add(vresult, v1, mask);
+  }
+
+  return vresult;
+}
+```
+
+which roughly translates to the following scalar loop logic...
+
+```C#
+for (int i = 0; i < s1.Length; i++)
+{
+  if (s1[i] < 0 && s2[i])
+    result[i] += s1[i];
+}
+```
+
+As `KMask512` expresses that we have a masked condition for `Vector512`, so to will we have `KMask256`, `KMask128`, and `KMask64`. In addition, when using the variable legnth `Vector<T>` API, we have `KMask<T>`, as seen the in the following example:
+
+
+```C#
+public Vector<int> SumVector(ReadOnlySpan<int> source)
+{
+  Vector<int> vresult = Vector<int>.Zero;
+
+  for (int i = 0; i < source.Length;; i += Vector<int>.Count)
+  {
+    Vector<int> v1 = new Vector<int>(source.Slice(i));
+    KMask<int> mask = v1.GreaterThan(0) & v1.NotEqual(5);
+    vresult = Vector.Add(vresult, v1, mask);
+  }
+
+  return vresult;
+}
+```
+
+Where `KMask<T>` expresses that the number of elements the condition applies to is variable-length, and determined by the JIT at runtime (though it must be compatible with `Vector<T>` selected length).
+
+
 ## Requirements
 
 ### Goals
 
-1. `Vector<T>` should allow to generate code that reaches performance within some threshold of hand-optimized intrinsics. 
-
-2. In combination with the JIT, `Vector<T>` written code should allow to adapt to the best performance of underlying platform, i.e., the JIT may generate multiple codepaths and thresholds that select at runtime which SIMD ISA to use.
-
-3. `Vector<T>` API surface should include sufficiently expressive methods to reach the first goal above. 
-
-4. `Vector512<T>` should expose at a minimum the same API operations that `Vector128<T>` and `Vector256<T>` expose.
-
-
 ### Non-Goals
-
-
-1. For the JIT to generate alternative SIMD pathways given a `Vectorize` and `Vector<T>` code block, it should not rely on auto vectorization techniques or advanced analysis. `Vectorize` is meant to serve as a hint to treat `Vector<T>` as a template for multiple ISAs given some thresholds.
 
 
 ## Stakeholders and Reviewers
@@ -99,36 +178,106 @@ early drafts).
 
 ## Design
 
-### `Vector512<T>` API Methods
+### New API Methods and Types
+
+#### `Vector512<T>` API Methods
 
 The `Vector512<T>` API surface should be defined as the same API that `Vector128` and `Vector256` expose, with the types and operations adjusted for the 512-bit vector length. 
 
+#### `KMask<T>` API Methods
+
+`KMask<T>` is meant to provide an API for working with conditional SIMD processing. Like `Vector<T>`, `KMask<T>` is defined generically, where its type parameter `T` represents the type of the elements that the condition applies to within a SIMD vector. This allows to both consider conditions as a "boolean" logic, but also perform lower-level processing and vector element selection typically seen in vectorized code.
+
+For example, in the following code snippet, a vector `vector` is checked against multiple candidate vectors `v1`, `v2`, and `v3`. The results are `or` together and converted to a `byte` vector so we can extract a bitmask of the most significant bits. The goal is to iterate through the elements of the `source` vector that are two.
+
+```C#
+Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
+Vector128<ushort> v1Eq = Vector128.Equals(vector, v1);
+Vector128<ushort> v2Eq = Vector128.Equals(vector, v2);
+Vector128<ushort> v3Eq = Vector128.Equals(vector, v3);
+Vector128<byte> cmp = (v1Eq | v2Eq | v3Eq).AsByte();
+
+if (cmp != Vector128<byte>.Zero)
+{
+    // Skip every other bit
+    uint mask = cmp.ExtractMostSignificantBits() & 0x5555; 
+    do
+    {
+        uint bitPos = (uint)BitOperations.TrailingZeroCount(mask) / sizeof(char);
+        sepListBuilder.Append((int)(offset + bitPos));
+        mask = BitOperations.ResetLowestSetBit(mask);
+    } while (mask != 0);
+}
+```
+
+However, this is cumbersome for the developer for two reasons: the first, is that because the bitmask is built from the most significant bit of each `byte` element in a vector, we first have to mask off every other element in the mask with `0x5555` to link this properly back to our vector of `ushort`; the second, is when we perform a `TrailingZeroCount` (to get the first pos of the first true element in the `byte` vector) we have to _map it back to an offset in the `ushort` vector (done by dividing `sizeof(char)).
+
+The following example shows how `KMask128` allows to perform the same functionality without dealing with these lower level details:
+
+```C#
+Vector128<ushort> vector = Vector128.LoadUnsafe(ref source, offset);
+KMask128<ushort> v1Eq = Vector128.KEquals(vector, v1);
+KMask128<ushort> v2Eq = Vector128.KEquals(vector, v2);
+KMask128<ushort> v3Eq = Vector128.KEquals(vector, v3);
+KMask128<ushort> cmp = (v1Eq | v2Eq | v3Eq);
+
+if (cmp != KMask128<ushort>.Zero)
+{
+    // Skip every other bit
+    do
+    {
+        uint elmPos = cmp.FirstIndexOf(true);
+        sepListBuilder.Append((int)(offset + elmPos));
+        cmp = cmp.SetElementCond(elmPos, false);
+    } while (cmp != 0);
+}
+```
+
+`KMask128<ushort>` properly links conditional SIMD processing with `Vector128<ushort>`. The JIT best determines how to lower the `KMask` API based on available hardware of the system; however, because `KMask` encodes conditional length and element type, it allows the JIT to lower the code optimally.
+
+The following lists the new classes we propose;
+
+
+| Class  | Associated `Vector` API | 
+| ------ | ---------- |
+| `KMask64<T>`  | `Vector64<T>`  | 
+| `KMask128<T>` | `Vector128<T>` | 
+| `KMask256<T>` | `Vector256<T>` | 
+| `KMask512<T>` | `Vector512<T>` | 
+| `KMask<T>`    | `Vector<T>`    |  
+
+#### Conditional Processing API Methods
+
+
 ### Internals Upgrades for EVEX/AVX512 Enabling
 
-Broadly speaking, we can break the implementation of EVEX/Vector512 enabling into the following components:
+Broadly speaking, we can break the implementation of `Vector512` and `KMask` into the following components:
 
 1. Enable EVEX encoding for Vector128/Vector256 in the xarch emitter.
 
 2. Extend register support for additional 16 registers
 
-3. Extend register support to Vector512
+3. Introduce `Vector512` API, associated types, and extend register support to Vector512
 
-4. Extend register support to Mask Registers
+4. Introduce `KMask` API, associated types, and extend register support to mask registers
 
 In particular, implementing (1) above allows for the most isolated set of changes and lays the foundation for the remaining work: EVEX encoding can be implemented for the Vector128  and Vector256 for any `AVX512VL` instructions without requiring the addition of new types and registers to the dotnet runtime. 
 
-
 We expand on each item in turn below:
 
-### Enable EVEX for Vector128/Vector256
+#### Enable EVEX for Vector128/Vector256
 
-### Enable Register Support for Additional 16 Registers
+`AVX512VL` allows to use `EVEX` encoding (which includes AVX512 instructions, opmask registers, embedded broading etc.) on 128-bit and 256-bit SIMD registers. As the infrastructure for 128-bit nad 256-bit SIMD types is already present in the entire runtime and JIT, enabling `EVEX` for 128-bit and 256-bit SIMD types allows to lay the foundation for the rest of the 512-bit and kmask enabling work without in isolation, i.e., the initial `EVEX` encoding work will be done in the `xarch` code emitter. This allows to develop and test the changes to the xarch emitter before introducing further reaching changes to the JIT which we discuss below.
 
-### `Internals Upgrades for Vector512<T>`
+#### Enable Register Support for Additional 16 Registers
+
+
+
+#### Internals Upgrades for `Vector512<T>`
 
 Once the framework for EVEX encoding is in place for the xarch codegen pipeline, introducing `Vector512` consists of the following modifications
 
-1. Introduction of a 512 bit (64 byte) type to the runtime, analogous to the types defined for 256-bit and 128-bit SIMD vectors.
+1. Introduction of a 64 byte type (TYP_SIMD64) to the runtime, analogous to the types defined for 32 byte and 16 byte SIMD vectors.
 
 2. Expanding the register allocator to allocate registers for the new 64 byte types.
 
@@ -142,37 +291,21 @@ As we propose to develop `Vector512<T>` as an instantiation of the `AVX512` ISA 
 
 In the following section, we detail the additional features of `EVEX` encoding that we plan to incorporate into RyuJIT to realize the full power of AVX512, but these will be added after the MVP. 
 
-### `Internals Upgrades for additional mask registers
+#### Internals Upgrades for `KMask<T>`
 
-### Further Internal Upgrades Specific to `AVX512`/`EVEX` for Additional Optimizations
+1. Introduction new kmask type (TYP_KMASK8, TYPE_KMASK16, TYP_KMASK32, and TYP_KMASK64) to the runtime. 
 
-Once the framework for `EVEX` encoding is implemented in the xarch code emitter, we propose to introduce the following capabilities of `EVEX` into RyuJIT:
+    - Similar to the API/implementation of `VectorXX<T>`, `KMaskXX<T>` `XX` expresses the number width of the condition, and `<T>` expresses the size of each element the condition applies to.
 
-- Opmask registers for masking `AVX512` instructions. 
+    - This encoding allows the JIT to address implementation details such as building the proper masks and associated offsets for a width and underlying element, and linking those back to a SIMD `Vector`.
 
-- Embedded broadcasts and explicit rounding control.
+2. Expanding the register allocator to allocate AVX512 opmask registers for the new kmask types.
 
-- `AVX512VL` which extends much of the existing AVX512 instructions and capabilities, e.g., embedded broadcast, to 128-bit and 256-bit vector registers.
+3. Introduce fallback JIT compiler pass that will allow `KMask<T>` to degenerate into `Vector<T>` and less efficient operations but still allow for the `KMask<T>` API to be used on all architectures.
 
-As `EVEX` capability will already be part of the xarch code emitter, most of the work to realize the aforementioned features will involve:
+4. Extend the `xarch` emitter to use `EVEX` encoding for opmask registers when using the for the conditional `Vector` API.
 
-1. Introduction of a masked register type to the runtime.
-
-2. Define an API associated with the masked register type, e.g., `KMask8`, which represents an 8-bit mask value to be assigned a mask register.
-
-3. Expand the register allocator to allocate mask registers for the masked register types, whether generated by the JIT or programmatically declared via the API and intrinsics.
-
-4. Extend instruction descriptors to encode the the presence of: (1) an opmask register; (2) embedded broadcasting; and (3) explicit rounding.
-
-5. Add the additional code paths to decide whether to emit VEX or EVEX prefix for 128-bit, 256-bit, or 512-bit vector instructions given the features in (4) above.
-
-These upgrades will allow the following optimizations:
-
-- Folding of a scalar load, SIMD broadcast, then SIMD operation into a single embedded load, for 128-bit, 256-bit, and 512-bit vector lengths.
-
-- Accelerated processing of trailing elements with an opmask that performs a partial load and partial operation on a vector register.
-
-- Accelerated scalar operations, e.g., computation of approximate reciprocals, conversion of double float to unsigned long.
+#### Additional Capabilities Through EVEX
 
 ## Q & A
 
