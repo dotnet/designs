@@ -226,7 +226,7 @@ Philosophically, both approaches allow the developer to focus less on the implem
 We refer readers to our [`KMask<T>`](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#kmaskt-type-and-api-methods) design. `KMask<T>` allows to abstract lower-level masking and conditional processing over SIMD vectors in a way that the JIT can take advantage of for optimization purposes. 
 `KMask<T>` allows to mitigate the need for casting `Vector<T>` to a fixed-size `VectorXX` to take advantage of existing fixed-width APIs like `ExtractMostSigBits` 
 
-In addition, `KMask<T>` exposes a [method for processing leading and trailing elements]() of Vector API.
+In addition, `KMask<T>` exposes a [method for processing leading and trailing elements](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#leadingtrailing-element-processing-with-kmask) of Vector API.
 
 As `KMask<T>` width matches `Vector<T>`, the above templated and PGO codegen that select `Vector<T>` size per-method also apply to `KMask<T>`. 
 

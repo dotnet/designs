@@ -155,7 +155,7 @@ public Vector<int> SumVector(ReadOnlySpan<int> source)
 
 Where `KMask<T>` expresses that the number of elements the condition applies to is variable-length, and determined by the JIT at runtime (though it must be compatible with `Vector<T>` selected length).
 
-### Leading/Trailing Element Processing with KMask
+### Leading/Trailing Element Processing with `KMask<T>`
 
 The `KMask<T>` API allows to perform leading and trailing element processing on SIMD vectors, which becomes particularly useful when operating with wider-length SIMD vectors.
 
