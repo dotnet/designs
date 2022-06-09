@@ -223,7 +223,14 @@ Philosophically, both approaches allow the developer to focus less on the implem
 
 ### Additional `Vector<T>` Methods for Near-Intrinsic Performance
 
-(TODO: Revisit this once we have some idea of APIs required to mitigate `MoveMask`)
+We refer readers to our [`KMask<T>`](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#kmaskt-type-and-api-methods) design. `KMask<T>` allows to abstract lower-level masking and conditional processing over SIMD vectors in a way that the JIT can take advantage of for optimization purposes. 
+`KMask<T>` allows to mitigate the need for casting `Vector<T>` to a fixed-size `VectorXX` to take advantage of existing fixed-width APIs like `ExtractMostSigBits` 
+
+In addition, `KMask<T>` exposes a [method for processing leading and trailing elements]() of Vector API.
+
+As `KMask<T>` width matches `Vector<T>`, the above templated and PGO codegen that select `Vector<T>` size per-method also apply to `KMask<T>`. 
+
+In the following section, we motivate all concepts with a complete example.
 
 ### A Complete Example
 
@@ -459,9 +466,6 @@ public static unsafe nuint NarrowUtf16ToAscii_Stub(char* pUtf16Buffer, byte* pAs
   NarrowUtf16ToAscii(pUtf16Buffer, pAsciiBuffer, elementCount);
 }
 ```
-
-
-
 #### 3. Codegen Design for Both
 
 ##### Transitive Method Codegen

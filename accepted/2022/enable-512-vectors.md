@@ -155,6 +155,63 @@ public Vector<int> SumVector(ReadOnlySpan<int> source)
 
 Where `KMask<T>` expresses that the number of elements the condition applies to is variable-length, and determined by the JIT at runtime (though it must be compatible with `Vector<T>` selected length).
 
+### Leading/Trailing Element Processing with KMask
+
+The `KMask<T>` API allows to perform leading and trailing element processing on SIMD vectors, which becomes particularly useful when operating with wider-length SIMD vectors.
+
+For the following example, let us assume our `source` span contains 7 integers (source.Length = 8), such as [0 1 2 3 4 5 6]. We include some comments in the code for clarity:
+
+```C#
+public int SumVector(ReadOnlySpan<int> source)
+{
+  Vector128<int> vresult = Vector128<int>.Zero;
+
+  int lastBlockIndex = source.Length - (source.Length % Vector128<int>.Count);
+  int i = 0;
+
+  for (i; i < lastBlockIndex; i += Vector128<int>.Count)
+  {
+    vresult += new Vector<int>(source.Slice(i));
+  }
+
+  // vresult = [0 1 2 3]
+
+  KMask128<int> trailMask = KMask128<int>.CreateTrailingMask(source.Length - lastBlockIndex);
+  Vector128<int> tail = Vector128<int>.LoadTrailing(source.Slice(lastBlockIndex), trailMask);
+
+  // tail = [4 5 6 X]
+
+  vresult = Vector128<int>.Add(vresult, tail, trailMask);
+
+  // vresult = [4 6 8 3]
+
+  // Handle reduce
+  result = vresult.ReduceAdd();
+
+  return result;
+}
+```
+
+The JIT decides how to implement the `LoadTrailing` and condition operations depending upon hardware features. 
+
+On architectures where masked loads are supported, `KMask<T>` allows to easily load just a partial vector, and perform conditional SIMD processing using the same mask (as seen in the example above). On architectures where masked loads are not supported, the JIT can backtrack the source point in `LoadTrailing` to load a full vector (where some of the vector is redundant from the last loop iteration) and corresponding adjust the `KMask128<int>`, something more akin to: 
+
+```C#
+// vresult = [0 1 2 3]
+
+KMask128<int> trailMask = KMask128<int>.CreateTrailingMask(source.Length - lastBlockIndex);
+Vector128<int> tail = Vector128<int>.LoadTrailing(source.Slice(lastBlockIndex), trailMask);
+
+// tail = [3 4 5 6]
+// tail = [0 1 1 1] & tail
+
+vresult = Vector128<int>.Add(vresult, tail, trailMask);
+
+// vresult = [0 5 7 9]
+
+```
+
+We also propose `CreateLeadingMask` and `LoadLeading` which function analogously to `CreateTrailingMask` and `CreateTrailing` respectively.
 
 ## Requirements
 
@@ -305,6 +362,20 @@ In order to make use of the `KMask<T>` for conditional processing, we expose the
 | ------ | 
 | `KMask<T> Vector<T>.CondAdd(Vector<T> v1, Vector<T> v2, KMask<T> cond)` | 
 
+
+#### Leading and Trailing Processing API Methods
+
+We propose the following methods for each `Vector` API for processing leading and trailing elements. 
+
+| Method  |
+| ------ | 
+| `KMask<T> Vector<T>.CreateLeadingMask(int rem)` | 
+| `KMask<T> Vector<T>.LoadLeading(Span<T> v1, KMask<T> mask)` | 
+| `KMask<T> Vector<T>.StoreLeading(Span<T> v1, KMask<T> mask)` | 
+| `KMask<T> Vector<T>.CreateTrailingMask(int rem)` | 
+| `KMask<T> Vector<T>.LoadTrailing(Span<T> v1, KMask<T> mask)` | 
+| `KMask<T> Vector<T>.StoreTrailing(Span<T> v1, KMask<T> mask)` | 
+
 ### Internals Upgrades for EVEX/AVX512 Enabling
 
 Broadly speaking, we can break the implementation of `Vector512` and `KMask` into the following components:
@@ -327,7 +398,15 @@ We expand on each item in turn below:
 
 #### Enable Register Support for Additional 16 Registers
 
+As AVX512 and EVEX allows for an additional 16 SIMD registers (`mm16`-`mm32`) the register allocator and runtime need to be expanded to support the greater number of registers.
 
+1. Expand the number of registers the runtime and JIT understand.
+
+2. Introduce support to the runtime to properly allow for context switching across managed and native boundaries with the new registers.
+
+3. Introduce debugger support for the new registers.
+
+This will lay foundation for adding 512-bit register support (as 128-bit, 256-bit, and 512-bit share the same registers on x86) and provide insight into adding the opmask register support.
 
 #### Internals Upgrades for `Vector512<T>`
 
@@ -357,9 +436,11 @@ In the following section, we detail the additional features of `EVEX` encoding t
 
 2. Expanding the register allocator to allocate AVX512 opmask registers for the new kmask types.
 
-3. Introduce fallback JIT compiler pass that will allow `KMask<T>` to degenerate into `Vector<T>` and less efficient operations but still allow for the `KMask<T>` API to be used on all architectures.
+3. Introduce JIT compiler passes for handling `KMask<T>` conditionals and leading and trailing masks.
 
-4. Extend the `xarch` emitter to use `EVEX` encoding for opmask registers when using the for the conditional `Vector` API.
+4. Introduce fallback JIT compiler pass that will allow `KMask<T>` to degenerate into `Vector<T>` and less efficient operations but still allow for the `KMask<T>` API to be used on all architectures.
+
+5. Extend the `xarch` emitter to use `EVEX` encoding for opmask registers when using the for the conditional `Vector` API.
 
 ## Q & A
 
