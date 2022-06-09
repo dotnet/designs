@@ -160,7 +160,15 @@ Where `KMask<T>` expresses that the number of elements the condition applies to 
 
 ### Goals
 
+1. Enable 512-bit vector support in .NET.
+
+2. Expose type safe and expressible API for declaring conditional SIMD processing.
+
 ### Non-Goals
+
+1. No automatic vectorization is performed. Conditional SIMD processing done through declarative APIS.
+
+2. Focus of the work is on Vector512 and KMask, including optimization passes needed to make `KMask` performant on all platforms. Additional optimizations enabled by `EVEX` encoding (such as folding multiple SIMD operations into a single embedded broadcast ) are desired but outside the scope of the initial work.
 
 
 ## Stakeholders and Reviewers
@@ -255,7 +263,15 @@ The following lists the methods for `KMask<T>` API that allow for combining `KMa
 | `KMask<T> KMask<T>.Not(KMask<T>, KMask<T>)`  | 
 | `KMask<T> KMask<T>.Xor(KMask<T>, KMask<T>)`  | 
 
-We detail the changes to `Vector` API which return `KMask` types in the following subsection.
+The following lists the methods that allow to use `KMask<T>` for some lower-level processing typically done in SIMD code
+
+(TODO: What else?)
+
+| Method  |
+| ------ | 
+| `KMask<T> KMask<T>.FirstIndexOf(KMask<T> mask, bool val)`  | 
+| `KMask<T> KMask<T>.SetElemntCond(KMask<T> mask, ulong pos, bool val)` | 
+
 
 #### Conditional Processing API Methods
 
@@ -280,6 +296,14 @@ We overload each method to make it easier to compare vectors against constants:
 | `KMask<T> Vector<T>.KGreaterThanEquals(Vector<T> v1, T val)`  | 
 | `KMask<T> Vector<T>.KLessThan(Vector<T> v1, T val)`          | 
 | `KMask<T> Vector<T>.KLessThanEquals(Vector<T> v1, T val)`    |  
+
+In order to make use of the `KMask<T>` for conditional processing, we expose the following APIs on `Vector<T>`:
+
+(TODO: What else?)
+
+| Method  |
+| ------ | 
+| `KMask<T> Vector<T>.CondAdd(Vector<T> v1, Vector<T> v2, KMask<T> cond)` | 
 
 ### Internals Upgrades for EVEX/AVX512 Enabling
 
