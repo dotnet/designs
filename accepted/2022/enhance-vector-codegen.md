@@ -664,7 +664,7 @@ It's possible that `_mvector` was created using `Vector128` as its underlying im
 
 ### New `Vector<T>` API Methods
 
-(TODO: Revisit this once we have some idea of APIs required to mitigate `MoveMask`)
+We refer to the associated [`Vector512<T>` and `KMask<T>`](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#kmaskt-type-and-api-methods) for more details.
 
 ## Q & A
 
