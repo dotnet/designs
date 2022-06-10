@@ -236,17 +236,95 @@ In the following section, we motivate all concepts with a complete example.
 
 We refer to the current implementation of `IndexOf` in `SpanHelper.Byte.cs` (https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/SpanHelpers.Byte.cs#L15) to illustrate the benefit of the proposed `Vector<T>` improvements.
 
-In the following code snippet, we collapse the existing implemention into a single code path using `Vector<T>` new APIs, and let the JIT determine the most performant SIMD ISA at runtime with the `#[Vectorize]` attribute.
-
-(The example should use the `#[Vectorize]`, a single `Vector<T>` code path, and ideally handle trailing elements with the trailing element API).
+In the following code snippet, we collapse the existing SIMD implementation into a single code path using `Vector<T>` new APIs, and let the JIT determine the most performant SIMD ISA at runtime with the `#[Vectorize]` attribute.
 
 ```C#
+#[Vectorize]
 public static int IndexOf(ref byte searchSpace, int searchSpaceLength, ref byte value, int valueLength)
 {
-  // TODO
+    if (valueLength == 0)
+        return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
+
+    int valueTailLength = valueLength - 1;
+    if (valueTailLength == 0)
+        return IndexOf(ref searchSpace, value, searchSpaceLength); // for single-byte values use plain IndexOf
+
+    nint offset = 0;
+    byte valueHead = value;
+    int searchSpaceMinusValueTailLength = searchSpaceLength - valueTailLength;
+    if (Vector.IsHardwareAccelerated && searchSpaceMinusValueTailLength >= Vector128<byte>.Count)
+    {
+        goto SEARCH_TWO_BYTES;
+    }
+
+    // ...
+    
+SEARCH_TWO_BYTES:
+    if (Vector.IsHardwareAccelerated && searchSpaceMinusValueTailLength - Vector<byte>.Count >= 0)
+    {
+        // Find the last unique (which is not equal to ch1) byte
+        // the algorithm is fine if both are equal, just a little bit less efficient
+        byte ch2Val = Unsafe.Add(ref value, valueTailLength);
+        nint ch1ch2Distance = valueTailLength;
+        while (ch2Val == value && ch1ch2Distance > 1)
+            ch2Val = Unsafe.Add(ref value, --ch1ch2Distance);
+
+        Vector<byte> ch1 = Vector.Create(value);
+        Vector<byte> ch2 = Vector.Create(ch2Val);
+
+        nint searchSpaceMinusValueTailLengthAndVector =
+            searchSpaceMinusValueTailLength - (nint)Vector<byte>.Count;
+
+        do
+        {
+            Debug.Assert(offset >= 0);
+            // Make sure we don't go out of bounds
+            Debug.Assert(offset + ch1ch2Distance + Vector512<byte>.Count <= searchSpaceLength);
+
+            KMask<byte> cmpCh2 = Vector.KEquals(ch2, Vector.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+            KMask<byte> cmpCh1 = Vector.Equals(ch1, Vector.LoadUnsafe(ref searchSpace, (nuint)offset));
+            KMask<byte> cmpAnd = (cmpCh1 & cmpCh2);
+
+            // Early out: cmpAnd is all zeros
+            if (cmpAnd != KMask<byte>.Zero)
+            {
+                goto CANDIDATE_FOUND;
+            }
+
+        LOOP_FOOTER:
+            offset += Vector<byte>.Count;
+
+            if (offset == searchSpaceMinusValueTailLength)
+                return -1;
+
+            // Overlap with the current chunk for trailing elements
+            if (offset > searchSpaceMinusValueTailLengthAndVector)
+                offset = searchSpaceMinusValueTailLengthAndVector;
+
+            continue;
+
+        CANDIDATE_FOUND:
+            do
+            {
+                int bitPos = cmpAnd.FirstIndexOf(true); 
+                if (valueLength == 2 || 
+                    SequenceEqual(
+                        ref Unsafe.Add(ref searchSpace, offset + bitPos),
+                        ref value, (nuint)(uint)valueLength)) 
+                {
+                    return (int)(offset + bitPos);
+                }
+                cmpAnd = cmpAnd.SetElementCond(bitPos, false);
+            } while (mask != KMask<byte>.Zero);
+            goto LOOP_FOOTER;
+
+        } while (true);
+    }
 }
+
 ```
 
+Note the presence of the new `KMask<T>` methods allows to use `Vector<T>` in place of the explicit `Vector128`, `Vector256` code path checks. When combined with `#[Vectorize]`, the JIT will probe the proper varaibles, i.e., `searchSpaceMinusValueTailLength` and compare with the threshold check `searchSpaceMinusValueTailLength - Vector<byte>.Count >= 0` at runtime to determine which `Vector<T>` length should be selected.
 ## Requirements
 
 ### Goals
