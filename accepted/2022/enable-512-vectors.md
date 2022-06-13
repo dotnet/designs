@@ -387,6 +387,26 @@ In order to make use of the `KMask<T>` for conditional processing, we expose the
 
 `KExpr` is meant to start a small domain specific language (DSL) for Vector SIMD processing. To keep the implementation simple, we choose to directly use a `C#` expression (embedded DSL) encoded through a lambda. 
 
+In the following example:
+
+```C#
+public Vector512<int> SumVector512(ReadOnlySpan<int> source)
+{
+  Vector512<int> vresult = Vector512<int>.Zero;
+
+  for (int i = 0; i < source.Length;; i += Vector512<int>.Count)
+  {
+    Vector512<int> v1 = new Vector512<int>(source.Slice(i));
+    KMask512<int> mask = v1.KExpr(x => x > 0 & x != 5);
+    vresult = Vector512.Add(vresult, v1, mask);
+  }
+
+  return vresult;
+}
+```
+
+to JIT should logically create a `KMask` equivalent to `v1.KGreaterThan(0) & v1.KNotEqual(5)`.
+
 Given a usage of `KExpr`, `v.KExpr(x => e)`, where `v` represents a `Vector` and `e` represents an expressions:
 
 - `v` defines the vector that we perform the conditional SIMD for (the implementation determines how the masking must be done)
