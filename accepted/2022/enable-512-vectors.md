@@ -145,7 +145,7 @@ public Vector<int> SumVector(ReadOnlySpan<int> source)
   for (int i = 0; i < source.Length;; i += Vector<int>.Count)
   {
     Vector<int> v1 = new Vector<int>(source.Slice(i));
-    KMask<int> mask = v1.GreaterThan(0) & v1.NotEqual(5);
+    KMask<int> mask = v1.KGreaterThan(0) & v1.KNotEqual(5);
     vresult = Vector.Add(vresult, v1, mask);
   }
 
@@ -154,6 +154,26 @@ public Vector<int> SumVector(ReadOnlySpan<int> source)
 ```
 
 Where `KMask<T>` expresses that the number of elements the condition applies to is variable-length, and determined by the JIT at runtime (though it must be compatible with `Vector<T>` selected length).
+
+Lastly, we propose to create a `KMask` using builtin C# boolean expressions by passing a lambda to a special `KExpr` API:
+
+```C#
+public Vector512<int> SumVector512(ReadOnlySpan<int> source)
+{
+  Vector512<int> vresult = Vector512<int>.Zero;
+
+  for (int i = 0; i < source.Length;; i += Vector512<int>.Count)
+  {
+    Vector512<int> v1 = new Vector512<int>(source.Slice(i));
+    KMask512<int> mask = v1.KExpr(x => x > 0 & x != 5);
+    vresult = Vector512.Add(vresult, v1, mask);
+  }
+
+  return vresult;
+}
+```
+
+Logically, the lambda passed to `KExpr` selects for which elements of `v1` to include in the `KMask`, and allows developers to program conditional SIMD logic with familiar boolean condition operations.
 
 ### Leading/Trailing Element Processing with `KMask<T>`
 
@@ -363,6 +383,22 @@ In order to make use of the `KMask<T>` for conditional processing, we expose the
 | `KMask<T> Vector<T>.CondAdd(Vector<T> v1, Vector<T> v2, KMask<T> cond)` | 
 
 
+#### KExpr API
+
+`KExpr` is meant to start a small domain specific language (DSL) for Vector SIMD processing. To keep the implementation simple, we choose to directly use a `C#` expression (embedded DSL) encoded through a lambda. 
+
+Given a usage of `KExpr`, `v.KExpr(x => e)`, where `v` represents a `Vector` and `e` represents an expressions:
+
+- `v` defines the vector that we perform the conditional SIMD for (the implementation determines how the masking must be done)
+
+- `x` can be logically thought of as `v[i]` and is used to hint to the JIT on how to build the mask.
+
+- `e` defines an expression that the JIT will lift up in an appropriate masking. `e` must be a boolean expression, and is restricted to the standard boolean comparision operations.
+
+- If `e` does not type check to a boolean expression, and uses expressions other than boolean comparision operations and `x`, the JIT will throw `OperationNotSupportedError`.
+
+There are more advanced uses of a true "embedded DSL" and if the idea seems applicable, we can extend `KExpr` to handle many more interesting cases (at the cost of more advanced lifting from C# expression to something the JIT can work with).
+
 #### Leading and Trailing Processing API Methods
 
 We propose the following methods for each `Vector` API for processing leading and trailing elements. 
@@ -441,6 +477,8 @@ In the following section, we detail the additional features of `EVEX` encoding t
 4. Introduce fallback JIT compiler pass that will allow `KMask<T>` to degenerate into `Vector<T>` and less efficient operations but still allow for the `KMask<T>` API to be used on all architectures.
 
 5. Extend the `xarch` emitter to use `EVEX` encoding for opmask registers when using the for the conditional `Vector` API.
+
+6. Implement `KExpr` DSL interpretation (lift provided C# expression into internals used for the rest of the `KMask` operations).
 
 ## Q & A
 
