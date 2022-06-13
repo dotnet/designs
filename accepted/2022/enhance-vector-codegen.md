@@ -449,7 +449,7 @@ The presence of a `#[Vectorize]` attribute instructs the JIT to perform a depend
 
   - If the parameter is one whose type has a queryable size, e.g., `Span` we mark it for sampling.
 
-  - Raw pointers are not marked for sampling. (TODO: Anyway to handle this).
+  - Raw pointers are not marked for sampling. (OPEN: Anyway to handle this).
 
 - Sinks are traced through use-def chains to reach a source.
 
@@ -478,11 +478,7 @@ public int SumVector(ReadOnlySpan<int> span) // <-- Source
     vresult += new Vector<int>(span.Slice(i));  // <-- Sink
   }
 
-  int result = 0;
-  for (int j = 0; j < Vector<int>.Count; j++)
-  {
-    result += vresult[j];
-  }
+  int result = vresult.Sum();
 
   // Handle tail
   while (i < span.Length)
@@ -494,7 +490,7 @@ public int SumVector(ReadOnlySpan<int> span) // <-- Source
 }
 ```
 
-will result in `span` being selected as a source for sampling. The JIT will _conceptually_ perform the following sampling and recompling --- we elide implementation details for now, which we recognize must fit into the existing PGO architecture (no actual "stub" will exist, instead the recompile logic will take place inside RyuJIT during a Tier1 compile check etc. )
+will result in `span` being selected as a source for sampling. The JIT will _conceptually_ perform the following sampling and recompiling --- we elide implementation details for now, which we recognize must fit into the existing PGO architecture (no actual "stub" will exist, instead the recompile logic will take place inside RyuJIT during a Tier1 compile check etc. )
 
 ```C#
 public int SumVector_Stub(ReadOnlySpan<int> span)
@@ -647,7 +643,7 @@ class Foo()
       vresult += new Vector<int>(span.Slice(i));  // <-- Sink
     }
 
-    int result = ReduceVector(vresult);
+    int result = vresult.Sum();
 
     // Handle tail
     while (i < span.Length)

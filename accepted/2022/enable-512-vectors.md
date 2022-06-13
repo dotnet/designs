@@ -1,8 +1,8 @@
 # Enable EVEX and Vector512 in RyuJIT
 
-.NET support for SIMD acceleration through its Vector APIS (`Vector<T>`, `Vector64`, `Vector128`, and `Vector256`) allow developers to harness the power of SIMD hardware acceleration without expert-level knowledge of underlying and complex instruction set architectures and extensive platform-dependent intrinsics. 
+.NET support for SIMD acceleration through its Vector APIs (`Vector<T>`, `Vector64`, `Vector128`, and `Vector256`) allow developers to harness the power of SIMD hardware acceleration without expert-level knowledge of underlying complex instruction set architectures and extensive platform-dependent intrinsics. 
 
-We introduce `Vector512` API that continues the trend of Vector API in .NET for 512-bit wide SIMD acceleration. In addition, we expose a new `KMask` API, which allows for a more declarative and programmer-friendly method for conditional SIMD operations.
+We introduce `Vector512` API that continues the trend of the Vector APIs in .NET for 512-bit wide SIMD acceleration. In addition, we expose a new `KMask` API, which allows for a more declarative and programmer-friendly method for performing conditional SIMD operations.
 
 One such realization of 512-bit SIMD acceleration is the `AVX512` family of instruction sets for `X86` architecture which this proposal addresses for implementation details; however, `Vector512` and `KMask` 
 
@@ -12,7 +12,7 @@ One such realization of 512-bit SIMD acceleration is the `AVX512` family of inst
 
 ### Vector512<T> Usage
 
-Existing code that utilizes `Vector256<T>` to perform vectorized sum over a span might look something like the following snippet (assuming the addition of a `ReduceAdd` method as described above):
+Existing code that utilizes `Vector256<T>` to perform vectorized sum over a span might look something like the following snippet:
 
 ```C#
 public int SumVector256(ReadOnlySpan<int> source)
@@ -27,7 +27,7 @@ public int SumVector256(ReadOnlySpan<int> source)
     vresult += new Vector256<int>(source.Slice(i));
   }
 
-  result += vresult.ReduceAdd();
+  int result += vresult.Sum();
 
   // Handle tail
   while (i < source.Length)
@@ -55,7 +55,7 @@ public int SumVector512(ReadOnlySpan<int> source)
     vresult += new Vector512<int>(source.Slice(i));
   }
 
-  result += vresult.ReduceAdd();
+  int result += vresult.Sum();
 
   // Handle tail
   while (i < source.Length)
@@ -134,7 +134,7 @@ for (int i = 0; i < s1.Length; i++)
 }
 ```
 
-As `KMask512` expresses that we have a masked condition for `Vector512`, so to will we have `KMask256`, `KMask128`, and `KMask64`. In addition, when using the variable legnth `Vector<T>` API, we have `KMask<T>`, as seen the in the following example:
+As `KMask512` expresses that we have a masked condition for `Vector512`, so to will we have `KMask256`, `KMask128`, and `KMask64`. In addition, when using the variable length `Vector<T>` API, we have `KMask<T>`, as seen the in the following example:
 
 
 ```C#
@@ -206,7 +206,7 @@ public int SumVector(ReadOnlySpan<int> source)
   // vresult = [4 6 8 3]
 
   // Handle reduce
-  result = vresult.ReduceAdd();
+  int result = vresult.Sum();
 
   return result;
 }
@@ -342,7 +342,7 @@ The following lists the methods for `KMask<T>` API that allow for combining `KMa
 
 The following lists the methods that allow to use `KMask<T>` for some lower-level processing typically done in SIMD code
 
-(TODO: What else?)
+(OPEN: What else?)
 
 | Method  |
 | ------ | 
@@ -374,13 +374,15 @@ We overload each method to make it easier to compare vectors against constants:
 | `KMask<T> Vector<T>.KLessThan(Vector<T> v1, T val)`          | 
 | `KMask<T> Vector<T>.KLessThanEquals(Vector<T> v1, T val)`    |  
 
-In order to make use of the `KMask<T>` for conditional processing, we expose the following APIs on `Vector<T>`:
-
-(TODO: What else?)
+In order to make use of the `KMask<T>` for conditional processing, we propose to extend the `Vector` operation API with overloaded methods to consume a `KMask`, e.g. `Vector<T>`:
 
 | Method  |
 | ------ | 
-| `KMask<T> Vector<T>.CondAdd(Vector<T> v1, Vector<T> v2, KMask<T> cond)` | 
+| `KMask<T> Vector<T>.Add(Vector<T> v1, Vector<T> v2, KMask<T> cond)` | 
+| `KMask<T> Vector<T>.And(Vector<T> v1, Vector<T> v2, KMask<T> cond)` | 
+
+(OPEN: What API methods to extend here?)
+
 
 
 #### KExpr API
@@ -415,7 +417,7 @@ Given a usage of `KExpr`, `v.KExpr(x => e)`, where `v` represents a `Vector` and
 
 - `e` defines an expression that the JIT will lift up in an appropriate masking. `e` must be a boolean expression, and is restricted to the standard boolean comparision operations.
 
-- If `e` does not type check to a boolean expression, and uses expressions other than boolean comparision operations and `x`, the JIT will throw `OperationNotSupportedError`.
+- If `e` does not type check to a boolean expression, and uses expressions other than boolean comparison operations and `x`, the JIT will throw `OperationNotSupportedError`.
 
 There are more advanced uses of a true "embedded DSL" and if the idea seems applicable, we can extend `KExpr` to handle many more interesting cases (at the cost of more advanced lifting from C# expression to something the JIT can work with).
 
@@ -476,7 +478,7 @@ Once the framework for EVEX encoding is in place for the xarch codegen pipeline,
 
 4. Define the `Vector512` operations (realized through code generation and intrinsics).
 
-As we propose to develop `Vector512<T>` as an instantiation of the `AVX512` ISA for x86/x64 architecture, most of the initial modification will take place in the xarch porition of the JIT, particularly in the lowering, code gen, and emitting stages. Adding the `EVEX` prefix to the xarch emitter (which allows to generate AVX512 family of instructions) will consume most of the initial work. 
+As we propose to develop `Vector512<T>` as an instantiation of the `AVX512` ISA for x86/x64 architecture, most of the initial modification will take place in the xarch portion of the JIT, particularly in the lowering, codegen, and emitting stages. Adding the `EVEX` prefix to the xarch emitter (which allows to generate AVX512 family of instructions) will consume most of the initial work. 
 
 `EVEX` encoding allows for more features than just emitting `AVX512` family of instructions; however, as a first pass, we propose to implement the minimum EVEX encoding to generate the instructions for the `Vector512<T>` API surface above. This represents an "MVP" for 512-bit vectors and EVEX encoding in RyuJIT. 
 
@@ -484,7 +486,7 @@ In the following section, we detail the additional features of `EVEX` encoding t
 
 #### Internals Upgrades for `KMask<T>`
 
-1. Introduction new kmask type (TYP_KMASK8, TYPE_KMASK16, TYP_KMASK32, and TYP_KMASK64) to the runtime. 
+1. Introduction of a new kmask type (TYP_KMASK8, TYPE_KMASK16, TYP_KMASK32, and TYP_KMASK64) to the runtime. 
 
     - Similar to the API/implementation of `VectorXX<T>`, `KMaskXX<T>` `XX` expresses the number width of the condition, and `<T>` expresses the size of each element the condition applies to.
 
