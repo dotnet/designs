@@ -91,6 +91,13 @@ In .NET Core 3.0 framework dependent apps use an `apphost` by default, which mak
 
 This means that .NET Core 3.0 is the last chance to get the algorithms for install locations modified in "breaking ways". Future release will very likely have to be 100% backward compatible in this regard.
 
+## Diagnosing issues
+
+To help with diagnosing issues with install location (and other hosting related
+problems) all of the hosting components use a common tracing mechanism.
+To turn it on, set environment variable `COREHOST_TRACE=1`. For more details
+about host tracing see [documentation](https://docs.microsoft.com/dotnet/core/dependency-loading/default-probing#how-do-i-debug-the-probing-properties-construction)
+or the [technical design](https://github.com/dotnet/runtime/blob/main/docs/design/features/host-tracing.md).
 
 ## Proposal for 3.0
 
