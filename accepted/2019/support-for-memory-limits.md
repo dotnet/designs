@@ -6,7 +6,7 @@
 
 Windows has a concept similar to cgroups called [job objects](https://docs.microsoft.com/windows/desktop/ProcThread/job-objects). .NET 6+ correctly honors job objects in the same way as cgroups. This document will focus on cgroups throughout.
 
-It is critical to provide effective and well-defined capabilities for .NET applications within memory-limited cgroups. An application should run indefinitely given a sensible configuration for that application. It is important that .NET developers have good controls to optimize their container hosted applications. Our goal is that certain classes of .NET applications can be run with <100 MiB memory constraints.
+It is critical to provide effective and well-defined capabilities for .NET applications within memory-limited cgroups. An application should run indefinitely given a sensible configuration for that application. It is important that .NET developers have good controls to optimize their container hosted applications. Our goal is that certain classes of .NET applications can be run with <100 MB memory constraints.
 
 Related:
 
@@ -17,7 +17,7 @@ Related:
 
 cgroups control two main resources: memory and cores. Both are relevant to the .NET GC.
 
-Memory constraints defines the maximum memory available to the cgroup. This memory is used by the guest operating system, the .NET runtime, the GC heap, and potentially other users. If a cgroup has `100 MiB` available, the app will have less than that. The cgroup will be terminated (AKA `OOMKilled`) when the memory limit is reached.
+Memory constraints defines the maximum memory available to the cgroup. This memory is used by the guest operating system, the .NET runtime, the GC heap, and potentially other users. If a cgroup has `100 MB` available, the app will have less than that. The cgroup will be terminated (AKA `OOMKilled`) when the memory limit is reached.
 
 Core constraints determine how many GC heaps should be created, at maximum. The maximum heap value matches `Environment.ProcessorCount`. There are three primary ways that this value can be set (using the `docker` CLI to demonstrate):
 
@@ -58,7 +58,7 @@ The heap count can be set two ways:
 - Manually via `DOTNET_GCHeapCount`.
 - Automatically by the GC, relying on:
   - Number of observed or configured cores.
-  - A minimum _reserved_ memory size per heap of `16 MiB`.
+  - A minimum _reserved_ memory size per heap of `16 MB`.
 
 If [`DOTNET_PROCESSOR_COUNT`](https://github.com/dotnet/runtime/issues/48094) is set, including if it differs from `--cpus`, then the GC will use the ENV value for determining the maximum number of heaps to create.
 
@@ -73,10 +73,10 @@ docker run --rm -m 256mb mcr.microsoft.com/dotnet/samples
 ```
 
 * 48 core machine
-* cgroup has a 256MiB memory limit
+* cgroup has a 256MB memory limit
 * cgroup has no CPU/core limit
 * 192MB `GCHeapHardLimit`
-* Server GC will create 12 GC heaps, with 16 MiB reserved memory
+* Server GC will create 12 GC heaps, with 16 MB reserved memory
 * All 48 cores can be used by the application, per [container policy](https://docs.docker.com/config/containers/resource_constraints/#cpu)
 
 `heaps = (256 * .75) / 16`
@@ -89,10 +89,10 @@ docker run --rm -m 256mb --cpus 2 mcr.microsoft.com/dotnet/samples
 ```
 
 * 48 core machine
-* cgroup has a 256MiB memory limit
+* cgroup has a 256MB memory limit
 * cgroup has 2 CPU/core limit
 * 192MB `GCHeapHardLimit`
-* Server GC will create 2 GC heaps, with 16 MiB reserved memory
+* Server GC will create 2 GC heaps, with 16 MB reserved memory
 * Only 2 cores can be used by the application
 
 ### Memory and CPU constrained (with CPU affinity):
@@ -102,10 +102,10 @@ docker run --rm -m 256mb --cpuset-cpus 0,2,3 mcr.microsoft.com/dotnet/samples
 ```
 
 * 48 core machine
-* cgroup has a 256MiB memory limit
+* cgroup has a 256MB memory limit
 * cgroup has 3 CPU/core limit
 * 192MB `GCHeapHardLimit`
-* Server GC will create 3 GC heaps, with 16 MiB reserved memory
+* Server GC will create 3 GC heaps, with 16 MB reserved memory
 * Only 3 cores can be used by the application
 
 ### Memory and CPU constrained (overriden by `DOTNET_PROCESSOR_COUNT`):
@@ -115,8 +115,8 @@ docker run --rm -m 256mb --cpus 2 -e DOTNET_PROCESSOR_COUNT=4 mcr.microsoft.com/
 ```
 
 * 48 core machine
-* cgroup has a 256MiB memory limit
+* cgroup has a 256MB memory limit
 * cgroup has 2 CPU/core limit
 * 192MB `GCHeapHardLimit`
-* Server GC will create 4 GC heaps, with 16 MiB reserved memory
+* Server GC will create 4 GC heaps, with 16 MB reserved memory
 * Only 2 cores can be used by the application
