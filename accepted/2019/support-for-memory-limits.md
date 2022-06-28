@@ -35,7 +35,7 @@ The *GC Heap Hard Limit* is the maximum managed heap size. It only applies when 
 The following configuration knobs are exposed to configure applications:
 
 * `GCHeapHardLimit` - specifies a hard limit for the GC heap as an absolute value, in bytes (hex value).
-* `GCHeapHardLimitPercent` - specifies a hard limit for the GC heap as a percentage of the cgroup hard limit.
+* `GCHeapHardLimitPercent` - specifies a hard limit for the GC heap as a percentage of the cgroup hard limit (hex value).
 
 If both are specified, `GCHeapHardLimit` is used.
 
