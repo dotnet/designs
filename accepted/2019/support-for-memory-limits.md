@@ -35,7 +35,7 @@ The GC will throw an `OutOfMemoryException` for allocations that would cause the
 
 Using Server GC, there are multiple GC heaps created, up to one per core. This model doesn't scale well when a small memory limit is set on a machine with many cores.
 
-The minimum _reserved_ segment size per heap: `16 MiB`
+The minimum _reserved_ memory size per heap: `16 MiB`
 
 Example -- CPU unconstrained:
 
