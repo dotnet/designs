@@ -70,7 +70,7 @@ There are other scenarios, like using `--cpuset-cpus` (CPU affinity) but they al
 
 If [`DOTNET_PROCESSOR_COUNT`](https://github.com/dotnet/runtime/issues/48094) is set, including if it differs from `--cpus`, then the GC will use the ENV value for determining the maximum number of heaps to create.
 
-Note: .NET Framework has the same behavior but `COMPlus_RUNNING_IN_CONTAINER` must be set. Also processor count is affected (in the same way) by `COMPlus_PROCESSOR_COUNT`.
+Note: [.NET Framework 4.8 and 4.8.1](https://github.com/microsoft/dotnet-framework-docker/discussions/935) have the same behavior but `COMPlus_RUNNING_IN_CONTAINER` must be set. Also processor count is affected (in the same way) by `COMPlus_PROCESSOR_COUNT`.
 
 ## Previous behavior
 
