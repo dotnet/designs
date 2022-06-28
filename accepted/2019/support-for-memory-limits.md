@@ -53,7 +53,12 @@ The GC will throw an `OutOfMemoryException` for allocations that would cause the
 
 Using Server GC, there are multiple GC heaps created, up to one per core. This model doesn't scale well when a small memory limit is set on a machine with many cores.
 
-The minimum _reserved_ memory size per heap: `16 MiB`
+The heap count can be set two ways:
+
+- Manually via `DOTNET_GCHeapCount`.
+- Automatically by the GC, relying on:
+  - Number of observed or configured cores.
+  - A minimum _reserved_ memory size per heap of `16 MiB`.
 
 If [`DOTNET_PROCESSOR_COUNT`](https://github.com/dotnet/runtime/issues/48094) is set, including if it differs from `--cpus`, then the GC will use the ENV value for determining the maximum number of heaps to create.
 
