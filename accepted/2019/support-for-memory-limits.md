@@ -66,7 +66,7 @@ docker run --rm -m 256mb --cpus 2 mcr.microsoft.com/dotnet/samples
 * Server GC will create 2 GC heaps, with 16 MiB reserved memory
 * Only 2 cores can be used by the application
 
-There are other scenarios, like using `--cpuset-cpus` but they all follow from these two examples.
+There are other scenarios, like using `--cpuset-cpus` (CPU affinity) but they all follow from these two examples.
 
 If [`DOTNET_PROCESSOR_COUNT`](https://github.com/dotnet/runtime/issues/48094) is set, including if it differs from `--cpus`, then the GC will use the ENV value for determining the maximum number of heaps to create.
 
