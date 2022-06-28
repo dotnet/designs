@@ -42,7 +42,7 @@ If both are specified, `GCHeapHardLimit` is used.
 By default, the `GCHeapHardLimit` will be calculated using the following formula:
 
 ```console
-max (20mb, 75% of the memory limit on the container)
+max (20 MB, 75% of the memory limit on the container)
 ```
 
 The GC will more aggressive perform GCs as the GC heap grows closer to the `GCHeapHardLimit` with the goal of making more memory available so that the application can continue to safely function. The GC will avoid continuously performing full blocking GCs if they are not considered productive.
@@ -73,9 +73,9 @@ docker run --rm -m 256mb mcr.microsoft.com/dotnet/samples
 ```
 
 * 48 core machine
-* cgroup has a 256MB memory limit
+* cgroup has a 256 MB memory limit
 * cgroup has no CPU/core limit
-* 192MB `GCHeapHardLimit`
+* 192 MB `GCHeapHardLimit`
 * Server GC will create 12 GC heaps, with 16 MB reserved memory
 * All 48 cores can be used by the application, per [container policy](https://docs.docker.com/config/containers/resource_constraints/#cpu)
 
@@ -89,9 +89,9 @@ docker run --rm -m 256mb --cpus 2 mcr.microsoft.com/dotnet/samples
 ```
 
 * 48 core machine
-* cgroup has a 256MB memory limit
+* cgroup has a 256 MB memory limit
 * cgroup has 2 CPU/core limit
-* 192MB `GCHeapHardLimit`
+* 192 MB `GCHeapHardLimit`
 * Server GC will create 2 GC heaps, with 16 MB reserved memory
 * Only 2 cores can be used by the application
 
@@ -102,9 +102,9 @@ docker run --rm -m 256mb --cpuset-cpus 0,2,3 mcr.microsoft.com/dotnet/samples
 ```
 
 * 48 core machine
-* cgroup has a 256MB memory limit
+* cgroup has a 256 MB memory limit
 * cgroup has 3 CPU/core limit
-* 192MB `GCHeapHardLimit`
+* 192 MB `GCHeapHardLimit`
 * Server GC will create 3 GC heaps, with 16 MB reserved memory
 * Only 3 cores can be used by the application
 
@@ -115,8 +115,8 @@ docker run --rm -m 256mb --cpus 2 -e DOTNET_PROCESSOR_COUNT=4 mcr.microsoft.com/
 ```
 
 * 48 core machine
-* cgroup has a 256MB memory limit
+* cgroup has a 256 MB memory limit
 * cgroup has 2 CPU/core limit
-* 192MB `GCHeapHardLimit`
+* 192 MB `GCHeapHardLimit`
 * Server GC will create 4 GC heaps, with 16 MB reserved memory
 * Only 2 cores can be used by the application
