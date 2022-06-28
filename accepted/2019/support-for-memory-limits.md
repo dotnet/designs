@@ -1,4 +1,4 @@
-# .NET GC Support for Docker Limits
+# .NET GC Support for Container Limits
 
 **Owner** [Rich Lander](https://github.com/richlander)
 
