@@ -12,6 +12,7 @@ Related:
 
 - [implementing hard limit for GC heap dotnet/coreclr #22180](https://github.com/dotnet/coreclr/pull/22180).
 - [Validate container improvements with .NET 6](https://github.com/dotnet/runtime/issues/53149).
+- [Runtime configuration options for garbage collection](https://docs.microsoft.com/dotnet/core/runtime-config/garbage-collector)
 
 ## Cgroup constraints
 
@@ -64,7 +65,7 @@ If [`DOTNET_PROCESSOR_COUNT`](https://github.com/dotnet/runtime/issues/48094) is
 
 Note: [.NET Framework 4.8 and 4.8.1](https://github.com/microsoft/dotnet-framework-docker/discussions/935) have the same behavior but `COMPlus_RUNNING_IN_CONTAINER` must be set. Also processor count is affected (in the same way) by `COMPlus_PROCESSOR_COUNT`.
 
-Let's look at some examples.
+Let's look at some examples. They are also demonstrated in [Testing GC Heap Counts with Containers](https://github.com/dotnet/runtime/issues/71413).
 
 ### Memory constrained; CPU unconstrained
 
