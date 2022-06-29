@@ -82,8 +82,10 @@ docker run --rm -m 256mb mcr.microsoft.com/dotnet/samples
 * Server GC will create 12 GC heaps, with 16 MB reserved memory
 * All 48 cores can be used by the application
 
-`heaps = (256 * .75) / 16`
-`heaps = 12`
+```
+heaps = (256 * .75) / 16
+heaps = 12
+```
 
 ### Memory and CPU constrained
 
