@@ -24,7 +24,7 @@ Core constraints determine how many GC heaps should be created, at maximum. The 
 
 - Not specified -- `Environment.ProcessorCount` will match the total number of machine cores.
 - Via `--cpus` -- `Environment.ProcessorCount` uses that (decimal) value (rounded up to the next integer).
-- Via `--cpu-sets` -- `Environment.ProcessorCount` matches the count of specified CPUs.
+- Via `--cpuset-cpus` -- `Environment.ProcessorCount` matches the count of specified CPUs.
 - `DOTNET_PROCESSOR_COUNT` -- `Environment.ProcessorCount` uses this value. If other values are also specified, they are ignored.
 
 In the general case, there will be one heap per core. If the GC creates too many heaps, that can over-eagerly use up the memory limit, at least in part. There are controls to avoid that.
