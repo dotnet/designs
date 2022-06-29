@@ -65,6 +65,8 @@ If [`DOTNET_PROCESSOR_COUNT`](https://github.com/dotnet/runtime/issues/48094) is
 
 Note: [.NET Framework 4.8 and 4.8.1](https://github.com/microsoft/dotnet-framework-docker/discussions/935) have the same behavior but `COMPlus_RUNNING_IN_CONTAINER` must be set. Also processor count is affected (in the same way) by `COMPlus_PROCESSOR_COUNT`.
 
+Note: The next section talks about how many cores can be used by an application. It isn't defined in this doc, but is assumed to be per the [container runtime policy](https://docs.docker.com/config/containers/resource_constraints/#cpu).
+
 Let's look at some examples. They are also demonstrated in [Testing GC Heap Counts with Containers](https://github.com/dotnet/runtime/issues/71413).
 
 ### Memory constrained; CPU unconstrained
@@ -78,7 +80,7 @@ docker run --rm -m 256mb mcr.microsoft.com/dotnet/samples
 * cgroup has no CPU/core limit
 * 192 MB `GCHeapHardLimit`
 * Server GC will create 12 GC heaps, with 16 MB reserved memory
-* All 48 cores can be used by the application, per [container policy](https://docs.docker.com/config/containers/resource_constraints/#cpu)
+* All 48 cores can be used by the application
 
 `heaps = (256 * .75) / 16`
 `heaps = 12`
@@ -93,8 +95,8 @@ docker run --rm -m 256mb --cpus 2 mcr.microsoft.com/dotnet/samples
 * cgroup has a 256 MB memory limit
 * cgroup has 2 CPU/core limit
 * 192 MB `GCHeapHardLimit`
-* Server GC will create 2 GC heaps, with 16 MB reserved memory
-* Only 2 cores can be used by the application
+* Server GC will create 2 GC heaps
+* 2 cores can be used by the application
 
 ### Memory and CPU constrained (with CPU affinity):
 
@@ -106,8 +108,8 @@ docker run --rm -m 256mb --cpuset-cpus 0,2,3 mcr.microsoft.com/dotnet/samples
 * cgroup has a 256 MB memory limit
 * cgroup has 3 CPU/core limit
 * 192 MB `GCHeapHardLimit`
-* Server GC will create 3 GC heaps, with 16 MB reserved memory
-* Only 3 cores can be used by the application
+* Server GC will create 3 GC heaps
+* 3 cores can be used by the application
 
 ### Memory and CPU constrained (overriden by `DOTNET_PROCESSOR_COUNT`):
 
@@ -119,5 +121,5 @@ docker run --rm -m 256mb --cpus 2 -e DOTNET_PROCESSOR_COUNT=4 mcr.microsoft.com/
 * cgroup has a 256 MB memory limit
 * cgroup has 2 CPU/core limit
 * 192 MB `GCHeapHardLimit`
-* Server GC will create 4 GC heaps, with 16 MB reserved memory
-* Only 2 cores can be used by the application
+* Server GC will create 4 GC heaps
+* 2 cores can be used by the application
