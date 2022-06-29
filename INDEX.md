@@ -30,7 +30,7 @@ Use update-index to regenerate it:
 | 2018 | [Rolling self-contained .NET Core app deployments forward to the latest patch](accepted/2018/self-contained-roll-forward.md) | [Daniel Plaisted](https://github.com/dsplaisted) |
 | 2018 | [Standardized Environment Variables for CI Services](accepted/2018/build/standard-ci-env-variables.md) | [Tomáš Matoušek](https://github.com/tmat) |
 | 2018 | [Windows Compatibility Pack](accepted/2018/compat-pack/compat-pack.md) | [Immo Landwerth](https://github.com/terrajobst), [Wes Haggard](https://github.com/weshaggard) |
-| 2019 | [.NET Core GC Support for Docker Limits](accepted/2019/support-for-memory-limits.md) | [Rich Lander](https://github.com/richlander) |
+| 2019 | [.NET GC Support for Container Limits](accepted/2019/support-for-memory-limits.md) | [Rich Lander](https://github.com/richlander) |
 | 2019 | [Background](accepted/2019/targeting-packs-and-runtime-packs.md) | [Rich Lander](https://github.com/richlander), [Nick Guerrera](https://github.com/nguerrera) |
 | 2019 | [Runtime Binding Behavior](accepted/2019/runtime-binding.md) | [Rich Lander](https://github.com/richlander) |
 | 2019 | [System.Index and System.Range](accepted/2019/system-range/system-range.md) | [Immo Landwerth](https://github.com/terrajobst) |
