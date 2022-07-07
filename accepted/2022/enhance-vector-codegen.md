@@ -66,7 +66,7 @@ public static unsafe nuint NarrowUtf16ToAscii(char* pUtf16Buffer, byte* pAsciiBu
 }
 ```
 
-This prevents the JIT from generating code from `Vector<T>` with consistent performance behavior, both internal to .NET libraries and for external .NET developers. Particularly with the addition of `Vector512`, workloads that previously would have been optimized would no longer clear the threshold. To aid `Vector<T>` to act as a single generic SIMD framework, we propose to add a `Vectorize.If` intrinsic that instructs the JIT to generate _multiple_ SIMD acceleration pathways. 
+This prevents the JIT from generating code from `Vector<T>` with consistent performance behavior, both internal to .NET libraries and for external .NET developers. Particularly with the addition of 512-bit vectors, workloads that previously would have been optimized would no longer clear the threshold. To aid `Vector<T>` to act as a single generic SIMD framework, we propose to add a `Vectorize.If` intrinsic that instructs the JIT to generate _multiple_ SIMD acceleration pathways. 
 
 For example, in the following snippet:
 
@@ -223,12 +223,12 @@ Philosophically, both approaches allow the developer to focus less on the implem
 
 ### Additional `Vector<T>` Methods for Near-Intrinsic Performance
 
-We refer readers to our [`KMask<T>`](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#kmaskt-type-and-api-methods) design. `KMask<T>` allows to abstract lower-level masking and conditional processing over SIMD vectors in a way that the JIT can take advantage of for optimization purposes. 
-`KMask<T>` allows to mitigate the need for casting `Vector<T>` to a fixed-size `VectorXX` to take advantage of existing fixed-width APIs like `ExtractMostSigBits` 
+We refer readers to our [`VectorMask<T>`](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#kmaskt-type-and-api-methods) design. `VectorMask<T>` allows to abstract lower-level masking and conditional processing over SIMD vectors in a way that the JIT can take advantage of for optimization purposes. 
+`VectorMask<T>` allows to mitigate the need for casting `Vector<T>` to a fixed-size `VectorXX` to take advantage of existing fixed-width APIs like `ExtractMostSigBits` 
 
-In addition, `KMask<T>` exposes a [method for processing leading and trailing elements](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#leadingtrailing-element-processing-with-kmaskt) of Vector API.
+In addition, `VectorMask<T>` exposes a [method for processing leading and trailing elements](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#leadingtrailing-element-processing-with-kmaskt) of Vector API.
 
-As `KMask<T>` width matches `Vector<T>`, the above templated and PGO codegen that select `Vector<T>` size per-method also apply to `KMask<T>`. 
+As `VectorMask<T>` width matches `Vector<T>`, the above templated and PGO codegen that select `Vector<T>` size per-method also apply to `VectorMask<T>`. 
 
 In the following section, we motivate all concepts with a complete example.
 
@@ -279,14 +279,14 @@ SEARCH_TWO_BYTES:
         {
             Debug.Assert(offset >= 0);
             // Make sure we don't go out of bounds
-            Debug.Assert(offset + ch1ch2Distance + Vector512<byte>.Count <= searchSpaceLength);
+            Debug.Assert(offset + ch1ch2Distance + Vector<byte>.Count <= searchSpaceLength);
 
-            KMask<byte> cmpCh2 = Vector.KEquals(ch2, Vector.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
-            KMask<byte> cmpCh1 = Vector.Equals(ch1, Vector.LoadUnsafe(ref searchSpace, (nuint)offset));
-            KMask<byte> cmpAnd = (cmpCh1 & cmpCh2);
+            VectorMask<byte> cmpCh2 = Vector.KEquals(ch2, Vector.LoadUnsafe(ref searchSpace, (nuint)(offset + ch1ch2Distance)));
+            VectorMask<byte> cmpCh1 = Vector.Equals(ch1, Vector.LoadUnsafe(ref searchSpace, (nuint)offset));
+            VectorMask<byte> cmpAnd = (cmpCh1 & cmpCh2);
 
             // Early out: cmpAnd is all zeros
-            if (cmpAnd != KMask<byte>.Zero)
+            if (cmpAnd != VectorMask<byte>.Zero)
             {
                 goto CANDIDATE_FOUND;
             }
@@ -315,7 +315,7 @@ SEARCH_TWO_BYTES:
                     return (int)(offset + bitPos);
                 }
                 cmpAnd = cmpAnd.SetElementCond(bitPos, false);
-            } while (mask != KMask<byte>.Zero);
+            } while (mask != VectorMask<byte>.Zero);
             goto LOOP_FOOTER;
 
         } while (true);
@@ -324,7 +324,7 @@ SEARCH_TWO_BYTES:
 
 ```
 
-Note the presence of the new `KMask<T>` methods allows to use `Vector<T>` in place of the explicit `Vector128`, `Vector256` code path checks. When combined with `#[Vectorize]`, the JIT will probe the proper varaibles, i.e., `searchSpaceMinusValueTailLength` and compare with the threshold check `searchSpaceMinusValueTailLength - Vector<byte>.Count >= 0` at runtime to determine which `Vector<T>` length should be selected.
+Note the presence of the new `VectorMask<T>` methods allows to use `Vector<T>` in place of the explicit `Vector128`, `Vector256` code path checks. When combined with `#[Vectorize]`, the JIT will probe the proper varaibles, i.e., `searchSpaceMinusValueTailLength` and compare with the threshold check `searchSpaceMinusValueTailLength - Vector<byte>.Count >= 0` at runtime to determine which `Vector<T>` length should be selected.
 ## Requirements
 
 ### Goals
@@ -660,7 +660,7 @@ It's possible that `_mvector` was created using `Vector128` as its underlying im
 
 ### New `Vector<T>` API Methods
 
-We refer to the associated [`Vector512<T>` and `KMask<T>`](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#kmaskt-type-and-api-methods) for more details.
+We refer to the associated [512-bit vectors and `VectorMask<T>`](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#kmaskt-type-and-api-methods) for more details.
 
 ## Q & A
 
