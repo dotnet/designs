@@ -46,7 +46,7 @@ where `Vector<T>` might select an internal implementation of 256-bit vectors to 
 
 For each `Vector` API, we introduce a corresponding `VectorMask`, which abstracts away low-level bit-masking and instead allows to express conditional SIMD processing as boolean logic over `Vector` APIs.
 
-For example, in the following snippet `SumVector`, we perform a conditional add of `Vector` vector elements if the source Vector `v1` element is greater than 0 and not equal to 5:
+For example, in the following snippet `SumVector`, we perform a conditional add of `Vector` elements if the source `Vector` `v1`'s element is greater than 0 and not equal to 5:
 
 
 ```C#
@@ -217,7 +217,7 @@ We also propose `CreateLeadingMask` and `LoadLeading` which function analogously
 
 1. No automatic vectorization is performed. Conditional SIMD processing done through declarative APIS.
 
-2. Focus of the work is on enabling 512-bit SIMD acceleration and VectorMask, including optimization passes needed to make `VectorMask` performant on all platforms. Additional optimizations enabled by `EVEX` encoding (such as folding multiple SIMD operations into a single embedded broadcast ) are desired but outside the scope of the initial work.
+2. Focus of the work is on enabling 512-bit SIMD acceleration and `VectorMask`, including optimization passes needed to make `VectorMask` performant on all platforms. Additional optimizations enabled by `EVEX` encoding (such as folding multiple SIMD operations into a single embedded broadcast ) are desired but outside the scope of the initial work.
 
 
 ## Stakeholders and Reviewers
@@ -263,7 +263,7 @@ if (cmp != Vector128<byte>.Zero)
 }
 ```
 
-However, this is cumbersome for the developer for two reasons: the first, is that because the bitmask is built from the most significant bit of each `byte` element in a vector, we first have to mask off every other element in the mask with `0x5555` to link this properly back to our vector of `ushort`; the second, is when we perform a `TrailingZeroCount` (to get the first pos of the first true element in the `byte` vector) we have to _map it back to an offset in the `ushort` vector (done by dividing `sizeof(char)).
+However, this is cumbersome for the developer for two reasons: the first, is that because the bitmask is built from the most significant bit of each `byte` element in a vector, we first have to mask off every other element in the mask with `0x5555` to link this properly back to our vector of `ushort`; the second, is when we perform a `TrailingZeroCount` (to get the first pos of the first true element in the `byte` vector) we have to _map it back_ to an offset in the `ushort` vector (done by dividing `sizeof(char)).
 
 The following example shows how `VectorMask128` allows to perform the same functionality without dealing with these lower level details:
 
@@ -376,7 +376,7 @@ public Vector256<int> SumVector256(ReadOnlySpan<int> source)
 
 to JIT should logically create a `VectorMask` equivalent to `v1.GreaterThanByVectorMask(0) & v1.NotEqualByVectorMask(5)`.
 
-Given a usage of `MaskExpr`, `v.MaskExpr(x => e)`, where `v` represents a `Vector` and `e` represents an expressions:
+Given a usage of `MaskExpr`, `v.MaskExpr(x => e)`, where `v` represents a `Vector` and `e` represents an expression:
 
 - `v` defines the vector that we perform the conditional SIMD for (the implementation determines how the masking must be done)
 
@@ -419,7 +419,7 @@ We expand on each item in turn below:
 
 #### Enable EVEX for Vector128/Vector256
 
-`AVX512VL` allows to use `EVEX` encoding (which includes AVX512 instructions, opmask registers, embedded broading etc.) on 128-bit and 256-bit SIMD registers. As the infrastructure for 128-bit nad 256-bit SIMD types is already present in the entire runtime and JIT, enabling `EVEX` for 128-bit and 256-bit SIMD types allows to lay the foundation for the rest of the 512-bit and kmask enabling work without in isolation, i.e., the initial `EVEX` encoding work will be done in the `xarch` code emitter. This allows to develop and test the changes to the xarch emitter before introducing further reaching changes to the JIT which we discuss below.
+`AVX512VL` allows to use `EVEX` encoding (which includes AVX512 instructions, opmask registers, embedded broading etc.) on 128-bit and 256-bit SIMD registers. As the infrastructure for 128-bit and 256-bit SIMD types is already present in the entire runtime and JIT, enabling `EVEX` for 128-bit and 256-bit SIMD types allows to lay the foundation for the rest of the 512-bit and vector mask enabling work in isolation, i.e., the initial `EVEX` encoding work will be done in the `xarch` code emitter. This allows to develop and test the changes to the xarch emitter before introducing further reaching changes to the JIT which we discuss below.
 
 #### Enable Register Support for Additional 16 Registers
 
@@ -455,7 +455,7 @@ In the following section, we detail the additional features of `EVEX` encoding t
 
 #### Internals Upgrades for `VectorMask<T>`
 
-1. Introduction of a new vector mask type (TYP_VECTORMASK8, TYPE_VECTORMASK16, TYP_VECTORMASK32, and TYP_VECTORMASK64) to the runtime. 
+1. Introduction of a new vector mask type (`TYP_VECTORMASK8`, `TYP_VECTORMASK16`, `TYP_VECTORMASK32`, and `TYP_VECTORMASK64`) to the runtime. 
 
     - Similar to the API/implementation of `VectorXX<T>`, `VectorMaskXX<T>` `XX` expresses the number width of the condition, and `<T>` expresses the size of each element the condition applies to.
 
