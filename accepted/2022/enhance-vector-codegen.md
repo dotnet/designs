@@ -662,6 +662,10 @@ It's possible that `_mvector` was created using `Vector128` as its underlying im
 
 We refer to the associated [512-bit vectors and `VectorMask<T>`](https://github.com/anthonycanino/designs/blob/main/accepted/2022/enable-512-vectors.md#kmaskt-type-and-api-methods) for more details.
 
+### Alternative Design
+
+As it currently stands, `Vector<T>` selects its vector width and underlying implementation per-process. To address some of the above limitations related to selected vector width sizes contrasting with the size of the workload, we can introduce additional compiler flags to allow the user to selectively enable/disable vector widths for `Vector<T>` based upon their anticpated workload sizes, i.e., if a user knows the program only operates on smaller inputs, then force `Vector<T>` to select `Vector128`.
+
 ## Q & A
 
 <!--
