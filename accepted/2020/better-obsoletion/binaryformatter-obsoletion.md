@@ -42,20 +42,21 @@ Encouraging migration away from `BinaryFormatter` has the additional benefit of 
 ### .NET 7 (Nov 2022)
 
 - All first-party dotnet org code bases continue migration away from `BinaryFormatter`
-- References to `BinaryFormatter` APIs marked obsolete as _warnings_ in .NET 5 now result in build _errors_ by default in .NET 7+
-- Build _errors_ can be downgraded back to build _warnings_ by setting `<EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>`
+- References to `BinaryFormatter` APIs marked obsolete as _warnings_ in .NET 5 now result in build _errors_
+  - A back-compat switch is made available to turn these back to warnings
 
 ### .NET 8 (Nov 2023)
 
 - All first-party dotnet org code bases complete migration away from `BinaryFormatter`
 - `BinaryFormatter` disabled by default across all project types
-- Entirety of `BinaryFormatter` type obsolete _as error_
+- All not-yet-obsolete `BinaryFormatter` APIs marked obsolete _as warning_
 - Entirety of legacy serialization infrastructure marked obsolete _as warning_
 - No new `[Serializable]` types introduced (all target frameworks)
 
 ### .NET 9 (Nov 2024)
 
 - `BinaryFormatter` infrastructure removed from .NET
+  - Back-compat switches also removed
 
 ## Timeline specifics
 
@@ -247,7 +248,18 @@ As part of this, dotnet org developers should audit the area of ownership for ca
 
 In .NET 5, we marked several `BinaryFormatter`-related APIs obsolete as warning (see [the breaking change notice](https://docs.microsoft.com/dotnet/core/compatibility/core-libraries/5.0/binaryformatter-serialization-obsolete)). In .NET 7, references to these APIs will produce build _errors_. This will cause compilation failures in applications which directly consume these APIs, and developers who call these APIs must take action in order to migrate their applications onto .NET 7.
 
-A back-compat switch will be made available for applications which cannot migrate away from `BinaryFormatter` in the .NET 7 timeframe. Details of this back-compat switch will be included in the breaking change notice which accompanies the release.
+An opt-in back-compat switch will be made available for applications which cannot migrate away from `BinaryFormatter` in the .NET 7 timeframe. We will utilize the same compat switch that was introduced in .NET 5.
+
+```xml
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <!-- Setting the switch below turns the errors back to warnings. -->
+    <!-- WARNING: re-enabling the switch below could subject your application to critical security vulnerabilities. -->
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+  </PropertyGroup>
+</Project>
+```
 
 ### All first-party dotnet org code bases complete migration away from BinaryFormatter (.NET 8)
 
@@ -257,11 +269,11 @@ Importantly, none of our project types (WinForms / WPF / ASP.NET / mobile / etc.
 
 ### BinaryFormatter disabled by default across all project types (.NET 8)
 
-Beginning with .NET 8.0, the "disable `BinaryFormatter`" feature switch is activated by default across all project types. Developers must perform an explicit opt-in gesture to re-enable these code paths. See the earlier feature switch section for more information.
+Beginning with .NET 8.0, the "disable `BinaryFormatter`" feature switch is activated by default across all project types. Developers must perform an explicit opt-in gesture to re-enable these code paths. This will utilize the same compat switch introduced in .NET 5.
 
 ### New obsoletions in .NET 8
 
-In .NET 8.0, the following APIs will be marked `[Obsolete]` _as error_. Applications which directly target these APIs will fail to compile. No back-compat switch will be provided.
+In .NET 8.0, the following APIs will be marked `[Obsolete]` _as error_ by default, where the error can be converted back to a warning by using the aformentioned compat switch.
 
 - The entirety of the `BinaryFormatter` type.
 - The entirety of the `IFormatter` interface.
@@ -273,7 +285,7 @@ Additionally, the following APIs will be marked `[Obsolete]` _as warning_.
   - Includes any public or explicitly-implemented `GetObjectData` methods.
 - `OnSerializingAttribute`, `OnDeserializingAttribute`, `OnSerializedAttribute`, and `OnDeserializedAttribute`
 - Any methods the above attributes are applied to.
-- The entirety of the types `FormatterServices`, `ISerializationSurrogate`, `ISurrogateSelector`, `ObjectManager`, `SurrogateSelector`, `FormatterAssemblyStyle`, `FormatterTypeStyle`, `IFieldInfo`, and `TypeFilterLevel`.
+- The entirety of the types `FormatterServices`, `ISerializationSurrogate`, `ISurrogateSelector`, `ObjectManager`, `ObjectIDGenerator`, `SurrogateSelector`, `FormatterAssemblyStyle`, `FormatterTypeStyle`, `IFieldInfo`, and `TypeFilterLevel`, `SerializationInfo`, and `StreamingContext`.
 - The `[Serializable]` and `[NonSerialized]` attributes.
 - Any serialization ctors (`".ctor(SerializationInfo, StreamingContext)"`) on public types.
 
@@ -293,11 +305,11 @@ Starting with .NET 8, we will no longer attribute _any_ new types with `[Seriali
 
 ### BinaryFormatter infrastructure removed from .NET (.NET 9)
 
-In .NET 9.0, the entirety of the `BinaryFormatter` infrastructure will be removed from the product. Here, "`BinaryFormatter` infrastructure" refers to any API which was obsoleted (_as error_) as part of an earlier stage of this proposal, even if that API is not itself on the `BinaryFormatter` type. The implementation of all such APIs will be to throw `PlatformNotSupportedException`. The internal `BinaryFormatter` implementation will no longer exist in .NET in any form. Functionality may be moved to an unsupported out-of-band package.
+In .NET 9.0, the entirety of the `BinaryFormatter` infrastructure will be removed from the product. Here, "`BinaryFormatter` infrastructure" refers to any API which was obsoleted (_as error_) as part of an earlier stage of this proposal, even if that API is not itself on the `BinaryFormatter` type. The implementation of all such APIs will be to throw `PlatformNotSupportedException`. The internal `BinaryFormatter` implementation will no longer exist in .NET in any form and cannot be reenabled through any compat switch. Functionality may be moved to an unsupported out-of-band package.
 
 All code bases which target _net9.0_ or above must be fully migrated away from `BinaryFormatter` at this time. This applies to _dotnet_ org first-party code, partner team code, and third-party user code.
 
-There is currently no plan to remove the now-dead APIs themselves from the SDK. However, this may be suggested in the future either concurrent with or occurring after the final "obsolete as error" behavior.
+There is currently no plan to remove the now-dead APIs themselves from the SDK. Doing so would prevent loading existing libraries which are compiled against those types. However, this may be suggested in the future either concurrent with or occurring after the final "obsolete as error" behavior.
 
 ## Q\&A
 
