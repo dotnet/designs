@@ -41,8 +41,9 @@ Encouraging migration away from `BinaryFormatter` has the additional benefit of 
 
 ### .NET 7 (Nov 2022)
 
-- All first-party dotnet org code bases continue migration away from `BinaryFormtter`
-- APIs previously marked obsolete (_as warning_) in .NET 5 are marked obsolete (_as error_)
+- All first-party dotnet org code bases continue migration away from `BinaryFormatter`
+- References to `BinaryFormatter` APIs marked obsolete as _warnings_ in .NET 5 now result in build _errors_ by default in .NET 7+
+- Build _errors_ can be downgraded back to build _warnings_ by setting `<EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>`
 
 ### .NET 8 (Nov 2023)
 
@@ -242,9 +243,9 @@ If `BinaryFormatter` is used in any other data persistence scenario (e.g., clipb
 
 As part of this, dotnet org developers should audit the area of ownership for calls to `Type.GetType` and related APIs, as these could function as unrestricted deserialization equivalents. Any call sites which deal with untrusted data should clearly be annotated as such in code comments. If necessary, the owners should open issues to track removing the dangerous code patterns or documenting the API as dangerous. This will allow us to make more informed estimates of our libraries' own exposure to potential RCE attacks.
 
-### APIs previously marked obsolete (_as warning_) in .NET 5 are marked obsolete (_as error_) (.NET 7)
+### APIs previously marked obsolete (_as warning_) in .NET 5 now produce build _errors_ by default (.NET 7)
 
-In .NET 5, we marked several `BinaryFormatter`-related APIs obsolete as warning (see [the breaking change notice](https://docs.microsoft.com/dotnet/core/compatibility/core-libraries/5.0/binaryformatter-serialization-obsolete)). In .NET 7, this set of APIs will be marked obsolete _as error_. This will cause compilation failures in applications which directly consume these APIs, and developers who call these APIs must take action in order to migrate their applications onto .NET 7.
+In .NET 5, we marked several `BinaryFormatter`-related APIs obsolete as warning (see [the breaking change notice](https://docs.microsoft.com/dotnet/core/compatibility/core-libraries/5.0/binaryformatter-serialization-obsolete)). In .NET 7, references to these APIs will produce build _errors_. This will cause compilation failures in applications which directly consume these APIs, and developers who call these APIs must take action in order to migrate their applications onto .NET 7.
 
 A back-compat switch will be made available for applications which cannot migrate away from `BinaryFormatter` in the .NET 7 timeframe. Details of this back-compat switch will be included in the breaking change notice which accompanies the release.
 
