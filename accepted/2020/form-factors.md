@@ -160,7 +160,7 @@ Emerging programming environments (e.g. Go, Rust) tend to be designed for this f
 
 Startup time in tens of milliseconds, and several MBs binary size for a "Hello world" style application, and high performance and predictability (no JIT) are required to be relevant on this playing field. Different implementation strategies for at least some components are often necessary to achieve such characteristics. Today, neither CoreCLR nor Mono have characteristics to qualify for the Native AOT league. CoreRT is the only .NET technology available today that qualifies.
 
-The native AOT support added to existing programming environments faces form-factor specific compatibility issues, not unlike the form-factor specific compatibility issues faced by .NET and discussed in this document. For example, see the list of compatibility issues in [Java Graal](https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Limitations.md).
+The native AOT support added to existing programming environments faces form-factor specific compatibility issues, not unlike the form-factor specific compatibility issues faced by .NET and discussed in this document. For example, see the list of compatibility issues in [Java Graal](https://github.com/oracle/graal/blob/master/docs/reference-manual/native-image/Compatibility.md).
 
 We have an opportunity to participate in this trend. The .NET community has demonstrated interest in this form factor by shipping apps using CoreRT, despite it never being released:
 
