@@ -203,7 +203,7 @@ vresult = Vector128<int>.Add(vresult, tail, trailMask);
 
 ```
 
-We also propose `CreateLeadingMask` and `LoadLeading` which function analogously to `CreateTrailingMask` and `CreateTrailing` respectively.
+In addition, `StoreTrailing` functions analogously to `LoadTrailing`. We also propose `CreateLeadingMask`, `LoadLeading`, and `StoreLeading` which function analogously to `CreateTrailingMask`, `CreateTrailing` and `StoreTrailing` respectively.
 
 ## Requirements
 
@@ -405,6 +405,8 @@ We propose the following methods for each `Vector` API for processing leading an
 
 Broadly speaking, we can break the implementation of 512-bit vectors and `VectorMask` into the following components:
 
+0. Enable VM recogniztion and tracking of the AVX-512 ISAs
+
 1. Enable EVEX encoding for Vector128/Vector256 in the xarch emitter.
 
 2. Extend register support for additional 16 registers
@@ -417,9 +419,15 @@ In particular, implementing (1) above allows for the most isolated set of change
 
 We expand on each item in turn below:
 
+#### Enable VM Recognition of AVX-512 ISAs
+
+
+
 #### Enable EVEX for Vector128/Vector256
 
 `AVX512VL` allows to use `EVEX` encoding (which includes AVX512 instructions, opmask registers, embedded broading etc.) on 128-bit and 256-bit SIMD registers. As the infrastructure for 128-bit and 256-bit SIMD types is already present in the entire runtime and JIT, enabling `EVEX` for 128-bit and 256-bit SIMD types allows to lay the foundation for the rest of the 512-bit and vector mask enabling work in isolation, i.e., the initial `EVEX` encoding work will be done in the `xarch` code emitter. This allows to develop and test the changes to the xarch emitter before introducing further reaching changes to the JIT which we discuss below.
+
+
 
 #### Enable Register Support for Additional 16 Registers
 
