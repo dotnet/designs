@@ -19,7 +19,7 @@ public int SumVector(ReadOnlySpan<int> source)
 {
   Vector<int> vresult = Vector<int>.Zero;
 
-  int lastBlockIndex = source.Length - (source.Length % Vector256<int>.Count);
+  int lastBlockIndex = source.Length - (source.Length % Vector<int>.Count);
   int i = 0;
 
   for (i; i < lastBlockIndex; i += Vector<int>.Count)
