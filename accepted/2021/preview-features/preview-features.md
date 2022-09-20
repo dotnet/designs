@@ -221,7 +221,7 @@ The reason for this is that experimental features aren't expected to be
 backwards compatible. That's the entire point of making them experimental in the
 first place.
 
-So you're only expect to be able to use experimental features when the TFM and
+So you're only expected to be able to use experimental features when the TFM and
 the SDK match. This ensures that users get an error message if, for example,
 they try to use an experimental feature in .NET 6 but they are using the .NET 7
 SDK. The assumption is that because the feature was experimental in .NET 6, we
