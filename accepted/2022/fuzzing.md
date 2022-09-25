@@ -1,4 +1,4 @@
-# Out-of-box fuzzing 
+# Out of the box fuzzing 
 
 **Owner** [Samuele Resca](https://github.com/samueleresca) 
 
