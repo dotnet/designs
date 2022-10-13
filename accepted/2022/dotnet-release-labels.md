@@ -49,7 +49,7 @@ New labels are proposed for a variety of purposes.
 
 **Release-type (support duration) labels:**
 
-- **STS** -- Indicates a release is supported for the Short Term Support (STS) timeframe (18 months) and currently actively supported.
+- **Standard** -- Indicates a release is supported for the Standard Support timeframe (18 months) and currently actively supported.
 - **LTS** -- Indicates a release is supported for the Long Term Support (LTS) timeframe (3 years) and currently actively supported.
 
 **Release support status labels:**
@@ -67,7 +67,7 @@ New labels are proposed for a variety of purposes.
 Note: "Other proposed labels" are labels that were proposed and that may or may not get used. They are good ideas, so they are being documented. Various pages and viewers of support information can use these labels even if Microsoft chooses not to.
 
 Notes:
- - The **Current** label will no longer be used and will be replaced with **STS**.
+ - The **Current** label will no longer be used and will be replaced with **Standard**.
  - Labels can use whatever casing makes sense for the artifact. For example, `releases.json` will use all lower-case.
 
 In some views, we can only show one label. In those cases, we will show the most relevant label, which will use the following algorithm:
@@ -91,34 +91,33 @@ These labels will show up in multiple places, including:
 
 Given this proposal, we will see the following labels used in the following timeframes (with a subset of [releases](https://github.com/dotnet/core/blob/main/releases.md) used as examples).
 
-
 Now (May 2022):
 
 - .NET Core 3.1 (LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Preview, STS)
+- .NET 7 (Preview, Standard)
 
 Just before .NET 7 GA (October, 2022):
 
 - .NET Core 3.1 (Maintenance; LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Go-Live, Preview, STS)
+- .NET 7 (Go-Live, Preview, Standard)
 
 At .NET 7 GA (November 2022):
 
 - .NET Core 3.1 (Maintenance, LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (STS, Latest)
+- .NET 7 (Standard, Latest)
 
 Just before .NET 8 GA (October 2023):
 
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (STS, Latest)
+- .NET 7 (Standard, Latest)
 - .NET 8 (Go-Live, Preview)
 
 At .NET 8 GA (November 2023):
@@ -126,7 +125,7 @@ At .NET 8 GA (November 2023):
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Maintenance, STS)
+- .NET 7 (Maintenance, Standard)
 - .NET 8 (LTS, Latest)
 
 +6 months (May, 2024):
@@ -136,7 +135,7 @@ At .NET 8 GA (November 2023):
 - .NET 6 (Maintenance; LTS)
 - .NET 7 (EOL)
 - .NET 8 (LTS, Latest)
-- .NET 9 (Preview, STS)
+- .NET 9 (Preview, Standard)
 
 At .NET 9 GA (November 2024):
 
@@ -145,7 +144,7 @@ At .NET 9 GA (November 2024):
 - .NET 6 (EOL)
 - .NET 7 (EOL)
 - .NET 8 (LTS)
-- .NET 9 (STS, Latest)
+- .NET 9 (Standard, Latest)
 
 Notes:
 
@@ -163,7 +162,7 @@ There are two forms of files:
 - Singular [`releases-index.json`](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json) file that describes all the major/minor releases, at a high-level.
 - Release-specific [`releases.json`](https://github.com/dotnet/core/blob/main/release-notes/6.0/releases.json) file that describes each of the patch releases for each major/minor .NET release.
 
-These files include labels. We have a strong desire to not break the current usage patterns, or as little as possible. They already display the most relevant tag per the scheme proposed in this document. We, however, need to adopt `sts` in place of `current`.
+These files include labels. We have a strong desire to not break the current usage patterns, or as little as possible. They already display the most relevant tag per the scheme proposed in this document. We, however, need to adopt `standard` in place of `current`.
 
 `release-index.json` currently displays the most relevant tag.
 
@@ -200,15 +199,15 @@ For example, this historical use of [`release-index.json` uses the `current` lab
 
 Going forward, we'll make the following changes:
 
-- `sts` will be used in place of `current`. This is a breaking change.
+- `standard` will be used in place of `current`. This is a breaking change.
 - The `support-phase` property will follow the algorithm described earlier.
-- A new `release-type` property will be added that will have one of two values: `lts` or `sts`.
+- A new `release-type` property will be added that will have one of two values: `lts` or `standard`.
 
 We cannot change the existing `support-phase` property significantly, due to compatibility. It will go through the following progression:
 
-`preview` -> `go-live` -> [`lts` | `sts`] -> `maintenance` -> `eol`
+`preview` -> `go-live` -> [`lts` | `standard`] -> `maintenance` -> `eol`
 
-The new `release-type` property will be set as either `lts` or `sts` and will not change, even after EOL.
+The new `release-type` property will be set as either `lts` or `standard` and will not change, even after EOL.
 
 When `release-type` == `support-phase`, that means "active" of "full" support. All other states are self-descriptive.
 
@@ -224,7 +223,7 @@ The new format will look like the following:
     "latest-sdk": "6.0.300",
     "product": ".NET",
     "support-phase": "lts",
-    "release-type": "lts"
+    "release-type": "lts",
     "eol-date": "2024-11-12",
     "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json"
 },
@@ -242,4 +241,4 @@ This approach follows established practice.
 
 ## Breaking change
 
-Switching from `current` to `sts` is a breaking change. This string doesn't appear anywhere currently since .NET 5 is EOL. .NET 7 is the next short-term release, and is currenlty several months away from being a stable release, at which point `support-phase` == `sts`. As a result, the change is not immediately breaking and enables readers multiple months to react.
+Switching from `current` to `standard` is a breaking change. This string doesn't appear anywhere currently since .NET 5 is EOL. .NET 7 is the next short-term release, and is currenlty several months away from being a stable release, at which point `support-phase` == `standard`. As a result, the change is not immediately breaking and enables readers multiple months to react.
