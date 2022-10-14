@@ -49,7 +49,7 @@ New labels are proposed for a variety of purposes.
 
 **Release-type (support duration) labels:**
 
-- **Standard** -- Indicates a release is supported for the Standard Support timeframe (18 months) and currently actively supported.
+- **Standard Support** -- Indicates a release is supported for the Standard Support timeframe (18 months) and currently actively supported.
 - **LTS** -- Indicates a release is supported for the Long Term Support (LTS) timeframe (3 years) and currently actively supported.
 
 **Release support status labels:**
@@ -67,7 +67,7 @@ New labels are proposed for a variety of purposes.
 Note: "Other proposed labels" are labels that were proposed and that may or may not get used. They are good ideas, so they are being documented. Various pages and viewers of support information can use these labels even if Microsoft chooses not to.
 
 Notes:
- - The **Current** label will no longer be used and will be replaced with **Standard**.
+ - The **Current** label will no longer be used and will be replaced with **Standard Support**.
  - Labels can use whatever casing makes sense for the artifact. For example, `releases.json` will use all lower-case.
 
 In some views, we can only show one label. In those cases, we will show the most relevant label, which will use the following algorithm:
@@ -96,28 +96,28 @@ Now (May 2022):
 - .NET Core 3.1 (LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Preview, Standard)
+- .NET 7 (Preview, Standard Support)
 
 Just before .NET 7 GA (October, 2022):
 
 - .NET Core 3.1 (Maintenance; LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Go-Live, Preview, Standard)
+- .NET 7 (Go-Live, Preview, Standard Support)
 
 At .NET 7 GA (November 2022):
 
 - .NET Core 3.1 (Maintenance, LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Standard, Latest)
+- .NET 7 (Standard Support, Latest)
 
 Just before .NET 8 GA (October 2023):
 
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Standard, Latest)
+- .NET 7 (Standard Support, Latest)
 - .NET 8 (Go-Live, Preview)
 
 At .NET 8 GA (November 2023):
@@ -125,7 +125,7 @@ At .NET 8 GA (November 2023):
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Maintenance, Standard)
+- .NET 7 (Maintenance, Standard Support)
 - .NET 8 (LTS, Latest)
 
 +6 months (May, 2024):
@@ -135,7 +135,7 @@ At .NET 8 GA (November 2023):
 - .NET 6 (Maintenance; LTS)
 - .NET 7 (EOL)
 - .NET 8 (LTS, Latest)
-- .NET 9 (Preview, Standard)
+- .NET 9 (Preview, Standard Support)
 
 At .NET 9 GA (November 2024):
 
@@ -144,7 +144,7 @@ At .NET 9 GA (November 2024):
 - .NET 6 (EOL)
 - .NET 7 (EOL)
 - .NET 8 (LTS)
-- .NET 9 (Standard, Latest)
+- .NET 9 (Standard Support, Latest)
 
 Notes:
 
@@ -241,4 +241,4 @@ This approach follows established practice.
 
 ## Breaking change
 
-Switching from `current` to `standard` is a breaking change. This string doesn't appear anywhere currently since .NET 5 is EOL. .NET 7 is the next short-term release, and is currenlty several months away from being a stable release, at which point `support-phase` == `standard`. As a result, the change is not immediately breaking and enables readers multiple months to react.
+Switching from `current` to `standard` is a breaking change. This string doesn't appear anywhere currently since .NET 5 is EOL. .NET 7 is the next standard support release and is currently several months away from being a stable release, at which point `support-phase` == `standard`. As a result, the change is not immediately breaking and enables readers multiple months to react.
