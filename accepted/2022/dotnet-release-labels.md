@@ -103,7 +103,7 @@ Just before .NET 7 GA (October, 2022):
 - .NET Core 3.1 (LTS, Maintenance)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Standard Support, Go-Live, Preview)
+- .NET 7 (Standard Support, Preview, Go-Live)
 
 At .NET 7 GA (November 2022):
 
@@ -241,4 +241,4 @@ This approach follows established practice.
 
 ## Breaking change
 
-Switching from `current` to `standard` is a breaking change. This string doesn't appear anywhere currently since .NET 5 is EOL. .NET 7 is the next standard support release and is currently several months away from being a stable release, at which point `support-phase` == `standard`. As a result, the change is not immediately breaking and enables readers multiple months to react.
+Switching from `current` to `standard` is a breaking change. This string doesn't appear anywhere currently since .NET 5 has reached end of support. .NET 7 is the next standard support release and at GA will be tagged with `support-phase` == `standard`.
