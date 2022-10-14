@@ -100,7 +100,7 @@ Now (May 2022):
 
 Just before .NET 7 GA (October, 2022):
 
-- .NET Core 3.1 (Maintenance; LTS)
+- .NET Core 3.1 (LTS, Maintenance)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
 - .NET 7 (Go-Live, Preview, Standard Support)
