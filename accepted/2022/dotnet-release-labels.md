@@ -49,8 +49,8 @@ New labels are proposed for a variety of purposes.
 
 **Release-type (support duration) labels:**
 
-- **Standard Support** -- Indicates a release is supported for the Standard Support timeframe (18 months) and currently actively supported.
-- **LTS** -- Indicates a release is supported for the Long Term Support (LTS) timeframe (3 years) and currently actively supported.
+- **Standard Support** -- Indicates a release is supported for the Standard Support timeframe (18 months).
+- **LTS** -- Indicates a release is supported for the Long Term Support (LTS) timeframe (3 years).
 
 **Release support status labels:**
 
@@ -75,7 +75,7 @@ In some views, we can only show one label. In those cases, we will show the most
 - show support status label, if
   - support status is "Preview"
   - support status is "Go Live"
-  - support status is (Maintenance or  EOL)
+  - support status is (Maintenance or EOL)
 - else show release type
 
 For example, the `support-phase` property in `releases-index.json` and `releases.json` will apply this algorithm.
@@ -96,14 +96,14 @@ Now (May 2022):
 - .NET Core 3.1 (LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Preview, Standard Support)
+- .NET 7 (Standard Support, Preview)
 
 Just before .NET 7 GA (October, 2022):
 
 - .NET Core 3.1 (LTS, Maintenance)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Go-Live, Preview, Standard Support)
+- .NET 7 (Standard Support, Go-Live, Preview)
 
 At .NET 7 GA (November 2022):
 
@@ -125,7 +125,7 @@ At .NET 8 GA (November 2023):
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Maintenance, Standard Support)
+- .NET 7 (Standard Support, Maintenance)
 - .NET 8 (LTS, Latest)
 
 +6 months (May, 2024):
@@ -135,7 +135,7 @@ At .NET 8 GA (November 2023):
 - .NET 6 (Maintenance; LTS)
 - .NET 7 (EOL)
 - .NET 8 (LTS, Latest)
-- .NET 9 (Preview, Standard Support)
+- .NET 9 (Standard Support, Preview)
 
 At .NET 9 GA (November 2024):
 
