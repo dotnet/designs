@@ -67,8 +67,9 @@ New labels are proposed for a variety of purposes.
 Note: "Other proposed labels" are labels that were proposed and that may or may not get used. They are good ideas, so they are being documented. Various pages and viewers of support information can use these labels even if Microsoft chooses not to.
 
 Notes:
- - The **Current** label will no longer be used and will be replaced with **Standard Support**.
- - Labels can use whatever casing makes sense for the artifact. For example, `releases.json` will use all lower-case.
+
+- The **Current** label will no longer be used and will be replaced with **Standard Support**.
+- Labels can use whatever casing makes sense for the artifact. For example, `releases.json` will use all lower-case.
 
 In some views, we can only show one label. In those cases, we will show the most relevant label, which will use the following algorithm:
 
