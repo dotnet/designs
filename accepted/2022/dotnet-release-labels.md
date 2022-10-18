@@ -197,6 +197,8 @@ For example, this historical use of [`release-index.json` uses the `current` lab
   "lifecycle-policy": "https://dotnet.microsoft.com/platform/support/policy/",
   "releases": [
     {
+    }
+  ]
 ```
 
 Going forward, we'll make the following changes:
