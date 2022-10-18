@@ -54,9 +54,10 @@ New labels are proposed for a variety of purposes.
 
 **Release support status labels:**
 
-- **Preview** -- Indicates a release is in preview and (unless "Go-Live") is unsupported.
-- **Go-Live** -- Indicates a preview or release candidate is supported in production.
-- **Maintenance** -- Indicates that a release is within 6 months of remaining support, with security fixes only.
+- **Preview** -- Indicates a release is in preview and (unless "RC") is unsupported.
+- **RC** -- Indicates a release candidate that has a go-live license and is supported in production.
+- **Active** - Indicates that a release has full support and is being actively updated to improve functional capabilities and mitigate security vulnerabilities. 
+- **Maintenance** -- Indicates that a release is within 6 months of remaining support and is only updated to mitigate security vulnerabilities.
 - **EOL** -- Indicates that the support has ended ("end of life").
 
 **Other proposed labels:**
@@ -69,13 +70,13 @@ Note: "Other proposed labels" are labels that were proposed and that may or may 
 Notes:
 
 - The **Current** label will no longer be used and will be replaced with **Standard Support**.
-- Labels can use whatever casing makes sense for the artifact. For example, `releases.json` will use all lower-case.
+- Labels can use whatever casing makes sense for the artifact. For example, `releases.json` will use all lowercase.
 
 In some views, we can only show one label. In those cases, we will show the most relevant label, which will use the following algorithm:
 
 - show support status label, if
   - support status is "Preview"
-  - support status is "Go Live"
+  - support status is "RC"
   - support status is (Maintenance or EOL)
 - else show release type
 
@@ -104,7 +105,7 @@ Just before .NET 7 GA (October, 2022):
 - .NET Core 3.1 (LTS, Maintenance)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Standard Support, Preview, Go-Live)
+- .NET 7 (Standard Support, Preview, RC)
 
 At .NET 7 GA (November 2022):
 
@@ -119,7 +120,7 @@ Just before .NET 8 GA (October 2023):
 - .NET 5 (EOL)
 - .NET 6 (LTS)
 - .NET 7 (Standard Support, Latest)
-- .NET 8 (Go-Live, Preview)
+- .NET 8 (RC, Preview)
 
 At .NET 8 GA (November 2023):
 
@@ -150,7 +151,7 @@ At .NET 9 GA (November 2024):
 Notes:
 
 - Release type is not displayed for EOL releases, since it isn't relevant.
-- The most relevant label is listed first, for cases where only one label can be shown.
+- For cases where only one label can be shown, The most relevant label is listed first.
 
 A given presentation (like Visual Studio) can print long-form or alternate versions of these labels. That's out of scope of this document.
 
@@ -201,12 +202,12 @@ For example, this historical use of [`release-index.json` uses the `current` lab
 Going forward, we'll make the following changes:
 
 - `standard` will be used in place of `current`. This is a breaking change.
-- The `support-phase` property will follow the algorithm described earlier.
+- The `support-phase` property will follow the algorithm described earlier. This is a breaking change due to the use of `active` instead of `lts` or `current`.
 - A new `release-type` property will be added that will have one of two values: `lts` or `standard`.
 
-We cannot change the existing `support-phase` property significantly, due to compatibility. It will go through the following progression:
+The `support-phase` property will go through the following progression:
 
-`preview` -> `go-live` -> [`lts` | `standard`] -> `maintenance` -> `eol`
+`preview` -> `rc` -> `active` -> `maintenance` -> `eol`
 
 The new `release-type` property will be set as either `lts` or `standard` and will not change, even after EOL.
 
@@ -223,7 +224,7 @@ The new format will look like the following:
     "latest-runtime": "6.0.5",
     "latest-sdk": "6.0.300",
     "product": ".NET",
-    "support-phase": "lts",
+    "support-phase": "active",
     "release-type": "lts",
     "eol-date": "2024-11-12",
     "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json"
@@ -232,7 +233,7 @@ The new format will look like the following:
 
 Based on [release-index.json](https://github.com/dotnet/core/blob/77017a2110cd00ce997c7840c2542d7a5ec323a5/release-notes/releases-index.json#L15-L26).
 
-When .NET 6 has 6 months of support left, the support phase property will change to the following value:
+When a release has 6 months of support left, the support phase property will change to the following value:
 
 ```json
     "support-phase": "maintenance",
@@ -240,6 +241,9 @@ When .NET 6 has 6 months of support left, the support phase property will change
 
 This approach follows established practice.
 
-## Breaking change
+## Breaking changes
 
-Switching from `current` to `standard` is a breaking change. This string doesn't appear anywhere currently since .NET 5 has reached end of support. .NET 7 is the next standard support release and at GA will be tagged with `support-phase` == `standard`.
+There are two breaking changes happening with this design proposal:
+
+- Switching from `current` to `standard`: this string doesn't appear anywhere currently since .NET 5 has reached end of support. .NET 7 is the next standard support release and at GA will be tagged with `support-phase` == `standard`.
+- Switching from `lts` or `current` to active in the `support-phase` property: the `support-phase` property will no longer contain a mix of release type and support phase. `lts` and `standard` will now show up in the new `release-type` property.
