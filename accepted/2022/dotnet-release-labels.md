@@ -199,6 +199,7 @@ For example, this historical use of [`release-index.json` uses the `current` lab
     {
     }
   ]
+}
 ```
 
 Going forward, we'll make the following changes:
