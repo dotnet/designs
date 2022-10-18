@@ -246,5 +246,5 @@ This approach follows established practice.
 
 There are two breaking changes happening with this design proposal:
 
-- Switching from `current` to `standard`: this string doesn't appear anywhere currently since .NET 5 has reached end of support. .NET 7 is the next standard support release and at GA will be tagged with `support-phase` == `standard`.
+- Switching from `current` to `standard`: this string doesn't appear anywhere currently since .NET 5 has reached end of support. .NET 7 is the next standard support release and at GA will be tagged with `release-type` == `standard`.
 - Switching from `lts` or `current` to active in the `support-phase` property: the `support-phase` property will no longer contain a mix of release type and support phase. `lts` and `standard` will now show up in the new `release-type` property.
