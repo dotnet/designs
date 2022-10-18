@@ -214,8 +214,6 @@ The `support-phase` property will go through the following progression:
 
 The new `release-type` property will be set as either `lts` or `standard` and will not change, even after EOL.
 
-When `release-type` == `support-phase`, that means "active" of "full" support. All other states are self-descriptive.
-
 The new format will look like the following:
 
 ```json
