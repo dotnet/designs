@@ -211,7 +211,7 @@ The `support-phase` property will go through the following progression:
 
 `preview` -> `go-live` -> `active` -> `maintenance` -> `eol`
 
-The new `release-type` property will be set as either `lts` or `standard` and will not change, even after the proudct is out of support.
+The new `release-type` property will be set as either `lts` or `standard` and will not change, even after the product is out of support.
 
 The new format will look like the following:
 
