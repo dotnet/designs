@@ -54,7 +54,7 @@ New labels are proposed for a variety of purposes.
 
 **Release support status labels:**
 
-- **Preview** -- Indicates a release is in preview and (unless "RC") is unsupported.
+- **Preview** -- Indicates a release is in preview and (unless "Go-live") is unsupported.
 - **Go-live** -- Indicates a preview or release candidate is supported in production.
 - **Active** - Indicates that a release has full support and is being actively updated to improve functional capabilities and mitigate security vulnerabilities. 
 - **Maintenance** -- Indicates that a release is within 6 months of remaining support and is only updated to mitigate security vulnerabilities.
@@ -105,7 +105,7 @@ Just before .NET 7 GA (October, 2022):
 - .NET Core 3.1 (LTS, Maintenance)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Standard Support, Preview, RC)
+- .NET 7 (Standard Support, Preview, Go-live)
 
 At .NET 7 GA (November 2022):
 
@@ -120,7 +120,7 @@ Just before .NET 8 GA (October 2023):
 - .NET 5 (EOL)
 - .NET 6 (LTS)
 - .NET 7 (Standard Support, Latest)
-- .NET 8 (RC, Preview)
+- .NET 8 (Go-live, Preview)
 
 At .NET 8 GA (November 2023):
 
