@@ -13,10 +13,10 @@ Today, we have a few release timeframes:
 
 For stable releases (post-GA), we have two support durations:
 
-- Shorter releases, supported for 18 months
+- Standard releases, supported for 18 months
 - Longer "LTS" releases, supported for 36 months
 
-The shorter releases are released in even years, and the LTS ones in odd years.
+The standard releases are released in even years, and the LTS ones in odd years.
 
 ## Currently-used labels
 
