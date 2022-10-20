@@ -55,7 +55,7 @@ New labels are proposed for a variety of purposes.
 **Release support status labels:**
 
 - **Preview** -- Indicates a release is in preview and (unless "RC") is unsupported.
-- **RC** -- Indicates a release candidate that has a go-live license and is supported in production.
+- **Go-live** -- Indicates a preview or release candidate is supported in production.
 - **Active** - Indicates that a release has full support and is being actively updated to improve functional capabilities and mitigate security vulnerabilities. 
 - **Maintenance** -- Indicates that a release is within 6 months of remaining support and is only updated to mitigate security vulnerabilities.
 - **EOL** -- Indicates that the support has ended ("end of life").
@@ -76,7 +76,7 @@ In some views, we can only show one label. In those cases, we will show the most
 
 - show support status label, if
   - support status is "Preview"
-  - support status is "RC"
+  - support status is "Go-live"
   - support status is (Maintenance or EOL)
 - else show release type
 
@@ -150,8 +150,8 @@ At .NET 9 GA (November 2024):
 
 Notes:
 
-- Release type is not displayed for EOL releases, since it isn't relevant.
-- For cases where only one label can be shown, The most relevant label is listed first.
+- Release type isn't displayed for EOL releases since it isn't relevant. It might be identified as out of support in a few cases.
+- For cases where only one label can be shown, the most relevant label is listed first.
 
 A given presentation (like Visual Studio) can print long-form or alternate versions of these labels. That's out of scope of this document.
 
@@ -204,15 +204,14 @@ For example, this historical use of [`release-index.json` uses the `current` lab
 
 Going forward, we'll make the following changes:
 
-- `standard` will be used in place of `current`. This is a breaking change.
-- The `support-phase` property will follow the algorithm described earlier. This is a breaking change due to the use of `active` instead of `lts` or `current`.
+- The `support-phase` property will contain new values and will follow a different progression. This is a breaking change due to the use of `active` instead of `lts` or `current` and the replacement of `rc` with `go-live`.
 - A new `release-type` property will be added that will have one of two values: `lts` or `standard`.
 
 The `support-phase` property will go through the following progression:
 
-`preview` -> `rc` -> `active` -> `maintenance` -> `eol`
+`preview` -> `go-live` -> `active` -> `maintenance` -> `eol`
 
-The new `release-type` property will be set as either `lts` or `standard` and will not change, even after EOL.
+The new `release-type` property will be set as either `lts` or `standard` and will not change, even after the proudct is out of support.
 
 The new format will look like the following:
 
@@ -244,7 +243,8 @@ This approach follows established practice.
 
 ## Breaking changes
 
-There are two breaking changes happening with this design proposal:
+There are three breaking changes happening with this design proposal:
 
 - Switching from `current` to `standard`: this string doesn't appear anywhere currently since .NET 5 has reached end of support. .NET 7 is the next standard support release and at GA will be tagged with `release-type` == `standard`.
 - Switching from `lts` or `current` to active in the `support-phase` property: the `support-phase` property will no longer contain a mix of release type and support phase. `lts` and `standard` will now show up in the new `release-type` property.
+- Switching from `rc` or `go-live` in the `support-phase` property: this will allow us to better represent the support phase the product is in.
