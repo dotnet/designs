@@ -13,7 +13,7 @@ Today, we have a few release timeframes:
 
 For stable releases (post-GA), we have two support durations:
 
-- Standard releases, supported for 18 months
+- Standard "STS" releases, supported for 18 months
 - Longer "LTS" releases, supported for 36 months
 
 The standard releases are released in even years, and the LTS ones in odd years.
@@ -49,7 +49,7 @@ New labels are proposed for a variety of purposes.
 
 **Release-type (support duration) labels:**
 
-- **Standard Support (short name Standard)** -- Indicates a release is supported for the Standard Support timeframe (18 months).
+- **Standard Term Support (short name STS)** -- Indicates a release is supported for the Standard Term Support (STS) timeframe (18 months).
 - **Long Term Support (short name LTS)** -- Indicates a release is supported for the Long Term Support (LTS) timeframe (3 years).
 
 **Release support status labels:**
@@ -69,7 +69,7 @@ Note: "Other proposed labels" are labels that were proposed and that may or may 
 
 Notes:
 
-- The **Current** label will no longer be used and will be replaced with **Standard Support**.
+- The **Current** label will no longer be used and will be replaced with **Standard Term Support**.
 - Labels can use whatever casing makes sense for the artifact. For example, `releases.json` will use all lowercase.
 
 In some views, we can only show one label. In those cases, we will show the most relevant label, which will use the following algorithm:
@@ -98,28 +98,28 @@ Now (May 2022):
 - .NET Core 3.1 (LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Standard Support, Preview)
+- .NET 7 (Standard Term Support, Preview)
 
 Just before .NET 7 GA (October, 2022):
 
 - .NET Core 3.1 (LTS, Maintenance)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Standard Support, Preview, Go-live)
+- .NET 7 (Standard Term Support, Preview, Go-live)
 
 At .NET 7 GA (November 2022):
 
 - .NET Core 3.1 (Maintenance, LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Standard Support, Latest)
+- .NET 7 (Standard Term Support, Latest)
 
 Just before .NET 8 GA (October 2023):
 
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Standard Support, Latest)
+- .NET 7 (Standard Term Support, Latest)
 - .NET 8 (Go-live, Preview)
 
 At .NET 8 GA (November 2023):
@@ -127,7 +127,7 @@ At .NET 8 GA (November 2023):
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Standard Support, Maintenance)
+- .NET 7 (Standard Term Support, Maintenance)
 - .NET 8 (LTS, Latest)
 
 +6 months (May, 2024):
@@ -137,7 +137,7 @@ At .NET 8 GA (November 2023):
 - .NET 6 (Maintenance; LTS)
 - .NET 7 (EOL)
 - .NET 8 (LTS, Latest)
-- .NET 9 (Standard Support, Preview)
+- .NET 9 (Standard Term Support, Preview)
 
 At .NET 9 GA (November 2024):
 
@@ -146,7 +146,7 @@ At .NET 9 GA (November 2024):
 - .NET 6 (EOL)
 - .NET 7 (EOL)
 - .NET 8 (LTS)
-- .NET 9 (Standard Support, Latest)
+- .NET 9 (Standard Term Support, Latest)
 
 Notes:
 
@@ -164,7 +164,7 @@ There are two forms of files:
 - Singular [`releases-index.json`](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json) file that describes all the major/minor releases, at a high-level.
 - Release-specific [`releases.json`](https://github.com/dotnet/core/blob/main/release-notes/6.0/releases.json) file that describes each of the patch releases for each major/minor .NET release.
 
-These files include labels. We have a strong desire to not break the current usage patterns, or as little as possible. They already display the most relevant tag per the scheme proposed in this document. We, however, need to adopt `standard` in place of `current`.
+These files include labels. We have a strong desire to not break the current usage patterns, or as little as possible. They already display the most relevant tag per the scheme proposed in this document. We, however, need to adopt `standard term support` or `sts` in place of `current`.
 
 `release-index.json` currently displays the most relevant tag.
 
@@ -205,13 +205,13 @@ For example, this historical use of [`release-index.json` uses the `current` lab
 Going forward, we'll make the following changes:
 
 - The `support-phase` property will contain new values and will follow a different progression. This is a breaking change due to the use of `active` instead of `lts` or `current` and the replacement of `rc` with `go-live`.
-- A new `release-type` property will be added that will have one of two values: `lts` or `standard`.
+- A new `release-type` property will be added that will have one of two values: `lts` or `sts`.
 
 The `support-phase` property will go through the following progression:
 
 `preview` -> `go-live` -> `active` -> `maintenance` -> `eol`
 
-The new `release-type` property will be set as either `lts` or `standard` and will not change, even after the product is out of support.
+The new `release-type` property will be set as either `lts` or `sts` and will not change, even after the product is out of support.
 
 The new format will look like the following:
 
@@ -245,6 +245,6 @@ This approach follows established practice.
 
 There are three breaking changes happening with this design proposal:
 
-- Switching from `current` to `standard`: this string doesn't appear anywhere currently since .NET 5 has reached end of support. .NET 7 is the next standard support release and at GA will be tagged with `release-type` == `standard`.
-- Switching from `lts` or `current` to active in the `support-phase` property: the `support-phase` property will no longer contain a mix of release type and support phase. `lts` and `standard` will now show up in the new `release-type` property.
+- Switching from `current` to `sts`: this string doesn't appear anywhere currently since .NET 5 has reached end of support. .NET 7 is the next Standard Term Support release and at GA will be tagged with `release-type` == `sts`.
+- Switching from `lts` or `current` to active in the `support-phase` property: the `support-phase` property will no longer contain a mix of release type and support phase. `lts` and `sts` will now show up in the new `release-type` property.
 - Switching from `rc` or `go-live` in the `support-phase` property: this will allow us to better represent the support phase the product is in.
