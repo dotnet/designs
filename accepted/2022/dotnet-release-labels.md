@@ -49,8 +49,8 @@ New labels are proposed for a variety of purposes.
 
 **Release-type (support duration) labels:**
 
-- **Standard Support** -- Indicates a release is supported for the Standard Support timeframe (18 months).
-- **LTS** -- Indicates a release is supported for the Long Term Support (LTS) timeframe (3 years).
+- **Standard Support (short name Standard)** -- Indicates a release is supported for the Standard Support timeframe (18 months).
+- **Long Term Support (short name LTS)** -- Indicates a release is supported for the Long Term Support (LTS) timeframe (3 years).
 
 **Release support status labels:**
 
