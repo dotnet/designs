@@ -98,28 +98,28 @@ Now (May 2022):
 - .NET Core 3.1 (LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Standard Term Support, Preview)
+- .NET 7 (STS, Preview)
 
 Just before .NET 7 GA (October, 2022):
 
 - .NET Core 3.1 (LTS, Maintenance)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (Standard Term Support, Preview, Go-live)
+- .NET 7 (STS, Preview, Go-live)
 
 At .NET 7 GA (November 2022):
 
 - .NET Core 3.1 (Maintenance, LTS)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Standard Term Support, Latest)
+- .NET 7 (STS, Latest)
 
 Just before .NET 8 GA (October 2023):
 
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Standard Term Support, Latest)
+- .NET 7 (STS, Latest)
 - .NET 8 (Go-live, Preview)
 
 At .NET 8 GA (November 2023):
@@ -127,7 +127,7 @@ At .NET 8 GA (November 2023):
 - .NET Core 3.1 (EOL)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
-- .NET 7 (Standard Term Support, Maintenance)
+- .NET 7 (STS, Maintenance)
 - .NET 8 (LTS, Latest)
 
 +6 months (May, 2024):
@@ -137,7 +137,7 @@ At .NET 8 GA (November 2023):
 - .NET 6 (Maintenance; LTS)
 - .NET 7 (EOL)
 - .NET 8 (LTS, Latest)
-- .NET 9 (Standard Term Support, Preview)
+- .NET 9 (STS, Preview)
 
 At .NET 9 GA (November 2024):
 
@@ -146,7 +146,7 @@ At .NET 9 GA (November 2024):
 - .NET 6 (EOL)
 - .NET 7 (EOL)
 - .NET 8 (LTS)
-- .NET 9 (Standard Term Support, Latest)
+- .NET 9 (STS, Latest)
 
 Notes:
 
