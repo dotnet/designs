@@ -22,6 +22,8 @@ These would be the default output paths for .NET 8 projects:
 - `bin\publish` - Publish output for single targeted project
 - `bin\publish\<TargetFramework>` - Publish output for multi-targeted project
 
+Note that the publish output paths would only apply when publishing the Release Configuration, which we plan to make the default configuration for `dotnet publish` in .NET 8.
+
 ## Implementation
 
 There are currently properties that control whether the TargetFramework and RuntimeIdentifier should be included in the output path: `AppendTargetFrameworkToOutputPath` and `AppendRuntimeIdentifierToOutputPath`.  Both of these currently default to true.  We will change the default values as follows:
@@ -30,7 +32,7 @@ There are currently properties that control whether the TargetFramework and Runt
 - `AppendRuntimeIdentifierToOutputPath` will default to true only when targeting .NET 7 or lower.
   - To be discussed: Should we also default it to true if `RuntimeIdentifiers` is set?
 
-For publish, we would change the publish output path only when targeting .NET 8 or higher and when the Configuration is set to Release (which we [plan to make the default](https://github.com/dotnet/sdk/issues/10357#issuecomment-1208564539) for .NET 8).  In that case we would set the publish output path to `$(BaseOutputPath)\publish` (by default `bin\publish`), and append the `TargetFramework` and `RuntimeIdentifier` to the path based on `AppendTargetFrameworkToOutputPath` and `AppendRuntimeIdentifierToOutputPath`.
+For publish, we would change the publish output path only when targeting .NET 8 or higher and when the Configuration is set to Release (which we [plan to make the default](https://github.com/dotnet/sdk/issues/27066) for .NET 8).  In that case we would set the publish output path to `$(BaseOutputPath)\publish` (by default `bin\publish`), and append the `TargetFramework` and `RuntimeIdentifier` to the path based on `AppendTargetFrameworkToOutputPath` and `AppendRuntimeIdentifierToOutputPath`.
 
 ## Considerations
 
@@ -43,6 +45,25 @@ These changes could break things such as scripts that copy the output of the bui
 It is worth considering why we have different output paths at all.  The advantage of having different output paths for some pivot (such as configuration, target framework, or RuntimeIdentifier) is that you can keep outputs for the different values of the pivot side-by-side, and that if you are switching back and forth between building them, the builds for a given pivot value can be incremental.
 
 Therefore, the assumption with these changes is that it is not common to switch back and forth between different target frameworks or different runtime identifiers.  Projects where it is common to switch back and forth could still set `AppendTargetFrameworkToOutputPath` or `AppendRuntimeIdentifierToOutputPath` to true.
+
+### Publish versus Configuration
+
+Putting the publish output in the `bin\publish` folder may appear to conflate publish with a Configuration.  This, however, is intentional.  We'd like to make publish behave more like a configuration.
+
+Some factors influencing this:
+
+- It is rarely correct to publish with the Debug configuration, as publish is used to create artifacts that are deployed.
+- Currently, there are operations that are only supported during publish, such as `PublishSingleFile`, `PublishTrimmed`, and `PublishAot`.  It would be more flexible to allow these to be specified for Build also.
+- There's not a good way to set MSBuild properties differently for the Publish operation.  This makes it hard to implement properties such as PublishSingleFile and PublishRuntimeIdentifier, and means that those properties will work with `dotnet publish` but not `dotnet build /t:Publish`.  Developers may also want to condition properties on whether the Publish operation is being run.  On the other hand, conditioning properties based on Configuration is trivial.
+
+We've been thinking about Publish versus Build for a while.  Here's some of that background:
+
+- https://github.com/dotnet/sdk/issues/26446
+- https://github.com/dotnet/sdk/issues/26247
+- https://github.com/dotnet/core/issues/7566
+- https://github.com/dotnet/docs/issues/30023
+- https://gist.github.com/dsplaisted/f032de83be1dda7e14ca77f350100065
+- https://github.com/dotnet/sdk/issues/15726
 
 ### Incremental publish
 
