@@ -46,6 +46,8 @@ It is worth considering why we have different output paths at all.  The advantag
 
 Therefore, the assumption with these changes is that it is not common to switch back and forth between different target frameworks or different runtime identifiers.  Projects where it is common to switch back and forth could still set `AppendTargetFrameworkToOutputPath` or `AppendRuntimeIdentifierToOutputPath` to true.
 
+Some project types may set `AppendRuntimeIdentifierToOutputPath` to true by default.  This will be the case for iOS projects, where different RuntimeIdentifiers are used for targeting a simulator versus a device, and it is common to switch back and forth.
+
 ### Publish versus Configuration
 
 Putting the publish output in the `bin\publish` folder may appear to conflate publish with a Configuration.  This, however, is intentional.  We'd like to make publish behave more like a configuration.
