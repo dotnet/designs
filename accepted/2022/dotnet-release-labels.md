@@ -105,11 +105,11 @@ Just before .NET 7 GA (October, 2022):
 - .NET Core 3.1 (LTS, Maintenance)
 - .NET 5 (EOL)
 - .NET 6 (LTS, Latest)
-- .NET 7 (STS, Preview, Go-live)
+- .NET 7 (STS, Go-live)
 
 At .NET 7 GA (November 2022):
 
-- .NET Core 3.1 (Maintenance, LTS)
+- .NET Core 3.1 (LTS, Maintenance)
 - .NET 5 (EOL)
 - .NET 6 (LTS)
 - .NET 7 (STS, Latest)
@@ -120,7 +120,7 @@ Just before .NET 8 GA (October 2023):
 - .NET 5 (EOL)
 - .NET 6 (LTS)
 - .NET 7 (STS, Latest)
-- .NET 8 (Go-live, Preview)
+- .NET 8 (LTS, Go-live)
 
 At .NET 8 GA (November 2023):
 
