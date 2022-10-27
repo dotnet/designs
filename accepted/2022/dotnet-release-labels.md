@@ -13,7 +13,7 @@ Today, we have a few release timeframes:
 
 For stable releases (post-GA), we have two support durations:
 
-- Standard "STS" releases, supported for 18 months
+- Shorter "STS" releases, supported for 18 months
 - Longer "LTS" releases, supported for 36 months
 
 The standard releases are released in even years, and the LTS ones in odd years.
