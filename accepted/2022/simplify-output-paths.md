@@ -13,14 +13,14 @@ This makes it harder to find the output of a project, and sometimes nests one ty
 
 ## Proposed behavior
 
-Projects targeting .NET 8 and higher will by default not include the `TargetFramework` in the output path unless the project is multi-targeted.  Similarly, the `RuntimeIdentifier` will not by default be part of the output path.  Finally, the publish output path will be `bin\publish` by default instead of a `publish` subfolder inside of the output path.
+Projects targeting .NET 8 and higher will by default not include the `TargetFramework` in the output path unless the project is multi-targeted.  Similarly, the `RuntimeIdentifier` will not by default be part of the build output path.  Finally, the publish output path will be `bin\publish` by default instead of a `publish` subfolder inside of the output path.
 
 These would be the default output paths for .NET 8 projects:
 
 - `bin\<Configuration>` - Build output path for single targeted project
 - `bin\<Configuration>\<TargetFramework>` - Build output for multi-targeted project
-- `bin\publish` - Publish output for single targeted project
-- `bin\publish\<TargetFramework>` - Publish output for multi-targeted project
+- `bin\publish\<RuntimeIdentifier>` - Publish output for single targeted project
+- `bin\publish\<TargetFramework>\<RuntimeIdentifier>` - Publish output for multi-targeted project
 
 Note that the publish output paths would only apply when publishing the Release Configuration, which we plan to make the default configuration for `dotnet publish` in .NET 8.
 
@@ -32,7 +32,7 @@ There are currently properties that control whether the TargetFramework and Runt
 - `AppendRuntimeIdentifierToOutputPath` will default to true only when targeting .NET 7 or lower.
   - To be discussed: Should we also default it to true if `RuntimeIdentifiers` is set?
 
-For publish, we would change the publish output path only when targeting .NET 8 or higher and when the Configuration is set to Release (which we [plan to make the default](https://github.com/dotnet/sdk/issues/27066) for .NET 8).  In that case we would set the publish output path to `$(BaseOutputPath)\publish` (by default `bin\publish`), and append the `TargetFramework` and `RuntimeIdentifier` to the path based on `AppendTargetFrameworkToOutputPath` and `AppendRuntimeIdentifierToOutputPath`.
+For publish, we would change the publish output path only when targeting .NET 8 or higher and when the Configuration is set to Release (which we [plan to make the default](https://github.com/dotnet/sdk/issues/27066) for .NET 8).  In that case we would set the publish output path to `$(BaseOutputPath)\publish` (by default `bin\publish`), and append the `TargetFramework` to the path based on `AppendTargetFrameworkToOutputPath` property.  The `RuntimeIdentifier` will always be appended to the publish output path, as is the case today.
 
 ## Considerations
 
@@ -47,6 +47,8 @@ It is worth considering why we have different output paths at all.  The advantag
 Therefore, the assumption with these changes is that it is not common to switch back and forth between different target frameworks or different runtime identifiers.  Projects where it is common to switch back and forth could still set `AppendTargetFrameworkToOutputPath` or `AppendRuntimeIdentifierToOutputPath` to true.
 
 Some project types may set `AppendRuntimeIdentifierToOutputPath` to true by default.  This will be the case for iOS projects, where different RuntimeIdentifiers are used for targeting a simulator versus a device, and it is common to switch back and forth.
+
+For publish, we believe it is more common to switch between different RuntimeIdentifiers, so we will continue to include the `RuntimeIdentifier` in the publish output path.
 
 ### Publish versus Configuration
 
@@ -73,4 +75,4 @@ Originally, the .NET SDK did not support incremental publish.  This meant that i
 
 ### Capitalization
 
-Should the default publish output path be `bin\publish` or `bin\Publish`?  Uppercase matches the Configuration values of `Debug` and `Release`, which the publish folder will be a sibling of.  However, the current publish folder capitalization is lowercase.
+The default publish output path could either be `bin\publish` or `bin\Publish`.  Uppercase matches the Configuration values of `Debug` and `Release`, which the publish folder will be a sibling of.  However, the current publish folder capitalization is lowercase.  The current plan is to go with the lowercase `bin\publish`.
