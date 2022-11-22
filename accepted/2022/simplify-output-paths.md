@@ -26,7 +26,7 @@ Projects targeting .NET 8 and higher will by default use a new output path forma
 - Output Type - Such as `build`, `publish`, `obj`, or `packages`
 - Pivots - This will at minimum be the `Configuration`, such as `Debug` or `Release`. Other pivots such as `TargetFramework` or `RuntimeIdentifier` may also be included, and the pivots will be joined by the underscore (`_`) character
   - `TargetFramework` will be included in the folder name if the project is multi-targeted (`TargetFrameworks` is non-empty), or if the `TargetFramework` property was set via the command line (ie is a global property)
-  - `RuntimeIdentifier` will be included in the folder name if it was explicitly set (either in a project file or on the command line).  If it is set automatically by the SDK (for example because `SelfContained` was set)
+  - `RuntimeIdentifier` will be included in the folder name if it was explicitly set (either in a project file or on the command line).  If it is set automatically by the SDK (for example because `SelfContained` was set), then the `RuntimeIdentifier` will not be included in the folder name
 
 Some examples:
 
