@@ -9,24 +9,24 @@ Currently, the default output path for a .NET project includes folders for the `
 - `bin\<Configuration>\<TargetFramework>\publish` - Publish output with no `RuntimeIdentifier`
 - `bin\<Configuration>\<TargetFramework>\<RuntimeIdentifier>\publish` - Publish output with `RuntimeIdentifier`
 
-This is rather complicated an inconsistent, which can make for a poor first impression of the .NET platform.
+This is rather complicated and inconsistent, which can make for a poor first impression of the .NET platform.
 
 We'd like to try to improve the output path structure.  Desired qualities include:
 
 - Simple and consistent
 - Avoid cases where one output path is nested inside of another one
-- Avoid excessively deep directory heirarchies
+- Avoid excessively deep directory hierarchies
 - Get rid of `obj` folder in project root
 
 ## Proposed behavior
 
-Projects targeting .NET and higher will by default use a new output path format.  The output path will consist of the following 3 nested folders
+Projects targeting .NET 8 and higher will by default use a new output path format.  The output path will consist of the following 3 nested folders
 
 - `bin` - All output (including intermediate output, will go under this folder)
 - Output Type - Such as `build`, `publish`, `obj`, or `packages`
 - Pivots - This will at minimum be the `Configuration`, such as `Debug` or `Release`. Other pivots such as `TargetFramework` or `RuntimeIdentifier` may also be included, and the pivots will be joined by the underscore (`_`) character
   - `TargetFramework` will be included in the folder name if the project is multi-targeted (`TargetFrameworks` is non-empty), or if the `TargetFramework` property was set via the command line (ie is a global property)
-  - `RuntimeIdentifier` will be included in the folder name if it was explicitly set (either in a project file or on the command line).  If it is set automatically by the SDK (for exmaple because `SelfContained` was set)
+  - `RuntimeIdentifier` will be included in the folder name if it was explicitly set (either in a project file or on the command line).  If it is set automatically by the SDK (for example because `SelfContained` was set)
 
 Some examples:
 
