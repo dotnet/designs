@@ -20,33 +20,51 @@ We'd like to try to improve the output path structure.  Desired qualities includ
 
 ## Proposed behavior
 
-Projects targeting .NET 8 and higher will by default use a new output path format.  The output path will consist of the following 3 nested folders
+The new output path format will consist of the following 3 nested folders:
 
-- `bin` - All output (including intermediate output, will go under this folder)
-- Output Type - Such as `build`, `publish`, `obj`, or `packages`
-- Pivots - This will at minimum be the `Configuration`, such as `Debug` or `Release`. Other pivots such as `TargetFramework` or `RuntimeIdentifier` may also be included, and the pivots will be joined by the underscore (`_`) character
+- `artifacts` - All output will go under this folder
+- Output Type - Such as `bin`, `publish`, `intermediates`, or `package`
+- Pivots - This will at minimum be the `Configuration` (lower-cased), such as `debug` or `release`. Other pivots such as `TargetFramework` or `RuntimeIdentifier` may also be included, and the pivots will be joined by the underscore (`_`) character
   - `TargetFramework` will be included in the folder name if the project is multi-targeted (`TargetFrameworks` is non-empty), or if the `TargetFramework` property was set via the command line (ie is a global property)
   - `RuntimeIdentifier` will be included in the folder name if it was explicitly set (either in a project file or on the command line).  If it is set automatically by the SDK (for example because `SelfContained` was set), then the `RuntimeIdentifier` will not be included in the folder name
 
 Some examples:
 
-- `bin\build\Debug` - The build output path for a simple project when you run `dotnet build`
-- `bin\obj\Debug` - The intermediate output path for a simple project when you run `dotnet build`
-- `bin\build\Debug_net8.0` - The build output path for the `net8.0` build of a multi-targeted project
-- `bin\publish\Release_linux-x64` - The publish path for a simple app when publishing for `linux-x64`
-- `bin\package\Release` - The folder where the release .nupkg will be created for a project
+- `artifacts\bin\debug` - The build output path for a simple project when you run `dotnet build`
+- `artifacts\intermediates\debug` - The intermediate output path for a simple project when you run `dotnet build`
+- `artifacts\bin\debug_net8.0` - The build output path for the `net8.0` build of a multi-targeted project
+- `artifacts\publish\release_linux-x64` - The publish path for a simple app when publishing for `linux-x64`
+- `artifacts\package\release` - The folder where the release .nupkg will be created for a project
+
+### Controlling the output path format
+
+We would like the new output format to be used by default.  However, a variety of things may depend on the output path, such as scripts that copy the output of the build, or custom MSBuild logic that hard-codes the output path.  So it would be a breaking change to change the output path format for all projects.
+
+One strategy we often use for situations like this is to make new behavior the default only when targeting the version of .NET that the behavior was introduced in or higher.  This prevents the new .NET SDK from breaking existing, unmodified projects, and ensures that the change in behavior will only be encountered when projects are modified to target a new `TargetFramework`.
+
+The logic for determining which output path format will be used will (mostly) be as follows:
+
+- If a project targets .NET 8 or higher, it will by default use the new output path format.  If it targets .NET 7 or lower, it will by default use the old output path format
+- A project can explicitly choose which output path format to use by setting the `UseArtifactsOutput` property to `true` or `false` in a `Directory.Build.props` file.
+
+### That pesky intermediate output path
+
+Unfortunately, the base intermediate output path can't depend on the project's `TargetFramework`, or anything else in the project file.  The only place to set properties which affect the base intermediate output path is in a `Directory.Build.props` file.  This is because MSBuild imports "project extensions" of the form `<ProjectName>.*.props` and `<ProjectName>.*.targets` from the base intermediate output path, and the project extensions .props files are imported early on in evaluation, before the body of the project file is evaluated.
+
+So, the way we will handle this is:
+
+- If `UseArtifactsOutput` is set to `true` in a `Directory.Build.props` file, then the new output format will be used, including for the intermediate output path
+- Otherwise, if `UseArtifactsOutput` is set to true later, either in the project file or in .NET SDK logic due to the `TargetFramework` being at least .NET 8, then the old output format will be used for the intermedate folder (so it will start with `obj\<Configuration>` by default), but the new `artifacts` format will be used for all other output.
+
+### Mixed output path formats in multi-targeted builds
+
+If a project is multi-targeted to `net7.0` and `net8.0` and doesn't specify the output path format, then different formats will be used for the output for the different target frameworks.  The .NET 7 build output will be in `bin\Debug\net7.0`, while the .NET 8 output will be in `artifacts\bin\debug_net8.0`.
+
+To prevent the output from one target framework to be globbed as part of the inputs to another target framework, both the `bin` and `artifacts` folder will need to be excluded from the default item globs (via the `DefaultItemExcludes` property).  This means that even projects that target .NET 7 or lower could be impacted by breaking changes if they currently have source files or other assets in an `artifacts` folder.
+
+Question: Could we have the outer build of a multi-targeted build query the inner builds to determine whether any of them target .NET 8 or higher, so we wouldn't have to have inconsistent output path formats?  Would this work with Visual Studio builds?
 
 ## Considerations
-
-### Breaking changes
-
-These changes could break things such as scripts that copy the output of the build or custom MSBuild logic that hard-codes these paths.  Tieing these changes to the project TargetFramework ensures that these breaks will be encountered when the project is modified to target a new TargetFramework, not when updating to a new version of the .NET SDK.
-
-### Opting in or out of the new behavior
-
-We need a way to explicitly opt in to or out of the new behavior.  This will let projects targeting prior versions of .NET opt in to the new folder structure, which is especially desirable for multi-targeted projects so that the inner builds have consistent output paths with each other.  It will also let projects that target .NET 8 use the old output path structure, for example if the new paths break scripts or CI setup.
-
-We need to come up with a name for the property that controls this.  `UseNewOutputPathFormat` is probably not a good name.
 
 ### Can't we use `bin\Debug`?
 
@@ -56,3 +74,4 @@ Before .NET Core, .NET Framework projects generally put their output directly in
 - Have an inconsistent folder structure (for example `bin\publish` next to `bin\Debug`)
 
 This is a classic "pick two of three things" situation, and we believe the least important of the three was trying to preserve `bin\<Configuration>` as an output path.
+
