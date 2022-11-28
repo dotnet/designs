@@ -64,6 +64,16 @@ To prevent the output from one target framework to be globbed as part of the inp
 
 Question: Could we have the outer build of a multi-targeted build query the inner builds to determine whether any of them target .NET 8 or higher, so we wouldn't have to have inconsistent output path formats?  Would this work with Visual Studio builds?
 
+### Solution or repo level output paths
+
+Many projects want to put all the output for the repo or the solution in a single folder.  We will support this with a new `RootArtifactsPath` property which can be set in a `Directory.Build.props file`.  If set, then we will use the following format for the output path:
+
+`<RootArtifactsPath>\<OutputType>\<ProjectName>\<Pivots>`
+
+If `RootArtifactsPath` is set, then it will not be necessary to separately set `UseArtifactsOutput`.
+
+We will consider updating commands such as `dotnet build` and `dotnet publish` so that when used on a `.sln` file, the `--output` parameter sets the `RootArtifactsPath`.
+
 ## Considerations
 
 ### Can't we use `bin\Debug`?
