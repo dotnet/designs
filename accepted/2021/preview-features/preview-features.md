@@ -222,10 +222,12 @@ support of each other, you can't expect to use, say, the .NET 7 SDK to build for
 SDKs are usually backwards compatible, but it's really no different from the
 framework, which is also backwards compatible but not for preview features.
 
-This means:
+In order to ensure that users get actionable error message we decided to
+actively block using preview features in frameworks that aren't the SDK's
+current framework:
 
-> The .NET SDK will only support preview features for the current .NET
-> framework.
+> The .NET SDK only supports preview features for the current framework. More
+> specifically, `<EnablePreviewFeatures>` is ignored for all other frameworks.
 >
 > The current framework is defined as the framework whose major and minor
 > version match the SDK. For instance, the .NET 6 SDK will only support preview
