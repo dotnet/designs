@@ -1,6 +1,6 @@
 # Function Pointers
 #### Steve Harter
-#### December 14, 2022
+#### December 16, 2022
 
 # Background
 For additional context, see:
@@ -39,7 +39,7 @@ A function pointer, as an ECMA-335 signature, is non-trivial and contains the fo
 - The parameter count
 - The types of all parameters
 - Custom modifiers for each parameter type and the return type  **(contentious area)**
-- The calling convention(s) **(unfortunate metadata encoding using custom modifiers)**
+- The calling convention(s) **(legacy enum encoding + newer encoding using custom modifiers)**
 
 An instance of a function pointer type, like a standard pointer type, is trivial, containing just the pointer to the function (thus the original and current use of `IntPtr`).
 
@@ -66,7 +66,7 @@ Previous API discussions covered whether the metadata for a function pointer sho
 
 The original design, however, did include a `FunctionPointerParameterInfo` that contained a mechanism to obtain both the type and custom modifiers for each parameter. The proposed design here no longer directly exposes custom modifiers for parameters, so the `FunctionPointerParameterInfo` is no longer necessary since the only state remaining is just the parameter type, which is now directly lifted to `Type` via `Type[] GetFunctionPointerParameterTypes()`.
 
-## Dealing with custom modifiers
+## Custom modifiers
 The [7.0 introspection attempt](https://github.com/dotnet/runtime/pull/71516) returned all custom modifiers including modifiers not used or needed by the runtime, such as parameter modifiers for `ref`, `out` and `in`. Due to concerns with that approach, the function pointer feature was pulled from late in 7.0 in order to properly vet and approve a new design (this design) for v8. The intent is to add this functionality early in v8 which will also allow time for feedback.
 
 Consider the following where `ref\out\in` all map to a reference (`&`) by the runtime:
@@ -96,6 +96,7 @@ void EmitCalli(
 
 So custom modifiers, except for calling convensions, are not exposed in the runtime. They are not necessary for the key scenario of passing or invoking a function pointer and would also interfere with equality and castability. If function pointers expose all custom modifiers, such as `ref\out\in` and the C++/CLI `const`, then equality and castability will be based on exact matches to that which is considered overly restrictive for runtime use and may break C++/CLI usage.
 
+## Custom modifiers for calling convention
 The only custom modifiers exposed by the runtime are the built-in classes representing calling conventions - these classes are named `System.Runtime.InteropServices.CallConv*`:
 - [CallConvCdecl](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvcdecl)
 - [CallConvStdCall](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvstdcall)
@@ -106,17 +107,108 @@ The only custom modifiers exposed by the runtime are the built-in classes repres
 
 C# in particular just maps calling conventions specified in a function pointer to `System.Runtime.InteropServices.CallConv*` types as metadata. These CallConv* types must live in the same assembly as defines `System.Object` (i.e. `System.Private.Corelib.dll`).
 
-_Off-topic thoughts on current implementation_: using these CallConv* classes to represent calling conventions was added in V6 because new callling conventions needed to be added and would not fit within the 4 bits that were being used to encode the existing calling conventions based on ECMA-335. So the decision, arguably not the best, was made to encode new calling conventions using custom modifiers since that would not affect existing metadata readers or require a ECMA-335 change. However, there are alternative approaches which may or may not have been considered -- one such approach would be to change the encompassing byte to be a 32-bit compressed integer encoding instead which .NET/CLI uses extensively elsewhere. This compressed integer approach is possible since the encompassing byte did not use bit 7 (`0x80`) which is the flag for a compressed integer to switch from one byte to two bytes. This would require a ECMA-335 change which would break other metadata readers once two+ bytes are used.
+### Normalization of calling conventions
+Calling conventions can be specified in one of two ways in metadata:
+- The older "CallKind" enum (which has issues with not being large enough to hold the newer calling conventions).
+- The newer approach of using modopts on the return parameter.
 
-### Exposing custom modifiers on `FieldInfo`, `ParameterInfo` and `PropertyInfo`
-Although we don't want to expose custom modifiers from function pointer types that are not calling conventions, obtaining the other custom modifiers is useful for those who read metadata for varying reasons. The [`MetadataLoadContext`](https://learn.microsoft.com/dotnet/api/system.reflection.metadataloadcontext) class is the preferred approach to read metadata, since it supports reading any assembly without having to load the respective types into the runtime.
+C# only uses the newer modopts approach when necessary; see the [c# spec section](https://learn.microsoft.com/dotnet/csharp/language-reference/proposals/csharp-9.0/function-pointers#metadata-representation-of-calling-conventions). However, we should assume any valid encoding.
 
-The proposal is to expose functionality in the `MetadataLoadContext` assembly using type extensions that return "signature types" which are an extended function pointer type that has `GetRequiredCustomModifiers()` and `GetOptionalCustomModifiers()` methods which return all custom modifiers. These APIs only work with signature types that are returned from `FieldInfo`, `PropertyInfo` and `ParameterInfo` via `GetFunctionPointerSignatureType()`.
+When returning the calling conventions through `Type.GetFunctionPointerCallingConventions()` any calling convention encoded using "CallKind" will return the appropriate CallConv* type, just like it was added through a modopt. This normalization avoids having to expose the "CallKind" in the API and makes it simpler for callers since there is just a single method to return the calling conventions no matter how they were encoded.
 
-## Castability
-The runtime keeps a cache of `Type` instances and looks them up based on identity. For function pointers, that includes all metadata including the parameter types...
+### _Off-topic thoughts on using custom modifiers to represent calling conventions_
+Using the CallConv* classes to represent calling conventions was added in V6 because new callling conventions needed to be added and would not fit within the 4 bits that were being used to encode the existing calling conventions based on ECMA-335. So the decision, arguably not the best, was made to encode new calling conventions using custom modifiers since that would not affect existing metadata readers or require a ECMA-335 change. However, there are alternative approaches which may or may not have been considered -- one such approach would be to change the encompassing byte to be a 32-bit compressed integer encoding instead which .NET/CLI uses extensively elsewhere. This compressed integer approach is possible since the encompassing byte did not use bit 7 (`0x80`) which is the flag for a compressed integer to switch from one byte to two bytes. This would require a ECMA-335 change which would break other metadata readers once two+ bytes are used.
 
-TODO: add examples here
+## Signature types
+Although we don't want to expose custom modifiers from function pointer types that are not calling conventions, obtaining the other custom modifiers is useful for those who read metadata for varying reasons. The proposal is to expose functionality that return "signature types" which are an extended function pointer type that has `GetRequiredCustomModifiers()` and `GetOptionalCustomModifiers()` methods which return all custom modifiers. These APIs only work with signature types that are returned from `FieldInfo.GetSignatureFieldType()`, `PropertyInfo.GetSignaturePropertyType()` and `ParameterInfo.GetSignatureParameterType()`.
+
+The "signature type" terminology is used in ECMA-335 but also called a "modified type" elsewhere including the CLR, `MetadataLoadContext` and `MetadataReader`.
+
+In CLI metadata, only fields, properties, local variables, method parameters and function pointer parameters allow custom modifiers. A type, method or function pointer itself cannot have custom modifiers; function pointers use the "return parameter" to contain its custom modifiers used for calling conventions. Thus, the new `GetSignature*Type()` methods could be called `GetFunctionPointerSignature*Type()` instead. However, the shorter version is used here just in case this no longer holds to just function pointers.
+
+See also see ECMA-335 `II.23.2 Blobs and signatures` for additional information. Note that in C# a function pointer is emitted as an ECMA "StandaloneMethodSig". There are several other types of custom modifiers besides the calling convention ones -- for example, in C#, a field is also a "signature" and can have a `volatile` modifier which is emitted as a custom modifier and would be returned via `FieldInfo.GetSignatureFieldType().GetRequiredCustomModifiers()` as the `System.Runtime.CompilerServices.IsVolatile` type, and in C++\CLI there is `System.Runtime.CompilerServices.IsConst` and others.
+
+## Supporting both runtime- and and static-reflection
+Previous discussions included the suggestion that both calling conventions and signature types are only exposed from the [`MetadataLoadContext`](https://learn.microsoft.com/dotnet/api/system.reflection.metadataloadcontext) class since it is the preferred approach to read metadata (vs. runtime reflection) due to being agnostic to the runtime referenced by the various reflected types. However, this design proposes full fidelity between the runtime and `MetadataLoadContext` (other runtimes besides the CoreCLR, including Mono and AOT runtimes, will need to be updated of course).
+
+The reason to support calling conventions through `Type.GetFunctionPointerCallingConventions()` with the runtime are that the calling conventions may be useful in runtime-cases (not just introspection cases) and because there is a larger design factor with the CoreClr: the internal function pointer implementation uses the "CallKind" byte to hold the legacy calling conventions for things like determining if the VARARG convention is used. In addition, the CoreClr has a concept of "TypeKey" and "TypeHandle" and they are 1:1 today meaning that all `Type` instances are fully self-describing and thus, we can't have additional state hanging off of `Type` that is not part of the "key", such as calling conventions -- thus also the reason for bifurcation of signature types and non-signature types.
+
+This means that if we don't expose the calling conventions on `Type` for function pointers, some function pointer types will be castable and others not, and with no obvious way to inspect the `Type` to determine why. We could exposed just the "CallKind" byte on `Type`, but that is not desired since that will confuse and\or complicate the consumer's usage -- see "Normalization of calling conventions".
+
+Since we must already do the work of exposing the calling conventions including the newer ones that are read via custom modifiers, it makes sense then to expose all custom modifieres (via the new `Type.GetRequiredCustomModifiers()` and `Type.GetOptionalCustomModifiers()`.
+
+## Type identity 
+### Using of void*
+A function pointer addresscan be cast to any function pointer type when using `void*`:
+```cs
+delegate*<string> fn_string = &StringMethod;
+int i = ((delegate*<int>)(void*)fn_string)(); // Unsafe code allows any cast once void* is used
+static string StringMethod() => "Forty-Two";
+```
+And the IL just does a `ldftn` with no check:
+```
+.locals init (method string *() V_0, int32 V_1)
+ldftn      string ConsoleApp104.Program::'<Main>g__StringMethod|0_0'()
+stloc.0
+ldloc.0
+calli      int32()
+stloc.1
+```
+
+### Equality:
+```cs
+bool f = typeof(delegate*<string>) == typeof(delegate*<int>); // Expect 'false' (today 'true' since they are both IntPtr)
+```
+Note the use of `ldtoken`:
+```
+ldtoken    method string *()
+call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+ldtoken    method int32 *()
+call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
+call       bool [System.Runtime]System.Type::op_Equality(class [System.Runtime]System.Type, class [System.Runtime]System.Type)
+```
+
+### Casting
+Using arrays to help:
+```cs
+object arrInt = new delegate*<int>[1];
+var yikes = (delegate*<string>[])arrInt; // Expect InvalidCastException
+```
+```
+.locals init (object V_0, method string *()[] V_1)
+ldc.i4.1
+newarr     method int32 *()
+stloc.0
+ldloc.0
+castclass  method string *()[]
+stloc.1
+```
+### `Is` keyword
+```cs
+object arrInt = new delegate*<int>[1];
+bool f = arrInt is delegate*<string>[]; // Expect 'false'
+```
+IL:
+```
+.locals init (object V_0, bool V_1)
+ldc.i4.1
+newarr     method int32 *()
+stloc.0
+ldloc.0
+isinst     method string *()[]
+ldnull
+cgt.un
+stloc.1
+```
+
+In all cases above* any calling conventions are included in type identity. For example,
+`delegate* unmanaged[Cdecl]<void>`
+and
+`delegate* unmanaged[FastCall]<void>`are not equal.
+
+_* not sure how the `is` (`isinst`) is implemented in the CLR and whether we can get the same behavior as `castclass`._
+
+All non-CallConv* modifiers, such as `ref\in\out\const` are not considered part of the type identity and are ignored unless the type is a signature type.
 
 ## Invoke capabilities
 ### ILGenerator
@@ -192,7 +284,7 @@ For [the proposed byref reflection APIs](https://github.com/dotnet/runtime/issue
 Below are the non-trivial behaviors overridden by a function pointer type.
 
 ### `ToString()`
-Returns a friendly string in the format `return_type + "(" + optional_parameter_types_comma_separated + ")"` and compose with the `ToString()` of other types. Samples:
+Returns a friendly string in the format `return_type + "(" + optional_parameter_types_comma_separated + ")"` and compose with the `ToString()` of other types:
 ToString() result | Delegate signature
 ---|---
 "System.Void()" | `delegate*<void>`
@@ -259,20 +351,13 @@ namespace System
 +       public virtual Type[] GetFunctionPointerParameterTypes();
 +       public virtual bool IsFunctionPointer { get; }
 
-        // Required since this can't be determined by inspecting the results from GetFunctionPointerCallingConventions()
 +       public virtual bool IsUnmanagedFunctionPointer { get; }
 
-        // Exposing here without requiring a signature type is debatable; it is here since this
-        // information may be useful for runtime scenarios, and not just metadata inspection.
-+       public virtual Type[] GetFunctionPointerCallingConventions();
-
-        // These only work for types obtained from GetFunctionPointerSignatureType().
+        // These only work for types obtained from GetSignature*Type().
         // An empty Type[] is returned otherwise.
++       public virtual Type[] GetFunctionPointerCallingConventions();
 +       public Type[] GetRequiredCustomModifiers();
-        // or "GetSignatureTypeRequiredCustomModifiers()?
 +       public Type[] GetOptionalCustomModifiers();
-        // or "GetSignatureTypeOptionalCustomModifiers()?
-
     }
 }
 ```
@@ -303,23 +388,27 @@ Debug.Assert(type.GetFunctionPointerCallingConventions[0] == typeof(CallConvCdec
 Debug.Assert(type.GetFunctionPointerCallingConventions[1] == typeof(CallConvMemberFunction));
 ```
 
-## FieldInfo, PropertyInfo and ParameterInfo
+## GetSignature*Type() methods for `FieldInfo`, `PropertyInfo` and `ParameterInfo`
+These return a function pointer `Type` that has references to custom modifiers.
+
+If not a function pointer, these methods return the value from the appropriate `FieldInfo.FieldType`, `PropertyInfo.PropertyType` or `ParameterInfo.ParameterType` property.
+
 ```diff
 namespace System.Reflection
 {
     public class FieldInfo
     {
-+       public Type GetFunctionPointerSignatureType();
++       public Type GetSignatureFieldType();
     }
 
     public class PropertyInfo
     {
-+       public Type GetFunctionPointerSignatureType();
++       public Type GetSignaturePropertyType();
     }
 
     public class ParameterInfo
     {
-+       public Type GetFunctionPointerSignatureType();
++       public Type GetSignatureParameterType();
     }
 }
 ```
@@ -334,7 +423,7 @@ public class Holder
 FieldInfo fieldInfo = typeof(Holder).GetField("_field");
 
 // Get the signature type from the field; this Type is like fieldInfo.FieldType but it includes custom mods
-Type fnType = fieldInfo.GetSignatureType();
+Type fnType = fieldInfo.GetSignatureFieldType();
 
 // Get the function pointer's first parameter's type
 Type p1Type = fnType.GetFunctionPointerParameterTypes()[0];
@@ -344,33 +433,6 @@ Type[] p1ReqMods = p1Type.GetRequiredCustomModifiers();
 
 // The required modifiers should include the 'in' modifier
 Debug.Assert(p1ReqMods[0].GetType() == typeof(Runtime.InteropServices.InAttribute));
-```
-
-```c#
-public class Holder
-{
-    // Array of function pointers
-    public unsafe delegate*<in int, out int, void>[] _field;
-}
-
-FieldInfo fieldInfo = typeof(Holder).GetField("_field");
-Debug.Assert(fieldInfo.FieldType.IsArray == true);
-
-Type fnType = fieldInfo.FieldType.ElementType;
-Debug.Assert(fnType.IsFunctionPointer);
-Type arg1Type = fnType.GetFunctionPointerParameterTypes()[0];
-// Custom modifiers not returned by default
-Debug.Assert(arg1Type.GetRequiredCustomModifiers().Length == 0);
-
-// TODO: discuss this
-// We want this Assert to pass in MetadataLoadContext and throw InvalidOperationException in CoreClr.
-// However, for nested types this implies a "calling context" is established once
-// GetFunctionPointerSignatureType() is called in order to populate ElementType.
-Debug.Assert(fieldInfo.GetFunctionPointerSignatureType().ElementType.GetRequiredCustomModifiers().Length == 1);
-// To avoid the "context" we can add helpers:
-Debug.Assert(fieldInfo.GetSignatureTypeOfArrayType().GetRequiredCustomModifiers().Length == 1);
-// but we'd also need similar helpers for pointers and generic parameters, and even those
-// would not work if nesting is more than one level deep such as an array of pointers to function pointers.
 ```
 
 ## System.Reflection.TypeDelegator
