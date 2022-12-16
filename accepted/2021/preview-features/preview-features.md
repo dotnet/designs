@@ -196,6 +196,46 @@ namespace System
 </Project>
 ```
 
+### SDK support of preview features
+
+The point of preview features is to gather customer feedback and adjust course
+accordingly. This includes doing breaking changes, just like in any other
+preview.
+
+Many preview features will span tooling as well as libraries. Tooling could
+include MSBuild targets but also language and IDE features.
+
+Unlike runtime and framework, projects don't directly indicate which .NET SDK
+they are using. Instead it's implied by the CLI or by the IDE version and
+configuration (Visual Studio, Visual Studio Code, and Rider all have different
+ways how and to what extent this can be controlled by the developer).
+
+Just like in the case of runtime and framework, we don't plan to support preview
+features in the SDK across versions. For instance, a preview API in `net6.0`
+shouldn't be expected to have the same shape -- or even exists -- in `net7.0`.
+The same is true for the .NET SDK: .NET 6 SDK might have preview features in
+MSBuild and C# that don't exist or have a very different syntax in .NET 7.
+
+Since preview features between runtime, framework, and tooling are usually in
+support of each other, you can't expect to use, say, the .NET 7 SDK to build for
+.NET 6 when using preview features. This is likely counter intuitive because
+SDKs are usually backwards compatible, but it's really no different from the
+framework, which is also backwards compatible but not for preview features.
+
+In order to ensure that users get actionable error message we decided to
+actively block using preview features in frameworks that aren't the SDK's
+current framework:
+
+> The .NET SDK only supports preview features for the current framework. More
+> specifically, `<EnablePreviewFeatures>` is ignored for all other frameworks.
+>
+> The current framework is defined as the framework whose major and minor
+> version match the SDK. For instance, the .NET 6 SDK will only support preview
+> features in `net6.0`. Conversely, the .NET 7 SDK will only support preview
+> features in `net7.0`.
+
+This has implications for multi-targeting, which is covered next.
+
 ### Meaning of property in multi-targeted projects
 
 Imagine a project that targets .NET 6, .NET 5, and .NET Standard 2.0:
@@ -215,22 +255,17 @@ This configuration shouldn't mean "turn preview features on in all TFMs" but
 rather "turn preview features on for the current TFM". The current TFM is
 defined as the major version of the SDK. For example, in the .NET 6 SDK the
 current TFM would be `net6.0` while in the .NET 7 SDK the current TFM is defined
-as `net7.0`.
+as `net7.0` (see previous section on why that is the case).
 
-The reason for this is that experimental features aren't expected to be
-backwards compatible. That's the entire point of making them experimental in the
-first place.
-
-So you're only expected to be able to use experimental features when the TFM and
-the SDK match. This ensures that users get an error message if, for example,
-they try to use an experimental feature in .NET 6 but they are using the .NET 7
-SDK. The assumption is that because the feature was experimental in .NET 6, we
-likely took some customer feedback and made a breaking change when we shipped
-.NET 7. For people that want to target .NET 6 and its experimental features,
-they will have to use the .NET 6 SDK.
+So you'll only be able to use preview features when the TFM and the SDK match.
+This ensures that users get an error message if, for example, they try to use a
+preview feature in .NET 6 but they are using the .NET 7 SDK. The assumption is
+that because the feature was in preview for .NET 6, we likely took some customer
+feedback and made a breaking change when we shipped .NET 7. For people that want
+to target .NET 6 and its preview features, they will have to use the .NET 6 SDK.
 
 In practice this means that a multi-targeted project will only be able to use
-experimental features in a single TFM, specifically the current one.
+preview features in a single TFM, specifically the current one.
 
 ### Assembly info generation
 
