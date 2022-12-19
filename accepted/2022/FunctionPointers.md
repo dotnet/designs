@@ -112,9 +112,46 @@ Calling conventions can be specified in one of two ways in metadata:
 - The older "CallKind" enum (which has issues with not being large enough to hold the newer calling conventions).
 - The newer approach of using modopts on the return parameter.
 
+In ECMA, "CallKind" is used with "CallConv":"
+```
+callConv :'instance' callConv 
+ | 'explicit' callConv 
+ | callKind 
+ ; 
+callKind : /* EMPTY */ 
+ | 'default' 
+ | 'vararg' 
+ | 'unmanaged' 'cdecl' 
+ | 'unmanaged' 'stdcall' 
+ | 'unmanaged' 'thiscall' 
+ | 'unmanaged' 'fastcall' 
+```
+and in exposed in various enums and types. Here's the raw values:
+```
+CALLCONV_DEFAULT       = 0x0,  
+
+CALLCONV_VARARG        = 0x5,  
+CALLCONV_FIELD         = 0x6,  
+CALLCONV_LOCAL_SIG     = 0x7,  
+CALLCONV_PROPERTY      = 0x8,  
+CALLCONV_UNMGD         = 0x9,  
+CALLCONV_GENERICINST   = 0xa,  
+CALLCONV_NATIVEVARARG  = 0xb,  
+CALLCONV_MAX           = 0xc,  
+
+CALLCONV_MASK          = 0x0f,  
+CALLCONV_HASTHIS       = 0x20,  
+CALLCONV_EXPLICITTHIS  = 0x40,  
+CALLCONV_GENERIC       = 0x10  
+```
+
+The calling convention is considered managed if the callKind is "default" or "vararg", so the proposed `Type.IsUnmanagedFunctionPointer` does not require looking at the newer modopts (at least currently; it is possible new managed calling conventions are introduced at some point).
+
+**Open issue: currently this design does not provide a way to determine if the managed calling convention is "default" vs "vararg" or "instance" vs. "explicit" (for the "this" parameter to instance methods).** However, we could easily add new methods to expose this (e.g. using two `bool` properties `IsExplicitThis` and `IsVarArg` or add a future-extensible implementation with enums instead of `bool`).
+
 C# only uses the newer modopts approach when necessary; see the [c# spec section](https://learn.microsoft.com/dotnet/csharp/language-reference/proposals/csharp-9.0/function-pointers#metadata-representation-of-calling-conventions). However, we should assume any valid encoding.
 
-When returning the calling conventions through `Type.GetFunctionPointerCallingConventions()` any calling convention encoded using "CallKind" will return the appropriate CallConv* type, just like it was added through a modopt. This normalization avoids having to expose the "CallKind" in the API and makes it simpler for callers since there is just a single method to return the calling conventions no matter how they were encoded.
+When returning the calling conventions through `Type.GetFunctionPointerCallingConventions()` any calling convention encoded using "CallKind" will return the appropriate CallConv* type, just like it was added through a modopt. This normalization avoids having to expose the "CallKind" in the API and makes it simpler for callers since there is just a single method to return the calling conventions no matter how they were encoded. The `Type.IsUnmanagedFunctionPointer` property was added since there are not CallConv* types for mananged that would otherwise have helped determine this.
 
 ### _Off-topic thoughts on using custom modifiers to represent calling conventions_
 Using the CallConv* classes to represent calling conventions was added in V6 because new callling conventions needed to be added and would not fit within the 4 bits that were being used to encode the existing calling conventions based on ECMA-335. So the decision, arguably not the best, was made to encode new calling conventions using custom modifiers since that would not affect existing metadata readers or require a ECMA-335 change. However, there are alternative approaches which may or may not have been considered -- one such approach would be to change the encompassing byte to be a 32-bit compressed integer encoding instead which .NET/CLI uses extensively elsewhere. This compressed integer approach is possible since the encompassing byte did not use bit 7 (`0x80`) which is the flag for a compressed integer to switch from one byte to two bytes. This would require a ECMA-335 change which would break other metadata readers once two+ bytes are used.
@@ -126,26 +163,35 @@ The "signature type" terminology is used in ECMA-335 but also called a "modified
 
 In CLI metadata, only fields, properties, local variables, method parameters and function pointer parameters allow custom modifiers. A type, method or function pointer itself cannot have custom modifiers; function pointers use the "return parameter" to contain its custom modifiers used for calling conventions. Thus, the new `GetSignature*Type()` methods could be called `GetFunctionPointerSignature*Type()` instead. However, the shorter version is used here just in case this no longer holds to just function pointers.
 
-See also see ECMA-335 `II.23.2 Blobs and signatures` for additional information. Note that in C# a function pointer is emitted as an ECMA "StandaloneMethodSig". There are several other types of custom modifiers besides the calling convention ones -- for example, in C#, a field is also a "signature" and can have a `volatile` modifier which is emitted as a custom modifier and would be returned via `FieldInfo.GetSignatureFieldType().GetRequiredCustomModifiers()` as the `System.Runtime.CompilerServices.IsVolatile` type, and in C++\CLI there is `System.Runtime.CompilerServices.IsConst` and others.
+For additional information on encoding, see ECMA-335 `II.23.2 Blobs and signatures`. Note that in C# a function pointer is emitted as an ECMA "StandaloneMethodSig". There are several other types of custom modifiers besides the calling convention ones. For example, in C#, a field is also a "signature" and can have a `volatile` modifier which is emitted as a custom modifier and will be returned via `FieldInfo.GetSignatureFieldType().GetRequiredCustomModifiers()` as the `System.Runtime.CompilerServices.IsVolatile` type. In C++\CLI there are additional modifiers including `System.Runtime.CompilerServices.IsConst`.
 
 ## Supporting both runtime- and and static-reflection
 Previous discussions included the suggestion that both calling conventions and signature types are only exposed from the [`MetadataLoadContext`](https://learn.microsoft.com/dotnet/api/system.reflection.metadataloadcontext) class since it is the preferred approach to read metadata (vs. runtime reflection) due to being agnostic to the runtime referenced by the various reflected types. However, this design proposes full fidelity between the runtime and `MetadataLoadContext` (other runtimes besides the CoreCLR, including Mono and AOT runtimes, will need to be updated of course).
 
 The reason to support calling conventions through `Type.GetFunctionPointerCallingConventions()` with the runtime are that the calling conventions may be useful in runtime-cases (not just introspection cases) and because there is a larger design factor with the CoreClr: the internal function pointer implementation uses the "CallKind" byte to hold the legacy calling conventions for things like determining if the VARARG convention is used. In addition, the CoreClr has a concept of "TypeKey" and "TypeHandle" and they are 1:1 today meaning that all `Type` instances are fully self-describing and thus, we can't have additional state hanging off of `Type` that is not part of the "key", such as calling conventions -- thus also the reason for bifurcation of signature types and non-signature types.
 
-This means that if we don't expose the calling conventions on `Type` for function pointers, some function pointer types will be castable and others not, and with no obvious way to inspect the `Type` to determine why. We could exposed just the "CallKind" byte on `Type`, but that is not desired since that will confuse and\or complicate the consumer's usage -- see "Normalization of calling conventions".
+So we have two choices for exposing the calling conventions:
+1) Expose only for only signature types.
+    - Since the legacy "CallKind" will continue to be part of the internal function pointer state, but not exposed publically, a non-signature function pointer may not be equal to another function pointer and with no obvious way to determine why. The user would need to obtain a signature type in order to determine why. If we expose the "CallKind" to rectify this, then that will complicate the consumer's usage -- see "Normalization of calling conventions".
+    - This option has the best performance for normal runtime use.
+2) Expose for both normal types and signature types.
 
-Since we must already do the work of exposing the calling conventions including the newer ones that are read via custom modifiers, it makes sense then to expose all custom modifieres (via the new `Type.GetRequiredCustomModifiers()` and `Type.GetOptionalCustomModifiers()`.
+This design assumes (1) - expose only for signature types even though there are some equality issues.
 
-## Type identity 
-### Using of void*
-A function pointer addresscan be cast to any function pointer type when using `void*`:
+Note that the `Type.IsUnmanagedFunctionPointer` property is planned to be available for non-signature pointer types. This is implementented by inspecting "CallKind". This is somewhat debtable - today this doesn't require looking at the custom modifiers to determine
+
+For signature types, since we must already do the work of exposing the calling conventions including the newer ones that are read via custom modifiers, it makes sense then to expose all custom modifieres via the new `Type.GetRequiredCustomModifiers()` and `Type.GetOptionalCustomModifiers()`.
+
+## Type identity
+
+### Using `void*`
+A function pointer address can be cast to any function pointer type when using `void*`:
 ```cs
 delegate*<string> fn_string = &StringMethod;
 int i = ((delegate*<int>)(void*)fn_string)(); // Unsafe code allows any cast once void* is used
 static string StringMethod() => "Forty-Two";
 ```
-And the IL just does a `ldftn` with no check:
+which, as expected, does a `ldftn` with no check:
 ```
 .locals init (method string *() V_0, int32 V_1)
 ldftn      string ConsoleApp104.Program::'<Main>g__StringMethod|0_0'()
@@ -157,9 +203,9 @@ stloc.1
 
 ### Equality:
 ```cs
-bool f = typeof(delegate*<string>) == typeof(delegate*<int>); // Expect 'false' (today 'true' since they are both IntPtr)
+bool f = typeof(delegate*<string>) == typeof(delegate*<int>); // 'false' (today 'true' since they are both IntPtr)
 ```
-Note the use of `ldtoken`:
+which uses `ldtoken` and `op_Equality` (which is the C# `==` operator) based on token\handle being the same:
 ```
 ldtoken    method string *()
 call       class [System.Runtime]System.Type [System.Runtime]System.Type::GetTypeFromHandle(valuetype [System.Runtime]System.RuntimeTypeHandle)
@@ -169,11 +215,12 @@ call       bool [System.Runtime]System.Type::op_Equality(class [System.Runtime]S
 ```
 
 ### Casting
-Using arrays to help:
+Using arrays to help with the comparison (since function pointers are declared inline):
 ```cs
 object arrInt = new delegate*<int>[1];
 var yikes = (delegate*<string>[])arrInt; // Expect InvalidCastException
 ```
+which uses `castclass`
 ```
 .locals init (object V_0, method string *()[] V_1)
 ldc.i4.1
@@ -186,9 +233,9 @@ stloc.1
 ### `Is` keyword
 ```cs
 object arrInt = new delegate*<int>[1];
-bool f = arrInt is delegate*<string>[]; // Expect 'false'
+bool f = arrInt is delegate*<string>[]; // 'false'
 ```
-IL:
+which uses `isinst`:
 ```
 .locals init (object V_0, bool V_1)
 ldc.i4.1
@@ -201,14 +248,85 @@ cgt.un
 stloc.1
 ```
 
-In all cases above* any calling conventions are included in type identity. For example,
-`delegate* unmanaged[Cdecl]<void>`
-and
-`delegate* unmanaged[FastCall]<void>`are not equal.
+### `Is` keyword with known values
+C# will not use `isinst` when it "knows" the types are equal or not equal:
+```cs
+var fn = new delegate*<int>[1];
+Console.WriteLine(fn is delegate*<int>[]); // true
+Console.WriteLine(fn is delegate*<bool>[]); // false
+```
+```
+ldc.i4.1
+newarr     method int32 *()
+ldnull
+cgt.un
+call       void [System.Console]System.Console::WriteLine(bool)
+ldc.i4.0
+call       void [System.Console]System.Console::WriteLine(bool)
+```
 
-_* not sure how the `is` (`isinst`) is implemented in the CLR and whether we can get the same behavior as `castclass`._
+The C# compiler will also consider the `false` case warning CS0184: `The given expression is never of the provided...`.
+
+This disagreement with "known values" also appears with array variance:
+```cs
+Console.WriteLine(new int[1] is uint[]); // false
+Console.WriteLine(((object)new int[1]) is uint[]); // true
+```
+
+### With modifiers and non-signature types
+The above examples only compare parameter types without calling conventions or modifiers.
+
+For a non-signature type, since no modifiers are included in type identity, the identity is affected by the invisible "CallKind" byte which always differentiates between managed vs. unmanaged:
+```cs
+object o = new delegate*<int>[1];
+Console.WriteLine(o is delegate*<int>[]); // true
+Console.WriteLine(o is delegate* unmanaged[Cdecl]<int>[]); // false
+
+var fn = new delegate*<int>[1];
+Console.WriteLine(fn is delegate*<int>[]); // true
+Console.WriteLine(fn is delegate* unmanaged[Cdecl] <int>[]); // false
+```
+
+However, it may or may not differentiate between two unmanaged calling conventions since the newer ones are encoded with modifiers:
+```cs
+object o1 = new delegate* unmanaged[SuppressGCTransition]<int>[1];
+Console.WriteLine(o1 is delegate* unmanaged[MemberFunction]<int>[]); // 'true' since both encoded with modifiers
+
+object o2 = new delegate* unmanaged[CDecl]<int>[1];
+Console.WriteLine(o2 is delegate* unmanaged[StdCall]<int>[]); // 'false' since at least one encoded with CallKind
+```
+
+Different compilers may not use the "CallKind" byte, so the `false` case above could vary between compilers.
 
 All non-CallConv* modifiers, such as `ref\in\out\const` are not considered part of the type identity and are ignored unless the type is a signature type.
+
+### With modifiers and signature types
+Calling conventions are included in type identity:
+```cs
+public class Holder
+{
+    public unsafe delegate* unmanaged[SuppressGCTransition]<int> _f1;
+    public unsafe delegate* unmanaged[MemberFunction]<int> _f2;
+}
+
+Type fnType1 = typeof(Holder).GetField("_f1").GetSignatureFieldType();
+Type fnType2 = typeof(Holder).GetField("_f2").GetSignatureFieldType();
+
+Console.WriteLine(fnType1 == fnType2); // false
+```
+and other modifiers:
+```cs
+public class Holder
+{
+    public unsafe delegate*<in int, void> _f1;
+    public unsafe delegate*<ref int, void> _f2;
+}
+
+Type fnType1 = typeof(Holder).GetField("_f1").GetSignatureFieldType();
+Type fnType2 = typeof(Holder).GetField("_f2").GetSignatureFieldType();
+
+Console.WriteLine(fnType1 == fnType2); // false
+```
 
 ## Invoke capabilities
 ### ILGenerator
@@ -356,8 +474,8 @@ namespace System
         // These only work for types obtained from GetSignature*Type().
         // An empty Type[] is returned otherwise.
 +       public virtual Type[] GetFunctionPointerCallingConventions();
-+       public Type[] GetRequiredCustomModifiers();
-+       public Type[] GetOptionalCustomModifiers();
++       public virtual Type[] GetRequiredCustomModifiers();
++       public virtual Type[] GetOptionalCustomModifiers();
     }
 }
 ```
@@ -389,26 +507,26 @@ Debug.Assert(type.GetFunctionPointerCallingConventions[1] == typeof(CallConvMemb
 ```
 
 ## GetSignature*Type() methods for `FieldInfo`, `PropertyInfo` and `ParameterInfo`
-These return a function pointer `Type` that has references to custom modifiers.
+The default implementation is to return the value from the appropriate `FieldInfo.FieldType`, `PropertyInfo.PropertyType` or `ParameterInfo.ParameterType` property.
 
-If not a function pointer, these methods return the value from the appropriate `FieldInfo.FieldType`, `PropertyInfo.PropertyType` or `ParameterInfo.ParameterType` property.
+If the type is a function pointer, these return a function pointer `Type` instance that has references to custom modifiers. If there are no custom modifiers, then the default implementation is called.
 
 ```diff
 namespace System.Reflection
 {
-    public class FieldInfo
+    public abstract class FieldInfo
     {
-+       public Type GetSignatureFieldType();
++       public virtual Type GetSignatureFieldType() => FieldType;
     }
 
-    public class PropertyInfo
+    public abstract class PropertyInfo
     {
-+       public Type GetSignaturePropertyType();
++       public virtual Type GetSignaturePropertyType() => PropertyType;
     }
 
-    public class ParameterInfo
+    public abstract class ParameterInfo
     {
-+       public Type GetSignatureParameterType();
++       public virtual Type GetSignatureParameterType() => ParameterType;
     }
 }
 ```
