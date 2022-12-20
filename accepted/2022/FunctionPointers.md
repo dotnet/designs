@@ -520,18 +520,18 @@ namespace System.Reflection
 {
     public abstract class FieldInfo
     {
-+       public virtual Type? GetModifiedFieldType() => FieldType;
++       public virtual Type? GetModifiedFieldType() => null;
         // or "GetFieldModifiedType"?
     }
 
     public abstract class PropertyInfo
     {
-+       public virtual Type? GetModifiedPropertyType() => PropertyType;
++       public virtual Type? GetModifiedPropertyType() => null;
     }
 
     public abstract class ParameterInfo
     {
-+       public virtual Type? GetModifiedParameterType() => ParameterType;
++       public virtual Type? GetModifiedParameterType() => null;
     }
 }
 ```
