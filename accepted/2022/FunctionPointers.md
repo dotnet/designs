@@ -126,32 +126,12 @@ callKind : /* EMPTY */
  | 'unmanaged' 'thiscall' 
  | 'unmanaged' 'fastcall' 
 ```
-and in exposed in various enums and types. Here's the raw values:
-```
-CALLCONV_DEFAULT       = 0x0,  
-
-CALLCONV_VARARG        = 0x5,  
-CALLCONV_FIELD         = 0x6,  
-CALLCONV_LOCAL_SIG     = 0x7,  
-CALLCONV_PROPERTY      = 0x8,  
-CALLCONV_UNMGD         = 0x9,  
-CALLCONV_GENERICINST   = 0xa,  
-CALLCONV_NATIVEVARARG  = 0xb,  
-CALLCONV_MAX           = 0xc,  
-
-CALLCONV_MASK          = 0x0f,  
-CALLCONV_HASTHIS       = 0x20,  
-CALLCONV_EXPLICITTHIS  = 0x40,  
-CALLCONV_GENERIC       = 0x10  
-```
 
 The calling convention is considered managed only if the callKind is "default" or "vararg" so the proposed `Type.IsUnmanagedFunctionPointer` does not require looking at the newer custom modifiers (at least currently; it is possible new managed calling conventions are introduced at some point that would require custom modifiers).
 
-C# only uses the newer custom modifiers (also called "modopts" for "modifiers that are optional") when necessary; see the [c# spec section](https://learn.microsoft.com/dotnet/csharp/language-reference/proposals/csharp-9.0/function-pointers#metadata-representation-of-calling-conventions). However, we should assume that other compilers may not use "CallKind" even when it could.
+When returning the calling conventions through `Type.GetFunctionPointerCallingConventions()` any calling convention encoded using "CallKind" will return the appropriate CallConv* type, just like it was added through a modifier. This normalization avoids having to expose the "CallKind" in the API and makes it simpler for callers since there is just a single method to return the calling conventions no matter how they were encoded. The `Type.IsUnmanagedFunctionPointer` property was added since there are not CallConv* types for managed that would otherwise have helped determine this.
 
-When returning the calling conventions through `Type.GetFunctionPointerCallingConventions()` any calling convention encoded using "CallKind" will return the appropriate CallConv* type, just like it was added through a modifier. This normalization avoids having to expose the "CallKind" in the API and makes it simpler for callers since there is just a single method to return the calling conventions no matter how they were encoded. The `Type.IsUnmanagedFunctionPointer` property was added since there are not CallConv* types for mananged that would otherwise have helped determine this.
-
-Internally in the runtime, the "CallKind" information will no longer be tracked by the function pointer type. Currently it is tracked, but that will change for unmodified types to just detecting "default" and "vararg" only to avoid inconsistent equality checks across function pointer types that differ only how unmanaged parameter types are encoded in metadata (either in "CallKind" or as a modifier - either could be used to represent the same calling convention in metadata).
+Internally in the runtime, the "CallKind" information will no longer be tracked by the function pointer type. Currently it is tracked, but that will change for unmodified types to just detecting managed (via "default" and "vararg") to avoid inconsistent semantics across the older "CallKind" and newer "modopts" encoding formats.
 
 ### _Off-topic thoughts on using custom modifiers to represent calling conventions_
 Using the CallConv* classes to represent calling conventions was added in V6 because new callling conventions needed to be added and would not fit within the 4 bits that were being used to encode the existing calling conventions based on ECMA-335. So the decision, arguably not the best, was made to encode new calling conventions using custom modifiers since that would not affect existing metadata readers or require a ECMA-335 change. However, there are alternative approaches which may or may not have been considered -- one such approach would be to change the encompassing byte to be a 32-bit compressed integer encoding instead which .NET/CLI uses extensively elsewhere. This compressed integer approach is possible since the encompassing byte did not use bit 7 (`0x80`) which is the flag for a compressed integer to switch from one byte to two bytes. This would require a ECMA-335 change which would break other metadata readers once two+ bytes are used.
