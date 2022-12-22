@@ -1,6 +1,6 @@
 # Function Pointers
 #### Steve Harter
-#### December 20, 2022
+#### December 22, 2022
 
 # Background
 For additional context, see:
@@ -11,27 +11,42 @@ For additional context, see:
 
 Function pointers, which have been in ECMA-335 and used by the CLR since the beginning were only recently supported by C# in C# v9 and .NET v6. However, the .NET type system has not been updated to directly support them and they are currently exposed as the `IntPtr` type:
 ```cs
-Type type = typeof(delegate*<int, bool>); // System.IntPtr (currently)
+Type type = typeof(delegate*<int>);
+Console.WriteLine(type == typeof(IntPtr)); // true (currently)
+
+Type type2 = typeof(delegate*<string>);
+Console.WriteLine(type == type2); // true (every function pointer is an IntPtr)
 ```
 
 Reflection also returns `IntPtr` for both runtime-reflection through `FieldInfo\ParameterInfo\PropertyInfo` and static-reflection through `MetadataLoadContext`:
 ```cs
-  FieldInfo fi = typeof(MyClass).GetField("_fn");
-  Type type = fi.FieldType; // System.IntPtr (currently)
+FieldInfo fi = typeof(MyClass).GetField("_fn");
+Console.WriteLine(fi.FieldType == typeof(IntPtr)); // true (currently)
 
-  unsafe class MyClass
-  {
-      public delegate*<int, bool> _fn; // A field as a function pointer
-  }
+unsafe class MyClass
+{
+    public delegate*<int> _fn; // A field as a function pointer
+}
 ```
 
-Treating function pointers as `IntPtr` essentially makes reflection introspection impossible, blocking scenarios that care about function pointers. The proposal is to change from `IntPtr` to `Type` which is a **breaking change**:
+Treating function pointers as `IntPtr` essentially makes reflection introspection impossible since everything is `typeof(IntPtr)`, blocking scenarios that care about function pointers. The proposal is to change from `typeof(IntPtr)` to having have a unique `Type` instance for every function pointer signature (ignoring the calling convention -- more on that later).
 ```cs
-Type type = typeof(delegate*<int, bool>); // System.Type (proposed design)
-bool isFunctionPointer = type.IsFunctionPointer; // A new method which returns 'true' here
+// Proposed semantics:
+
+Type type = typeof(delegate*<int>);
+Console.WriteLine(type == typeof(IntPtr)); // false
+Console.WriteLine(type.IsFunctionPointer); // true (a new method)
+
+Type type2 = typeof(delegate*<int>);
+Console.WriteLine(type == type2); // true (same Type instance)
+
+Type type3 = typeof(delegate*<string>);
+Console.WriteLine(type == type3); // false (each function pointer is a new Type instance)
 ```
 
-Note that Mono returns "System.MonoFNPtrFakeClass" for the type name, not "IntPtr". This design applies to Mono as well and is expected that both runtimes are consistent going forward.
+Changing the type semantics is a **breaking change**.
+
+Note that Mono returns "System.MonoFNPtrFakeClass" for the type name. This design applies to Mono as well and is expected that both runtimes are consistent going forward.
 
 ## Function pointer metadata
 A function pointer, as an ECMA-335 signature, is non-trivial and contains the following metadata:
@@ -153,9 +168,6 @@ For additional information on encoding, see ECMA-335 `II.23.2 Blobs and signatur
 Previous discussions included the suggestion that both calling conventions and modified types are only exposed from the [`MetadataLoadContext`](https://learn.microsoft.com/dotnet/api/system.reflection.metadataloadcontext) class since it is the preferred approach to read metadata (vs. runtime reflection) due to being agnostic to the runtime referenced by the various reflected types. However, this design proposes full fidelity between the runtime and `MetadataLoadContext` (other runtimes besides the CoreCLR, including Mono and AOT runtimes, will need to be updated of course).
 
 Note that the `Type.IsUnmanagedFunctionPointer` property works for both modified and unmodified types.
-
-For This design assumes (1) - expose only for modified types even though there are some equality issues.
- types, since we must already do the work of exposing the calling conventions including the newer ones that are read via custom modifiers, it makes sense then to expose all custom modifieres via the new `Type.GetRequiredCustomModifiers()` and `Type.GetOptionalCustomModifiers()`.
 
 ## Type identity
 
@@ -475,10 +487,6 @@ namespace System
 +       public virtual Type[] GetOptionalCustomModifiers();
         // Throws InvalidOperationException if UnderlyingSystemType.IsFunctionPointer = false
 +       public virtual Type[] GetFunctionPointerCallingConventions(); 
-
-        // This is used with 'Type.GetMethod(..., Type[] types)' to find a method with parameters that
-        // are function pointers. For a similar reference, see Type.MakePointerType().
-+       public static Type MakeFunctionPointerType(Type[] functionPointerArguments);
     }
 }
 ```
@@ -628,12 +636,41 @@ namespace System.Reflection
 }
 ```
 
+## Support Type.GetMethod()
+If a user tries to retrieve a Method through [`Type.GetMethod()`](https://learn.microsoft.com/dotnet/api/system.type.getmethod) that has function pointer arguments specified by the `Type[]` passed into that method, the current design throws `NotSupportedException` since we don't have a good way to specify the custom modifiers for each parameter in the API (see below -- requires "MethodSignature").
+
+The workaround is to have the caller manually loop through the `MethodInfo`s returned from `Type.GetMethods()` and perform the filtering there.
+
+```diff
+    public abstract class Type
+    {
+        // This is used with 'Type.GetMethod(..., Type[] types)' to find a method with parameters that
+        // are function pointers. For a similar reference, see Type.MakeGenericSignatureType().
++       public static Type MakeFunctionPointerType(Type[] functionPointerArguments, Type returnType, bool isUnmanaged);
+
+        // For unmanaged methods, we need to specify the modopts, so something like the proposed MethodSignature below
++       public static Type MakeFunctionPointerType(MethodSignature functionPointerArguments);
+        // which is preferred over something like this:
+        public static Type MakeFunctionPointerType(
+            Type[] argumentTypes,
+            Type[,] argumentOptionalModifiers,
+            Type[,] argumentRequiredModifiers,
+            Type[] returnType,
+            Type[] returnTypeOptionalModifiers,
+            Type[] returnTypeRequiredModifiers,
+            bool isUnmanaged);
+
+        // For the entire argument, like a 'const' parameter in C++/CLI, something like this?
++       public static Type MakeModifiedType(Type underlyingType, Type[] optionalMods, Type[] requiredMods);
+    }
+```
+
 ## System.Reflection.MethodSignature
 Currently this is called "MethodSignature" with the intention that this may also support `MethodBase` and\or `Delegate` in the future.  If that was not the case, this would be called "FunctionPointerSignature".
 
 Shown is support for a late-bound invoke analogous to [Delegate.DynamicInvoke](https://docs.microsoft.com/dotnet/api/system.delegate.dynamicinvoke) and [MethodBase.Invoke](https://docs.microsoft.com/dotnet/api/system.reflection.methodbase.invoke).
 
-We may also want to add an overload to `ILGenerator.EmitCalli()` to take a "MethodSignature".
+We may also want to add an overload to `ILGenerator.EmitCalli()` to take a "MethodSignature" and to the future "Type.MakeFunctionPointerType()".
 
 `Type` exposes various methods to construct pointers, arrays and generics through `Type.MakePointerType()` etc. However, there is no proposal for V8 to add similar methods to function pointers. The "MethodSignature" class would assist with that, and could either be passed as-is to represent function pointer metadata, or we could expose a `Type CreateFunctionPointerType()` method.
 
