@@ -144,7 +144,7 @@ callKind : /* EMPTY */
 
 The calling convention is considered managed only if the callKind is "default" or "vararg" so the proposed `Type.IsUnmanagedFunctionPointer` does not require looking at the newer custom modifiers (at least currently; it is possible new managed calling conventions are introduced at some point that would require custom modifiers).
 
-When returning the calling conventions through `Type.GetFunctionPointerCallingConventions()` any calling convention encoded using "CallKind" will return the appropriate CallConv* type, just like it was added through a modifier. This normalization avoids having to expose the "CallKind" in the API and makes it simpler for callers since there is just a single method to return the calling conventions no matter how they were encoded. The `Type.IsUnmanagedFunctionPointer` property was added since there are not CallConv* types for managed that would otherwise have helped determine this.
+When returning the calling conventions through `Type.GetFunctionPointerCallingConventions()`, any calling convention encoded using "CallKind" will return the appropriate CallConv* type, just like it was added through a modifier. This normalization avoids having to expose the "CallKind" in the API and makes it simpler for callers since there is just a single method to return the calling conventions no matter how they were encoded. The `Type.IsUnmanagedFunctionPointer` property was added since there are not CallConv* types for managed that would otherwise have helped determine this.
 
 Internally in the runtime, the "CallKind" information will no longer be tracked by the function pointer type. Currently it is tracked, but that will change for unmodified types to just detecting managed (via "default" and "vararg") to avoid inconsistent semantics across the older "CallKind" and newer "modopts" encoding formats.
 
@@ -152,7 +152,7 @@ Internally in the runtime, the "CallKind" information will no longer be tracked 
 Using the CallConv* classes to represent calling conventions was added in V6 because new callling conventions needed to be added and would not fit within the 4 bits that were being used to encode the existing calling conventions based on ECMA-335. So the decision, arguably not the best, was made to encode new calling conventions using custom modifiers since that would not affect existing metadata readers or require a ECMA-335 change. However, there are alternative approaches which may or may not have been considered -- one such approach would be to change the encompassing byte to be a 32-bit compressed integer encoding instead which .NET/CLI uses extensively elsewhere. This compressed integer approach is possible since the encompassing byte did not use bit 7 (`0x80`) which is the flag for a compressed integer to switch from one byte to two bytes. This would require a ECMA-335 change which would break other metadata readers once two+ bytes are used.
 
 ## Modified types
-Obtaining all custom modifiers including `ref\out\in` is useful for those who read metadata for varying reasons. The proposal to support that is to expose functionality that returns a "modified type" which, for function pointers, is a wrapper over the unmodified function pointer and intercepts calls to `GetFunctionPointerParameters()` to return a "modified type" for each parameter. From that parameter modified type, `GetRequiredCustomModifiers()` and `GetOptionalCustomModifiers()` can be used.
+Obtaining all custom modifiers including `ref\out\in` is useful for those who read metadata for varying reasons. The proposal to support that is to expose functionality that returns a "modified type" which, for function pointers, is a wrapper over the unmodified function pointer and overrides `GetFunctionPointerParameters()` to return a potential "modified type" for each parameter. From those modified types, `GetRequiredCustomModifiers()` and `GetOptionalCustomModifiers()` can be used.
 
 A modified type always start with a "root" function pointer obtained from `FieldInfo.GetModifiedFieldType()`, `PropertyInfo.GetModifiedPropertyType()` and `ParameterInfo.GetModifiedParameterType()`. **discussion topic**: a modified type "tree" ends with the modified parameter types. For example, if a field is a function pointer that has parameters and those parameters are also function pointers, the secondary function pointers are not accessible as modified types. This limitation was added to simplify the design. Without it, an N-level tree of modified types would need to be created, recusively. It is possible to add this in the future, however.
 
@@ -286,9 +286,7 @@ Console.WriteLine(o2 is delegate* unmanaged[StdCall]<int>[]); // true
 In addition, all non-CallConv* modifiers, such as `ref\in\out\const` are not considered part of the type identity either.
 
 ### With modified types
-A modified type is a simple wrapper that does not forward the other various `Type` members to the underlying type. It does, however intercept `GetFunctionPointerParameters()` to return modified type parameters. It also implements `GetOptionalCustomModifiers()` and `GetRequiredCustomModifiers()` which throw on unmodified types.
-
-Thus there isn't a `Type` identity for a modified type since it is created lazily and not cached. Comparing using `==` or `Equals()` will return `false`.
+A modified type acts like the underlying type with the exception that it overrides `GetFunctionPointerParameters()` to return the modified parameter types. It has an identity separate than the underlying types.
 
 ```cs
 public class Holder
@@ -296,18 +294,19 @@ public class Holder
     public unsafe delegate* unmanaged[SuppressGCTransition]<int> _field;
 }
 
-Type modifiedType = typeof(Holder).GetField("_field").GetModifiedFieldType()!;
+Type modifiedType = typeof(Holder).GetField("_field").GetModifiedFieldType();
 Console.WriteLine(modifiedType.IsModifiedType); // true
-Console.WriteLine(modifiedType.UnderlyingSystemType); // (function pointer)
+Console.WriteLine(modifiedType.UnderlyingSystemType); // (unmodified function pointer)
 Console.WriteLine(modifiedType.IsFunctionPointer); // false
 Console.WriteLine(modifiedType.UnderlyingSystemType.IsFunctionPointer); // true
 
 Console.WriteLine(modifiedType.GetFunctionPointerCallingConventions().Length); // 2
 Console.WriteLine(modifiedType.GetFunctionPointerCallingConventions[0]); // CallConvCdecl
+Console.WriteLine(modifiedType.GetFunctionPointerCallingConventions[0].IsModifiedType); // true
 Console.WriteLine(modifiedType.GetFunctionPointerCallingConventions[1]); // CallConvMemberFunction
 
-Type modifiedType2 = typeof(Holder).GetField("_field").GetModifiedFieldType()!; // same field...
-Console.WriteLine(modifiedType == modifiedType2); // false (a different type instance; not cached)
+Type modifiedType2 = typeof(Holder).GetField("_field").GetModifiedFieldType(); // same field...
+Console.WriteLine(modifiedType == modifiedType2); // true (same instance)
 ```
 
 ## Invoke capabilities
@@ -455,9 +454,7 @@ Returns `UnderlyingSystemType.ToString()`. We could return a string representati
 A modified type is an internal class called "System.RuntimeModifiedType" class that derives from a "System.ModifiedType" which derives from "System.Type". So these methods just return the expected values there.
 
 ### `GetFunctionPointerParameters()`
-This returns modified types for each function pointer parameter which allows the user to call `GetRequiredCustomModifiers()` or `GetOptionalCustomModifiers()`.
-
-This is listed here since this method also works on unmodified types, although unmodified types don't allow `GetRequiredCustomModifiers()` or `GetOptionalCustomModifiers()` to be called (an `InvalidOperationException` is thrown).
+This returns modified types for each function pointer parameter which allows the user to call `GetRequiredCustomModifiers()` or `GetOptionalCustomModifiers()`. A modified type is only returned if necessary (if it has custom modifiers).
 
 # Proposed APIs
 ## System.Type
@@ -482,10 +479,11 @@ namespace System
         // Updated semantics: if IsModifiedType = true, returns the unmodified type such as `typeof(Int32)`.
         public virtual bool UnderlyingSystemType { get; }
 
-        // These only work if IsModifiedType = true. InvalidOperationException otherwise.
+        // At least one of these return a non-empty value if IsModifiedType = false.
 +       public virtual Type[] GetRequiredCustomModifiers();
 +       public virtual Type[] GetOptionalCustomModifiers();
-        // Throws InvalidOperationException if UnderlyingSystemType.IsFunctionPointer = false
+
+        // Throws InvalidOperationException if IsFunctionPointer = false
 +       public virtual Type[] GetFunctionPointerCallingConventions(); 
     }
 }
@@ -513,13 +511,13 @@ Debug.Assert(type.GetFunctionPointerParameterTypes()[0] == typeof(int));
 ```
 
 ## GetModified*Type() methods for `FieldInfo`, `PropertyInfo` and `ParameterInfo`
-If the type returned from the corresponding `FieldInfo.FieldType`, `PropertyInfo.PropertyType` or `ParameterInfo.ParameterType` is not a function pointer, then the return type is `null`.
+If the return type is from the corresponding `FieldInfo.FieldType`, `PropertyInfo.PropertyType` or `ParameterInfo.ParameterType` is a function pointer and has custom modifiers, then a "modified type" is returned which is a wrapper over the type returned from `FieldType \ PropertyType \ Parametertype`. That type will have the property `IsModifierType = true`.
 
-**discussion: we could also return the underlying, unmodified function pointer type. This requires the caller to always check `IsModifiedType` before using the members like `GetFunctionPointerCallingConventions()`.**
+If the return type is not a function pointer, or a function pointer without any custom modifiers, then the value from FieldType etc. will be returned which will have `IsModifierType = false`.
 
-However, if the return type is a function pointer, then a "modified type" is returned which is a wrapper over the type returned from `FieldType \ PropertyType \ Parametertype`. 
+The API is designed so that the user can call `GetModified*Type()` and use the returned type without concern whether the original type was a function pointer or whether it has custom modifiers. To help with this, an unmodified type returns an empty array for `GetOptionalCustomModifiers()` and `GetRequiredCustomModifiers()` instead of throwing. If a modified type is returned (meaning the type is a function pointer with custom modifiers), then the modified type forwards all other members to the underlying type so it acts like the underlying function pointer type in other regards (except equality).
 
-Each type returned from `GetFunctionPointerParameterTypes()`, whether a primitive such as `String` or a user-defined class, is considered a modified type that contains any custom modifiers present on the parameter declaration, such as `ref\out\in`. If it contains no modifiers, it is essentially an empty type with just a reference to its underlying type, such as `String`.
+Each type returned from `GetFunctionPointerParameterTypes()`, whether a primitive such as `String` or a user-defined class, is considered a modified type that contains any custom modifiers present on the parameter declaration, such as `ref\out\in`.
 
 From a modified parameter type, the custom modifiers can be accessed via `GetOptionalCustomModifiers()` and `GetRequiredCustomModifiers()`.
 
@@ -528,18 +526,18 @@ namespace System.Reflection
 {
     public abstract class FieldInfo
     {
-+       public virtual Type? GetModifiedFieldType() => null;
++       public virtual Type GetModifiedFieldType() => throw new NotSupportedException();
         // or "GetFieldModifiedType"?
     }
 
     public abstract class PropertyInfo
     {
-+       public virtual Type? GetModifiedPropertyType() => null;
++       public virtual Type GetModifiedPropertyType() => throw new NotSupportedException();
     }
 
     public abstract class ParameterInfo
     {
-+       public virtual Type? GetModifiedParameterType() => null;
++       public virtual Type GetModifiedParameterType() => throw new NotSupportedException();
     }
 }
 ```
