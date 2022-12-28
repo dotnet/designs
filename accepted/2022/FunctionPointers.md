@@ -1,6 +1,6 @@
 # Function Pointers
 #### Steve Harter
-#### December 22, 2022
+#### December 28, 2022
 
 # Background
 For additional context, see:
@@ -100,7 +100,7 @@ Type t3 = typeof(MethodHolder).GetMethod("M3").GetParameters()[0].ParameterType;
 Debug.Assert(t1 == t2 && t2 == t3); // True today; all are "int reference type" (int&)
 ```
 
-Also consider [ILGenerator.EmitCalli()](https://docs.microsoft.com/dotnet/api/system.reflection.emit.ilgenerator.emitcalli#system-reflection-emit-ilgenerator-emitcalli(system-reflection-emit-opcode-system-runtime-interopservices-callingconvention-system-type-system-type())) as a reference implementation which does not support modifiers:
+Also consider [ILGenerator.EmitCalli()](https://learn.microsoft.com/dotnet/api/system.reflection.emit.ilgenerator.emitcalli#system-reflection-emit-ilgenerator-emitcalli(system-reflection-emit-opcode-system-runtime-interopservices-callingconvention-system-type-system-type())) as a reference implementation which does not support modifiers:
 ```cs
 void EmitCalli(
     System.Reflection.Emit.OpCode opcode,
@@ -113,12 +113,12 @@ So custom modifiers, except for calling convensions, are not exposed in the runt
 
 ## Custom modifiers for calling convention
 The only custom modifiers exposed by the runtime are the built-in classes representing calling conventions - these classes are named `System.Runtime.InteropServices.CallConv*`:
-- [CallConvCdecl](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvcdecl)
-- [CallConvStdCall](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvstdcall)
-- [CallConvThiscall](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvthiscall)
-- [CallConvFastcall](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvfastcall)
-- [CallConvSuppressGCTransition](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvsuppressgctransition)
-- [CallConvMemberFunction](https://docs.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvmemberfunction)
+- [CallConvCdecl](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvcdecl)
+- [CallConvStdCall](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvstdcall)
+- [CallConvThiscall](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvthiscall)
+- [CallConvFastcall](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvfastcall)
+- [CallConvSuppressGCTransition](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvsuppressgctransition)
+- [CallConvMemberFunction](https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.callconvmemberfunction)
 
 C# in particular just maps calling conventions specified in a function pointer to `System.Runtime.InteropServices.CallConv*` types as metadata. These CallConv* types must live in the same assembly as defines `System.Object` (i.e. `System.Private.Corelib.dll`).
 
@@ -291,7 +291,7 @@ A modified type acts like the underlying type with the exception that it overrid
 ```cs
 public class Holder
 {
-    public unsafe delegate* unmanaged[SuppressGCTransition]<int> _field;
+    public unsafe delegate* unmanaged[Cdecl, MemberFunction]<int> _field;
 }
 
 Type modifiedType = typeof(Holder).GetField("_field").GetModifiedFieldType();
@@ -306,7 +306,9 @@ Console.WriteLine(modifiedType.GetFunctionPointerCallingConventions[0].IsModifie
 Console.WriteLine(modifiedType.GetFunctionPointerCallingConventions[1]); // CallConvMemberFunction
 
 Type modifiedType2 = typeof(Holder).GetField("_field").GetModifiedFieldType(); // same field...
-Console.WriteLine(modifiedType == modifiedType2); // true (same instance)
+Console.WriteLine(modifiedType == modifiedType2); // true (types are equal - Type already overrides and compares against UnderlyingSystemType)
+Console.WriteLine(modifiedType.Equals(modifiedType.UnderlyingSystemType)); // true (modified and underlying types are equal)
+Console.WriteLine(ReferenceEquals(modifiedType, modifiedType2)); // undefined. The implementation is not required to return same instance.
 ```
 
 ## Invoke capabilities
@@ -397,14 +399,14 @@ ToString() result | Delegate signature
 "System.Boolean(System.String(System.Int32))" | `delegate*<delegate*<int, string>, bool>`
 
 ### `FullName` and `AssemblyQualifiedName` properties
-Returns `null`. This is a simplification that avoids a [type name grammar update](https://docs.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names) that would need to include grammar for custom modifiers as well as supporting  `Type.GetType()`, `Assembly.GetType()` and any other similar APIs that parse those strings in order to construct a function pointer from it.
+Returns `null`. This is a simplification that avoids a [type name grammar update](https://learn.microsoft.com/dotnet/framework/reflection-and-codedom/specifying-fully-qualified-type-names) that would need to include grammar for custom modifiers as well as supporting  `Type.GetType()`, `Assembly.GetType()` and any other similar APIs that parse those strings in order to construct a function pointer from it.
 
 Support for a grammar update is possible in the future, with a minimal breaking change here.
 
 Note that this property is already nullable and does return `null` in open generic parameters cases as well.
 
 ### `Name` property
-Returns `String.Empty()`. Any other syntax here is somewhat arbitrary, and since the property is not nullable, the empty string seems fine unless a compelling reason is found. 
+Returns `string.Empty`. Any other syntax here is somewhat arbitrary, and since the property is not nullable, the empty string seems fine unless a compelling reason is found to add a syntax. 
 
 Other options discussed include "`*()`" and "`*(comma_for_each_parameter)`". Consider that generics do not provide parameter type information either:
 ```cs
@@ -501,7 +503,7 @@ Debug.Assert(type.GetFunctionPointerParameterTypes()[0] == typeof(int));
 
 ```cs
 // Simple unmanaged function pointer
-Type type = typeof(delegate* unmanaged[Cdecl, MemberFunction]<int, bool>);
+Type type = typeof(delegate* unmanaged[Cdecl]<int, bool>);
 Debug.Assert(type.IsFunctionPointer == true);
 Debug.Assert(type.IsUnmanagedFunctionPointer == true);
 Debug.Assert(type.GetFunctionPointerReturnType() == typeof(bool));
@@ -511,9 +513,9 @@ Debug.Assert(type.GetFunctionPointerParameterTypes()[0] == typeof(int));
 ```
 
 ## GetModified*Type() methods for `FieldInfo`, `PropertyInfo` and `ParameterInfo`
-If the return type is from the corresponding `FieldInfo.FieldType`, `PropertyInfo.PropertyType` or `ParameterInfo.ParameterType` is a function pointer and has custom modifiers, then a "modified type" is returned which is a wrapper over the type returned from `FieldType \ PropertyType \ Parametertype`. That type will have the property `IsModifierType = true`.
+If the return type is from the corresponding `FieldInfo.FieldType`, `PropertyInfo.PropertyType` or `ParameterInfo.ParameterType` is a function pointer and has custom modifiers, then a "modified type" is returned which is a wrapper over the type returned from `FieldType \ PropertyType \ Parametertype`. That type will have the property `IsModifiedType= true`.
 
-If the return type is not a function pointer, or a function pointer without any custom modifiers, then the value from FieldType etc. will be returned which will have `IsModifierType = false`.
+If the return type is not a function pointer, or a function pointer without any custom modifiers, then the value from FieldType etc. will be returned which will have `IsModifiedType= false`.
 
 The API is designed so that the user can call `GetModified*Type()` and use the returned type without concern whether the original type was a function pointer or whether it has custom modifiers. To help with this, an unmodified type returns an empty array for `GetOptionalCustomModifiers()` and `GetRequiredCustomModifiers()` instead of throwing. If a modified type is returned (meaning the type is a function pointer with custom modifiers), then the modified type forwards all other members to the underlying type so it acts like the underlying function pointer type in other regards (except equality).
 
@@ -584,7 +586,7 @@ namespace System.Reflection
 ```
 
 ## System.Reflection.Emit.ILGenerator
-See the existing [ILGenerator.EmitCalli()](https://docs.microsoft.com/dotnet/api/system.reflection.emit.ilgenerator.emitcalli#system-reflection-emit-ilgenerator-emitcalli) for reference.
+See the existing [ILGenerator.EmitCalli()](https://learn.microsoft.com/dotnet/api/system.reflection.emit.ilgenerator.emitcalli#system-reflection-emit-ilgenerator-emitcalli) for reference.
 ```diff
 namespace System.Reflection.Emit
 {
@@ -617,7 +619,7 @@ Various features not planned for 8.0; somewhat discussed earlier.
 Including `Type.GetType()` and similar APIs to parse that string to construct a function pointer type dynamically.
 
 ## `System.Reflection.FunctionPointer` for `System.Object`-based invoke
-See the existing [System.Reflection.Pointer](https://docs.microsoft.com/dotnet/api/system.reflection.pointer) for reference. This would allow passing strongly-typed, validated function pointers when using `System.Object`-based invoke. Naming of Box\Unbox vs. constructors etc. is TBD.
+See the existing [System.Reflection.Pointer](https://learn.microsoft.com/dotnet/api/system.reflection.pointer) for reference. This would allow passing strongly-typed, validated function pointers when using `System.Object`-based invoke. Naming of Box\Unbox vs. constructors etc. is TBD.
 
  This is a value type, not a reference type like `Pointer`, since newer proposed reflection APIs will not force boxing to occur.
 
@@ -635,27 +637,29 @@ namespace System.Reflection
 ```
 
 ## Support Type.GetMethod()
-If a user tries to retrieve a Method through [`Type.GetMethod()`](https://learn.microsoft.com/dotnet/api/system.type.getmethod) that has function pointer arguments specified by the `Type[]` passed into that method, the current design throws `NotSupportedException` since we don't have a good way to specify the custom modifiers for each parameter in the API (see below -- requires "MethodSignature").
+If a user tries to retrieve a Method through [`Type.GetMethod()`](https://learn.microsoft.com/dotnet/api/system.type.getmethod) that has function pointer arguments specified by the `Type[]` passed into that method, the current design throws `NotSupportedException` since we don't have a good way to specify the custom modifiers for each parameter in the API assuming the function pointer signature isn't known at compile-time. If the function pointer signature is known at compile-time, which is likely an edge case, we could support a function pointer type (e.g., `typeof(delegate*<bool>)`) passed to `Type.GetMethod()` since the parameters and modifiers can be compared for equality.
 
-The workaround is to have the caller manually loop through the `MethodInfo`s returned from `Type.GetMethods()` and perform the filtering there.
+The workaround to not adding any new functionality here is to have the caller manually loop through the `MethodInfo`s returned from `Type.GetMethods()` and perform the filtering there. This was the approach used with generic methods for quite some time before `Type.GetMethod()` overloads were added for generics.
 
 ```diff
     public abstract class Type
     {
         // This is used with 'Type.GetMethod(..., Type[] types)' to find a method with parameters that
         // are function pointers. For a similar reference, see Type.MakeGenericSignatureType().
-+       public static Type MakeFunctionPointerType(Type[] functionPointerArguments, Type returnType, bool isUnmanaged);
+        // We should also support strongly-typed, runtime function pointer types passed to 'Type.GetMethod()'
+        // like 'typeof(delegate*<bool>)'.
++       public static Type MakeFunctionPointerType(Type returnType, Type[] parameterTypes, bool isUnmanaged);
 
         // For unmanaged methods, we need to specify the modopts, so something like the proposed MethodSignature below
 +       public static Type MakeFunctionPointerType(MethodSignature functionPointerArguments);
-        // which is preferred over something like this:
+        // or something like what MethodBuilder.SetSignature uses:
         public static Type MakeFunctionPointerType(
-            Type[] argumentTypes,
-            Type[,] argumentOptionalModifiers,
-            Type[,] argumentRequiredModifiers,
-            Type[] returnType,
-            Type[] returnTypeOptionalModifiers,
-            Type[] returnTypeRequiredModifiers,
+            Type returnType,
+            Type[]? returnTypeRequiredCustomModifiers,
+            Type[]? returnTypeOptionalCustomModifiers,
+            Type[]? parameterTypes,
+            Type[][]? parameterTypeRequiredCustomModifiers,
+            Type[][]? parameterTypeOptionalCustomModifiers,
             bool isUnmanaged);
 
         // For the entire argument, like a 'const' parameter in C++/CLI, something like this?
@@ -666,7 +670,7 @@ The workaround is to have the caller manually loop through the `MethodInfo`s ret
 ## System.Reflection.MethodSignature
 Currently this is called "MethodSignature" with the intention that this may also support `MethodBase` and\or `Delegate` in the future.  If that was not the case, this would be called "FunctionPointerSignature".
 
-Shown is support for a late-bound invoke analogous to [Delegate.DynamicInvoke](https://docs.microsoft.com/dotnet/api/system.delegate.dynamicinvoke) and [MethodBase.Invoke](https://docs.microsoft.com/dotnet/api/system.reflection.methodbase.invoke).
+Shown is support for a late-bound invoke analogous to [Delegate.DynamicInvoke](https://learn.microsoft.com/dotnet/api/system.delegate.dynamicinvoke) and [MethodBase.Invoke](https://learn.microsoft.com/dotnet/api/system.reflection.methodbase.invoke).
 
 We may also want to add an overload to `ILGenerator.EmitCalli()` to take a "MethodSignature" and to the future "Type.MakeFunctionPointerType()".
 
