@@ -148,7 +148,7 @@ public sealed class RequiresPreviewFeaturesAttribute : Attribute
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
     public RequiresPreviewFeaturesAttribute() {}
-        : this(PreviewScope.LibraryAndPlatform, message) {}
+        : this(PreviewScope.LibraryAndPlatform) {}
 
     [EditorBrowsable(EditorBrowsableState.Never)]
     public RequiresPreviewFeaturesAttribute(string? message)
