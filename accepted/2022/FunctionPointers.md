@@ -214,10 +214,10 @@ Console.WriteLine(modifiedType.IsArray); // true
 Type fcnPointerType = modifiedType.GetElementType();
 
 // The nested type is a modified type:
-Console.WriteLine(fcnPointerType.UnderlyingSystemType != null); // true (we have a modified type)
+Console.WriteLine(fcnPointerType.UnderlyingSystemType == fcnPointerType); // false (we have a modified type)
 Type paramType = fcnPointerType.GetFunctionPointerParameterTypes()[0];
 
-Console.WriteLine(paramType.UnderlyingSystemType != null); // true (the 'int' param type is also a modified type)
+Console.WriteLine(paramType.UnderlyingSystemType == paramType); // false (the 'int' param type is also a modified type)
 Console.WriteLine(paramType == typeof(int)); // false (a modified type is != to the unmodified)
 Console.WriteLine(paramType.UnderlyingSystemType == typeof(int)); // true
 
@@ -244,7 +244,7 @@ public struct MyStruct
 Type modifiedType = typeof(Holder).GetField("_myStruct").GetModifiedFieldType();
 Type nestedType = modifiedType.GetFunctionPointerParameterTypes()[0];
 // The referenced MyClass type is not a modified type:
-Console.WriteLine(nestedType.UnderlyingSystemType == null); // true
+Console.WriteLine(nestedType.UnderlyingSystemType == nestedType); // true
 ```
 
 ## Supporting both runtime- and and static-reflection
@@ -380,7 +380,7 @@ public class Holder
 
 Type modifiedType = typeof(Holder).GetField("_field").GetModifiedFieldType();
 Console.WriteLine(modifiedType.IsFunctionPointer); // true
-Console.WriteLine(modifiedType.UnderlyingSystemType != null); // true (unmodified function pointer)
+Console.WriteLine(modifiedType.UnderlyingSystemType == modifiedType); // false
 Console.WriteLine(modifiedType.UnderlyingSystemType.IsFunctionPointer); // true
 
 Console.WriteLine(modifiedType.GetFunctionPointerCallingConventions().Length); // 2
@@ -572,12 +572,12 @@ Debug.Assert(type.GetFunctionPointerParameterTypes()[0] == typeof(int));
 ## GetModified*Type() methods for `FieldInfo`, `PropertyInfo` and `ParameterInfo`
 If the return type is from the corresponding `FieldInfo.FieldType`, `PropertyInfo.PropertyType` or `ParameterInfo.ParameterType` is a function pointer and has custom modifiers, then a "modified type" is returned which is a wrapper over the type returned from `FieldType \ PropertyType \ Parametertype`. That type's `UnderlyingSystemType` property will be the non-null, unmodified function pointer type.
 
-If the return type is not a function pointer, or a function pointer without any custom modifiers, then the value from FieldType etc. will be returned which will have `UnderlyingSystemType == null`.
+If the return type is not a function pointer, or a function pointer without any custom modifiers, then the value from FieldType etc. will be returned which will have `this.UnderlyingSystemType != this`.
 
 The API is designed so that the user can call `GetModified*Type()` and use the returned type without concern whether the original type was a function pointer or whether it has custom modifiers. To help with this, an unmodified type returns an empty array for `GetOptionalCustomModifiers()` and `GetRequiredCustomModifiers()` instead of throwing. If a modified type is returned (meaning the type is a function pointer with custom modifiers), then the modified type forwards all other members to the underlying type so it acts like the underlying function pointer type in other regards (except equality). Because of this, there is no need for a "IsModifiedType" property. To check if a type is modified:
 ```cs
 Type someType = ...
-bool isModifiedFunctionPointer = someType.IsFunctionPointer && someType.UnderlyingSystemType != null;
+bool isModifiedFunctionPointer = someType.IsFunctionPointer && someType.UnderlyingSystemType != someType;
 ```
 
 Each type returned from `GetFunctionPointerParameterTypes()`, whether a primitive such as `String` or a user-defined class, is considered a modified type that contains any custom modifiers present on the parameter declaration, such as `ref\out\in`.
