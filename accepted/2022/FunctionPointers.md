@@ -1,6 +1,6 @@
 # Function Pointers
 #### Steve Harter
-#### January 5, 2023
+#### January 9, 2023
 
 # Background
 For additional context, see:
@@ -154,9 +154,9 @@ Using the CallConv* classes to represent calling conventions was added in V6 bec
 ## Modified types
 Obtaining all custom modifiers including `ref\out\in` is useful for those who read metadata for varying reasons. The proposal to support that is to expose functionality that returns a "modified type" which, for function pointers, is a wrapper over the unmodified function pointer and overrides `GetFunctionPointerParameterTypes()` to return a potential "modified type" for each parameter. From those modified types, `GetRequiredCustomModifiers()` and `GetOptionalCustomModifiers()` can be used.
 
-A modified type always start with a "root" function pointer obtained from `FieldInfo.GetModifiedFieldType()`, `PropertyInfo.GetModifiedPropertyType()` and `ParameterInfo.GetModifiedParameterType()`.
+A modified type always starts with a "root" type obtained from `FieldInfo.GetModifiedFieldType()`, `PropertyInfo.GetModifiedPropertyType()` and `ParameterInfo.GetModifiedParameterType()`. A root type may be a function pointer, array, pointer (`*`) or reference (`&`) type and nested modified types may be returned recursively (such as a pointer-to-pointer-to-functionpointer). A function pointer also returns modifified types when obtaining its return type or parameter types, since those may have custom modifiers.
 
-The actual, underlying type is obtained through the existing `Type.UnderlyingSystemType` property. Note that type delegation through `TypeDelegator` also uses this property in a similar way.
+The actual, underlying type of a modified type is obtained through the existing `Type.UnderlyingSystemType` property.
 
 This "modified type" terminology is used internally elsewhere including the CLR, `MetadataLoadContext` and `MetadataReader`. A "unmodified" type is a standard type that does not have any custom modifiers, even though in metadata it may.
 
@@ -164,7 +164,7 @@ In CLI metadata, only fields, properties, local variables, method parameters and
 
 For additional information on encoding, see ECMA-335 `II.23.2 Blobs and signatures`. Note that in C# a function pointer is emitted as an ECMA "StandaloneMethodSig". There are several other types of custom modifiers besides the calling convention ones. For example, in C#, a field is also a "signature" and can have a `volatile` modifier which is emitted as a custom modifier and will be returned via `FieldInfo.GetModifiedFieldType().GetRequiredCustomModifiers()` as the `System.Runtime.CompilerServices.IsVolatile` type. In C++\CLI there are additional modifiers including `System.Runtime.CompilerServices.IsConst`.
 
-Addressing modified type correctly means also supporting "nested types" including
+Supporting modified types correctly means also supporting "nested types" including
 - Arrays
 ```cs
     delegate*<int>[] a_0 = null!;
@@ -210,16 +210,14 @@ public class Holder
 
 // Ask for the modified type
 Type modifiedType = typeof(Holder).GetField("_myArray").GetModifiedFieldType();
-Console.WriteLine(modifiedType.IsArray); // true
-Type fcnPointerType = modifiedType.GetElementType();
+Console.WriteLine(modifiedType.IsArray); // true (forwards to UnderlyingSystemType)
+Type fcnPointerType = modifiedType.GetElementType(); // get array's nested function pointer type
 
 // The nested type is a modified type:
-Console.WriteLine(fcnPointerType.UnderlyingSystemType == fcnPointerType); // false (we have a modified type)
+Console.WriteLine(Object.ReferenceEquals(fcnPointerType.UnderlyingSystemType, fcnPointerType)); // false (we have a modified type)
 Type paramType = fcnPointerType.GetFunctionPointerParameterTypes()[0];
 
-Console.WriteLine(paramType.UnderlyingSystemType == paramType); // false (the 'int' param type is also a modified type)
-Console.WriteLine(paramType == typeof(int)); // false (a modified type is != to the unmodified)
-Console.WriteLine(paramType.UnderlyingSystemType == typeof(int)); // true
+Console.WriteLine(Object.ReferenceEquals(paramType.UnderlyingSystemType, paramType)); // false (the 'int' param type is also a modified type)
 
 Console.WriteLine(paramType.GetRequiredCustomModifiers().Length == 1); // true
 Console.WriteLine(paramType.GetRequiredCustomModifiers()[0] == typeof(Runtime.InteropServices.InAttribute); // true
@@ -228,7 +226,7 @@ Console.WriteLine(paramType.GetRequiredCustomModifiers()[0] == typeof(Runtime.In
 Console.WriteLine(paramType.UnderlyingSystemType.GetRequiredCustomModifiers().Length == 0); // true
 ```
 
-Note, however, that if a class type was provided above instead of `int` for the arguments, that type's members would **not** support the modified type mechanism:
+Note, however, that if a class or struct type was provided above instead of `int` for the arguments, that type's members would **not** support the modified type mechanism:
 ```cs
 public class Holder
 {
@@ -243,8 +241,24 @@ public struct MyStruct
 // Ask for the modified type
 Type modifiedType = typeof(Holder).GetField("_myStruct").GetModifiedFieldType();
 Type nestedType = modifiedType.GetFunctionPointerParameterTypes()[0];
-// The referenced MyClass type is not a modified type:
-Console.WriteLine(nestedType.UnderlyingSystemType == nestedType); // true
+// The referenced MyStruct type is not a modified type:
+Console.WriteLine(Object.ReferenceEquals(nestedType.UnderlyingSystemType, nestedType)); // false
+```
+
+This means a root modified type is a really a "signature" which includes any nested types that help comprise that signature (function pointer, array and pointer types, recursively). Other types hanging off the signature through properties and fields do not make up its signature.
+
+## FieldInfo, PropertyInfo and ParameterInfo still return custom modifiers
+This feature does not overlap with how fields, properties and parameters can have their own custom modifiers:
+```cs
+public class Holder
+{
+    public unsafe static volatile delegate* unmanaged[Cdecl, MemberFunction]<int> _field;
+
+    // 'FieldInfo.GetRequiredCustomModifiers()' is an existing method; not impacted by this design.
+    FieldInfo fieldInfo = = typeof(Holder).GetField("_field");
+    Type modifiedType fieldInfo.GetRequiredCustomModifiers().Length; // 1 (does not include those on the fcn ptr type)
+    Type modifiedType fieldInfo.GetRequiredCustomModifiers()[0]; // IsVolatile
+}
 ```
 
 ## Supporting both runtime- and and static-reflection
@@ -363,10 +377,12 @@ object o1 = new delegate* unmanaged[SuppressGCTransition]<int>[1];
 Console.WriteLine(o1 is delegate* unmanaged[MemberFunction]<int>[]); // true
 
 object o2 = new delegate* unmanaged[CDecl]<int>[1];
-Console.WriteLine(o2 is delegate* unmanaged[StdCall]<int>[]); // true
+Console.WriteLine(o2 is delegate* unmanaged[CDecl]<int>[]); // true
 ```
 
-In addition, all non-CallConv* modifiers, such as `ref\in\out\const` are not considered part of the type identity either.
+The non-CallConv* modifiers, such as `ref\in\out\const` are not considered part of the type identity.
+
+Internally, a managed function pointer can be `default` or `varargs`. These *are* considered part of the type identity since they are encoded within the "CallKind" byte (not custom modifiers) and because the runtime needs to differentiate between them. However, this information is not currently exposed in the APIs proposed here.
 
 ### With modified types
 A modified type acts like the underlying type with the exception that it overrides `GetFunctionPointerParameterTypes()` to return the modified parameter types. It has an identity separate than the underlying type.
@@ -530,20 +546,17 @@ namespace System
 {
     public abstract class Type
     {
-        // Throws InvalidOperationException if IsFunctionPointer = false.
-+       public virtual Type GetFunctionPointerReturnType();
-+       public virtual Type[] GetFunctionPointerParameterTypes();
 +       public virtual bool IsFunctionPointer { get; }
-
-        // Should we reverse this and use "IsManagedFunctionPointer" instead?
 +       public virtual bool IsUnmanagedFunctionPointer { get; }
 
-        // At least one of these return a non-empty value if a modified type.
+        // These throw InvalidOperationException if IsFunctionPointer = false:
++       public virtual Type GetFunctionPointerReturnType();
++       public virtual Type[] GetFunctionPointerParameterTypes();
+
+        // These require a "modified type" to return custom modifier types:
 +       public virtual Type[] GetRequiredCustomModifiers();
 +       public virtual Type[] GetOptionalCustomModifiers();
-
-        // Throws InvalidOperationException if IsFunctionPointer = false
-+       public virtual Type[] GetFunctionPointerCallingConventions(); 
++       public virtual Type[] GetFunctionPointerCallingConventions(); // Throws if IsFunctionPointer = false
     }
 }
 ```
@@ -570,7 +583,7 @@ Debug.Assert(type.GetFunctionPointerParameterTypes()[0] == typeof(int));
 ```
 
 ## GetModified*Type() methods for `FieldInfo`, `PropertyInfo` and `ParameterInfo`
-If the return type is from the corresponding `FieldInfo.FieldType`, `PropertyInfo.PropertyType` or `ParameterInfo.ParameterType` is a function pointer and has custom modifiers, then a "modified type" is returned which is a wrapper over the type returned from `FieldType \ PropertyType \ Parametertype`. That type's `UnderlyingSystemType` property will be the non-null, unmodified function pointer type.
+If the return type is from the corresponding `FieldInfo.FieldType`, `PropertyInfo.PropertyType` or `ParameterInfo.ParameterType` is a function pointer and has custom modifiers, then a "modified type" is returned which is a wrapper over the type returned from `FieldType \ PropertyType \ Parametertype`. That type's `UnderlyingSystemType` property will be the unmodified function pointer type.
 
 If the return type is not a function pointer, or a function pointer without any custom modifiers, then the value from FieldType etc. will be returned which will have `this.UnderlyingSystemType != this`.
 
@@ -590,7 +603,6 @@ namespace System.Reflection
     public abstract class FieldInfo
     {
 +       public virtual Type GetModifiedFieldType() => throw new NotSupportedException();
-        // or "GetFieldModifiedType"?
     }
 
     public abstract class PropertyInfo
