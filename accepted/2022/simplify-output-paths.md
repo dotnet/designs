@@ -27,6 +27,7 @@ The new output path format will consist of the following 3 nested folders:
 - Pivots - This will at minimum be the `Configuration` (lower-cased), such as `debug` or `release`. Other pivots such as `TargetFramework` or `RuntimeIdentifier` may also be included, and the pivots will be joined by the underscore (`_`) character
   - `TargetFramework` will be included in the folder name if the project is multi-targeted (`TargetFrameworks` is non-empty), or if the `TargetFramework` property was set via the command line (ie is a global property)
   - `RuntimeIdentifier` will be included in the folder name if it was explicitly set (either in a project file or on the command line).  If it is set automatically by the SDK (for example because `SelfContained` was set), then the `RuntimeIdentifier` will not be included in the folder name
+  - For the `package` output type, the pivots will only be the `Configuration`, and other values won't be included in the path
 
 Some examples:
 
@@ -85,3 +86,10 @@ Before .NET Core, .NET Framework projects generally put their output directly in
 
 This is a classic "pick two of three things" situation, and we believe the least important of the three was trying to preserve `bin\<Configuration>` as an output path.
 
+### NuGet pack logic
+
+Currently, as part of the NuGet pack command, the `_WalkEachTargetPerFramework` target runs the `_GetBuildOutputFilesWithTfm` target for each `TargetFramework`.  This means in this inner build the `TargetFramework` will be a global property, even if there is only one.
+
+This interferes with the logic where the output path depends on whether the `TargetFramework` is specified as a global property.  To fix this, the NuGet pack logic would need to change so that if there is only one target framework, it does not pass the `TargetFramework` global property in this case.
+
+https://github.com/NuGet/Home/issues/12323
