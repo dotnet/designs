@@ -1,6 +1,6 @@
 # .NET Runtime Form Factors
 
-**Owner** [Rich Lander](https://github.com/richlander) | [Jan Kotas](https://github.com/jkotas)
+**Owner** [Jan Kotas](https://github.com/jkotas) | [Rich Lander](https://github.com/richlander)
 
 Starting in about 2014, we started a journey to open source and consolidate the .NET platform into a single code base, experience and brand. Those initial goals are now almost complete, with .NET 5.0. It is now time to re-evaluate where the industry and .NET users are heading next, and to make choices for .NET that are aligned. The .NET runtime form-factors are a frequent topic of feedback and discussions -- with current and potential users -- in terms of how we should improve and change fundamental .NET execution characteristics and expand the scenarios in which .NET can be used.
 
