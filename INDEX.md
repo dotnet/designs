@@ -37,7 +37,7 @@ Use update-index to regenerate it:
 | 2020 | [.NET 5 Minimum OS Versioning](accepted/2020/minimum-os-version/minimum-os-version.md) | [Mikayla Hutchinson](https://github.com/mhutch) |
 | 2020 | [.NET Core 3.0 AppDomain Replacement Design and Guidance](accepted/2020/AssemblyLoadContext/AppDomainReplacement.md) | [Steve MacLean](https://github.com/sdmaclea) |
 | 2020 | [.NET Optional SDK Workloads](accepted/2020/workloads/workloads.md) | [Rich Lander](https://github.com/richlander) |
-| 2020 | [.NET Runtime Form Factors](accepted/2020/form-factors.md) | [Rich Lander](https://github.com/richlander), [Jan Kotas](https://github.com/jkotas) |
+| 2020 | [.NET Runtime Form Factors](accepted/2020/form-factors.md) | [Jan Kotas](https://github.com/jkotas), [Rich Lander](https://github.com/richlander) |
 | 2020 | [.NET SDK Workload Manifests](accepted/2020/workloads/workload-manifest.md) | [Mikayla Hutchinson](https://github.com/mhutch) |
 | 2020 | [Annotating APIs as unsupported on specific platforms](accepted/2020/platform-exclusion/platform-exclusion.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Annotating platform-specific APIs and detecting its use](accepted/2020/platform-checks/platform-checks.md) | [Immo Landwerth](https://github.com/terrajobst) |
