@@ -1,11 +1,13 @@
 # Function Pointers
 #### Steve Harter
-#### January 9, 2023
+#### January 24, 2023
 
 # Background
 For additional context, see:
+- [8.0 introspection PR](https://github.com/dotnet/runtime/pull/81006)
 - [Original feature ask](https://github.com/dotnet/runtime/issues/11354)
 - [MetadataLoadContext feature ask](https://github.com/dotnet/runtime/issues/43791)
+- [API issue for introspection](https://github.com/dotnet/runtime/issues/69273)
 - [7.0 introspection attempt](https://github.com/dotnet/runtime/pull/71516)
 - [C# function pointer spec](https://learn.microsoft.com/dotnet/csharp/language-reference/proposals/csharp-9.0/function-pointers)
 
@@ -58,6 +60,11 @@ A function pointer, as an ECMA-335 signature, is non-trivial and contains the fo
 
 An instance of a function pointer type, like a standard pointer type, is trivial, containing just the pointer to the function (thus the original and current use of `IntPtr`).
 
+Custom modifiers do not belong to a Type declaration, like an Attribute might; instead they belong to a Signature. From ECMA 335:
+<br>
+_II.7.1.1 modreq and modopt<br>
+Custom modifiers, defined using modreq (“required modifier”) and modopt (“optional modifier”), are similar to custom attributes (§II.21) except that modifiers are part of a signature rather than being attached to a declaration. Each modifer associates a type reference with an item in the signature._
+
 # Design
 ## Treating a function pointer as a type
 From previous API discussions, the proposal is to treat a function pointer as a `System.Type` class and not, for example, by exposing a new "MethodSignature" class that represents a function pointer. This is consistent in ECMA and C# where a function pointer is a type, where can be specified as the type for parameters, variables, properties and fields in addition to composing with other types:
@@ -82,7 +89,7 @@ Previous API discussions covered whether the metadata for a function pointer sho
 The original design, however, did include a `FunctionPointerParameterInfo` that contained a mechanism to obtain both the type and custom modifiers for each parameter. The proposed design here no longer directly exposes custom modifiers for parameters, so the `FunctionPointerParameterInfo` is no longer necessary since the only state remaining is just the parameter type, which is now directly lifted to `Type` via `Type[] GetFunctionPointerParameterTypes()`.
 
 ## Custom modifiers
-The [7.0 introspection attempt](https://github.com/dotnet/runtime/pull/71516) returned all custom modifiers including modifiers not used or needed by the runtime, such as parameter modifiers for `ref`, `out` and `in`. Due to concerns with that approach, the function pointer feature was pulled from late in 7.0 in order to properly vet and approve a new design (this design) for v8. The intent is to add this functionality early in v8 which will also allow time for feedback.
+The [7.0 introspection attempt](https://github.com/dotnet/runtime/pull/71516) returned all custom modifiers including modifiers not used or needed by the runtime, such as parameter modifiers for `ref` and `in` (note that `out` has no modifier). Due to concerns with that approach, the function pointer feature was pulled from late in 7.0 in order to properly vet and approve a new design (this design) for v8. The intent is to add this functionality early in v8 which will also allow time for feedback.
 
 Consider the following where `ref\out\in` all map to a reference (`&`) by the runtime:
 ```cs
@@ -109,7 +116,9 @@ void EmitCalli(
     Type[]? parameterTypes)
 ```
 
-So custom modifiers, except for calling convensions, are not exposed in the runtime. They are not necessary for the key scenario of passing or invoking a function pointer and would also interfere with equality and castability. If function pointers expose all custom modifiers, such as `ref\out\in` and the C++/CLI `const`, then equality and castability will be based on exact matches to that which is considered overly restrictive for runtime use and may break C++/CLI usage.
+So custom modifiers, except for calling conventions, are not exposed or used by the native runtime. They are not necessary for the key scenario of passing or invoking a function pointer and would also interfere with equality and castability. If function pointers expose all custom modifiers, such as `ref\in` and the C++/CLI `const`, then equality and castability will be based on exact matches to that which is considered overly restrictive for runtime use and may break C++/CLI usage.
+
+Instead custom modifiers will be returned by the managed libraries with no impact on the native runtime.
 
 ## Custom modifiers for calling convention
 The only custom modifiers exposed by the runtime are the built-in classes representing calling conventions - these classes are named `System.Runtime.InteropServices.CallConv*`:
@@ -142,19 +151,19 @@ callKind : /* EMPTY */
  | 'unmanaged' 'fastcall' 
 ```
 
-The calling convention is considered managed only if the callKind is "default" or "vararg" so the proposed `Type.IsUnmanagedFunctionPointer` does not require looking at the newer custom modifiers (at least currently; it is possible new managed calling conventions are introduced at some point that would require custom modifiers).
+The calling convention is considered managed only if the callKind is "default" (or "vararg" which is not supported by function pointers) so the proposed `Type.IsUnmanagedFunctionPointer` does not require looking at the newer custom modifiers at least currently; it is possible new managed calling conventions are introduced at some point that would require custom modifiers.
 
 When returning the calling conventions through `Type.GetFunctionPointerCallingConventions()`, any calling convention encoded using "CallKind" will return the appropriate CallConv* type, just like it was added through a modifier. This normalization avoids having to expose the "CallKind" in the API and makes it simpler for callers since there is just a single method to return the calling conventions no matter how they were encoded. The `Type.IsUnmanagedFunctionPointer` property was added since there are not CallConv* types for managed that would otherwise have helped determine this.
 
 Internally in the runtime, the "CallKind" information will no longer be tracked by the function pointer type. Currently it is tracked, but that will change for unmodified types to just detecting managed (via "default" and "vararg") to avoid inconsistent semantics across the older "CallKind" and newer "modopts" encoding formats.
 
 ### _Off-topic thoughts on using custom modifiers to represent calling conventions_
-Using the CallConv* classes to represent calling conventions was added in V6 because new callling conventions needed to be added and would not fit within the 4 bits that were being used to encode the existing calling conventions based on ECMA-335. So the decision, arguably not the best, was made to encode new calling conventions using custom modifiers since that would not affect existing metadata readers or require a ECMA-335 change. However, there are alternative approaches which may or may not have been considered -- one such approach would be to change the encompassing byte to be a 32-bit compressed integer encoding instead which .NET/CLI uses extensively elsewhere. This compressed integer approach is possible since the encompassing byte did not use bit 7 (`0x80`) which is the flag for a compressed integer to switch from one byte to two bytes. This would require a ECMA-335 change which would break other metadata readers once two+ bytes are used.
+Using the CallConv* classes to represent calling conventions was added in V6 because new calling conventions needed to be added and would not fit within the 4 bits that were being used to encode the existing calling conventions based on ECMA-335. So the decision, arguably not the best, was made to encode new calling conventions using custom modifiers since that would not affect existing metadata readers or require a ECMA-335 change. However, there are alternative approaches which may or may not have been considered -- one such approach would be to change the encompassing byte to be a 32-bit compressed integer encoding instead which .NET/CLI uses extensively elsewhere. This compressed integer approach is possible since the encompassing byte did not use bit 7 (`0x80`) which is the flag for a compressed integer to switch from one byte to two bytes. This would require a ECMA-335 change which would break other metadata readers once two+ bytes are used.
 
 ## Modified types
-Obtaining all custom modifiers including `ref\out\in` is useful for those who read metadata for varying reasons. The proposal to support that is to expose functionality that returns a "modified type" which, for function pointers, is a wrapper over the unmodified function pointer and overrides `GetFunctionPointerParameterTypes()` to return a potential "modified type" for each parameter. From those modified types, `GetRequiredCustomModifiers()` and `GetOptionalCustomModifiers()` can be used.
+Obtaining all custom modifiers including `ref\in` is useful for those who read metadata for varying reasons. The proposal to support that is to expose functionality that returns a "modified type" which, for function pointers, is a wrapper over the unmodified function pointer and overrides `GetFunctionPointerParameterTypes()` to return a potential "modified type" for each parameter. From those modified types, `GetRequiredCustomModifiers()` and `GetOptionalCustomModifiers()` can be used.
 
-A modified type always starts with a "root" type obtained from `FieldInfo.GetModifiedFieldType()`, `PropertyInfo.GetModifiedPropertyType()` and `ParameterInfo.GetModifiedParameterType()`. A root type may be a function pointer, array, pointer (`*`) or reference (`&`) type and nested modified types may be returned recursively (such as a pointer-to-pointer-to-functionpointer). A function pointer also returns modifified types when obtaining its return type or parameter types, since those may have custom modifiers.
+A modified type always starts with a "root" type obtained from `FieldInfo.GetModifiedFieldType()`, `PropertyInfo.GetModifiedPropertyType()` and `ParameterInfo.GetModifiedParameterType()`. A root type may be a function pointer, array, pointer (`*`) or reference (`&`) type and parameterized modified types may be returned recursively (such as a pointer-to-pointer-to-functionpointer). A function pointer also returns modifified types when obtaining its return type or parameter types, since those may have custom modifiers.
 
 The actual, underlying type of a modified type is obtained through the existing `Type.UnderlyingSystemType` property.
 
@@ -164,7 +173,7 @@ In CLI metadata, only fields, properties, local variables, method parameters and
 
 For additional information on encoding, see ECMA-335 `II.23.2 Blobs and signatures`. Note that in C# a function pointer is emitted as an ECMA "StandaloneMethodSig". There are several other types of custom modifiers besides the calling convention ones. For example, in C#, a field is also a "signature" and can have a `volatile` modifier which is emitted as a custom modifier and will be returned via `FieldInfo.GetModifiedFieldType().GetRequiredCustomModifiers()` as the `System.Runtime.CompilerServices.IsVolatile` type. In C++\CLI there are additional modifiers including `System.Runtime.CompilerServices.IsConst`.
 
-Supporting modified types correctly means also supporting "nested types" including
+Supporting modified types correctly means also supporting "parameterize types" including
 - Arrays
 ```cs
     delegate*<int>[] a_0 = null!;
@@ -200,7 +209,7 @@ Supporting modified types correctly means also supporting "nested types" includi
 
 Note that a function pointer type cannot currently be used as a generic parameter type, so that limits this scope a bit.
 
-The "nested" function pointer types above help make up the signature of the root type, so they support the modified type mechanism:
+The "parameterized" function pointer types above help make up the signature of the root type, so they support the modified type mechanism:
 ```cs
 public class Holder
 {
@@ -211,9 +220,9 @@ public class Holder
 // Ask for the modified type
 Type modifiedType = typeof(Holder).GetField("_myArray").GetModifiedFieldType();
 Console.WriteLine(modifiedType.IsArray); // true (forwards to UnderlyingSystemType)
-Type fcnPointerType = modifiedType.GetElementType(); // get array's nested function pointer type
+Type fcnPointerType = modifiedType.GetElementType(); // get array's parameterized function pointer type
 
-// The nested type is a modified type:
+// The parameterized type is a modified type:
 Console.WriteLine(Object.ReferenceEquals(fcnPointerType.UnderlyingSystemType, fcnPointerType)); // false (we have a modified type)
 Type paramType = fcnPointerType.GetFunctionPointerParameterTypes()[0];
 
@@ -240,15 +249,15 @@ public struct MyStruct
 
 // Ask for the modified type
 Type modifiedType = typeof(Holder).GetField("_myStruct").GetModifiedFieldType();
-Type nestedType = modifiedType.GetFunctionPointerParameterTypes()[0];
+Type parameterizedType = modifiedType.GetFunctionPointerParameterTypes()[0];
 // The referenced MyStruct type is not a modified type:
-Console.WriteLine(Object.ReferenceEquals(nestedType.UnderlyingSystemType, nestedType)); // false
+Console.WriteLine(Object.ReferenceEquals(parameterizedType.UnderlyingSystemType, parameterizedType)); // false
 ```
 
-This means a root modified type is a really a "signature" which includes any nested types that help comprise that signature (function pointer, array and pointer types, recursively). Other types hanging off the signature through properties and fields do not make up its signature.
+This means a root modified type is a really a "signature" which includes any parameterized types that help comprise that signature (function pointer, array and pointer types, recursively). Other types hanging off the signature through properties and fields do not make up its signature.
 
-## FieldInfo, PropertyInfo and ParameterInfo still return custom modifiers
-This feature does not overlap with how fields, properties and parameters can have their own custom modifiers:
+## FieldInfo, PropertyInfo and ParameterInfo return custom modifiers
+This feature does not change how fields, properties and parameters currently have their own custom modifiers:
 ```cs
 public class Holder
 {
@@ -260,6 +269,8 @@ public class Holder
     Type modifiedType fieldInfo.GetRequiredCustomModifiers()[0]; // IsVolatile
 }
 ```
+
+However, the `GetModifiedXxxType()` methods will return these modifiers from the root field, property or parameter type.
 
 ## Supporting both runtime- and and static-reflection
 Previous discussions included the suggestion that both calling conventions and modified types are only exposed from the [`MetadataLoadContext`](https://learn.microsoft.com/dotnet/api/system.reflection.metadataloadcontext) class since it is the preferred approach to read metadata (vs. runtime reflection) due to being agnostic to the runtime referenced by the various reflected types. However, this design proposes full fidelity between the runtime and `MetadataLoadContext` (other runtimes besides the CoreCLR, including Mono and AOT runtimes, will need to be updated of course).
@@ -357,6 +368,21 @@ Console.WriteLine(new int[1] is uint[]); // false
 Console.WriteLine(((object)new int[1]) is uint[]); // true
 ```
 
+Also consider unmanaged values where `isint` is also not used and the hard-coded result is baked in:
+```cs
+var fn = new delegate* unmanaged[Cdecl]<int>[1];
+bool b = fn is delegate* unmanaged[Fastcall]<int>[];
+```
+```
+.locals init (method unmanaged cdecl int32 *()[] V_0, bool V_1)
+IL_0001:  ldc.i4.1
+IL_0002:  newarr     method unmanaged cdecl int32 *()
+IL_0007:  stloc.0
+IL_0008:  ldc.i4.0
+IL_0009:  stloc.1
+IL_000a:  ret
+ ```
+
 ### With modifiers + unmodified types
 The above examples only compare parameter types without calling conventions or modifiers.
 
@@ -380,7 +406,7 @@ object o2 = new delegate* unmanaged[CDecl]<int>[1];
 Console.WriteLine(o2 is delegate* unmanaged[CDecl]<int>[]); // true
 ```
 
-The non-CallConv* modifiers, such as `ref\in\out\const` are not considered part of the type identity.
+The non-CallConv* modifiers, such as `in\out\const` are not considered part of the type identity.
 
 Internally, a managed function pointer can be `default` or `varargs`. These *are* considered part of the type identity since they are encoded within the "CallKind" byte (not custom modifiers) and because the runtime needs to differentiate between them. However, this information is not currently exposed in the APIs proposed here.
 
@@ -520,22 +546,6 @@ Returns `false`. Per past design discussions, this should be `false` since funct
 ### `IsValueType` and `IsClass` properties
 Use the same behavior as standard pointers which is `IsValueType == false` and `IsClass == true`.
 
-The type hierarchy is covered somewhat [here](https://learn.microsoft.com/previous-versions/visualstudio/visual-studio-2008/2hf02550(v=vs.90)) and in ECMA\CLI: 
-- Type
-  - Value types
-    - Built-in value types
-    - User-defined value types
-    - Enumerations
-  - Reference types
-    - **Pointer types**
-    - Interface types
-    - Self-describing types
-      - Arrays
-      - Class types
-        - User-defined classes
-        - Boxed value types
-        - Delegates
-
 ### `Type? UnderlyingSystemType { get; }`
 If a modified type, returns the unmodified function pointer type.
 
@@ -593,7 +603,7 @@ Type someType = ...
 bool isModifiedFunctionPointer = someType.IsFunctionPointer && someType.UnderlyingSystemType != someType;
 ```
 
-Each type returned from `GetFunctionPointerParameterTypes()`, whether a primitive such as `String` or a user-defined class, is considered a modified type that contains any custom modifiers present on the parameter declaration, such as `ref\out\in`.
+Each type returned from `GetFunctionPointerParameterTypes()`, whether a primitive such as `String` or a user-defined class, is considered a modified type that contains any custom modifiers present on the parameter declaration, such as `ref\in`.
 
 From a modified parameter type, the custom modifiers can be accessed via `GetOptionalCustomModifiers()` and `GetRequiredCustomModifiers()`.
 
@@ -779,3 +789,9 @@ namespace System.Reflection
 +   }
 }
 ```
+## Modifiers for other things
+A modified type obtained from `GetModifiedXxxType()` returns modifiers for:
+- Function pointer parameters and return types. The calling convention modifiers are actually obtained from either the "CallKind" byte in the signature or from the function pointer's return type's modifiers.
+- Modifiers from a `FieldInfo`, `ParameterInfo` and `PropertyInfo`.
+
+However, this design does not attempt to add support for other areas, such as (`const` used by C++\CLI)[https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.isconst]. However, it is expected that this can be added with minimal cost; priority will be high for this if it becomes supported by C#.
