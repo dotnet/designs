@@ -89,7 +89,7 @@ Previous API discussions covered whether the metadata for a function pointer sho
 The original design, however, did include a `FunctionPointerParameterInfo` that contained a mechanism to obtain both the type and custom modifiers for each parameter. The proposed design here no longer directly exposes custom modifiers for parameters, so the `FunctionPointerParameterInfo` is no longer necessary since the only state remaining is just the parameter type, which is now directly lifted to `Type` via `Type[] GetFunctionPointerParameterTypes()`.
 
 ## Custom modifiers
-The [7.0 introspection attempt](https://github.com/dotnet/runtime/pull/71516) returned all custom modifiers including modifiers not used or needed by the runtime, such as parameter modifiers for `ref` and `in` (note that `out` has no modifier). Due to concerns with that approach, the function pointer feature was pulled from late in 7.0 in order to properly vet and approve a new design (this design) for v8. The intent is to add this functionality early in v8 which will also allow time for feedback.
+The [7.0 introspection attempt](https://github.com/dotnet/runtime/pull/71516) returned all custom modifiers including modifiers not used or needed by the runtime, such as parameter modifiers for `ref` and `in` (note that `ref` has no modifier). Due to concerns with that approach, the function pointer feature was pulled from late in 7.0 in order to properly vet and approve a new design (this design) for v8. The intent is to add this functionality early in v8 which will also allow time for feedback.
 
 Consider the following where `ref\out\in` all map to a reference (`&`) by the runtime:
 ```cs
@@ -116,7 +116,7 @@ void EmitCalli(
     Type[]? parameterTypes)
 ```
 
-So custom modifiers, except for calling conventions, are not exposed or used by the native runtime. They are not necessary for the key scenario of passing or invoking a function pointer and would also interfere with equality and castability. If function pointers expose all custom modifiers, such as `ref\in` and the C++/CLI `const`, then equality and castability will be based on exact matches to that which is considered overly restrictive for runtime use and may break C++/CLI usage.
+So custom modifiers, except for calling conventions, are not exposed or used by the native runtime. They are not necessary for the key scenario of passing or invoking a function pointer and would also interfere with equality and castability. If function pointers expose all custom modifiers, such as `out\in` and the C++/CLI `const`, then equality and castability will be based on exact matches to that which is considered overly restrictive for runtime use and may break C++/CLI usage.
 
 Instead custom modifiers will be returned by the managed libraries with no impact on the native runtime.
 
@@ -161,7 +161,7 @@ Internally in the runtime, the "CallKind" information will no longer be tracked 
 Using the CallConv* classes to represent calling conventions was added in V6 because new calling conventions needed to be added and would not fit within the 4 bits that were being used to encode the existing calling conventions based on ECMA-335. So the decision, arguably not the best, was made to encode new calling conventions using custom modifiers since that would not affect existing metadata readers or require a ECMA-335 change. However, there are alternative approaches which may or may not have been considered -- one such approach would be to change the encompassing byte to be a 32-bit compressed integer encoding instead which .NET/CLI uses extensively elsewhere. This compressed integer approach is possible since the encompassing byte did not use bit 7 (`0x80`) which is the flag for a compressed integer to switch from one byte to two bytes. This would require a ECMA-335 change which would break other metadata readers once two+ bytes are used.
 
 ## Modified types
-Obtaining all custom modifiers including `ref\in` is useful for those who read metadata for varying reasons. The proposal to support that is to expose functionality that returns a "modified type" which, for function pointers, is a wrapper over the unmodified function pointer and overrides `GetFunctionPointerParameterTypes()` to return a potential "modified type" for each parameter. From those modified types, `GetRequiredCustomModifiers()` and `GetOptionalCustomModifiers()` can be used.
+Obtaining all custom modifiers including `out\in` is useful for those who read metadata for varying reasons. The proposal to support that is to expose functionality that returns a "modified type" which, for function pointers, is a wrapper over the unmodified function pointer and overrides `GetFunctionPointerParameterTypes()` to return a potential "modified type" for each parameter. From those modified types, `GetRequiredCustomModifiers()` and `GetOptionalCustomModifiers()` can be used.
 
 A modified type always starts with a "root" type obtained from `FieldInfo.GetModifiedFieldType()`, `PropertyInfo.GetModifiedPropertyType()` and `ParameterInfo.GetModifiedParameterType()`. A root type may be a function pointer, array, pointer (`*`) or reference (`&`) type and parameterized modified types may be returned recursively (such as a pointer-to-pointer-to-functionpointer). A function pointer also returns modifified types when obtaining its return type or parameter types, since those may have custom modifiers.
 
@@ -603,7 +603,7 @@ Type someType = ...
 bool isModifiedFunctionPointer = someType.IsFunctionPointer && someType.UnderlyingSystemType != someType;
 ```
 
-Each type returned from `GetFunctionPointerParameterTypes()`, whether a primitive such as `String` or a user-defined class, is considered a modified type that contains any custom modifiers present on the parameter declaration, such as `ref\in`.
+Each type returned from `GetFunctionPointerParameterTypes()`, whether a primitive such as `String` or a user-defined class, is considered a modified type that contains any custom modifiers present on the parameter declaration, such as `out\in`.
 
 From a modified parameter type, the custom modifiers can be accessed via `GetOptionalCustomModifiers()` and `GetRequiredCustomModifiers()`.
 
