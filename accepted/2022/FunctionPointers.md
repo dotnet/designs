@@ -1,6 +1,6 @@
 # Function Pointers
 #### Steve Harter
-#### January 24, 2023
+#### January 26, 2023
 
 # Background
 For additional context, see:
@@ -116,9 +116,9 @@ void EmitCalli(
     Type[]? parameterTypes)
 ```
 
-So custom modifiers, except for calling conventions, are not exposed or used by the native runtime. They are not necessary for the key scenario of passing or invoking a function pointer and would also interfere with equality and castability. If function pointers expose all custom modifiers, such as `out\in` and the C++/CLI `const`, then equality and castability will be based on exact matches to that which is considered overly restrictive for runtime use and may break C++/CLI usage.
+The runtime's internal type for function pointers (which is exposed to managed code as `System.Type` function pointer type) does not hold any custom modifiers for function pointers. When such modifiers need to be obtained by the runtime, it will obtain that information in a lower-level manner. If the runtime did add modifier suppport to its internal function pointer type then equality and castability of `System.Type` will be based on exact matches which is considered overly restrictive and may break C++/CLI usage. It also adds unnecessary overhead.
 
-Instead custom modifiers will be returned by the managed libraries with no impact on the native runtime.
+Instead, custom modifiers will be returned by new managed reflection APIs through the use of "modified types" with no impact to the native runtime's current usage of function pointers.
 
 ## Custom modifiers for calling convention
 The only custom modifiers exposed by the runtime are the built-in classes representing calling conventions - these classes are named `System.Runtime.InteropServices.CallConv*`:
@@ -271,6 +271,9 @@ public class Holder
 ```
 
 However, the `GetModifiedXxxType()` methods will return these modifiers from the root field, property or parameter type.
+
+## Modifiers for generic parameters
+Due to the addition of modified types, we can now expose custom modifiers on generic parameters (either as a function pointer parameter or as a method parameter) that was not possible before. Although C# doesn't support this yet, C++\CLI does allow a (`const` modifier)[https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.isconst]. From a modified parameter type obtained from `ParameterInfo.GetModifiedType()`, the `const` modifier (and any others) can now be returned.
 
 ## Supporting both runtime- and and static-reflection
 Previous discussions included the suggestion that both calling conventions and modified types are only exposed from the [`MetadataLoadContext`](https://learn.microsoft.com/dotnet/api/system.reflection.metadataloadcontext) class since it is the preferred approach to read metadata (vs. runtime reflection) due to being agnostic to the runtime referenced by the various reflected types. However, this design proposes full fidelity between the runtime and `MetadataLoadContext` (other runtimes besides the CoreCLR, including Mono and AOT runtimes, will need to be updated of course).
@@ -789,9 +792,3 @@ namespace System.Reflection
 +   }
 }
 ```
-## Modifiers for other things
-A modified type obtained from `GetModifiedXxxType()` returns modifiers for:
-- Function pointer parameters and return types. The calling convention modifiers are actually obtained from either the "CallKind" byte in the signature or from the function pointer's return type's modifiers.
-- Modifiers from a `FieldInfo`, `ParameterInfo` and `PropertyInfo`.
-
-However, this design does not attempt to add support for other areas, such as (`const` used by C++\CLI)[https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.isconst]. However, it is expected that this can be added with minimal cost; priority will be high for this if it becomes supported by C#.
