@@ -1,4 +1,4 @@
-# Library Preview Features
+# Experimental APIs
 
 **Owner** [Immo Landwerth](https://github.com/terrjobst)
 
@@ -64,6 +64,9 @@ Since library-level preview features cannot change how the .NET runtime itself
 operates, we don't have that same level of concern. In fact, we believe the
 viral nature is also undesirable.
 
+For the remainder of this proposal we'll refer to *library-level preview*
+features as *experimental APIs*.
+
 ## Scenarios and User Experience
 
 ## Requirements
@@ -123,9 +126,9 @@ namespace System.Diagnostics.CodeAnalysis;
                 AttributeTargets.Event |
                 AttributeTargets.Interface |
                 AttributeTargets.Delegate, Inherited = false)]
-public sealed class PreviewAttribute : Attribute
+public sealed class ExperimentalAttribute : Attribute
 {
-    public PreviewAttribute(string diagnosticId);
+    public ExperimentalAttribute(string diagnosticId);
     public string DiagnosticId { get; }
     public string? UrlFormat { get; set; }
 }
@@ -133,15 +136,15 @@ public sealed class PreviewAttribute : Attribute
 
 ### Compiler Behavior
 
-The compiler will raise a diagnostic when a preview API is used, using supplied
-diagnostic ID. The severity is always error.
+The compiler will raise a diagnostic when an experimental API is used, using the
+supplied diagnostic ID. The severity is always error.
 
 The semantics are identical to how obsolete is tracked, except that it will
 always raise a diagnostic regardless of whether the call site is marked as
-preview or not. There is also no special treatment when both caller and callee
-are in the same assembly -- any use will generate a diagnostic and the caller is
-expected to suppress it, with the usual means (i.e. `#pragma` or project-wide
-`NoWarn`).
+experimental or not. There is also no special treatment when both caller and
+callee are in the same assembly -- any use will generate a diagnostic and the
+caller is expected to suppress it, with the usual means (i.e. `#pragma` or
+project-wide `NoWarn`).
 
 ## Tracking Items
 
@@ -185,6 +188,18 @@ We considered offering a different mode for `RequiresPreviewFeaturesAttribute`
 instead of using a different attribute but we believe this makes it harder to
 understand as these are really disjoint features. Having different names for
 them makes it easier to communicate that difference to our users.
+
+### Why did we use the term `Experimental` over `Preview`?
+
+This change was based on [this discussion][experimental-discussion]:
+
+1. It more strongly separates the existing `RequiresPreviewFeatures` from this
+   new feature.
+
+2. Folks found it it better aligns with the naming of the community and other
+   parts of our stack that has the same semantics (such as WinRT).
+
+[experimental-discussion]: https://github.com/dotnet/designs/pull/285#discussion_r1082052754
 
 ### Why is this not an analyzer?
 
