@@ -69,6 +69,76 @@ features as *experimental APIs*.
 
 ## Scenarios and User Experience
 
+### Shipping an experimental API in a stable package
+
+Martin builds a library that integrates with ASP.NET Core and provides features
+to make it easier to build services. The library is distributed as a NuGet
+package. The package is already in a version well past 1.0 and is considered
+stable.
+
+He ships the package often and doesn't want to maintain multiple flavors of the
+package, one marked as prerelease and one marked as stable. However, he wants to
+expose new APIs without making the promise that these APIs are stable. He
+designs the new APIs as if they would be stable, that is, he puts them in the
+namespace they belong and names the types and members without any naming
+convention that implies that they aren't stable yet. If customer feedback is
+positive, the API will become stable as-is, otherwise he'll make changes to
+address the feedback.
+
+In order to convey to the consumers that these APIs aren't stable yet, he puts
+the `Experimental` attribute on them:
+
+```C#
+namespace MartinsLibrary.FancyLogging
+{
+    public static class FancyLoggerExtensions
+    {
+        [Experimental("ML123", UrlFormat="https://martinslibrary.net/diagnostics/{0}")]
+        public static IServiceCollection AddFancyLogging(this IServiceCollections services)
+        {
+            // ...
+        }
+    }
+}
+```
+
+### Consuming an experimental API
+
+David builds a new version of Jabber.NET and consumes Martin's library. He very
+much wants to play with the new fancy logging Martin added. When David calls
+`AddFancyLogging` he gets a compilation error:
+
+> error ML123: FancyLoggerExtensions.AddFancyLogging() is not a stable API. In
+  order to consume this experimental API, suppress this error from the call
+  site.
+
+David is happy to accommodate future breaking changes around the fancy logging
+feature. He understands that the diagnostic ID is specific to the fancy logging
+feature of Martin's library, so he decides to add a suppression to the project
+file:
+
+```xml
+<Project>
+    <PropertyGroup>
+        <!-- Fancy logging is an experimental APIs -->
+        <NoWarn>$(NoWarn);ML123</NoWarn>
+    </PropertyGroup>
+</Project>
+```
+
+### Consuming another experimental API
+
+Later, David discovers Martin's library also has support for fancy serialization.
+When he starts consuming it, he gets another compilation error:
+
+> error ML456: FancySerializationExtensions.AddFancySerialization() is not a
+  stable API. In order to consume this experimental API, suppress this error
+  from the call site.
+
+Giving it some thought, David concludes that the risk of using an unstable
+serialization API isn't worth it because it's not necessary for Jabber, so he
+stops exploring that API.
+
 ## Requirements
 
 ### Goals
