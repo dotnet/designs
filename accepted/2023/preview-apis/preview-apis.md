@@ -189,6 +189,6 @@ them makes it easier to communicate that difference to our users.
 ### Why is this not an analyzer?
 
 The compiler team suggested to make this a compiler behavior, rather than an
-analyzer. This would allow the attribute to have a `DiagnosticId` which regular
-analyzers can't (because a given analyzer has to tell the compiler upfront which
-diagnostic IDs it will raise).
+analyzer. This would allow the attribute to specify custom `DiagnosticId` values
+which regular analyzers can't (because a given analyzer has to tell the compiler
+upfront which diagnostic IDs it will raise).
