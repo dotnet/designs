@@ -170,6 +170,8 @@ stops exploring that API.
     - EF
     - Azure SDK
     - R9
+    - Windows Forms
+    - WPF
 * Project system team
 * SDK team
 * MSBuild team
