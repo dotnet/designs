@@ -228,6 +228,12 @@ project-wide `NoWarn`).
     - [dotnet/dotnet-api-docs#6861](https://github.com/dotnet/dotnet-api-docs/issues/6861)
 * Highlighting preview APIs in IDE
     - [dotnet/roslyn#65915](https://github.com/dotnet/roslyn/issues/65915)
+* Consider highlight preview APIs when APIs represent UI elements that aren't
+  used via user written code
+    - Areas to consider:
+    - Toolbox
+    - Property Grid
+    - Design Service
 
 [preview-features]: ../../2021/preview-features/preview-features.md
 
