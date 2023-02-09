@@ -234,6 +234,10 @@ project-wide `NoWarn`).
     - Toolbox
     - Property Grid
     - Design Service
+* Consider providing an analyzer that warns when
+  `RequiresPreviewFeaturesAttribute` is being used in (user written) code.
+    - It should only be used by the platform
+    - We should point users to this new attribute (`ExperimentalAttribute`)
 
 [preview-features]: ../../2021/preview-features/preview-features.md
 
