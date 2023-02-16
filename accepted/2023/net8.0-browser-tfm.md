@@ -5,8 +5,8 @@
 **Contact** [Artak Mkrtchyan](https://github.com/mkartakmsft) | [Artak Mkrtchyan](https://github.com/mkartakmsft)
 
 For a video introduction to what we are trying to achieve, see:
-https://www.youtube.com/watch?v=48G_CEGXZZM
 https://www.youtube.com/live/kIH_Py8ytlY?feature=share&t=473
+https://www.youtube.com/watch?v=48G_CEGXZZM
 
 We have been shipping .NET in the browser via webassembly since the introduction of Blazor 3.2.0. During that initial release we decided to avoid adding a TFM for the browser as we were not clear on whether we needed it and we knew it was a one way operation. Once we introduced a TFM, we would never be able to take it back.
 
@@ -27,9 +27,9 @@ Over time, we have learned that the lack of a TFM is limiting for us and our cus
     class IJSInProcessRuntime {
       <<interface>>
       Invoke<&zwj;TResult>(string identifier, params object?[]? args) TResult
-    }    
+    }
   ```
-* **Varying framework/library code contents/behavior based on whether it's running in the browser or not:** For example, having DI dependencies or other library code references varying by platform. Doing it based on TFM (not on RuntimeInformation) helps compilation and trimming. 
+* **Varying framework/library code contents/behavior based on whether it's running in the browser or not:** For example, having DI dependencies or other library code references varying by platform. Doing it based on TFM (not on RuntimeInformation) helps compilation and trimming.
   * A library that targets Blazor Server and Webassembly must provide at a minimum an additional package for the server to avoid bringing the server dependencies to webassembly.
   * A webassembly app with a companion server backend must also have, a project to host the webassembly app, a project to share common abstractions and a project to host the server backend. This exact scheme is reflected in the default Blazor Webassembly Hosted template.
 
@@ -65,7 +65,7 @@ Finally, we are looking at two new core experiences for which a TFM is heavily d
   ```csharp
   public class RecipesStore
   {
-  #if BROWSER  
+  #if BROWSER
       private readonly HttpClient _http;
   #else
       IDictionary<string, Recipe> recipes;
@@ -76,7 +76,7 @@ Finally, we are looking at two new core experiences for which a TFM is heavily d
   #if !BROWSER
       public RecipesStore()
       {
-        ...        
+        ...
       }
   #else
       public RecipesStore(HttpClient http)
@@ -85,7 +85,7 @@ Finally, we are looking at two new core experiences for which a TFM is heavily d
       }
   #endif
 
-  #if BROWSER        
+  #if BROWSER
       public async Task<string> AddImage(Stream imageData)
       {
           var response = await _http.PostAsync("api/images", new StreamContent(imageData));
@@ -126,7 +126,7 @@ Finally, we are looking at two new core experiences for which a TFM is heavily d
       public Task<byte[]> GetImage(string filename)
           => ...;
   #endif
-  }    
+  }
   ```
 
 ## Requirements
