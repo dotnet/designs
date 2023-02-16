@@ -4,9 +4,7 @@
 **Contact** [Daniel Roth](https://github.com/danroth27) | [Daniel Roth](https://github.com/danroth27)
 **Contact** [Artak Mkrtchyan](https://github.com/mkartakmsft) | [Artak Mkrtchyan](https://github.com/mkartakmsft)
 
-For a video introduction to what we are trying to achieve, see:
-https://www.youtube.com/live/kIH_Py8ytlY?feature=share&t=473
-https://www.youtube.com/watch?v=48G_CEGXZZM
+For a video introduction to what we are trying to achieve, see [this demo from the community standup](https://www.youtube.com/live/kIH_Py8ytlY?feature=share&t=473) as well as the [Blazor United prototype](https://www.youtube.com/watch?v=48G_CEGXZZM).
 
 We have been shipping .NET in the browser via webassembly since the introduction of Blazor 3.2.0. During that initial release we decided to avoid adding a TFM for the browser as we were not clear on whether we needed it and we knew it was a one way operation. Once we introduced a TFM, we would never be able to take it back.
 
