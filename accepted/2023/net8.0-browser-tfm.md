@@ -145,7 +145,7 @@ The general rule will be that this TFM will work in the same way as net8.0-andro
 **TL;DR**
 * Per browser TFM
 * Per browser version TFM
-* Browser specific API sets (although might be expanded in the future to cover this)
+* In-box browser specific API sets (although might be expanded in the future to cover this)
 
 #### Details
 
