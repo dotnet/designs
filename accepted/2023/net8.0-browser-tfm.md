@@ -1,16 +1,16 @@
 # net8.0-browser TFM for applications running in the browser
 
-**Owner** [Javier Calvarro](https://github.com/javiercn) | [Javier Calvarro](https://github.com/javiercn)
-**Contact** [Daniel Roth](https://github.com/danroth27) | [Daniel Roth](https://github.com/danroth27)
-**Contact** [Artak Mkrtchyan](https://github.com/mkartakmsft) | [Artak Mkrtchyan](https://github.com/mkartakmsft)
+**Owner** [Javier Calvarro](https://github.com/javiercn) |
+**Contact** [Daniel Roth](https://github.com/danroth27) |
+**Contact** [Artak Mkrtchyan](https://github.com/mkartakmsft) |
 
 For a video introduction to what we are trying to achieve, see [this demo from the community standup](https://www.youtube.com/live/kIH_Py8ytlY?feature=share&t=473) as well as the [Blazor United prototype](https://www.youtube.com/watch?v=48G_CEGXZZM).
 
 We have been shipping .NET in the browser via webassembly since the introduction of Blazor 3.2.0. During that initial release we decided to avoid adding a TFM for the browser as we were not clear on whether we needed it and we knew it was a one way operation. Once we introduced a TFM, we would never be able to take it back.
 
-Our reasoning was that we could likely get away with a RID as that would allow third-parties to provide alternative pre-compiled webassembly assets (including native dependencies compiled to wasm).
+Our reasoning was that we could likely get away with a RID alone as that would allow third-parties to provide alternative pre-compiled webassembly assets (including native dependencies compiled to wasm).
 
-We reasoned that we did not need a TFM as we could always provide a PAL over any functionality we needed and we would annotate the APIs with the `[SupportedOSPlatform]` attribute and an analyzer that would warn against incorrect usage when targeting the browser.
+We reasoned that we did not need a TFM as we could always provide a PAL over any functionality we needed and we would annotate the APIs with the `[SupportedOSPlatform]` attribute which would warn against incorrect usage when targeting the browser.
 
 Over time, we have learned that the lack of a TFM is limiting for us and our customers. The lack of a TFM introduces friction in two ways:
 * **Exposing additional customer-facing APIs when running in browser (and not on desktop)**: For example, Blazor includes many platform agnostic abstractions like IJSRuntime, IJSInProcessRuntime and different implementations to be able to reflect the different capabilities of the different platforms. This makes taking advantage of some of the webassembly unique capabilities more challenging as this kind of functionality needs to be carefully designed, and creates other problems like lack of discoverability (you need to know the existence of IJSInProcessRuntime and downcast to it).
@@ -172,7 +172,11 @@ So in general, any API that has been supported by browsers for at least 1 year i
 
 ## Stakeholders and Reviewers
 
-@lewing, @pavelsavara, @marek-safar, @terrajobst, more to be added here.
+- Runtime
+- ASP.NET Core
+- Web Tools 
+- SDK
+- NuGet
 
 ## Design
 
@@ -182,4 +186,6 @@ The ASP.NET Core team will build a similar experience on top of the TFM with sim
 
 ## Q & A
 
-What will be the outcome of a net8.0 project referencing a net8.0-browser? (No multi-targeting)
+## Can `net8.0` reference `net8.0-browser`?
+
+No. The compatibility rules for platform-based TFMs are syntax based. `net8.0-browser` will be able to reference `net8.0` but not vice versa.
