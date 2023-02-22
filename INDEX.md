@@ -81,6 +81,8 @@ Use update-index to regenerate it:
 | 2021 | [TFM for .NET nanoFramework](accepted/2021/nano-framework-tfm/nano-framework-tfm.md) | [Immo Landwerth](https://github.com/terrajobst), [Laurent Ellerbach](https://github.com/Ellerbach), [José Simões](https://github.com/josesimoes) |
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
 | 2022 | [.NET 7 Version Selection Improvements](accepted/2022/version-selection.md) | [Rich Lander](https://github.com/richlander) |
+| 2022 | [Enable EVEX and 512-bit Vectors in RyuJIT](accepted/2022/enable-512-vectors.md) | [Anthony Canino](https://github.com/anthonycanino) |
+| 2022 | [Upgrade `Vector` API SIMD Acceleration Capability in .NET](accepted/2022/enhance-vector-codegen.md) | [Anthony Canino](https://github.com/anthonycanino) |
 
 ## Drafts
 
