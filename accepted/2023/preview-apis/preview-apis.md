@@ -52,18 +52,6 @@ restriction not make sense, it's highly undesirable. Library authors simply want
 a way to express "these parts of my API surface might change". This statement
 isn't tied to any runtime-, framework-, or language features.
 
-Another concern we had for platform-level preview features is that we wanted to
-ensure that application developers are aware when their applications have a
-dependency on them. That is, we want to avoid a case where a library on NuGet
-uses platform-level preview features as an implementation detail that the
-application consumer isn't aware of. So we made the opt-in mechanism viral: a
-library that turns on platform-level preview features requires its consumer to
-turn them on as well.
-
-Since library-level preview features cannot change how the .NET runtime itself
-operates, we don't have that same level of concern. In fact, we believe the
-viral nature is also undesirable.
-
 For the remainder of this proposal we'll refer to *library-level preview*
 features as *experimental APIs*.
 
@@ -143,18 +131,16 @@ stops exploring that API.
 
 ### Goals
 
-* Don't change the guardrails for platform-level preview features:
-    - They require opt-in (without, the build fails with an error)
-    - They require to be viral (i.e. opt-in is also required for indirect
-      dependencies relying on preview features)
-    - The opt-in can be expressed centrally in the project file
-    - They require SDK and framework to match
+* Don't change the behavior for platform-level preview features
 
 * Offer library-level preview features with a different set of guardrails:
-    - They require opt-in (without, the build fails with an error)
-    - The opt-in isn't viral and can be an implementation detail
-    - The opt-in is centralized, but it's specific to each preview feature
-    - Using them poses no requirements on the SDK version
+    - Modelled after `[Obsolete]`, except the severity is always an error
+    - The opting-ing is expressed similar to obsolete, that is the call site is
+      either marked as experimental itself or the error is suppressed via any of
+      the existing ways (e.g. `<NoWarn>` or `#pragma`).
+    - In order to make centralization possible, each feature is encouraged
+      to have a separate diagnostic ID.
+    - Using experimental APIs poses no requirements on the SDK version
 
 ### Non-Goals
 
@@ -206,17 +192,45 @@ public sealed class ExperimentalAttribute : Attribute
 }
 ```
 
+### Intended Usage
+
+A library owner should use separate diagnostic IDs for each logical feature that
+is considered not yet stable. All API entry points into that feature should be
+marked with the same diagnostic ID. Like diagnostic IDs, the library owner is
+encouraged to create a unique prefix.
+
+The library consumer has multiple options to deal with experimental APIs:
+
+1. **Mark the consuming API as experimental**. In those cases, the consumer can
+  either re-use the same diagnostic ID to express that it merely depends on the
+  same experimental feature, or introduce a separate diagnostic ID, which
+  expresses there is a derived feature that is also experimental. This means if
+  the underlying experimental API becomes stable, the derived feature might not
+  yet be stable. In either case, the experimental nature is forwarded to the
+  consumer's consumer, essentially making it viral.
+
+2. **Suppress**. This basically states "I'm intending to shield my consumer from
+  breaking changes that occur as a result of me using an experimental feature".
+  The suppression an can be handled in two distinct ways, which we consider a
+  coding style question:
+   - Suppress individual call sites using `#pragma` or `[SuppressMessageMessage]
+   - Suppress them centrally using `<NoWarn>` or `[assembly: SuppressMessageMessage]`
+
+Whether or not the experimental nature is made viral or not is up to the
+consumer of the experimental API. Since there is a built-in code fixer for all
+diagnostics that enables suppression (2) we should probably also provide a code
+fixer for (1) which applies the attribute with the same diagnostics. This way,
+both options are being presented to the consumer.
+
 ### Compiler Behavior
 
 The compiler will raise a diagnostic when an experimental API is used, using the
 supplied diagnostic ID. The severity is always error.
 
-The semantics are identical to how obsolete is tracked, except that it will
-always raise a diagnostic regardless of whether the call site is marked as
-experimental or not. There is also no special treatment when both caller and
-callee are in the same assembly -- any use will generate a diagnostic and the
-caller is expected to suppress it, with the usual means (i.e. `#pragma` or
-project-wide `NoWarn`).
+The semantics are identical to how obsolete is tracked, except there is no
+special treatment when both caller and callee are in the same assembly -- any
+use will generate a diagnostic and the caller is expected to suppress it, with
+the usual means (i.e. `#pragma` or project-wide `NoWarn`).
 
 ## Tracking Items
 
@@ -265,6 +279,20 @@ features:
    example, if you try to use the .NET 7.0 SDK, you'll get a build error telling
    you that this isn't supported. This alignment isn't necessary for library
    preview APIs and in fact highly undesirable.
+
+In the discussion of library-level preview features we concluded that we want to
+model it as a peer to `[Obsolete]`:
+
+1. **Can be viral or non-viral**. We ended up liking the fact that this mean it
+   can both be viral and not viral, depending on wether the consumer suppresses
+   it or marks themselves.
+
+2. **Not a free-for all switch**. We don't want a single global property that
+   enables all library preview features. Rather, we want to allow the caller
+   opt-in those features separately.
+
+3. **Not tied to the SDK version**. Since these features have no dependency on
+ tooling preview features, there is no need for this constraint.
 
 We considered offering a different mode for `RequiresPreviewFeaturesAttribute`
 instead of using a different attribute but we believe this makes it harder to
