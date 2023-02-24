@@ -8,6 +8,7 @@ Goals:
 - Provide simple and consistent output paths
 - Avoid cases where one output path is nested inside of another one
 - Avoid excessively deep directory heirarchies
+- Allow output path customization when needed
 
 ## Motivation
 
@@ -29,8 +30,7 @@ The recommended way to opt in to the new output path format will be to set the `
 The artifacts folder will by default be named `.artifacts`.  The convention we will use to determine which folder the artifacts folder should go in will be:
 
 - If a `Directory.Build.props` file was used in the build, put the artifacts folder in the same folder where `Directory.Build.props` was found, which will typically be at the root of a repo.  Since MSBuild already probes for `Directory.Build.props`, we should be able to use this folder for the artifacts with minimal perf impact
-- Look for a folder with a `.sln` file in it, walking up the directory tree from the current project folder to the root.  When a `.sln` file is found, put the artifacts folder in that same directory.  We may need an additional intrinsic MSBuild function to do this, as the `GetDirectoryNameOfFileAbove` function doesn't support wildcards for the file name
-- If neither a `Directory.Build.props` file nor a `.sln` file was found, then put the artifacts folder in the project folder.
+- If a `Directory.Build.props` file was not found, then put the artifacts folder in the project folder.
 
 To override the default artifacts folder path, the `ArtifactsPath` property can be used.  If `ArtifactsPath` is set, then `UseArtifactsOutput` will default to `true` and it won't be necessary to set both properties.  `ArtifactsPath` should normally be set in a `Directory.Build.props` file.  For example:
 
@@ -44,12 +44,12 @@ To override the default artifacts folder path, the `ArtifactsPath` property can 
 
 Under the artifacts folder will be nested folders for the type of the output, the project name, and the pivots, ie `<ArtifactsPath>\<Type of Output>\<Project Name>\<Pivots>`.
 
-- Type of Output - This will be a value such as `bin`, `publish`, `intermediates`, or `package`.  Projects will be able to override this value, for example to separate shipping and non-shipping artifacts into different folders
+- Type of Output - This will be a value such as `bin`, `publish`, `obj`, or `package`.  Projects will be able to override this value, for example to separate shipping and non-shipping artifacts into different folders
   - `bin` will be the folder for the normal build output.  Projects can override this with `ArtifactsOutputName`
   - `publish` will be the folder for the publish output.  Projects can override this with `ArtifactsPublishOutputName`
   - `package` will be the folder for the package output, where .nupkg folders are placed. (Or should it be `packages`?  Feedback welcome.)  Projects can override this with `ArtifactsPackageOutputName`
-  - `intermediates` will be the folder for the intermediate output.  (Or should we stick with `obj`?  Feedback welcome.)
-- The Project Name.  This will ensure that each project has a separate output folder.  By default this will be `$(MSBuildProjectName)`, but projects can override this with the `ArtifactsProjectName` property.  If `ArtifactsPath` was not explicitly specified, and neither a `Directory.Build.props` nor a `.sln` file was found, then the artifacts folder will already be inside the project folder, and an additional Project Name folder will *not* be included in the output paths.  Additionally, for package output, this folder won't be included in the path, so that all the `.nupkg` files that are built can be in a single folder.
+  - `obj` will be the folder for the intermediate output.
+- The Project Name.  This will ensure that each project has a separate output folder.  By default this will be `$(MSBuildProjectName)`, but projects can override this with the `ArtifactsProjectName` property.  If `ArtifactsPath` was not explicitly specified, and a `Directory.Build.props` was not found, then the artifacts folder will already be inside the project folder, and an additional Project Name folder will *not* be included in the output paths.  Additionally, for package output, this folder won't be included in the path, so that all the `.nupkg` files that are built can be in a single folder.
 - Pivots - This is used to distinguish between builds of a project for different configurations, target frameworks, runtime identifiers, or other values.  It can be specified with `ArtifactsPivots`.  By default, the pivot will include:
   - The `Configuration` value (lower-cased, using the invariant culture)
   - The `TargetFramework` if the project is multi-targeted
@@ -60,7 +60,7 @@ If multiple pivot elements are used, they will be joined by the underscore (`_`)
 Some examples:
 
 - `.artifacts\bin\debug` - The build output path for a simple project when you run `dotnet build`
-- `.artifacts\intermediates\debug` - The intermediate output path for a simple project when you run `dotnet build`
+- `.artifacts\obj\debug` - The intermediate output path for a simple project when you run `dotnet build`
 - `.artifacts\bin\MyApp\debug_net8.0` - The build output path for the `net8.0` build of a multi-targeted project
 - `.artifacts\publish\MyApp\release_linux-x64` - The publish path for a simple app when publishing for `linux-x64`
 - `.artifacts\package\release` - The folder where the release .nupkg will be created for a project
@@ -93,6 +93,10 @@ The `Directory.AfterTargetFrameworkInference.targets` would include the followin
     </PropertyGroup>
 </Project>
 ```
+
+## Specifying the output path via command line
+
+The .NET CLI supports an `--output` parameter to specify the output path for various commands.  This [does not work well](https://learn.microsoft.com/en-us/dotnet/core/compatibility/sdk/7.0/solution-level-output-no-longer-valid) for solutions, since it results in multiple projects building to the same folder.  We will add an `--artifactspath` parameter that sets the `ArtifactsPath` property.  Because each project will be built into a separate subfolder, this will be a safer option to use for solution builds.
 
 ## Changing the default output path format
 
@@ -128,3 +132,9 @@ There is also at least one drawback:
 ### Finding the output path from scripts
 
 Today, the output path is likely hardcoded in many places that interact with MSBuild (build scripts, CI pipelines, etc.).  If those are going to need to be updated, it would be better if they could be updated in a way that makes them resilient to output path changes.  To do this, we should provide a way for a script to call in to MSBuild and get the output path value.  This will be a separate design proposal, right now we have it tracked with the following work item: https://github.com/dotnet/msbuild/issues/3911
+
+## Looking for a .sln file in the convention
+
+If we ever enable the new output path format by default, we would want it to work for projects without a Directory.Build.props file.  In that case we would want to update the convention so that if a Directory.Build.props file isn't found, it will look for a folder with a `.sln` file in it, walking up the directory tree from the current project folder to the root.  When a `.sln` file is found, the artifacts folder would be put in that same directory.
+
+To implement this, we would probably need an additional intrinsic MSBuild function, as the `GetDirectoryNameOfFileAbove` function doesn't support wildcards for the file name
