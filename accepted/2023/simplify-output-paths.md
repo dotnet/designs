@@ -45,9 +45,9 @@ To override the default artifacts folder path, the `ArtifactsPath` property can 
 Under the artifacts folder will be nested folders for the type of the output, the project name, and the pivots, ie `<ArtifactsPath>\<Type of Output>\<Project Name>\<Pivots>`.
 
 - Type of Output - This will be a value such as `bin`, `publish`, `obj`, or `package`.  Projects will be able to override this value, for example to separate shipping and non-shipping artifacts into different folders
-  - `bin` will be the folder for the normal build output.  Projects can override this with `ArtifactsOutputName`
+  - `bin` will be the folder for the normal build output.  Projects can override this with `ArtifactsBinOutputName`
   - `publish` will be the folder for the publish output.  Projects can override this with `ArtifactsPublishOutputName`
-  - `package` will be the folder for the package output, where .nupkg folders are placed. (Or should it be `packages`?  Feedback welcome.)  Projects can override this with `ArtifactsPackageOutputName`
+  - `package` will be the folder for the package output, where .nupkg files that are created when packing the project are placed. (Or should the folder name be `packages`?  Feedback welcome.)  Projects can override this with `ArtifactsPackageOutputName`
   - `obj` will be the folder for the intermediate output.
 - The Project Name.  This will ensure that each project has a separate output folder.  By default this will be `$(MSBuildProjectName)`, but projects can override this with the `ArtifactsProjectName` property.  If `ArtifactsPath` was not explicitly specified, and a `Directory.Build.props` was not found, then the artifacts folder will already be inside the project folder, and an additional Project Name folder will *not* be included in the output paths.  Additionally, for package output, this folder won't be included in the path, so that all the `.nupkg` files that are built can be in a single folder.
 - Pivots - This is used to distinguish between builds of a project for different configurations, target frameworks, runtime identifiers, or other values.  It can be specified with `ArtifactsPivots`.  By default, the pivot will include:
