@@ -184,6 +184,23 @@ The general design guidelines for this feature follow the same principles as the
 
 The ASP.NET Core team will build a similar experience on top of the TFM with similar conventions.
 
+The work that needs to happen in NuGet is ensuring that the friendly parses into a target platform of `browser`. The version is assumed to be non-existing but should follow what we have been doing for the (already existing) runtime identifier (RID).
+
+| TFM Component | Value            |
+| ------------- | ---------------- |
+| Friendly name | `net8.0-browser` |
+| TPI           | `browser`        |
+
+### Open design challenges
+
+* Is there any TFM work on the IDE side?
+  - For example, there are drop downs that show frameworks (editor as well as project properties). Do they need a display name?
+* Are there any existing APIs that should be moved from `net7.0` to `net8.0-browser`?
+* This document focuses on the TFM, but we need to think about the multi-targeting experience in the IDE
+  - Logically the server needs to reference the client (because the client is downloaded from the server). With this proposal the intent is to have a single multi-targeted project where the server output (`net8.0`) depends on the client output (`net8.0-browser`)
+  - Seems we want some amount of "streamlining" in the IDE/build experience, for instance by having a single output where the browser output is nested under the server output, making F5 work without being able to accidentally launch the wrong side. There are also other aspects where the IDE prunes the TFM graph, for instance, when running unit tests. We'd have to make sure that these features work, but all of these are multi-targeting IDE experience issues not issues with having a TFM.
+  - The sample code above also used conditions in the build file which are limited and intrinsic functions are verbose. We should consider making this more natural in MSBuild, not just for this experience but for multi-targeting in general. One idea was to make certain properties intrinsic and have the build engine parse their values from the `TargetFramework` property on demand.
+
 ## Q & A
 
 ## Can `net8.0` reference `net8.0-browser`?
