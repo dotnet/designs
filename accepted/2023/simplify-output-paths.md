@@ -96,7 +96,7 @@ The `Directory.AfterTargetFrameworkInference.targets` would include the followin
 
 ## Specifying the output path via command line
 
-The .NET CLI supports an `--output` parameter to specify the output path for various commands.  This [does not work well](https://learn.microsoft.com/en-us/dotnet/core/compatibility/sdk/7.0/solution-level-output-no-longer-valid) for solutions, since it results in multiple projects building to the same folder.  We will add an `--artifactspath` parameter that sets the `ArtifactsPath` property.  Because each project will be built into a separate subfolder, this will be a safer option to use for solution builds.
+The .NET CLI supports an `--output` parameter to specify the output path for various commands.  This [does not work well](https://learn.microsoft.com/en-us/dotnet/core/compatibility/sdk/7.0/solution-level-output-no-longer-valid) for solutions, since it results in multiple projects building to the same folder.  We will add an `--artifacts-path` parameter that sets the `ArtifactsPath` property.  Because each project will be built into a separate subfolder, this will be a safer option to use for solution builds.
 
 ## Changing the default output path format
 
