@@ -135,7 +135,7 @@ stops exploring that API.
 
 * Offer library-level preview features with a different set of guardrails:
     - Modelled after `[Obsolete]`, except the severity is always an error
-    - The opting-ing is expressed similar to obsolete, that is the call site is
+    - The opting-in is expressed similar to obsolete, that is the call site is
       either marked as experimental itself or the error is suppressed via any of
       the existing ways (e.g. `<NoWarn>` or `#pragma`).
     - In order to make centralization possible, each feature is encouraged
