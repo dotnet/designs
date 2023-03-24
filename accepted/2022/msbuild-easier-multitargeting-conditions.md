@@ -45,11 +45,18 @@ So, the currently recommended solution is to use [built-in MSBuild functions](ht
 
 The new behavior will be a modification to MSBuild that will automatically parse the `TargetFramework` property into the component properties when needed.  It would work as follows:
 
-- When reading the value of a property, if:
-  - The property is one of `TargetFrameworkIdentifier`, `TargetFrameworkVersion`, `TargetPlatformIdentifier`, or `TargetPlatformVersion`
-  - The current property value is unset / empty
-  - The `MSBuildAutomaticallyParseTargetFramework` property is set to `True`
-- Then MSBuild would read the `TargetFramework` property, and if it was non-empty call the appropriate NuGet target framework parsing function to get the value.  It would not store the computed value of the property for future reads, simply return the computed value for the current property value read.
 - The .NET SDK would set the `MSBuildAutomaticallyParseTargetFramework` property to `True` in its `.props` files to enable the new behavior for Sdk-style projects.
+- When reading the value of a property, if:
+  - The `MSBuildAutomaticallyParseTargetFramework` property is set to `True`
+  - The property to be read is one of `TargetFrameworkIdentifier`, `TargetFrameworkVersion`, `TargetPlatformIdentifier`, or `TargetPlatformVersion`
+- Then, if the current property value is unset / empty
+  - MSBuild would read the `TargetFramework` property, and if it was non-empty call the appropriate NuGet target framework parsing function to get the value.
+  - It would not store the computed value of the property for future reads, simply return the computed value for the current property value read.
+  - If the `TargetFramework` property was not set, then MSBuild will generate an evaluation error.  This is to help avoid situations where logic silently doesn't work (for example if you tried to set a property based on the `TargetFrameworkIdentifier` in `Directory.Build.props`, that would not work because the `TargetFramework` wouldn't be set).
+- Otherwise, if the property to be read is set
+  - MSBuild would still read the `TargetFramework` property and parse the appropriate value.  It would compare the parse result with the current value of the property.  If they do not match, it would generate an evaluation error
+  - This is to ensure that the "magic" properties have a consistent value, whether that value comes from the new automatic parsing logic in MSBuild, the default parsing in the .NET SDK targets, or elsewhere.
+  - This may cause errors when [TargetFramework](https://github.com/NuGet/Home/issues/5154) [aliasing](https://github.com/NuGet/Home/pull/12124) is used.  If TargetFramework aliasinng is being used and the resultant TargetFramework component properties are different than the result would be from a standard parse of the `TargetFramework`, then the aliasing logic should also turn off `MSBuildAutomaticallyParseTargetFramework`.
+  - We may also need to special-case how the target platform is handled, as for any target framework that is not .NET 5 or higher, the target platform will default to Windows 7.0 (see the use of the `_EnableDefaultWindowsPlatform` property in the .NET SDK and MSBuild common targets).
 
 This would mean that multi-targeted projects could use simple conditions based on the `TargetFrameworkIdentifier`, `TargetPlatformIdentifier`, etc. for both properties and items.
