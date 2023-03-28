@@ -81,6 +81,7 @@ Use update-index to regenerate it:
 | 2021 | [TFM for .NET nanoFramework](accepted/2021/nano-framework-tfm/nano-framework-tfm.md) | [Immo Landwerth](https://github.com/terrajobst), [Laurent Ellerbach](https://github.com/Ellerbach), [José Simões](https://github.com/josesimoes) |
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
 | 2022 | [.NET 7 Version Selection Improvements](accepted/2022/version-selection.md) | [Rich Lander](https://github.com/richlander) |
+| 2023 | [.NET 8.0 Polyfill](accepted/2023/net8.0-polyfills/net8.0-polyfills.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2023 | [Experimental APIs](accepted/2023/preview-apis/preview-apis.md) | [Immo Landwerth](https://github.com/terrjobst) |
 | 2023 | [net8.0-browser TFM for applications running in the browser](accepted/2023/net8.0-browser-tfm.md) | [Javier Calvarro](https://github.com/javiercn) |
 
