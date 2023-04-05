@@ -280,7 +280,7 @@ In .NET 8.0, the following APIs will be marked `[Obsolete]` _as error_ by defaul
 - The entirety of the `IFormatter` interface.
 - The entirety of the `Formatter` type.
 
-The following APIs will be marked `[Obsolete]` _as warning_ using a new warning code (tentatively `SYSLIB0049`).
+The following APIs will be marked `[Obsolete]` _as warning_ using a new warning code (tentatively `SYSLIB0050`).
 
 **Newly obsolete types**
 
@@ -307,7 +307,7 @@ The following APIs will be marked `[Obsolete]` _as warning_ using a new warning 
 - `ISerializable.GetObjectData` method, but not the type itself
 - `SerializationInfo` and `StreamingContext`, all ctors, but not the types themselves
 
-The following APIs will be marked `[Obsolete]` _as warning_ using a new warning code (tentatively `SYSLIB0050`) and marked `[EditorBrowsable(Never)]`.
+The following APIs will be marked `[Obsolete]` _as warning_ using a new warning code (tentatively `SYSLIB0051`) and marked `[EditorBrowsable(Never)]`.
 
 - All externally visible (public or protected) serialization ctors: `.ctor(SerializationInfo, StreamingContext)`.
 - All public (not explicit or protected) implementations of `IObjectReference.GetRealObject`.
@@ -320,9 +320,9 @@ The following APIs will not be obsoleted but will be marked `[EditorBrowsable(Ne
 
 These changes only affect applications targeting .NET 8+. If a project targets multiple runtimes, these new annotations will be `#if` conditioned to apply only to .NET 8+.
 
-The reason for using two new warning codes is that these warnings are directed at two different audiences. The first warning code (tentatively `SYSLIB0049`) is directed toward people who _invoke_ the legacy serialization infrastructure. This consists mostly of people who are writing serializers or of application developers who are doing something so specialized that they require direct calls back in to the serialization infrastructure.
+The reason for using two new warning codes is that these warnings are directed at two different audiences. The first warning code (tentatively `SYSLIB0050`) is directed toward people who _invoke_ the legacy serialization infrastructure. This consists mostly of people who are writing serializers or of application developers who are doing something so specialized that they require direct calls back in to the serialization infrastructure.
 
-The second warning code (tentatively `SYSLIB0050`) is directed at library authors who extend existing `[Serializable]` types. For example, this warning code would be observed by developers who _both_ subclass types like `Exception` or `Dictionary<TKey, TValue>` _and_ extend its serialization ctor. The warning code indicates that this is legacy serialization infrastructure intended only for compatibility, and it should not be adopted by new .NET applications.
+The second warning code (tentatively `SYSLIB0051`) is directed at library authors who extend existing `[Serializable]` types. For example, this warning code would be observed by developers who _both_ subclass types like `Exception` or `Dictionary<TKey, TValue>` _and_ extend its serialization ctor. The warning code indicates that this is legacy serialization infrastructure intended only for compatibility, and it should not be adopted by new .NET applications.
 
 > Most developers who use `[Serializable]` or who implement `ISerializable` themselves will see no warnings, since those types are not being obsoleted at this time. For developers who see warnings because they call into base implementations' now-obsolete members, self-remediation guidance will be provided.
 
