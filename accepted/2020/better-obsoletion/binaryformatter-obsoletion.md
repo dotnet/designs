@@ -50,11 +50,12 @@ Encouraging migration away from `BinaryFormatter` has the additional benefit of 
 - All first-party dotnet org code bases complete migration away from `BinaryFormatter`
 - `BinaryFormatter` disabled by default across all project types
 - All not-yet-obsolete `BinaryFormatter` APIs marked obsolete _as warning_
-- Entirety of legacy serialization infrastructure marked obsolete _as warning_
+- Additional legacy serialization infrastructure marked obsolete _as warning_
 - No new `[Serializable]` types introduced (all target frameworks)
 
 ### .NET 9 (Nov 2024)
 
+- Remainder of legacy serialization infrastructure marked obsolete _as warning_
 - `BinaryFormatter` infrastructure removed from .NET
   - Back-compat switches also removed
 
@@ -273,35 +274,80 @@ Beginning with .NET 8.0, the "disable `BinaryFormatter`" feature switch is activ
 
 ### New obsoletions in .NET 8
 
-In .NET 8.0, the following APIs will be marked `[Obsolete]` _as error_ by default, where the error can be converted back to a warning by using the aformentioned compat switch.
+In .NET 8.0, the following APIs will be marked `[Obsolete]` _as error_ by default. These will utilize the existing `SYSLIB0011` warning code. The errors can be converted back to warnings by using the `<EnableUnsafeBinaryFormatterSerialization>` compat switch within the project file. 
 
 - The entirety of the `BinaryFormatter` type.
 - The entirety of the `IFormatter` interface.
 - The entirety of the `Formatter` type.
 
-Additionally, the following APIs will be marked `[Obsolete]` _as warning_.
+The following APIs will be marked `[Obsolete]` _as warning_ using a new warning code (tentatively `SYSLIB0050`).
 
-- The entirety of the `ISerializable` type.
-  - Includes any public or explicitly-implemented `GetObjectData` methods.
-- `OnSerializingAttribute`, `OnDeserializingAttribute`, `OnSerializedAttribute`, and `OnDeserializedAttribute`
-- Any methods the above attributes are applied to.
-- The entirety of the types `FormatterServices`, `ISerializationSurrogate`, `ISurrogateSelector`, `ObjectManager`, `ObjectIDGenerator`, `SurrogateSelector`, `FormatterAssemblyStyle`, `FormatterTypeStyle`, `IFieldInfo`, and `TypeFilterLevel`, `SerializationInfo`, and `StreamingContext`.
-- The `[Serializable]` and `[NonSerialized]` attributes.
-- Any serialization ctors (`".ctor(SerializationInfo, StreamingContext)"`) on public types.
+**Newly obsolete types**
 
-As mentioned previously, members on `Exception`-derived types in projects which are consumed by _netstandard2.0_ or earlier will not be subject to obsoletion.
+- `IFormatterConverter` interface and `FormatterConverter` concrete type
+- `FormatterServices` static class
+- `IObjectReference` interface
+- `ISurrogateSelector` and `ISerializationSurrogate` interfaces, and the `SurrogateSelector` concrete type
+- `ISafeSerializationData` and `SafeSerializationEventArgs`
+- `StreamingContextStates` enum
+- `ObjectIDGenerator`
+- `ObjectManager`
+- `SerializationObjectManager`
+- `FormatterTypeStyle`, `FormatterAssemblyStyle`, and `TypeFilterLevel` enums
+- `IFieldInfo` interface
 
-For packages which perform asset harvesting or which otherwise aren't always compiled against _NetCoreAppCurrent_, obsoleting the serialization ctors and `GetObjectData` methods should be done on a best-effort basis. We'll have to see how difficult the task will be, but let's not force ourselves to perform unnatural contortions in the packaging system.
+(All APIs which expose these types through their public API surface would also be obsoleted.)
 
-This will also follow a "better obsoletion" mechanism so that applications can suppress the entire category of warnings if needed.
+**Newly obsolete members on existing types**
 
-_(n.b. Obsoleting the `[Serializable]` and `[NonSerialized]` attributes may require additional thought. They are intricately tied to the legacy serialization infrastructure and cannot correctly be used outside of it, but there are many serializers in the wild which special-case only these two attributes and which don't understand the contract they have with the rest of the legacy serialization stack.)_
+- `Type.IsSerializable` public property (and all overridden implementations)
+- `TypeAttributes.Serializable` enum value
+- `FieldInfo.IsNotSerialized` public property
+- `FieldAttributes.NotSerialized` enum value
+- `ISerializable.GetObjectData` method, but not the type itself
+- `SerializationInfo` and `StreamingContext`, all ctors, but not the types themselves
+
+The following APIs will be marked `[Obsolete]` _as warning_ using a new warning code (tentatively `SYSLIB0051`) and marked `[EditorBrowsable(Never)]`.
+
+- All externally visible (public or protected) serialization ctors: `.ctor(SerializationInfo, StreamingContext)`.
+- All public (not explicit or protected) implementations of `IObjectReference.GetRealObject`.
+- All public (not explicit or protected) implementations of `ISerializable.GetObjectData`.
+
+The following APIs will not be obsoleted but will be marked `[EditorBrowsable(Never)]`.
+
+- The `SerializableAttribute` type
+- The `NonSerializedAttribute` type
+
+These changes only affect applications targeting .NET 8+. If a project targets multiple runtimes, these new annotations will be `#if` conditioned to apply only to .NET 8+.
+
+The reason for using two new warning codes is that these warnings are directed at two different audiences. The first warning code (tentatively `SYSLIB0050`) is directed toward people who _invoke_ the legacy serialization infrastructure. This consists mostly of people who are writing serializers or of application developers who are doing something so specialized that they require direct calls back in to the serialization infrastructure.
+
+The second warning code (tentatively `SYSLIB0051`) is directed at library authors who extend existing `[Serializable]` types. For example, this warning code would be observed by developers who _both_ subclass types like `Exception` or `Dictionary<TKey, TValue>` _and_ extend its serialization ctor. The warning code indicates that this is legacy serialization infrastructure intended only for compatibility, and it should not be adopted by new .NET applications.
+
+> Most developers who use `[Serializable]` or who implement `ISerializable` themselves will see no warnings, since those types are not being obsoleted at this time. For developers who see warnings because they call into base implementations' now-obsolete members, self-remediation guidance will be provided.
+
+The following types are _not_ being obsoleted at this time: `SerializableAttribute`, `NonSerializedAttribute`, `OnSerializingAttribute`, `OnSerializedAttribute`, `OnDeserializingAttribute`, `OnDeserializingAttribute`, `ISerializable`. This would be too disruptive to the wider ecosystem at this time since other serializers within .NET understand these attributes (but do not honor them correctly). Rather, we must prioritize getting people off of legacy dangerous deserializers by providing better guidance and stepping stones before tackling this longer tail of work. To support that principle, these APIs will not be obsoleted until .NET 9. However, since `SerializableAttribute` and `NonSerializedAttribute` are within the `System` namespace, it's prudent to mark them `[EditorBrowsable(Never)]` as part of this wave.
 
 ### No new \[Serializable\] types introduced (.NET 8)
 
 In .NET 6, we had stopped attributing new types with `[Serializable]`, carving out an exception only for `Exception`-derived types in projects which targeted _netfx_ or _netstandard_.
 
 Starting with .NET 8, we will no longer attribute _any_ new types with `[Serializable]`, voiding the previously granted exception. (Already-shipped types will retain their existing annotations.)
+
+### Remainder of legacy serialization infrastructure obsoleted (.NET 9)
+
+When targeting .NET 9+, the following types will be marked `[Obsolete]` _as warning_.
+
+- `SerializableAttribute`
+- `NonSerializedAttribute`
+- `OnSerializingAttribute`
+- `OnSerializedAttribute`
+- `OnDeserializingAttribute`
+- `OnDeserializedAttribute`
+- `ISerializable`
+- `IDeserializationCallback`
+
+This should represent the balance of unobsoleted APIs which are strongly tied to the legacy serialization infrastructure.
 
 ### BinaryFormatter infrastructure removed from .NET (.NET 9)
 
