@@ -35,7 +35,7 @@ One of the reasons we were hesitant to ask for a TFM in the initial release of B
 * Blazor Server has a healthy user base, which makes it desirable for library authors to target net8.0.
 * A core piece of Blazor functionality (prerendering) depends on being able to run the application on net8.0.
 
-Given this, we consider unlikely that developers will author wasm specific code (net8.0-wasm) without also including a net8.0 version, as it will make it incompatible with any other Blazor flavor.
+Given this, we consider unlikely that developers will author wasm specific code (net8.0-browser) without also including a net8.0 version, as it will make it incompatible with any other Blazor flavor.
 
 In addition this, we also have the experience with Blazor Hybrid and Maui where developers already have to work with multiple TFMs (one per platform) and Blazor Hybrid being part of that ecosystem needs to deal with that too.
 
