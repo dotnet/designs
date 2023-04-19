@@ -28,13 +28,29 @@ This is very complicated and doesn't make it easy to understand workload version
 - Deadlines for workload completion and insertion do not change from current processes
 - Workload updates should require minimal (or no) additional validation of non-workload scenarios
 
-## Workload patch versions
+## Workloads versions
 
 Currently, we use a 3 part version number for the .NET SDK, for example 8.0.100.  Typically we release a patch each month, for example 8.0.101, 8.0.102, etc.
 
-We will create a workload patch version number that encapsulates all the workload manifest versions that are released together.  We will represent the workload patch version by adding an additional component to the .NET SDK version.  The versions of the workloads that release on the same release date as the .NET SDK will be number `.0`.  Subsequent workload updates before the next .NET SDK patch will be numbered `.1`, `.2`, etc.  For example, the full workload patch version for the initial 8.0 release would be `8.0.100.0`, and if there was a workload update before the first .NET SDK patch, the updated workload patch version would be `8.0.100.1`.
+We will create a workloads version number that encapsulates all the workload manifest versions that are released together.  A workloads version is essentially a mapping from the workloads version to the different versions for each workload manifest.  For public releases, the workloads version will use the same version number as the .NET SDK.  For example, when .NET SDK 8.0.101 releases, there will be a corresponding workloads version 8.0.101 that corresponds to the versions of the workloads that were released together with that .NET SDK.
 
-A workload patch is essentially a mapping from the workload patch version to the different versions for each workload manifest.  Creating a workload patch should be a lightweight process, which involves creating a NuGet packages and corresponding installers to deliver this mapping.  The .NET SDK assets and installers, workload manifests, and workload packs should already be built and should not need to be created when building a workload patch.
+## Baseline workload versions
+
+.NET SDK workloads have similar shipping deadlines as the .NET SDK.  That means that the .NET SDK itself can't include final versions of workloads which are built outside of the .NET build, as building and signing off on those workloads happens in parallel with .NET build and signoff.  So the .NET SDK ships with *baseline* workload manifests, which are mainly used to enable the .NET SDK to list which workloads are available, and to know if a project requires a workload which isn't installed.  By default, when a workload is installed via the .NET CLI, the .NET SDK will first look for and update to the latest workload manifests for the current feature band before installing workloads.
+
+When we build the .NET SDK, we will assign a workloads version to the baseline workload manifest versions that are included in that SDK.  For releases with stabilized version numbers, we need a different workloads version number for the baseline workload manifest versions than for the stabilized version number for the .NET SDK.  In that case, we will use `baseline` as a the first semantic version pre-release identifier, followed by build number information.  For example, the baseline workloads version for 8.0.201 could be `8.0.201-baseline.23919.2`.
+
+For non-stabilized builds of the .NET SDK, we will use the same (prerelease) version number for the workloads version as we do for the .NET SDK version.
+
+QUESTION: Will it be OK for the `baseline` versions to be semantically less than `preview` and `rc` versions?
+
+## Workload versions in Visual Studio
+
+Visual Studio includes the .NET SDK, but rather than including baseline manifest versions for the .NET SDK workloads, it includes the final workload manifests for a given release.  These manifests are inserted into Visual Studio together with the workloads.
+
+For public releases of Visual Studio, the workloads version information should be created and inserted into Visual Studio together with the workloads.  However, internal builds of Visual Studio may not have an assigned workloads version.  In that case, the .NET SDK will use the same basic logic as it currently does to select manifests.  This involves finding the latest installed manifest for the current feature band, and if an expected manifest isn't found for the current feature band, then falling back to previous feature bands.  In this case, when a workloads version is needed, the .NET SDK will create a version using the .NET SDK feature band, the pre-release specifier `vs`, and a hash of the manifest IDs and versions.  For example, `8.0.200-vs.9e7f4b93`.
+
+NOTE: This means that these `vs` prerelase workloads versions would be semantically greater than any `baseline`, `preview`, or `rc` workloads versions.
 
 ## Experience
 
@@ -45,26 +61,26 @@ A workload patch is essentially a mapping from the workload patch version to the
 8.0.201
 ```
 
-We will add a new `dotnet workload --version` command to print the workload patch version:
+We will add a new `dotnet workload --version` command to print the workloads version:
 
 ```
 > dotnet workload --version
-8.0.201.2
+8.0.201
 ```
 
-We will also update `dotnet --info` and `dotnet workload --info` to display the workload patch version.  For example:
+We will also update `dotnet --info` and `dotnet workload --info` to display the workloads version.  For example:
 
 ```
 > dotnet --info
 .NET SDK:
  Version:              8.0.201
  Commit:               <commit>
- Workloads version:    8.0.201.2
+ Workloads version:    8.0.201
 
 <further information>
 
 > dotnet workload --info
- Workloads version:     8.0.201.2
+ Workloads version:     8.0.201
  [wasm-tools]
    Installation Source: SDK 8.0.100-preview.4
    Manifest Version:    8.0.0-preview.4.23181.9/8.0.100-preview.4
@@ -72,23 +88,23 @@ We will also update `dotnet --info` and `dotnet workload --info` to display the 
    Install Type:        FileBased
 ```
 
-When updating workloads, console output will include the old and new workload patch versions:
+When updating workloads, console output will include the old and new workloads versions:
 
 ```
 > dotnet workload install wasm-tools
 Checking for updated workloads version...
-Updating workloads version from 8.0.201.0 to 8.0.201.2...
+Updating workloads version from 8.0.201-baseline.23919.2 to 8.0.201...
 Installing workload manifest microsoft.net.sdk.android version 34.0.0-preview.4.230...
 <Further workload manifest update messages>
 Installing pack Microsoft.NET.Runtime.WebAssembly.Sdk version 8.0.0-preview.4.23181.9...
 <Further workload pack installation manifests>
 Garbage collecting for SDK feature band(s) 8.0.200...
 
-Successfully updated workloads version from 8.0.201.0 to 8.0.201.2.
+Successfully updated workloads version from 8.0.201-baseline.23919.2 to 8.0.201.2.
 Successfully installed workload(s) wasm-tools.
 ```
 
-The proposed [workload history](https://github.com/dotnet/sdk/pull/30486) command will also display the workload patch versions.
+The proposed [workload history](https://github.com/dotnet/sdk/pull/30486) command will also display the workloads versions.
 
 The .NET SDK will periodically (once a day, by default) check for updated workload versions in order to notify users if there is an update available.  Currently, commands such as `dotnet build` print out the following message:
 
@@ -105,16 +121,16 @@ Updates are available for the following workload(s): wasm-tools. Run `dotnet wor
 We will modify both commands to print the same message:
 
 ```
-A workload update (version 8.0.201.2) is available. Run `dotnet workload update` to install the latest workloads.
+A workload update (version 8.0.202) is available. Run `dotnet workload update` to install the latest workloads.
 ```
 
 We will add a new `--version` option to `dotnet workload update` to allow installing (or downgrading to) a specific workloads version:
 
 ```
-> dotnet workload update --version 8.0.201.0
-Updating workloads version from 8.0.201.2 to 8.0.201.0...
+> dotnet workload update --version 8.0.202
+Updating workloads version from 8.0.201 to 8.0.202...
 <Manifest and pack installation / garbage collection messages>
-Successfully updated workloads version from 8.0.201.2 to 8.0.201.0.
+Successfully updated workloads version from 8.0.201 to 8.0.202.
 ```
 
 ## Specifying workload versions with global.json
@@ -124,17 +140,14 @@ We will add support for specifying the workloads version in global.json.  For ex
 ```json
 {
   "sdk": {
-    "version": "8.0.201.0",
-    "rollForward": "disable"
+    "workloadsVersion": "8.0.201"
   }
 }
 ```
 
-This would force the SDK to use workloads version `8.0.201.0`, and would error if that version was not installed.
+This would force the SDK to use workloads version `8.0.201`, and would error if that version was not installed.
 
-We will support side-by-side workload version installations.  If 8.0.201.2 is installed, we would support running `dotnet workload install --version 8.0.201.0` to install that version of the workloads.  After installing the earlier version, the .NET SDK would still by default use the latest installed workloads version.  An earlier workloads version would only be used if it was specified in a global.json file.
-
-NOTE: Various tools (such Azure DevOps and [GitHub actions](github.com/actions/setup-dotnet)) read global.json in order to install the right version of the .NET SDK.  Those tools would need to be updated ignore the fourth section of the SDK version number.
+We will support side-by-side workload version installations.  If 8.0.202 is installed, we would support running `dotnet workload install --version 8.0.201` to install that version of the workloads.  After installing the earlier version, the .NET SDK would still by default use the latest installed workloads version.  An earlier workloads version would only be used if it was specified in a global.json file.
 
 NOTE: We may not implement the global.json workloads version support in the same release as the rest of the changes described in this design.
 
