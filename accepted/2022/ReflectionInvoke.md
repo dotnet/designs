@@ -1,6 +1,6 @@
 # Reflection Invoke for 8.0 (draft / in progress)
 #### Steve Harter
-#### April 25, 2023
+#### April 26, 2023
 
 # Background
 For additional context, see:
@@ -114,22 +114,15 @@ namespace System.Reflection
 {
      public ref struct MethodInvoker
      {
-        // Zero-arg case:
-        public MethodInvoker()
-
-        // Variable-length number of arguments:
+        // Takes a variable-length number of arguments:
         public unsafe MethodInvoker(ArgumentValue* argumentStorage, int argCount)
 
-        // Fixed length (say up to 8)
-        public MethodInvoker(ref ArgumentValuesFixed values)
-
-        // Dispose needs to be called with variable-length case
+        // Dispose needs to be called to unregister GC tracking
         public void Dispose()
 
         // Target
         public object? GetTarget()
         public ref T GetTarget<T>()
-
         public void SetTarget(object value)
         public unsafe void SetTarget(void* value, Type type)
         public void SetTarget<T>(ref T value)
@@ -137,7 +130,6 @@ namespace System.Reflection
         // Arguments
         public object? GetArgument(int index)
         public ref T GetArgument<T>(int index)
-
         public void SetArgument(int index, object? value)
         public unsafe void SetArgument(int index, void* value, Type type)
         public void SetArgument<T>(int index, ref T value)
@@ -145,23 +137,24 @@ namespace System.Reflection
         // Return
         public object? GetReturn()
         public ref T GetReturn<T>()
-
         public void SetReturn(object value)
         public unsafe void SetReturn(void* value, Type type)
         public void SetReturn<T>(ref T value)
 
-        // Unsafe direct invoke (no validation or conversions)
+        // Unsafe versions; no conversions or validation
         public unsafe void InvokeDirectUnsafe(MethodBase method)
-        // Faster for fixed parameter count (object-only) and no ref/out. Extra args ignored.
+        // Faster for fixed parameter count (object-only) and no ref\out. Any extra args are ignored
         public static unsafe object? InvokeDirectUnsafe(MethodBase method, object? target)
+        public static unsafe object? InvokeDirectUnsafe(MethodBase method, object? target, ReadOnlySpan<object?> args)
         public static unsafe object? InvokeDirectUnsafe(MethodBase method, object? target, object? arg1)
         public static unsafe object? InvokeDirectUnsafe(MethodBase method, object? target, object? arg1, object? arg2)
         public static unsafe object? InvokeDirectUnsafe(MethodBase method, object? target, object? arg1, object? arg2, object? arg3)
         public static unsafe object? InvokeDirectUnsafe(MethodBase method, object? target, object? arg1, object? arg2, object? arg3, object? arg4)
 
-        // Safe invoke (same validation and conversions as reflection today)
+        // Safe versions; validation and conversions as in reflection today
         public void Invoke(MethodBase method)
         public static object? Invoke(MethodBase method, object? target)
+        public static object? Invoke(MethodBase method, ReadOnlySpan<object?> target)
         public static object? Invoke(MethodBase method, object? target, object? arg1)
         public static object? Invoke(MethodBase method, object? target, object? arg1, object? arg2)
         public static object? Invoke(MethodBase method, object? target, object? arg1, object? arg2, object? arg3)
@@ -213,18 +206,16 @@ namespace System.Reflection
 
 ## Examples
 ### Variable-length object arguments
-Unsafe and slightly slower than fixed-length plus requires `using` or `try-finally-Dispose()`.
 ```cs
 unsafe
 {
-    ArgumentValue* args = stackalloc ArgumentValue[4];
-    using (MethodInvoker context = new InvokeContext(ref args))
+    using (MethodInvoker invoker = new MethodInvoker(argCount: 3))
     {
-        context.SetArgument(0, new MyClass());
-        context.SetArgument(1, null);
-        context.SetArgument(2, 42);
-        context.SetArgument(3, "Hello");
-        context.InvokeDirectUnsafe(method);
+        invoker.SetArgument(0, new MyClass());
+        invoker.SetArgument(1, null);
+        invoker.SetArgument(2, 42);
+        invoker.SetArgument(3, "Hello");
+        invoker.InvokeDirectUnsafe(method);
     }
 }
 ```
@@ -235,14 +226,18 @@ Value types can be references to avoid boxing.
 ```cs
 int i = 42;
 int ret = 0;
-ArgumentValuesFixed args = new(4);
-MethodInvoker context = new InvokeContext(ref args);
-context.SetArgument(0, new MyClass());
-context.SetArgument(1, null);
-context.SetArgument<int>(2, ref i); // No boxing (argument not required to be byref)
-context.SetArgument(3, "Hello");
-context.SetReturn<int>(ref ret); // No boxing; 'ret' variable updated automatically
-context.InvokeDirectUnsafe(method);
+using (MethodInvoker invoker = new MethodInvoker(argCount: 3))
+{
+    invoker.SetArgument(0, new MyClass());
+    invoker.SetArgument(1, null);
+    invoker.SetArgument<int>(2, ref i); // No boxing (argument not required to be byref)
+    invoker.SetArgument(3, "Hello");
+    invoker.SetReturn<int>(ref ret); // No boxing; 'ret' variable updated automatically
+    unsafe
+    {
+        invoker.InvokeDirectUnsafe(method);
+    }
+}
 ```
 
 ### Pass a `Span<T>` to a method
@@ -252,14 +247,16 @@ ArgumentValuesFixed args = new(1);
 
 unsafe
 {
-    MethodInvoker context = new InvokeContext(ref args);
-#pragma warning disable CS8500    
-    void* ptr = (void*)new IntPtr(&span);
-#pragma warning restore CS8500    
-    // Ideally we can use __makeref(span) instead of the above.
+    using (MethodInvoker invoker = new MethodInvoker(ref args))
+    {
+    #pragma warning disable CS8500    
+        // Ideally in the future we can use __makeref(span) here instead.
+        void* ptr = (void*)new IntPtr(&span);
+    #pragma warning restore CS8500    
 
-    context.SetArgument(0, ptr, typeof(Span<int>));
-    context.InvokeDirectUnsafe(method);
+        invoker.SetArgument(0, ptr, typeof(Span<int>));
+        invoker.InvokeDirectUnsafe(method);
+    }
 }
 ```
 # Design addendum
@@ -475,7 +472,7 @@ namespace System.Reflection
         // Used when non-object arguments are specified later.
         public ArgumentValuesFixed(int argCount)
         
-        // Fastest way to pass objects:
+        // Faster way to pass objects:
         public ArgumentValuesFixed(object? obj1)
         public ArgumentValuesFixed(object? obj1, object? o2) // ("obj" not "o" assume for naming)
         public ArgumentValuesFixed(object? obj1, object? o2, object? o3)
@@ -491,26 +488,25 @@ namespace System.Reflection
 ```cs
 MethodInfo method = ... // Some method to call
 ArgumentValuesFixed values = new(4); // 4 parameters
-MethodInvoker context = new MethodInvoker(ref values);
-context.SetArgument(0, new MyClass());
-context.SetArgument(1, null);
-context.SetArgument(2, 42);
-context.SetArgument(3, "Hello");
+MethodInvoker invoker = new MethodInvoker(ref values);
+invoker.SetArgument(0, new MyClass());
+invoker.SetArgument(1, null);
+invoker.SetArgument(2, 42);
+invoker.SetArgument(3, "Hello");
 
 // Can inspect before or after invoke:
-object o0 = context.GetArgument(0);
-object o1 = context.GetArgument(1);
-object o2 = context.GetArgument(2);
-object o3 = context.GetArgument(3);
+object o0 = invoker.GetArgument(0);
+object o1 = invoker.GetArgument(1);
+object o2 = invoker.GetArgument(2);
+object o3 = invoker.GetArgument(3);
 
-context.InvokeDirectUnsafe(method);
-int ret = (int)context.GetReturn();
+invoker.InvokeDirectUnsafe(method);
+int ret = (int)invoker.GetReturn();
 ```
 
 ### Fixed-length object arguments (sample)
 ```cs
 ArgumentValuesFixed args = new(new MyClass(), null, 42, "Hello");
-MethodInvoker context = new MethodInvoker(ref args);
-context.InvokeDirectUnsafe(method);
+MethodInvoker invoker = new MethodInvoker(ref args);
+invoker.InvokeDirectUnsafe(method);
 ```
-
