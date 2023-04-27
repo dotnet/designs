@@ -40,6 +40,12 @@ We will create a workloads version number that encapsulates all the workload man
 
 When we build the .NET SDK, we will assign a workloads version to the baseline workload manifest versions that are included in that SDK.  For releases with stabilized version numbers, we need a different workloads version number for the baseline workload manifest versions than for the stabilized version number for the .NET SDK.  In that case, we will use `baseline` as a the first semantic version pre-release identifier, followed by build number information.  For example, the baseline workloads version for 8.0.201 could be `8.0.201-baseline.23919.2`.
 
+There are various ways we could display this baseline version number:
+
+- `8.0.201-baseline.23919.2`
+- `8.0.201-baseline`
+- `8.0.201 (Baseline)`
+
 For non-stabilized builds of the .NET SDK, we will use the same (prerelease) version number for the workloads version as we do for the .NET SDK version.
 
 QUESTION: Will it be OK for the `baseline` versions to be semantically less than `preview` and `rc` versions?
@@ -48,9 +54,7 @@ QUESTION: Will it be OK for the `baseline` versions to be semantically less than
 
 Visual Studio includes the .NET SDK, but rather than including baseline manifest versions for the .NET SDK workloads, it includes the final workload manifests for a given release.  These manifests are inserted into Visual Studio together with the workloads.
 
-For public releases of Visual Studio, the workloads version information should be created and inserted into Visual Studio together with the workloads.  However, internal builds of Visual Studio may not have an assigned workloads version.  In that case, the .NET SDK will use the same basic logic as it currently does to select manifests.  This involves finding the latest installed manifest for the current feature band, and if an expected manifest isn't found for the current feature band, then falling back to previous feature bands.  In this case, when a workloads version is needed, the .NET SDK will create a version using the .NET SDK feature band, the pre-release specifier `vs`, and a hash of the manifest IDs and versions.  For example, `8.0.200-vs.9e7f4b93`.
-
-NOTE: This means that these `vs` prerelase workloads versions would be semantically greater than any `baseline`, `preview`, or `rc` workloads versions.
+For public releases of Visual Studio, the workloads version information should be created and inserted into Visual Studio together with the workloads.  However, internal builds of Visual Studio may not have an assigned workloads version.  In that case, the .NET SDK will use the same basic logic as it currently does to select manifests.  This involves finding the latest installed manifest for the current feature band, and if an expected manifest isn't found for the current feature band, then falling back to previous feature bands.  In this case, when a workloads version is needed, the .NET SDK will create a version using the .NET SDK feature band, the pre-release specifier `manifests`, and a hash of the manifest IDs and versions.  For example, `8.0.200-manifests.9e7f4b93`.
 
 ## Experience
 
@@ -100,7 +104,7 @@ Installing pack Microsoft.NET.Runtime.WebAssembly.Sdk version 8.0.0-preview.4.23
 <Further workload pack installation manifests>
 Garbage collecting for SDK feature band(s) 8.0.200...
 
-Successfully updated workloads version from 8.0.201-baseline.23919.2 to 8.0.201.2.
+Successfully updated workloads version from 8.0.201-baseline.23919.2 to 8.0.201.
 Successfully installed workload(s) wasm-tools.
 ```
 
@@ -151,3 +155,10 @@ We will support side-by-side workload version installations.  If 8.0.202 is inst
 
 NOTE: We may not implement the global.json workloads version support in the same release as the rest of the changes described in this design.
 
+## Development build behavior
+
+Currently, when the .NET SDK looks for workload updates, it looks for the latest available version of each individual manifest.  We will change this so that it will look for the latest "workloads version", which is a package that we create and publish.
+
+However, for development builds of the .NET SDK, we may want to retain the old behavior of updating each manifest individually.  This would allow the latest workloads to be used with a development build even if they hadn't flowed into the installer build and we hadn't created a "workloads version" package.
+
+We will add a `--update-manifests-separately` parameter to the `dotnet workload update` and `install` commands, which will opt in to the old update behavior.  We may also make this the default behavior for development builds, though there may not be a good way to tell whether a given build is a "development" build or a build that will be released as an official public preview.  If development builds aren't signed the same way as full preview builds are, we may be able to key off of that.
