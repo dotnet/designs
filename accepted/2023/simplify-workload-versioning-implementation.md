@@ -24,7 +24,7 @@ The Workload set NuGet package for file-based installs will be named `Microsoft.
 
 ### Workload set disk layout
 
-Workload version information will be stored in `dotnet\sdk-manifests\<Feature Band>\workloadsets\<Workloads Version>`, for example `dotnet\sdk-manifests\8.0.200\workloadsets\8.0.201`.   In this folder will be one or more `.json` files which will specify the versions of each manifest that should be used.  These `.json` files will use the same format as rollback files currently use.  For example, the following file would specify that the android manifest should be version 33.0.4 from the 8.0.200 feature band, while the mono toolchain manifest should be version 8.0.3 from the 8.0.100 band:
+Workload version information will be stored in `dotnet\sdk-manifests\<Feature Band>\workloadsets\<Workload Set Version>`, for example `dotnet\sdk-manifests\8.0.200\workloadsets\8.0.201`.   In this folder will be one or more files ending in `.workloadset.json` which will specify the versions of each manifest that should be used.  These `.json` files will use the same format as rollback files currently use.  For example, the following file would specify that the android manifest should be version 33.0.4 from the 8.0.200 feature band, while the mono toolchain manifest should be version 8.0.3 from the 8.0.100 band:
 
 ```json
 {
@@ -47,17 +47,62 @@ The final workload set for a release will be produced in the workloadversions re
 
 In some cases, internal builds of Visual Studio may not have workload set information.  In this case, when the SDK needs to display a workload set version, one will be generated using the .NET SDK feature band, the pre-release specifier `manifests`, and a hash of the manifest IDs and versions.  For example, `8.0.200-manifests.9e7f4b93`.
 
+### Rolling back and pinning workload versions
+
+The following commands can be used to select workload versions which don't correspond to the latest workload set:
+
+- `dotnet workload update --from-rollback`
+- `dotnet workload update --from-history`
+- `dotnet workload update --version`
+
+When these commands run, they need to "pin" the workload versions so that the resolver will load the selected workload versions.  The information about what versions are pinned needs to be stored somewhere.  We will call the folder where it is stored the "workload install state folder".
+
+- For MSI-based installs, it will be stored in `%PROGRAMDATA%\dotnet\workloads\<Feature Band>\InstallState`
+- For file-based installs, it will be stored in `dotnet\metadata\workloads\<Feature Band>\InstallState`
+
+If the workload versions are "pinned", there will be a `default.json` file in this folder.  The file will specify either a workload set version, or versions for each individual manifest:
+
+```json
+{
+  "workloadSet": "8.0.102"
+}
+```
+
+```json
+{
+  "manifests":
+  {
+    "microsoft.net.sdk.android": "33.0.46/7.0.100",
+    "microsoft.net.sdk.ios": "16.4.7054/7.0.100",
+    //  etc.
+  }
+}
+```
+
+Normally the file should use a workload set version if possible, and only include manifest versions when a rollback file is used.  However, if there are manifests that are installed that are not part of the workload set (for example for Tizen), then the json file should include the workload set version and then the manifest versions for manifests that are not part of the workload set.
+
+When workload versions are pinned, running `dotnet workload install` will not automatically do a workload update.
+
+If `dotnet workload update` is run, then any pinned workload versions will be removed (the json file will be deleted), as the intent of the command is to update to the latest version.
+
 ### Workload resolver updates
 
 Because the `workloadsets` folder will be next to the other workload manifest folders, the resolver will be updated to ignore this folder when looking for workload manifests.  Older versions of the resolver should not be impacted, because they will not be looking in the newer version band folder.  This does mean that the resolver changes should go into Visual Studio as soon as possible so that full Framework MSBuild can work with the new manifests.
 
-### Workload manifest garbage collection
+The workload resolver should first look for a workload set version from a global.json file.  If not specified via global.json, then it should look in the workload install state folder for a workload set or workload manifest versions to use.  If not specified via the install state folder, then the resolver should use the latest workload set version installed for the feature band.  Finally, if no workload set is installed, the resolver should use the latest version of each manifest for the feature band.
 
+### Installing workload set from global.json
 
-### Rolling back and saving workload versions
+`dotnet workload update` - If workload set is specified in global.json, this should install that workload set.  Also should register this global.json path in workload install state folder as a GC root.
 
+- `dotnet workload restore` - global.json aware, same as update
+- `dotnet workload install` - global.json aware
+- `dotnet workload clean` - should look through all records of global.json, see if they are still there and up-to-date, delete as necessary before GC
+- `dotnet workload roots` - (not sure about command name) List all registered global.json files and versions of workload sets they pin
 
-### Managing workload set GC roots
+When installing a workload, it is installed only for the active workload set version.  If you need it installed for other versions, you need to go to the corresponding folder with the global.json and run a workload restore or install command.  The alternative would be to install the workload for all workload sets, which doesn't seem desirable.
+
+### Workload set / workload manifest garbage collection
 
 
 ### Workload updates

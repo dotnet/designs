@@ -151,9 +151,19 @@ We will add support for specifying the workload set version in global.json.  For
 
 This would force the SDK to use workload set version `8.0.201`, and would error if that version was not installed.
 
-We will support side-by-side workload version installations.  If 8.0.202 is installed, we would support running `dotnet workload install --version 8.0.201` to install that version of the workloads.  After installing the earlier version, the .NET SDK would still by default use the latest installed workload set version.  An earlier workload set version would only be used if it was specified in a global.json file.
-
 NOTE: We may not implement the global.json workload set version support in the same release as the rest of the changes described in this design.
+
+## Side by side workload sets
+
+The workload `restore`, `update`, and `install` commands will be updated to check if there is a global.json file specifying a workload set version applying to the current folder.  If so, these commands will install that workload set version side-by-side with any other installed workload set.  They will also record the path to the global.json file and the workload set version it specified.  This record will be used as a root during garbage collection to prevent the side-by-side workload set (and its packs) from being removed.
+
+The `dotnet workload clean` command will read these records and check to see if the global.json file referenced still exists and specifies the same workload set version.  If not, that record will be removed before garbage collection, allowing the workload set, its manifests, and packs to possibly be removed.  The `dotnet workload clean --all` command uninstalls all workloads, and will also delete all of these records.
+
+We will add a `dotnet workload roots` command (though hopefully we can come up with a better name).  This will list all of the current records of global.json paths and workload set versions that the SDK has.  This can help understand why workload assets may not be uninstalled / cleaned up as expected.
+
+## Workload list updates
+
+`dotnet workload list` currently displays the workload ID, the manifest version, and the installation source.  We will change it to display the workload set version instead of the manifest version.  Additionally, we will add a column for the "status".  If all the packs for the workload are installed, this will be "OK".  If any packs are missing, the status will be "Missing packs".  This can happen if the workload set is updated to a new baseline workload set, or if there are side-by-side workload sets installed but a workload is not installed for all of those workload sets.
 
 ## Development build behavior
 
