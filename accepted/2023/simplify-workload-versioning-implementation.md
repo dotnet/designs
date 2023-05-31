@@ -1,6 +1,6 @@
 ## Implementation
 
-Creating a workload set version should be a lightweight process, which involves creating a NuGet packages and corresponding installers to deliver the mapping from the workload set version to the workload manifest versions.  The .NET SDK assets and installers, workload manifests, and workload packs should already be built and should not need to be created when building a workload set.
+Creating a workload set version should be a lightweight process, which involves creating NuGet packages and corresponding installers to deliver the mapping from the workload set version to the workload manifest versions.  The .NET SDK assets and installers, workload manifests, and workload packs should already be built and should not need to be created when building a workload set.
 
 ### Current workload release schedule
 
@@ -37,7 +37,7 @@ Workload version information will be stored in `dotnet\sdk-manifests\<Feature Ba
 
 The layout of the workload manifests on disk will change.  Currently, they go in a path which includes the feature band but not the version number of the manifest, such as `dotnet\sdk-manifests\8.0.200\microsoft.net.sdk.android`.  This will change to also include the manifest version in the path, for example `dotnet\sdk-manifests\8.0.200\microsoft.net.sdk.android\33.0.4`.  This will allow multiple workload sets to be installed side-by-side, and for a global.json file to select which one should be used.
 
-Currently, the manifests for each feature band update in-place, and the corresponding MSIs are upgradeable.  With the new design, each manifest version will not have an MSI upgrade relationship to other versions of that manifest.  This should also help fix issues that occur when we try to roll back to manifests prior to those installed by Visual Studio.  Now, the prior versions of the manifest can be installed side-by-side with the versions installed by Visual Studio, and the `workloadsets` files (possibly together with glebal.json) will determine which manifests are used.
+Currently, the manifests for each feature band update in-place, and the corresponding MSIs are upgradeable.  With the new design, each manifest version will not have an MSI upgrade relationship to other versions of that manifest.  This should also help fix issues that occur when we try to roll back to manifests prior to those installed by Visual Studio.  Now, the prior versions of the manifest can be installed side-by-side with the versions installed by Visual Studio, and the `workloadsets` files (possibly together with global.json) will determine which manifests are used.
 
 ### Baseline workload sets
 
