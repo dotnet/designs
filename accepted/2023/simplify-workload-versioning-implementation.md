@@ -85,6 +85,8 @@ When workload versions are pinned, running `dotnet workload install` will not au
 
 If `dotnet workload update` is run, then any pinned workload versions will be removed (the json file will be deleted), as the intent of the command is to update to the latest version.
 
+TODO: Error if global.json specifies a workload set that isn't installed should recommend running `dotnet workload restore`.
+
 ### Workload resolver updates
 
 Because the `workloadsets` folder will be next to the other workload manifest folders, the resolver will be updated to ignore this folder when looking for workload manifests.  Older versions of the resolver should not be impacted, because they will not be looking in the newer version band folder.  This does mean that the resolver changes should go into Visual Studio as soon as possible so that full Framework MSBuild can work with the new manifests.

@@ -159,7 +159,11 @@ The workload `restore`, `update`, and `install` commands will be updated to chec
 
 The `dotnet workload clean` command will read these records and check to see if the global.json file referenced still exists and specifies the same workload set version.  If not, that record will be removed before garbage collection, allowing the workload set, its manifests, and packs to possibly be removed.  The `dotnet workload clean --all` command uninstalls all workloads, and will also delete all of these records.
 
+Question: What should clean do if a path is not accessible (ie on a thumb drive that was removed)?
+
 We will add a `dotnet workload roots` command (though hopefully we can come up with a better name).  This will list all of the current records of global.json paths and workload set versions that the SDK has.  This can help understand why workload assets may not be uninstalled / cleaned up as expected.
+
+Question: Should we support `dotnet workload install --version`?  This could help in the scenario where you switch back and forth between branches that pin different workload set versions, but don't want the churn of uninstalling and reinstalling workloads each time.
 
 ## Workload list updates
 
