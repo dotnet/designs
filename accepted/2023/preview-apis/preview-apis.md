@@ -134,9 +134,9 @@ stops exploring that API.
 * Don't change the behavior for platform-level preview features
 
 * Offer library-level preview features with a different set of guardrails:
-    - Modelled after `[Obsolete]`, except the severity is always an error
+    - Modelled after `[Obsolete]`, except the severity is always a warning
     - The opting-in is expressed similar to obsolete, that is the call site is
-      either marked as experimental itself or the error is suppressed via any of
+      either marked as experimental itself or the warning is suppressed via any of
       the existing ways (e.g. `<NoWarn>` or `#pragma`).
     - In order to make centralization possible, each feature is encouraged
       to have a separate diagnostic ID.
