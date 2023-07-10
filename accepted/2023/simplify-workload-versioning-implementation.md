@@ -64,7 +64,7 @@ If the workload versions are "pinned", there will be a `default.json` file in th
 
 ```json
 {
-  "workloadSet": "8.0.102"
+  "workloadVersion": "8.0.102"
 }
 ```
 

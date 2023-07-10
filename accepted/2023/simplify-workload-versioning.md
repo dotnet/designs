@@ -144,7 +144,7 @@ We will add support for specifying the workload set version in global.json.  For
 ```json
 {
   "sdk": {
-    "workloadsVersion": "8.0.201"
+    "workloadVersion": "8.0.201"
   }
 }
 ```
