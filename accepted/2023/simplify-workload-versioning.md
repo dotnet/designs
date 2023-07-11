@@ -79,12 +79,12 @@ We will also update `dotnet --info` and `dotnet workload --info` to display the 
 .NET SDK:
  Version:                 8.0.201
  Commit:                  <commit>
- Workload set version:    8.0.201
+ Workload version:    8.0.201
 
 <further information>
 
 > dotnet workload --info
- Workload set version:  8.0.201
+ Workload version:  8.0.201
  [wasm-tools]
    Installation Source: SDK 8.0.100-preview.4
    Manifest Version:    8.0.0-preview.4.23181.9/8.0.100-preview.4
