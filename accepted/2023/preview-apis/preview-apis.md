@@ -225,7 +225,17 @@ both options are being presented to the consumer.
 ### Compiler Behavior
 
 The compiler will raise a diagnostic when an experimental API is used, using the
-supplied diagnostic ID. The severity is always error.
+supplied diagnostic ID.
+
+> [!NOTE]
+> The severity is warning, because errors cannot be suppressed.
+>
+> However, there will also be a generic compiler diagnostic ID that applies to
+> all warnings raised for using experimental APIs (like nullable). The built-in
+> `editor.config` that we ship with the .NET SDK will elevate these warnings to
+> errors. From a user's standpoint this will result in these diagnostics to
+> appear as errors that they are expected to suppress, which is the UX we
+> desire.
 
 The semantics are identical to how obsolete is tracked, except there is no
 special treatment when both caller and callee are in the same assembly -- any
