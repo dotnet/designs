@@ -232,7 +232,7 @@ supplied diagnostic ID.
 >
 > However, there will also be a generic compiler diagnostic ID that applies to
 > all warnings raised for using experimental APIs (like nullable). The built-in
-> `editor.config` that we ship with the .NET SDK will elevate these warnings to
+> `.editorconfig` that we ship with the .NET SDK will elevate these warnings to
 > errors. From a user's standpoint this will result in these diagnostics to
 > appear as errors that they are expected to suppress, which is the UX we
 > desire.
