@@ -75,6 +75,14 @@
         - see problems **1,2**
 - "managed thread pool thread"
     - pthread dedicated to serving Mono thread pool
+- "comlink"
+    - in this document it stands for the pattern
+        - dispatch to another worker via pure JS means
+        - create JS proxies for types which can't be serialized, like `Function`
+    - actual [comlink](https://github.com/GoogleChromeLabs/comlink)
+        - doesn't implement spin-wait
+    - we already have prototype of the similar functionality
+        - which can spin-wait
 
 ## Implementation options (only some combinations are possible)
 - how to deal with blocking C# code on UI thread
@@ -98,7 +106,6 @@
     - **O)** enables it on all workers (let user deal with JS state)
 - how to dispatch calls to the right JS thread context
     - **P)** via `SynchronizationContext` before `JSImport` stub, synchronously, stack frames
-        - this is written by user. Complex, async, MT stuff.
     - **Q)** via `SynchronizationContext` inside `JSImport` C# stub
     - **R)** via `emscripten_dispatch_to_thread_async` inside C code of ``
 - how to implement GC/dispose of `JSObject` proxies
@@ -145,18 +152,23 @@
     - **r)** out of scope
     - **s)** in the UI thread
     - **t)** is a dedicated web worker
+- where to marshal JSImport/JSExport parameters/return/exception
+    - **u)** could be only values types, proxies out of scope
+    - **v)** could be on UI thread (with deputy design and Mono there)
+    - **w)** could be on sidecar (with double proxies of parameters via comlink)
+    - **x)** could be on sidecar (with comlink calls per parameter)
 
 # Interesting combinations
 
 ## Minimal support
-- **A,D,G,L,P,S,U,Y,a,f,h,l,n,p** 
+- **A,D,G,L,P,S,U,Y,a,f,h,l,n,p,v** 
 - this is what we [already have today](#Current-state-2023-Sep)
 - it could deadlock or die, 
 - JS interop on threads requires lot of user code attention
 - Keeps problems **1,2,3,4**
 
 ## Sidecar + no JS interop + narrow Blazor support
-- **C,E,G,L,P,S,U,Z,c,d,h,m,o,q**
+- **C,E,G,L,P,S,U,Z,c,d,h,m,o,q,u**
 - minimal effort, low risk, low capabilities
 - move both emscripten and Mono VM sidecar thread
 - no user code JS interop on any thread
@@ -164,7 +176,7 @@
 - Ignores problems **1,2,3,4,5**
 
 ## Sidecar + only async just JS proxies UI + JSWebWorker + Blazor WASM server
-- **C,E,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q**
+- **C,E,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q,w**
 - no C or managed code on UI thread
 - no support for blocking sync JSExport calls from UI thread (callbacks)
     - it will throw PNSE
@@ -177,7 +189,7 @@
 - Solves **3,4,5**
 
 ## Sidecar + async & sync just JS proxies UI + JSWebWorker + Blazor WASM server
-- **C,F,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q**
+- **C,F,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q,w**
 - no C or managed code on UI thread
 - support for blocking sync JSExport calls from UI thread (callbacks)
     - at blocking the UI is at least well isolated from runtime code
@@ -197,7 +209,7 @@
     - it needs to also use `SynchronizationContext` for `JSExport` and callbacks, to dispatch to deputy.
 - blazor render could be both legacy render or Blazor server style
     - because we have both memory and mono on the UI thread
-- Ignores **1,2** for JS callback 
+- Ignores **1,2** for JS callback
 - Solves **1,2** for managed code
     - emscripten main loop stays responsive
     - unless there is sync `JSImport`->`JSExport` call
@@ -211,6 +223,11 @@
     - it still needs to enter GC barrier and so it could block UI for GC run
 - blazor render could be both legacy render or Blazor server style
     - because we have both memory and mono on the UI thread
+- Ignores **1,2** for JS callback
+- Solves **1,2** for managed code
+    - emscripten main loop stays responsive
+    - unless there is sync `JSImport`->`JSExport` call
+- Solves **3,4,5**
 
 # Details
 
@@ -225,6 +242,122 @@
 - sync could be called on from UI thread is problematic
     - with spin-wait in UI in JS it would at least block the UI rendering
     - with spin-wait in emscripten, it could deadlock the rest of the app
+
+## Proxies - thread affinity
+- all of them have thread affinity
+- all of them need to be used and disposed on correct thread
+    - how to dispatch to correct thread is one of the questions here
+- all of them are registered to 2 GCs
+    - maybe `Dispose` could be schedule asynchronously instead of blocking Mono GC
+- `JSObject`
+    - have thread ID on them, so we know which thread owns them
+- `JSException`
+    - they are a proxy because stack trace is lazy
+    - we could eval stack trace eagerly, so they could become "value type"
+        - but it would be expensive
+- `Task`
+    - continuations need to be dispatched onto correct JS thread
+    - they can't be passed back to wrong JS thread
+    - resolving `Task` could be async
+- `Func`/`Action`/`JSImport`
+    - callbacks need to be dispatched onto correct JS thread
+    - they can't be passed back to wrong JS thread
+    - calling functions which return `Task` could be aggressively async
+        - unless the synchronous part of the implementation could throw exception
+        - which maybe our HTTP/WS could do ?
+        - could this difference we ignored ?
+- `JSExport`/`Function`
+    - we already are on correct thread in JS
+    - would anything improve if we tried to be more async ?
+
+## HTTP and WS clients
+- are implemented in terms of `JSObject` and `Promise` proxies
+- they have thread affinity, see above
+    - typically to the `JSWebWorker` of the creator
+- could C# thread-pool threads create HTTP clients ?
+    - there is no `JSWebWorker`
+    - but this is JS state which the runtime could manage well
+    - so the answer should be yes!
+- but are consumed via their C# Streams from any thread. 
+- And so need to solve the dispatch to correct thread.
+
+# Dispatching call, who is responsible
+- User code
+    - this is difficult and complex task which many will fail to do right
+    - it can't be user code for HTTP/WS clients because there is no direct call via Streams
+    - authors of 3rd party components would need to do it to hide complexity from users
+- Roslyn generator: JSExport is already on correct thread, no action
+- Roslyn generator: JSImport 
+    - it needs to stay backward compatible with Net7, Net8 already generated code
+    - it needs to do it via public C# API
+        - possibly new API `JSHost.Post` or `JSHost.Send`
+    - it needs to re-consider current `stackalloc`
+        - probably by re-ordering Roslyn generated code of `__arg_return.ToManaged(out __retVal);` before `JSFunctionBinding.InvokeJS`
+    - it needs to propagate exceptions
+
+# Dispatching JSImport - what should happen
+- is normally bound to JS context of the calling managed thread
+- but it could be called with `JSObject` parameters which are bound to another thread
+    - if targets don't match each other throw `ArgumentException` ?
+    - if it's called from thread-pool thread
+        - which is not `JSWebWorker`
+        - should we dispatch it by affinity of the parameters ?
+    - if parameters affinity do match each other but not match current `JSWebWorker`
+        - should we dispatch it by affinity of the parameters ?
+        - this would solve HTTP/WS scenarios
+
+# Dispatching call - options
+- `JSSynchronizationContext`
+    - is implementation of `SynchronizationContext` installed to 
+    - managed thread with `JSWebWorker`
+    - or main managed thread
+    - it has asynchronous `SynchronizationContext.Post`
+    - it has synchronous `SynchronizationContext.Send` 
+        - can propagate caller stack frames
+        - can propagate exceptions from callee thread
+    - this would not work in sidecar design
+    - when the method is async
+        - we can schedule it asynchronously to the `JSWebWorker` or main thread
+        - propagate exceptions via `TaskCompletionSource.SetException` from any managed thread
+    - when the method is sync
+        - create internal `TaskCompletionSource`
+        - we can schedule it asynchronously to the `JSWebWorker` or main thread
+        - we could block-wait on `Task.Wait` until it's done.
+        - return sync result
+- `emscripten_dispatch_to_thread_async` - in deputy design
+    - can dispatch async call to C function on the timer loop of target pthread
+    - doesn't block and doesn't propagate exceptions
+    - needs to deal with `stackalloc` in C# generated stub
+        - probably by re-ordering Roslyn generated code
+    - when the method is async
+        - extract GCHandle of the `TaskCompletionSource`
+        - copy "stack frame" and pass it to 
+        - asynchronously schedule to the target pthread via `emscripten_dispatch_to_thread_async`
+        - unpack the "stack frame"
+            - using local Mono `cwraps` for marshaling
+        - capture JS result/exception
+        - use stored `TaskCompletionSource` to resolve the `Task` on target thread
+    - when the method is sync
+        - inside `JSFunctionBinding.InvokeJS`:
+        - create internal `TaskCompletionSource`
+        - use async dispatch above
+        - block-wait on `Task.Wait` until it's done.
+        - return sync result
+    - or when the method is sync
+        - do something similar in C or JS
+- "comlink" - in sidecar design
+    - when the method is async
+        - extract GCHandle of the `TaskCompletionSource`
+        - convert parameters to JS (sidecar context)
+            - using sidecar Mono `cwraps` for marshaling
+        - call UI thread via "comlink"
+            - will create comlink proxies
+        - capture JS result/exception from "comlink"
+        - use stored `TaskCompletionSource` to resolve the `Task` on target thread
+- `postMessage`
+    - can send serializable message to WebWorker
+    - doesn't block and doesn't propagate exceptions
+    - this is slow
 
 ## JSWebWorker with JS interop
 - is proposed concept to let user to manage JS state of the worker explicitly
@@ -260,6 +393,10 @@
     - TODO: which implementation keeps this working ? Which worker is the target ?
 - `JSImport` used for logging: `globalThis.console.debug`, `globalThis.console.error`, `globalThis.console.info`, `globalThis.console.warn`, `Blazor._internal.dotNetCriticalError`
     - probably could be any JS context
+
+# WebPack, Rollup friendly
+- it's not clear how to make this single-file
+- because web workers need to start separate script(s)
 
 # Current state 2023 Sep
  - we already ship MT version of the runtime in the wasm-tools workload.
