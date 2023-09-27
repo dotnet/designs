@@ -2,21 +2,20 @@
 
 ## Goals
  - CPU intensive workloads on dotnet thread pool
- - enable blocking .Wait APIs from C# user code on all threads
+ - enable blocking `Task.Wait` and `lock()` like APIs from C# user code on all threads
      - Current public API throws PNSE for it
      - This is core part on MT value proposition.
      - If people want to use existing MT code-bases, most of the time, the code is full of locks. 
      - People want to use existing desktop/server multi-threaded code as is.
- - allow HTTP and WS C# APIs to be used from any thread
-     - Underlying JS object have thread affinity
+ - allow HTTP and WS C# APIs to be used from any thread despite underlying JS object affinity
  - JSImport/JSExport interop in maximum possible extent
  - don't change/break single threaded build. †
 
 ## Lower priority goals
  - try to make it debugging friendly
  - implement crypto via `subtle` browser API
- - allow calls to synchronous JSExport from UI thread (callback)
  - allow lazy `[DLLImport]` to download from the server
+ - allow calls to synchronous JSExport from UI thread (callback)
 
 <sub><sup>† Note: all the text below discusses MT build only, unless explicit about ST build.</sup></sub>
 
@@ -52,7 +51,7 @@
     - emscripten pre-allocates poll of web worker to be used as pthreads. 
         - Because they could only be created asynchronously, but `pthread_create` is synchronous call
         - Because they are slow to start
-    - those pthreads have JS context `self`, which is re-used when mapped to C# thread pool
+    - those pthreads have stateful JS context `self`, which is re-used when mapped to C# thread pool
     - when we allow JS interop on a managed thread, we need a way how to clean up the JS state
 
 **5)** Blazor's `renderBatch` is using direct memory access
@@ -90,7 +89,7 @@
     - **A)** pretend it's not a problem (this we already have)
     - **B)** move user C# code to web worker
     - **C)** move all Mono to web worker
-- how to deal with blocking in synchronous JS calls from UI thread
+- how to deal with blocking in synchronous JS calls from UI thread (like `onClick` callback)
     - **D)** pretend it's not a problem (this we already have)
     - **E)** throw PNSE when synchronous JSExport is called on UI thread
     - **F)** dispatch calls to synchronous JSExport to web worker and spin-wait on JS side of UI thread.
