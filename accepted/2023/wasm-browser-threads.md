@@ -62,6 +62,7 @@
     - it can't block-wait, only spin-wait
 - "sidecar" thread - possible design
     - is a web worker with emscripten and mono VM started on it
+    - for Blazor rendering MAUI/BlazorWebView use the same concept
     - doing this allows all managed threads to allow blocking wait
 - "deputy" thread - possible design
     - is a web worker and pthread with C# `Main` entrypoint
@@ -74,10 +75,6 @@
         - see problems **1,2**
 - "managed thread pool thread"
     - pthread dedicated to serving Mono thread pool
-- `JSSynchronizationContext`
-- `JSObject`
-- `Promise`/`Task`
-- `JSWebWorker`
 
 ## Implementation options (only some combinations are possible)
 - how to deal with blocking C# code on UI thread
@@ -215,6 +212,33 @@
 - blazor render could be both legacy render or Blazor server style
     - because we have both memory and mono on the UI thread
 
+# Details
+
+## JSImport and marshaled JS functions
+- both sync and async could be called on all `JSWebWorker` threads
+- both sync and async could be called on main managed thread (even when running on UI)
+    - unless there is loop back to blocking `JSExport`, it could not deadlock
+
+## JSExport & C# delegates
+- async could be called on all `JSWebWorker` threads
+- sync could be called on `JSWebWorker`
+- sync could be called on from UI thread is problematic
+    - with spin-wait in UI in JS it would at least block the UI rendering
+    - with spin-wait in emscripten, it could deadlock the rest of the app
+
+## JSWebWorker with JS interop
+- is proposed concept to let user to manage JS state of the worker explicitly
+    - because of problem **4**
+- is C# thread created and disposed by new API for it
+- could block on synchronization primitives 
+- could do full JSImport/JSExport to it's own JS `self` context
+- there is `JSSynchronizationContext`` installed on it
+    - so that user code could dispatch back to it, in case that it needs to call `JSObject` proxy (with thread affinity)
+
+## Debugging
+- VS debugger would work as usual
+- Chrome dev tools would only see the events coming from `postMessage` or `Atomics.waitAsync`
+- Chrome dev tools debugging C# could be bit different, it possibly works already. The C# code would be in different node of the "source" tree view
 
 ## Blazor
 - as compared to single threaded runtime, the major difference would be no synchronous callbacks.
@@ -222,6 +246,7 @@
     - but there is really [no way around it](#problem), because you can't have both MT and sync calls from UI.
 - Blazor `renderBatch`
     - currently `Blazor._internal.renderBatch` -> `MONO.getI16`, `MONO.getI32`, `MONO.getF32`, `BINDING.js_string_to_mono_string`, `BINDING.conv_string`, `BINDING.unbox_mono_obj`
+    - we could also [RenderBatchWriter](https://github.com/dotnet/aspnetcore/blob/045afcd68e6cab65502fa307e306d967a4d28df6/src/Components/Shared/src/RenderBatchWriter.cs) in the WASM
     - some of them need Mono VM and GC barrier, but could be re-written with GC pause and only memory read
 - Blazor's [`IJSInProcessRuntime.Invoke`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.jsinterop.ijsinprocessruntime.invoke) - this is C# -> JS direction
     - TODO: which implementation keeps this working ? Which worker is the target ?
@@ -258,11 +283,11 @@
 - [ ] public API for `JSHost.<Target>SynchronizationContext` which could be used by code generator.
 - [ ] reimplement `JSSynchronizationContext` to be more async
 - [ ] implement Blazor's `WebAssemblyDispatcher` + [feedback](https://github.com/dotnet/aspnetcore/pull/48991)
-- [ ] optinal: make underlying emscripten WebWorker pool allocation dynamic, or provide C# API for that.
-- [ ] optinal: implement async function/delegate marshaling in JSImport/JSExport parameters.
-- [ ] optinal: enable blocking HTTP/WS APIs
-- [ ] optinal: enable lazy DLL download by blocking the caller
-- [ ] optinal: implement crypto
+- [ ] optional: make underlying emscripten WebWorker pool allocation dynamic, or provide C# API for that.
+- [ ] optional: implement async function/delegate marshaling in JSImport/JSExport parameters.
+- [ ] optional: enable blocking HTTP/WS APIs
+- [ ] optional: enable lazy DLL download by blocking the caller
+- [ ] optional: implement crypto
 - [ ] measure perf impact
 
 Related Net8 tracking https://github.com/dotnet/runtime/issues/85592
