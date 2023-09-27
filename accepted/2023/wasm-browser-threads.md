@@ -307,7 +307,7 @@
         - this would solve HTTP/WS scenarios
 
 # Dispatching call - options
-- `JSSynchronizationContext`
+- `JSSynchronizationContext` - in deputy design
     - is implementation of `SynchronizationContext` installed to 
     - managed thread with `JSWebWorker`
     - or main managed thread
@@ -315,7 +315,6 @@
     - it has synchronous `SynchronizationContext.Send` 
         - can propagate caller stack frames
         - can propagate exceptions from callee thread
-    - this would not work in sidecar design
     - when the method is async
         - we can schedule it asynchronously to the `JSWebWorker` or main thread
         - propagate result/exceptions via `TaskCompletionSource.SetException` from any managed thread
@@ -324,6 +323,8 @@
         - we can schedule it asynchronously to the `JSWebWorker` or main thread
         - we could block-wait on `Task.Wait` until it's done.
         - return sync result
+    - this would not work in sidecar design 
+        - because UI is not managed thread there
 - `emscripten_dispatch_to_thread_async` - in deputy design
     - can dispatch async call to C function on the timer loop of target pthread
     - doesn't block and doesn't propagate exceptions
@@ -345,6 +346,9 @@
         - return sync result
     - or when the method is sync
         - do something similar in C or JS
+    - this would not work in sidecar design 
+        - because UI is not managed thread there
+        - Mono cwraps are not available either
 - "comlink" - in sidecar design
     - when the method is async
         - extract GCHandle of the `TaskCompletionSource`
