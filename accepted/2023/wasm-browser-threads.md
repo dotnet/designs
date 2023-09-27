@@ -16,6 +16,7 @@
  - try to make it debugging friendly
  - implement crypto via `subtle` browser API
  - allow calls to synchronous JSExport from UI thread (callback)
+ - allow lazy `[DLLImport]` to download from the server
 
 <sub><sup>† Note: all the text below discusses MT build only, unless explicit about ST build.</sup></sub>
 
@@ -394,9 +395,19 @@
 - `JSImport` used for logging: `globalThis.console.debug`, `globalThis.console.error`, `globalThis.console.info`, `globalThis.console.warn`, `Blazor._internal.dotNetCriticalError`
     - probably could be any JS context
 
-# WebPack, Rollup friendly
+## WebPack, Rollup friendly
 - it's not clear how to make this single-file
 - because web workers need to start separate script(s)
+
+## Subtle crypto
+- once we have have all managed threads outside of the UI thread
+- we could synchronously wait for another thread to do async operations 
+- and use [async API of subtle crypto](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto)
+
+## Lazy DLLImport - download
+- once we have have all managed threads outside of the UI thread
+- we could synchronously wait for another thread to do async operations 
+- to fetch another DLL which was not pre-downloaded
 
 # Current state 2023 Sep
  - we already ship MT version of the runtime in the wasm-tools workload.
