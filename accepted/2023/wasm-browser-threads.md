@@ -31,9 +31,9 @@
         - It eats your battery
         - Browser will kill your tab at random point (Aw, snap).
         - It's not deterministic and you can't really test your app to prove it harmless.
-    - Firefox (still) has synchronous XHR which could be captured by async code in service worker
-        - it's deprecated legacy API
-        - but other browsers don't and it's unlikely they will implement it
+    - Firefox (still) has synchronous `XMLHttpRequest` which could be captured by async code in service worker
+        - it's [deprecated legacy API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Synchronous_and_Asynchronous_Requests#synchronous_request)
+        - [but other browsers don't](https://wpt.fyi/results/service-workers/service-worker/fetch-request-xhr-sync.https.html?label=experimental&label=master&aligned) and it's unlikely they will implement it
         - there are deployment and security challenges with it
     - all the other threads/workers could synchronously block
     - if we will have managed thread on the UI thread, any `lock` or Mono GC barrier could cause spin-wait
