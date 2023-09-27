@@ -318,7 +318,7 @@
     - this would not work in sidecar design
     - when the method is async
         - we can schedule it asynchronously to the `JSWebWorker` or main thread
-        - propagate exceptions via `TaskCompletionSource.SetException` from any managed thread
+        - propagate result/exceptions via `TaskCompletionSource.SetException` from any managed thread
     - when the method is sync
         - create internal `TaskCompletionSource`
         - we can schedule it asynchronously to the `JSWebWorker` or main thread
