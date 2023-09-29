@@ -142,8 +142,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - where to create HTTP+WS JS objects
     - **d)** in the UI thread
     - **e)** in the managed main thread
-    - **f)** in first calling managed thread
-        - install `JSSynchronizationContext` even without `JSWebWorker` ?
+    - **f)** in first calling `JSWebWorker` managed thread
 - how to dispatch calls to HTTP+WS JS objects
     - **g)** try to stick to the same thread via `ConfigureAwait(false)`.
         - doesn't really work. `Task` migrate too freely
@@ -164,7 +163,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - where to implement sync-to-async: crypto/DLLImport/HTTP APIs/
     - **r)** out of scope
     - **s)** in the UI thread
-    - **t)** is a dedicated web worker
+    - **t)** in a dedicated web worker
     - **z)** in the sidecar or deputy
 - where to marshal JSImport/JSExport parameters/return/exception
     - **u)** could be only values types, proxies out of scope
@@ -174,14 +173,14 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 
 # Interesting combinations
 
-## Minimal support
+## (8) Minimal support
 - **A,D,G,L,P,S,U,Y,a,f,h,l,n,p,v**
 - this is what we [already have today](#Current-state-2023-Sep)
 - it could deadlock or die,
 - JS interop on threads requires lot of user code attention
 - Keeps problems **1,2,3,4**
 
-## Sidecar + no JS interop + narrow Blazor support
+## (9) Sidecar + no JS interop + narrow Blazor support
 - **C,E,G,L,P,S,U,Z,c,d,h,m,o,q,u**
 - minimal effort, low risk, low capabilities
 - move both emscripten and Mono VM sidecar thread
@@ -189,7 +188,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - internal solutions for Blazor needs
 - Ignores problems **1,2,3,4,5**
 
-## Sidecar + only async just JS proxies UI + JSWebWorker + Blazor WASM server
+## (10) Sidecar + only async just JS proxies UI + JSWebWorker + Blazor WASM server
 - **C,E,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q,w**
 - no C or managed code on UI thread
 - no support for blocking sync JSExport calls from UI thread (callbacks)
@@ -202,7 +201,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - emscripten main loop stays responsive
 - Solves **3,4,5**
 
-## Sidecar + async & sync just JS proxies UI + JSWebWorker + Blazor WASM server
+## (11) Sidecar + async & sync just JS proxies UI + JSWebWorker + Blazor WASM server
 - **C,F,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q,w**
 - no C or managed code on UI thread
 - support for blocking sync JSExport calls from UI thread (callbacks)
@@ -217,9 +216,10 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - unless there is sync `JSImport`->`JSExport` call
 - Solves **3,4,5**
 
-## Deputy + managed UI interop + JSWebWorker
+## (12) Deputy + managed dispatch to UI + JSWebWorker
+- **B,F,K,N,Q,S/T,U,W,a/b/c,d+f,h,l,n,s/z,v**
 - this uses `JSSynchronizationContext` to dispatch calls to UI thread
-    - this is problematic because some managed code is actually running on UI thread
+    - this is "dirty" as compared to sidecar because some managed code is actually running on UI thread
     - it needs to also use `SynchronizationContext` for `JSExport` and callbacks, to dispatch to deputy.
 - blazor render could be both legacy render or Blazor server style
     - because we have both memory and mono on the UI thread
@@ -229,7 +229,10 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - unless there is sync `JSImport`->`JSExport` call
 - Solves **3,4,5**
 
-## Deputy + UI bound interop + JSWebWorker
+## (13) Deputy + emscripten dispatch to UI + JSWebWorker
+- **B,F,J,N,R,T,U,W,a/b/c,d+f,i,l,n,s,v**
+- is variation of **(12)**
+    - with emscripten dispatch and marshaling in UI thread
 - this uses `emscripten_dispatch_to_thread_async` for `call_entry_point`, `complete_task`, `cwraps.mono_wasm_invoke_method_bound`, `mono_wasm_invoke_bound_function`, `mono_wasm_invoke_import`, `call_delegate_method` to get to the UI thread.
 - it uses other `cwraps` locally on UI thread, like `mono_wasm_new_root`, `stringToMonoStringRoot`, `malloc`, `free`, `create_task_callback_method`
     - it means that interop related managed runtime code is running on the UI thread, but not the user code.
