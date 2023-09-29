@@ -19,6 +19,10 @@
 
 <sub><sup>† Note: all the text below discusses MT build only, unless explicit about ST build.</sup></sub>
 
+## Key idea in this proposal
+
+Move all managed user code out of UI/DOM thread, so that it becomes consistent with all other threads.
+
 ## Context - Problems
 **1)** If you have multithreading, any thread might need to block while waiting for any other to release a lock.
      - locks are in the user code, in nuget packages, in Mono VM itself
@@ -26,8 +30,14 @@
      - in single-threaded build of the runtime, all of this is NOOP. That's why it works on UI thread.
 
 **2)** UI thread in the browser can't synchronously block
+    - that means, "you can't not block" UI thread, not just usual "you should not block" UI
+        - `Atomics.wait()` throws `TypeError` on UI thread
     - you can spin-lock but it's bad idea.
-        - Deadlock: when you spin-block, the JS timer loop and any messages are not pumping. But code in other threads may be waiting for some such event to resolve.
+        - Deadlock: when you spin-block, the JS timer loop and any messages are not pumping. 
+            - But code in other threads may be waiting for some such event to resolve.
+            - all async/await don't work during spin-wait
+            - all networking doesn't work
+            - you can't create or join another web worker
         - It eats your battery
         - Browser will kill your tab at random point (Aw, snap).
         - It's not deterministic and you can't really test your app to prove it harmless.
@@ -36,8 +46,9 @@
         - [but other browsers don't](https://wpt.fyi/results/service-workers/service-worker/fetch-request-xhr-sync.https.html?label=experimental&label=master&aligned) and it's unlikely they will implement it
         - there are deployment and security challenges with it
     - all the other threads/workers could synchronously block
+        - `Atomics.wait()` works as expected
     - if we will have managed thread on the UI thread, any `lock` or Mono GC barrier could cause spin-wait
-        - in case of Mono code,  we at least know it's short duration
+        - in case of Mono code, we at least know it's short duration
         - we should prevent it from blocking in user code
 
 **3)** JavaScript engine APIs and objects have thread affinity. 
@@ -400,7 +411,10 @@
 
 ## WebPack, Rollup friendly
 - it's not clear how to make this single-file
-- because web workers need to start separate script(s)
+- because web workers need to start separate script(s) via `new Worker('./dotnet.js', {type: 'module'})`
+    - we can start a WebWorker with a Blob, but that's not CSP friendly.
+    - when bundled together with user code, into "my-react-application.js" we don't have way how to `new Worker('./dotnet.js')` anymore.
+- emscripten uses `dotnet.native.worker.js` script. At the moment we don't have nice way how to customize what is inside of it.
 
 ## Subtle crypto
 - once we have have all managed threads outside of the UI thread
