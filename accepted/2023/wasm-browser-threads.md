@@ -61,7 +61,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - they need to be disposed on correct thread. GC is running on random thread
 
 **4)** State management of JS context `self` of the worker.
-    - emscripten pre-allocates poll of web worker to be used as pthreads.
+    - emscripten pre-allocates pool of web worker to be used as pthreads.
         - Because they could only be created asynchronously, but `pthread_create` is synchronous call
         - Because they are slow to start
     - those pthreads have stateful JS context `self`, which is re-used when mapped to C# thread pool
@@ -196,8 +196,8 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - this will create double proxy for `Task`, `JSObject`, `Func<>` etc
     - difficult to GC, difficult to debug
 - double marshaling of parameters
-- Avoids **1,2** for JS callback
 - Solves **1,2** for managed code.
+- Avoids **1,2** for JS callback
     - emscripten main loop stays responsive
 - Solves **3,4,5**
 
@@ -210,26 +210,26 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - this will create double proxy for `Task`, `JSObject`, `Func<>` etc
     - difficult to GC, difficult to debug
 - double marshaling of parameters
-- Ignores **1,2** for JS callback
 - Solves **1,2** for managed code
-    - emscripten main loop stays responsive
     - unless there is sync `JSImport`->`JSExport` call
+- Ignores **1,2** for JS callback
+    - emscripten main loop stays responsive
 - Solves **3,4,5**
 
-## (12) Deputy + managed dispatch to UI + JSWebWorker
+## (12) Deputy + managed dispatch to UI + JSWebWorker + with sync JSExport
 - **B,F,K,N,Q,S/T,U,W,a/b/c,d+f,h,l,n,s/z,v**
 - this uses `JSSynchronizationContext` to dispatch calls to UI thread
     - this is "dirty" as compared to sidecar because some managed code is actually running on UI thread
     - it needs to also use `SynchronizationContext` for `JSExport` and callbacks, to dispatch to deputy.
 - blazor render could be both legacy render or Blazor server style
     - because we have both memory and mono on the UI thread
-- Ignores **1,2** for JS callback
 - Solves **1,2** for managed code
-    - emscripten main loop stays responsive
     - unless there is sync `JSImport`->`JSExport` call
+- Ignores **1,2** for JS callback
+    - emscripten main loop could deadlock on sync JSExport
 - Solves **3,4,5**
 
-## (13) Deputy + emscripten dispatch to UI + JSWebWorker
+## (13) Deputy + emscripten dispatch to UI + JSWebWorker + with sync JSExport
 - **B,F,J,N,R,T,U,W,a/b/c,d+f,i,l,n,s,v**
 - is variation of **(12)**
     - with emscripten dispatch and marshaling in UI thread
@@ -237,13 +237,24 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - it uses other `cwraps` locally on UI thread, like `mono_wasm_new_root`, `stringToMonoStringRoot`, `malloc`, `free`, `create_task_callback_method`
     - it means that interop related managed runtime code is running on the UI thread, but not the user code.
     - it means that parameter marshalling is fast (compared to sidecar)
-    - it still needs to enter GC barrier and so it could block UI for GC run
+    - it still needs to enter GC barrier and so it could block UI for GC run shortly
 - blazor render could be both legacy render or Blazor server style
     - because we have both memory and mono on the UI thread
+- Solves **1,2** for managed code
+    - unless there is sync `JSImport`->`JSExport` call
 - Ignores **1,2** for JS callback
+    - emscripten main loop could deadlock on sync JSExport
+- Solves **3,4,5**
+
+## (14) Deputy + emscripten dispatch to UI + JSWebWorker + no sync JSExport
+- **B,F,J,N,R,T,U,W,a/b/c,d+f,i,l,n,s,v**
+- is variation of **(13)**
+    - without support for synchronous JSExport
 - Solves **1,2** for managed code
     - emscripten main loop stays responsive
     - unless there is sync `JSImport`->`JSExport` call
+- Avoids **2** for JS callback
+    - by throwing PNSE
 - Solves **3,4,5**
 
 # Details
@@ -257,8 +268,9 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - async could be called on all `JSWebWorker` threads
 - sync could be called on `JSWebWorker`
 - sync could be called on from UI thread is problematic
-    - with spin-wait in UI in JS it would at least block the UI rendering
-    - with spin-wait in emscripten, it could deadlock the rest of the app
+    - with spin-wait in UI in JS it has **2)** problems
+    - with spin-wait in UI when emscripten is there could also deadlock the rest of the app
+        - this means that combination of sync JSExport and deputy design is dangerous
 
 ## Proxies - thread affinity
 - all of them have thread affinity
