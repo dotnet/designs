@@ -286,17 +286,24 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - are implemented in terms of `JSObject` and `Promise` proxies
 - they have thread affinity, see above
     - typically to the `JSWebWorker` of the creator
+- but are consumed via their C# Streams from any thread. 
+    - therefore need to solve the dispatch to correct thread.
+        - such dispatch will come with overhead
+        - especially when called with small buffer in tight loop
+    - or we could throw PNSE, but it may be difficult for user code to 
+        - know what thread created the client 
+        - have means how to dispatch the call there
+- because we could have blocking wait now, we could also implement synchronous APIs of HTTP/WS
+    - so that existing use code bases would just work without change
+    - at the moment they throw PNSE
+    - this would also require separate thread, doing the async job
 - could C# thread-pool threads create HTTP clients ?
     - there is no `JSWebWorker`
-    - is JS state which the runtime could manage well
+    - this is JS state which the runtime could manage well
         - so we could create the HTTP client on the pool worker
         - but managed thread pool doesn't know about it and could kill the pthread at any time
     - so we could instead create dedicated `JSWebWorker`
     - or we could dispatch it to UI thread
-- but are consumed via their C# Streams from any thread. 
-- And so need to solve the dispatch to correct thread.
-    - such dispatch will come with overhead
-    - especially when called with small buffer in tight loop
 
 # Dispatching call, who is responsible
 - User code
