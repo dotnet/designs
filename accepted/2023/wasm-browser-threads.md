@@ -5,7 +5,7 @@
  - enable blocking `Task.Wait` and `lock()` like APIs from C# user code on all threads
      - Current public API throws PNSE for it
      - This is core part on MT value proposition.
-     - If people want to use existing MT code-bases, most of the time, the code is full of locks. 
+     - If people want to use existing MT code-bases, most of the time, the code is full of locks.
      - People want to use existing desktop/server multi-threaded code as is.
  - allow HTTP and WS C# APIs to be used from any thread despite underlying JS object affinity
  - JSImport/JSExport interop in maximum possible extent
@@ -33,12 +33,13 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 **2)** UI thread in the browser can't synchronously block
     - that means, "you can't not block" UI thread, not just usual "you should not block" UI
         - `Atomics.wait()` throws `TypeError` on UI thread
-    - you can spin-lock but it's bad idea.
-        - Deadlock: when you spin-block, the JS timer loop and any messages are not pumping. 
+    - you can spin-wait but it's bad idea.
+        - Deadlock: when you spin-block, the JS timer loop and any messages are not pumping.
             - But code in other threads may be waiting for some such event to resolve.
-            - all async/await don't work during spin-wait
+            - all async/await don't work
             - all networking doesn't work
             - you can't create or join another web worker
+            - browser dev tools UI freeze
         - It eats your battery
         - Browser will kill your tab at random point (Aw, snap).
         - It's not deterministic and you can't really test your app to prove it harmless.
@@ -52,7 +53,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - in case of Mono code, we at least know it's short duration
         - we should prevent it from blocking in user code
 
-**3)** JavaScript engine APIs and objects have thread affinity. 
+**3)** JavaScript engine APIs and objects have thread affinity.
     - The DOM and few other browser APIs are only available on the main UI "thread"
         - and so, you need to have C# interop with UI, but you can't block there.
     - HTTP & WS objects have affinity, but we would like to consume them (via Streams) from any managed thread
@@ -60,7 +61,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - they need to be disposed on correct thread. GC is running on random thread
 
 **4)** State management of JS context `self` of the worker.
-    - emscripten pre-allocates poll of web worker to be used as pthreads. 
+    - emscripten pre-allocates poll of web worker to be used as pthreads.
         - Because they could only be created asynchronously, but `pthread_create` is synchronous call
         - Because they are slow to start
     - those pthreads have stateful JS context `self`, which is re-used when mapped to C# thread pool
@@ -160,10 +161,11 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - where to run the C# main entrypoint
     - **p)** could be on the UI thread
     - **q)** could be on the "deputy" or "sidecar" thread
-- where to implement subtle crypto
+- where to implement sync-to-async: crypto/DLLImport/HTTP APIs/
     - **r)** out of scope
     - **s)** in the UI thread
     - **t)** is a dedicated web worker
+    - **z)** in the sidecar or deputy
 - where to marshal JSImport/JSExport parameters/return/exception
     - **u)** could be only values types, proxies out of scope
     - **v)** could be on UI thread (with deputy design and Mono there)
@@ -173,9 +175,9 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 # Interesting combinations
 
 ## Minimal support
-- **A,D,G,L,P,S,U,Y,a,f,h,l,n,p,v** 
+- **A,D,G,L,P,S,U,Y,a,f,h,l,n,p,v**
 - this is what we [already have today](#Current-state-2023-Sep)
-- it could deadlock or die, 
+- it could deadlock or die,
 - JS interop on threads requires lot of user code attention
 - Keeps problems **1,2,3,4**
 
@@ -195,7 +197,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - this will create double proxy for `Task`, `JSObject`, `Func<>` etc
     - difficult to GC, difficult to debug
 - double marshaling of parameters
-- Avoids **1,2** for JS callback 
+- Avoids **1,2** for JS callback
 - Solves **1,2** for managed code.
     - emscripten main loop stays responsive
 - Solves **3,4,5**
@@ -209,7 +211,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - this will create double proxy for `Task`, `JSObject`, `Func<>` etc
     - difficult to GC, difficult to debug
 - double marshaling of parameters
-- Ignores **1,2** for JS callback 
+- Ignores **1,2** for JS callback
 - Solves **1,2** for managed code
     - emscripten main loop stays responsive
     - unless there is sync `JSImport`->`JSExport` call
@@ -286,15 +288,15 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - are implemented in terms of `JSObject` and `Promise` proxies
 - they have thread affinity, see above
     - typically to the `JSWebWorker` of the creator
-- but are consumed via their C# Streams from any thread. 
+- but are consumed via their C# Streams from any thread.
     - therefore need to solve the dispatch to correct thread.
         - such dispatch will come with overhead
         - especially when called with small buffer in tight loop
-    - or we could throw PNSE, but it may be difficult for user code to 
-        - know what thread created the client 
+    - or we could throw PNSE, but it may be difficult for user code to
+        - know what thread created the client
         - have means how to dispatch the call there
 - because we could have blocking wait now, we could also implement synchronous APIs of HTTP/WS
-    - so that existing use code bases would just work without change
+    - so that existing user code bases would just work without change
     - at the moment they throw PNSE
     - this would also require separate thread, doing the async job
 - could C# thread-pool threads create HTTP clients ?
@@ -302,7 +304,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - this is JS state which the runtime could manage well
         - so we could create the HTTP client on the pool worker
         - but managed thread pool doesn't know about it and could kill the pthread at any time
-    - so we could instead create dedicated `JSWebWorker`
+    - so we could instead create dedicated `JSWebWorker` managed thread
     - or we could dispatch it to UI thread
 
 # Dispatching call, who is responsible
@@ -310,14 +312,14 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - this is difficult and complex task which many will fail to do right
     - it can't be user code for HTTP/WS clients because there is no direct call via Streams
     - authors of 3rd party components would need to do it to hide complexity from users
-- Roslyn generator: JSExport is already on correct thread, no action
-- Roslyn generator: JSImport 
+- Roslyn generator: JSImport - if we make it responsible for the dispatch
     - it needs to stay backward compatible with Net7, Net8 already generated code
     - it needs to do it via public C# API
         - possibly new API `JSHost.Post` or `JSHost.Send`
     - it needs to re-consider current `stackalloc`
         - probably by re-ordering Roslyn generated code of `__arg_return.ToManaged(out __retVal);` before `JSFunctionBinding.InvokeJS`
     - it needs to propagate exceptions
+- Roslyn generator: JSExport - if we make it responsible for the dispatch
 
 # Dispatching JSImport - what should happen
 - is normally bound to JS context of the calling managed thread
@@ -330,13 +332,21 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - should we dispatch it by affinity of the parameters ?
         - this would solve HTTP/WS scenarios
 
+# Dispatching JSExport - what should happen
+- when caller is UI, we need to dispatch back to managed thread
+    - preferably deputy or sidecar thread
+- when caller is `JSWebWorker`,
+    - we are probably on correct thread already
+    - when caller is callback from HTTP/WS we could dispatch to any managed thread
+- caller can't be managed thread pool, because they would not use JS `self` context
+
 # Dispatching call - options
 - `JSSynchronizationContext` - in deputy design
-    - is implementation of `SynchronizationContext` installed to 
+    - is implementation of `SynchronizationContext` installed to
     - managed thread with `JSWebWorker`
     - or main managed thread
     - it has asynchronous `SynchronizationContext.Post`
-    - it has synchronous `SynchronizationContext.Send` 
+    - it has synchronous `SynchronizationContext.Send`
         - can propagate caller stack frames
         - can propagate exceptions from callee thread
     - when the method is async
@@ -347,7 +357,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - we can schedule it asynchronously to the `JSWebWorker` or main thread
         - we could block-wait on `Task.Wait` until it's done.
         - return sync result
-    - this would not work in sidecar design 
+    - this would not work in sidecar design
         - because UI is not managed thread there
 - `emscripten_dispatch_to_thread_async` - in deputy design
     - can dispatch async call to C function on the timer loop of target pthread
@@ -356,7 +366,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - probably by re-ordering Roslyn generated code
     - when the method is async
         - extract GCHandle of the `TaskCompletionSource`
-        - copy "stack frame" and pass it to 
+        - copy "stack frame" and pass it to
         - asynchronously schedule to the target pthread via `emscripten_dispatch_to_thread_async`
         - unpack the "stack frame"
             - using local Mono `cwraps` for marshaling
@@ -370,7 +380,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - return sync result
     - or when the method is sync
         - do something similar in C or JS
-    - this would not work in sidecar design 
+    - this would not work in sidecar design
         - because UI is not managed thread there
         - Mono cwraps are not available either
 - "comlink" - in sidecar design
@@ -383,15 +393,23 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - capture JS result/exception from "comlink"
         - use stored `TaskCompletionSource` to resolve the `Task` on target thread
 - `postMessage`
-    - can send serializable message to WebWorker
+    - can send serializable message to web worker
     - doesn't block and doesn't propagate exceptions
     - this is slow
+
+## Spin-waiting in JS
+- if we want to keep synchronous JS APIs to work on UI thread, we have to spin-wait
+- at the moment emscripten implements spin-wait in wasm
+    - if we want sidecar design we also need pure JS version of it (we have OK prototype)
+- if emscripten main is not running in UI thread, it means it could still pump events and would not deadlock in Mono or managed code
+- it could still deadlock if there is synchronous JSImport call to UI thread while UI thread is spin-waiting on it.
+    - this would be clearly user code mistake
 
 ## JSWebWorker with JS interop
 - is proposed concept to let user to manage JS state of the worker explicitly
     - because of problem **4**
 - is C# thread created and disposed by new API for it
-- could block on synchronization primitives 
+- could block on synchronization primitives
 - could do full JSImport/JSExport to it's own JS `self` context
 - there is `JSSynchronizationContext`` installed on it
     - so that user code could dispatch back to it, in case that it needs to call `JSObject` proxy (with thread affinity)
@@ -426,17 +444,19 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - it's not clear how to make this single-file
 - because web workers need to start separate script(s) via `new Worker('./dotnet.js', {type: 'module'})`
     - we can start a WebWorker with a Blob, but that's not CSP friendly.
-    - when bundled together with user code, into "my-react-application.js" we don't have way how to `new Worker('./dotnet.js')` anymore.
+    - when bundled together with user code, into `./my-react-application.js` we don't have way how to `new Worker('./dotnet.js')` anymore.
 - emscripten uses `dotnet.native.worker.js` script. At the moment we don't have nice way how to customize what is inside of it.
+- for ST build we have JS API to replace our dynamic `import()` of our modules with provided instance of a module.
+    - we would have to have some way how 3rs party code could become responsible for doing it also on web worker (which we start)
 
 ## Subtle crypto
 - once we have have all managed threads outside of the UI thread
-- we could synchronously wait for another thread to do async operations 
+- we could synchronously wait for another thread to do async operations
 - and use [async API of subtle crypto](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto)
 
 ## Lazy DLLImport - download
 - once we have have all managed threads outside of the UI thread
-- we could synchronously wait for another thread to do async operations 
+- we could synchronously wait for another thread to do async operations
 - to fetch another DLL which was not pre-downloaded
 
 # Current state 2023 Sep
