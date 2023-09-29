@@ -15,6 +15,7 @@
  - try to make it debugging friendly
  - implement crypto via `subtle` browser API
  - allow lazy `[DLLImport]` to download from the server
+ - implement synchronous APIs of the HTTP and WS clients. At the moment they throw PNSE.
  - allow calls to synchronous JSExport from UI thread (callback)
 
 <sub><sup>† Note: all the text below discusses MT build only, unless explicit about ST build.</sup></sub>
@@ -287,10 +288,15 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - typically to the `JSWebWorker` of the creator
 - could C# thread-pool threads create HTTP clients ?
     - there is no `JSWebWorker`
-    - but this is JS state which the runtime could manage well
-    - so the answer should be yes!
+    - is JS state which the runtime could manage well
+        - so we could create the HTTP client on the pool worker
+        - but managed thread pool doesn't know about it and could kill the pthread at any time
+    - so we could instead create dedicated `JSWebWorker`
+    - or we could dispatch it to UI thread
 - but are consumed via their C# Streams from any thread. 
 - And so need to solve the dispatch to correct thread.
+    - such dispatch will come with overhead
+    - especially when called with small buffer in tight loop
 
 # Dispatching call, who is responsible
 - User code
