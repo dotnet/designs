@@ -1,22 +1,26 @@
 # Multi-threading on a browser
 
 ## Goals
- - CPU intensive workloads on dotnet thread pool
- - enable blocking `Task.Wait` and `lock()` like APIs from C# user code on all threads
-     - Current public API throws PNSE for it
-     - This is core part on MT value proposition.
-     - If people want to use existing MT code-bases, most of the time, the code is full of locks.
-     - People want to use existing desktop/server multi-threaded code as is.
- - allow HTTP and WS C# APIs to be used from any thread despite underlying JS object affinity
- - JSImport/JSExport interop in maximum possible extent
- - don't change/break single threaded build. †
+- CPU intensive workloads on dotnet thread pool
+- enable blocking `Task.Wait` and `lock()` like APIs from C# user code on all threads
+    - Current public API throws PNSE for it
+    - This is core part on MT value proposition.
+    - If people want to use existing MT code-bases, most of the time, the code is full of locks.
+    - People want to use existing desktop/server multi-threaded code as is.
+- allow HTTP and WS C# APIs to be used from any thread despite underlying JS object affinity
+- JSImport/JSExport interop in maximum possible extent
+- don't change/break single threaded build. †
 
 ## Lower priority goals
- - try to make it debugging friendly
- - implement crypto via `subtle` browser API
- - allow lazy `[DLLImport]` to download from the server
- - implement synchronous APIs of the HTTP and WS clients. At the moment they throw PNSE.
- - allow calls to synchronous JSExport from UI thread (callback)
+- try to make it debugging friendly
+- sync C# to async JS
+    - dynamic creation of new pthread
+    - implement crypto via `subtle` browser API
+    - allow lazy `[DLLImport]` to download from the server
+    - implement synchronous APIs of the HTTP and WS clients. At the moment they throw PNSE.
+- sync JS to async JS to sync C#
+    - allow calls to synchronous JSExport from UI thread (callback)
+- don't prevent future marshaling of JS [transferable objects](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects), like streams and canvas.
 
 <sub><sup>† Note: all the text below discusses MT build only, unless explicit about ST build.</sup></sub>
 
@@ -191,6 +195,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 ## (10) Sidecar + only async just JS proxies UI + JSWebWorker + Blazor WASM server
 - **C,E,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q,w**
 - no C or managed code on UI thread
+    - this architectural clarity is major selling point for sidecar design
 - no support for blocking sync JSExport calls from UI thread (callbacks)
     - it will throw PNSE
 - this will create double proxy for `Task`, `JSObject`, `Func<>` etc
@@ -237,6 +242,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - it uses other `cwraps` locally on UI thread, like `mono_wasm_new_root`, `stringToMonoStringRoot`, `malloc`, `free`, `create_task_callback_method`
     - it means that interop related managed runtime code is running on the UI thread, but not the user code.
     - it means that parameter marshalling is fast (compared to sidecar)
+        - this deputy design is major selling point #2
     - it still needs to enter GC barrier and so it could block UI for GC run shortly
 - blazor render could be both legacy render or Blazor server style
     - because we have both memory and mono on the UI thread
@@ -299,6 +305,15 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - we already are on correct thread in JS
     - would anything improve if we tried to be more async ?
 
+## JSWebWorker with JS interop
+- is proposed concept to let user to manage JS state of the worker explicitly
+    - because of problem **4**
+- is C# thread created and disposed by new API for it
+- could block on synchronization primitives
+- could do full JSImport/JSExport to it's own JS `self` context
+- there is `JSSynchronizationContext`` installed on it
+    - so that user code could dispatch back to it, in case that it needs to call `JSObject` proxy (with thread affinity)
+
 ## HTTP and WS clients
 - are implemented in terms of `JSObject` and `Promise` proxies
 - they have thread affinity, see above
@@ -314,13 +329,16 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - so that existing user code bases would just work without change
     - at the moment they throw PNSE
     - this would also require separate thread, doing the async job
-- could C# thread-pool threads create HTTP clients ?
-    - there is no `JSWebWorker`
-    - this is JS state which the runtime could manage well
-        - so we could create the HTTP client on the pool worker
-        - but managed thread pool doesn't know about it and could kill the pthread at any time
-    - so we could instead create dedicated `JSWebWorker` managed thread
-    - or we could dispatch it to UI thread
+
+## JSImport calls on threads without JSWebWorker
+- what should happen when thread-pool thread uses JSImport directly ?
+- what should happen when thread-pool thread uses HTTP/WS clients ?
+- we could dispatch it to UI thread
+    - easy to understand default behavior
+    - downside is blocking the UI and emscripten loops with CPU intensive activity
+    - in sidecar design, also extra copy of buffers
+- we could instead create dedicated `JSWebWorker` managed thread
+    - this extra worker could also serve all the sync-to-async jobs
 
 # Dispatching call, who is responsible
 - User code
@@ -329,6 +347,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - authors of 3rd party components would need to do it to hide complexity from users
 - Roslyn generator: JSImport - if we make it responsible for the dispatch
     - it needs to stay backward compatible with Net7, Net8 already generated code
+        - how to detect that there is new version of generated code ?
     - it needs to do it via public C# API
         - possibly new API `JSHost.Post` or `JSHost.Send`
     - it needs to re-consider current `stackalloc`
@@ -414,20 +433,22 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 
 ## Spin-waiting in JS
 - if we want to keep synchronous JS APIs to work on UI thread, we have to spin-wait
+    - we probably should have opt-in configuration flag for this
+    - making user responsible for the consequences
 - at the moment emscripten implements spin-wait in wasm
-    - if we want sidecar design we also need pure JS version of it (we have OK prototype)
-- if emscripten main is not running in UI thread, it means it could still pump events and would not deadlock in Mono or managed code
+    - See [pthread_cond_timedwait.c](https://github.com/emscripten-core/emscripten/blob/cbf4256d651455abc7b3332f1943d3df0698e990/system/lib/libc/musl/src/thread/pthread_cond_timedwait.c#L117-L118) and [__timedwait.c](https://github.com/emscripten-core/emscripten/blob/cbf4256d651455abc7b3332f1943d3df0698e990/system/lib/libc/musl/src/thread/__timedwait.c#L67-L69)
+    - I was not able to confirm that they would call `emscripten_check_mailbox` during spin-wait
+- in sidecar design - emscripten main is not running in UI thread
+    - it means it could still pump events and would not deadlock in Mono or managed code
+    - unless the sidecar thread is blocked, or CPU hogged, which could happen
+    - we need pure JS version of spin-wait and we have OK enough prototype
+- in deputy design - emscripten main is running in UI thread
+    - but the UI thread is not running managed code
+    - it means it could still pump events and would not deadlock in Mono or managed code
+        - this deputy design is major selling point #1
+    - unless user code opts-in to call sync JSExport
 - it could still deadlock if there is synchronous JSImport call to UI thread while UI thread is spin-waiting on it.
     - this would be clearly user code mistake
-
-## JSWebWorker with JS interop
-- is proposed concept to let user to manage JS state of the worker explicitly
-    - because of problem **4**
-- is C# thread created and disposed by new API for it
-- could block on synchronization primitives
-- could do full JSImport/JSExport to it's own JS `self` context
-- there is `JSSynchronizationContext`` installed on it
-    - so that user code could dispatch back to it, in case that it needs to call `JSObject` proxy (with thread affinity)
 
 ## Debugging
 - VS debugger would work as usual
@@ -437,7 +458,6 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 ## Blazor
 - as compared to single threaded runtime, the major difference would be no synchronous callbacks.
     - for example from DOM `onClick`. This is one of the reasons people prefer ST WASM over Blazor Server.
-    - but there is really [no way around it](#problem), because you can't have both MT and sync calls from UI.
 - Blazor `renderBatch`
     - currently `Blazor._internal.renderBatch` -> `MONO.getI16`, `MONO.getI32`, `MONO.getF32`, `BINDING.js_string_to_mono_string`, `BINDING.conv_string`, `BINDING.unbox_mono_obj`
     - we could also [RenderBatchWriter](https://github.com/dotnet/aspnetcore/blob/045afcd68e6cab65502fa307e306d967a4d28df6/src/Components/Shared/src/RenderBatchWriter.cs) in the WASM
@@ -462,7 +482,8 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - when bundled together with user code, into `./my-react-application.js` we don't have way how to `new Worker('./dotnet.js')` anymore.
 - emscripten uses `dotnet.native.worker.js` script. At the moment we don't have nice way how to customize what is inside of it.
 - for ST build we have JS API to replace our dynamic `import()` of our modules with provided instance of a module.
-    - we would have to have some way how 3rs party code could become responsible for doing it also on web worker (which we start)
+    - we would have to have some way how 3rd party code could become responsible for doing it also on web worker (which we start)
+- what other JS frameworks do when they want to be webpack friendly and create web workers ?
 
 ## Subtle crypto
 - once we have have all managed threads outside of the UI thread
