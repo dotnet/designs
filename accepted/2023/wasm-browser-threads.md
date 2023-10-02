@@ -61,7 +61,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - The DOM and few other browser APIs are only available on the main UI "thread"
         - and so, you need to have C# interop with UI, but you can't block there.
     - HTTP & WS objects have affinity, but we would like to consume them (via Streams) from any managed thread
-    - Any `JSObject`, `JSException` and `Task` have thread affinity
+    - Any `JSObject`, `JSException` and `Promise`->`Task` have thread affinity
         - they need to be disposed on correct thread. GC is running on random thread
 
 **4)** State management of JS context `self` of the worker.
@@ -203,7 +203,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - double marshaling of parameters
 - Solves **1,2** for managed code.
 - Avoids **1,2** for JS callback
-    - emscripten main loop stays responsive
+    - emscripten main loop stays responsive only when main managed thread is idle
 - Solves **3,4,5**
 
 ## (11) Sidecar + async & sync just JS proxies UI + JSWebWorker + Blazor WASM server
@@ -218,7 +218,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - Solves **1,2** for managed code
     - unless there is sync `JSImport`->`JSExport` call
 - Ignores **1,2** for JS callback
-    - emscripten main loop stays responsive
+    - emscripten main loop stays responsive only when main managed thread is idle
 - Solves **3,4,5**
 
 ## (12) Deputy + managed dispatch to UI + JSWebWorker + with sync JSExport
@@ -252,7 +252,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - emscripten main loop could deadlock on sync JSExport
 - Solves **3,4,5**
 
-## (14) Deputy + emscripten dispatch to UI + JSWebWorker + no sync JSExport
+## (14) Deputy + emscripten dispatch to UI + JSWebWorker + without sync JSExport
 - **B,F,J,N,R,T,U,W,a/b/c,d+f,i,l,n,s,v**
 - is variation of **(13)**
     - without support for synchronous JSExport
@@ -302,7 +302,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - which maybe our HTTP/WS could do ?
         - could this difference we ignored ?
 - `JSExport`/`Function`
-    - we already are on correct thread in JS
+    - we already are on correct thread in JS, unless this is UI thread
     - would anything improve if we tried to be more async ?
 
 ## JSWebWorker with JS interop
@@ -331,13 +331,17 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - this would also require separate thread, doing the async job
 
 ## JSImport calls on threads without JSWebWorker
-- what should happen when thread-pool thread uses JSImport directly ?
-- what should happen when thread-pool thread uses HTTP/WS clients ?
+- those are
+    - thread-pool threads
+    - main managed thread in deputy design
+- what should happen when it calls JSImport directly ?
+- what should happen when it calls HTTP/WS clients ?
 - we could dispatch it to UI thread
     - easy to understand default behavior
     - downside is blocking the UI and emscripten loops with CPU intensive activity
     - in sidecar design, also extra copy of buffers
 - we could instead create dedicated `JSWebWorker` managed thread
+    - more difficult to reason about
     - this extra worker could also serve all the sync-to-async jobs
 
 # Dispatching call, who is responsible
@@ -354,6 +358,8 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - probably by re-ordering Roslyn generated code of `__arg_return.ToManaged(out __retVal);` before `JSFunctionBinding.InvokeJS`
     - it needs to propagate exceptions
 - Roslyn generator: JSExport - if we make it responsible for the dispatch
+- Mono/C/JS internal layer
+    - see `emscripten_dispatch_to_thread_async` below
 
 # Dispatching JSImport - what should happen
 - is normally bound to JS context of the calling managed thread
