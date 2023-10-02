@@ -437,6 +437,10 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - doesn't block and doesn't propagate exceptions
     - this is slow
 
+## Performance
+- the dispatch between threads (caused by JS object thread affinity) will have negative performance impact on the JS interop
+- in case of HTTP/WS clients used via Streams, it could be surprizing
+
 ## Spin-waiting in JS
 - if we want to keep synchronous JS APIs to work on UI thread, we have to spin-wait
     - we probably should have opt-in configuration flag for this
@@ -444,6 +448,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - at the moment emscripten implements spin-wait in wasm
     - See [pthread_cond_timedwait.c](https://github.com/emscripten-core/emscripten/blob/cbf4256d651455abc7b3332f1943d3df0698e990/system/lib/libc/musl/src/thread/pthread_cond_timedwait.c#L117-L118) and [__timedwait.c](https://github.com/emscripten-core/emscripten/blob/cbf4256d651455abc7b3332f1943d3df0698e990/system/lib/libc/musl/src/thread/__timedwait.c#L67-L69)
     - I was not able to confirm that they would call `emscripten_check_mailbox` during spin-wait
+    - See also https://emscripten.org/docs/porting/pthreads.html
 - in sidecar design - emscripten main is not running in UI thread
     - it means it could still pump events and would not deadlock in Mono or managed code
     - unless the sidecar thread is blocked, or CPU hogged, which could happen
