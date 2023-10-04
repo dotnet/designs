@@ -304,6 +304,9 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - `JSExport`/`Function`
     - we already are on correct thread in JS, unless this is UI thread
     - would anything improve if we tried to be more async ?
+- `MonoString`
+    - we have optimization for interned strings, that we marshal them only once by value. Subsequent calls in both directions are just a pinned pointer.
+    - in deputy design we could create `MonoString` instance on the UI thread, but it involves GC barrier
 
 ## JSWebWorker with JS interop
 - is proposed concept to let user to manage JS state of the worker explicitly
@@ -423,6 +426,8 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - this would not work in sidecar design
         - because UI is not managed thread there
         - Mono cwraps are not available either
+- `emscripten_sync_run_in_main_runtime_thread` - in deputy design
+    - can run sync method in UI thread
 - "comlink" - in sidecar design
     - when the method is async
         - extract GCHandle of the `TaskCompletionSource`
@@ -434,6 +439,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - use stored `TaskCompletionSource` to resolve the `Task` on target thread
 - `postMessage`
     - can send serializable message to web worker
+    - can transmit [transferable objects](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects)
     - doesn't block and doesn't propagate exceptions
     - this is slow
 
