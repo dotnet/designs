@@ -467,6 +467,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - `monoStringToString`, `stringToMonoStringRoot`
     - `mono_wasm_string_get_data_ref`
     - `mono_wasm_string_from_utf16_ref`
+    - `get_string_root` -> `mono_wasm_new_external_root`
     - we could start passing just a buffer instead of `MonoString`
     - we will lose the optimization for interned strings
 - managed instances in `MonoArray`, like `MonoString`, `JSObject` or `System.Object`
@@ -480,6 +481,10 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - `mono_wasm_get_assembly_exports` -> `__Register_`
     - `mono_wasm_assembly_load`, `mono_wasm_assembly_find_class`, `mono_wasm_assembly_find_method`
     - this logic could be moved to deputy or sidecar thread
+- `mono_wasm_bind_js_function`, `mono_wasm_bind_cs_function`
+    - `mono_wasm_new_external_root`
+- `invoke_method_and_handle_exception`
+    - `mono_wasm_new_root`
 - not problem for deputy design: `Module.stackAlloc`, `Module.stackSave`, `Module.stackRestore`
 - what's overall perf impact for Blazor's `renderBatch` ?
 
