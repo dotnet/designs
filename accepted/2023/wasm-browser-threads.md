@@ -279,6 +279,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - this will need to create something like `GCHandle`/`JSHandle` on the opposite direction and send it instead of creating it with extra call
         - which means that we need richer interop stack frame slot, because we need to pack more information
             - this is doable by making `MarshalerType` `byte`-based instead of `Int32`-based. This will be also good for better nested generic types if we proceed with it.
+        - this problem with "who owns the proxy", I'm still confused about it after implementing 80% prototype.
     - `MonoString`
         - `monoStringToString`, `stringToMonoStringRoot`
         - `mono_wasm_string_get_data_ref`
