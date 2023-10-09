@@ -263,6 +263,41 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - by throwing PNSE
 - Solves **3,4,5**
 
+## (15) Deputy + Sidecar + UI thread
+- 2 levels of indirection.
+- benefit: blocking JSExport from UI thread doesn't block emscripten loop
+- downside: complex and more resource intensive
+
+## (16) Deputy without Mono, no GC barrier breach for interop
+- variation on **(13)** or **(14)** where we get rid of per-parameter calls to Mono
+- benefit: get closer to purity of sidecar design without loosing perf
+- offenders
+    - `Task`/`Promise`
+        - `create_task_callback`, `mono_wasm_marshal_promise`
+        - `JavaScriptImports.MarshalPromise`
+        - this will need to create something like `GCHandle`/`JSHandle` on the opposite direction and send it instead of creating it with extra call
+        - which means that we need richer interop stack frame slot, because we need to pack more information
+            - this is doable by making `MarshalerType` `byte`-based instead of `Int32`-based. This will be also good for better nested generic types if we proceed with it.
+    - `MonoString`
+        - `monoStringToString`, `stringToMonoStringRoot`
+        - `mono_wasm_string_get_data_ref`
+        - `mono_wasm_string_from_utf16_ref`
+        - we could start passing just a buffer instead of `MonoString`
+        - we will the optimization for interned strings
+    - managed instances in `MonoArray`, like `MonoString`, `JSObject` or `System.Object`
+        - `mono_wasm_register_root`, `mono_wasm_deregister_root`
+        - `Interop.Runtime.DeregisterGCRoot`, `Interop.Runtime.RegisterGCRoot`
+    - this is about GC and Dispose(): `ManagedObject`, `ErrorObject`
+        - `release_js_owned_object_by_gc_handle`, `setup_managed_proxy`, `teardown_managed_proxy`
+        - `JavaScriptExports.ReleaseJSOwnedObjectByGCHandle`, `CreateTaskCallback`
+    - this is about GC and Dispose(): `JSObject`, `JSException`
+        - `Interop.Runtime.ReleaseCSOwnedObject`
+    - `mono_wasm_get_assembly_exports` -> `__Register_`
+        - `mono_wasm_assembly_load`, `mono_wasm_assembly_find_class`, `mono_wasm_assembly_find_method`
+        - this logic could be moved to deputy or sidecar thread
+    - not problem for deputy design: `Module.stackAlloc`, `Module.stackSave`, `Module.stackRestore`
+    - what's overall perf impact for Blazor's `renderBatch` ?
+
 # Details
 
 ## JSImport and marshaled JS functions
