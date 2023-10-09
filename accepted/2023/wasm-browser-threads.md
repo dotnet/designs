@@ -272,6 +272,8 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - variation on **(13)** or **(14)** where we get rid of per-parameter calls to Mono
 - benefit: get closer to purity of sidecar design without loosing perf
     - this could be done later as purity optimization
+- in this design the mono could be started on deputy thread 
+- UI would not be mono attached thread.
 - See [details](#Get_rid_of_Mono_GC_boundary_breach)
 
 # Details
