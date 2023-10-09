@@ -271,6 +271,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 ## (16) Deputy without Mono, no GC barrier breach for interop
 - variation on **(13)** or **(14)** where we get rid of per-parameter calls to Mono
 - benefit: get closer to purity of sidecar design without loosing perf
+    - this could be done later as purity optimization
 - offenders
     - `Task`/`Promise`
         - `create_task_callback`, `mono_wasm_marshal_promise`
