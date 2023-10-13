@@ -30,46 +30,46 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 
 ## Context - Problems
 **1)** If you have multithreading, any thread might need to block while waiting for any other to release a lock.
-     - locks are in the user code, in nuget packages, in Mono VM itself
-     - there are managed and un-managed locks
-     - in single-threaded build of the runtime, all of this is NOOP. That's why it works on UI thread.
+- locks are in the user code, in nuget packages, in Mono VM itself
+- there are managed and un-managed locks
+- in single-threaded build of the runtime, all of this is NOOP. That's why it works on UI thread.
 
 **2)** UI thread in the browser can't synchronously block
-    - that means, "you can't not block" UI thread, not just usual "you should not block" UI
-        - `Atomics.wait()` throws `TypeError` on UI thread
-    - you can spin-wait but it's bad idea.
-        - Deadlock: when you spin-block, the JS timer loop and any messages are not pumping.
-            - But code in other threads may be waiting for some such event to resolve.
-            - all async/await don't work
-            - all networking doesn't work
-            - you can't create or join another web worker
-            - browser dev tools UI freeze
-        - It eats your battery
-        - Browser will kill your tab at random point (Aw, snap).
-        - It's not deterministic and you can't really test your app to prove it harmless.
-    - Firefox (still) has synchronous `XMLHttpRequest` which could be captured by async code in service worker
-        - it's [deprecated legacy API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Synchronous_and_Asynchronous_Requests#synchronous_request)
-        - [but other browsers don't](https://wpt.fyi/results/service-workers/service-worker/fetch-request-xhr-sync.https.html?label=experimental&label=master&aligned) and it's unlikely they will implement it
-        - there are deployment and security challenges with it
-    - all the other threads/workers could synchronously block
-        - `Atomics.wait()` works as expected
-    - if we will have managed thread on the UI thread, any `lock` or Mono GC barrier could cause spin-wait
-        - in case of Mono code, we at least know it's short duration
-        - we should prevent it from blocking in user code
+- that means, "you can't not block" UI thread, not just usual "you should not block" UI
+    - `Atomics.wait()` throws `TypeError` on UI thread
+- you can spin-wait but it's bad idea.
+    - Deadlock: when you spin-block, the JS timer loop and any messages are not pumping.
+        - But code in other threads may be waiting for some such event to resolve.
+        - all async/await don't work
+        - all networking doesn't work
+        - you can't create or join another web worker
+        - browser dev tools UI freeze
+    - It eats your battery
+    - Browser will kill your tab at random point (Aw, snap).
+    - It's not deterministic and you can't really test your app to prove it harmless.
+- Firefox (still) has synchronous `XMLHttpRequest` which could be captured by async code in service worker
+    - it's [deprecated legacy API](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Synchronous_and_Asynchronous_Requests#synchronous_request)
+    - [but other browsers don't](https://wpt.fyi/results/service-workers/service-worker/fetch-request-xhr-sync.https.html?label=experimental&label=master&aligned) and it's unlikely they will implement it
+    - there are deployment and security challenges with it
+- all the other threads/workers could synchronously block
+    - `Atomics.wait()` works as expected
+- if we will have managed thread on the UI thread, any `lock` or Mono GC barrier could cause spin-wait
+    - in case of Mono code, we at least know it's short duration
+    - we should prevent it from blocking in user code
 
 **3)** JavaScript engine APIs and objects have thread affinity.
-    - The DOM and few other browser APIs are only available on the main UI "thread"
-        - and so, you need to have C# interop with UI, but you can't block there.
-    - HTTP & WS objects have affinity, but we would like to consume them (via Streams) from any managed thread
-    - Any `JSObject`, `JSException` and `Promise`->`Task` have thread affinity
-        - they need to be disposed on correct thread. GC is running on random thread
+- The DOM and few other browser APIs are only available on the main UI "thread"
+    - and so, you need to have C# interop with UI, but you can't block there.
+- HTTP & WS objects have affinity, but we would like to consume them (via Streams) from any managed thread
+- Any `JSObject`, `JSException` and `Promise`->`Task` have thread affinity
+    - they need to be disposed on correct thread. GC is running on random thread
 
 **4)** State management of JS context `self` of the worker.
-    - emscripten pre-allocates pool of web worker to be used as pthreads.
-        - Because they could only be created asynchronously, but `pthread_create` is synchronous call
-        - Because they are slow to start
-    - those pthreads have stateful JS context `self`, which is re-used when mapped to C# thread pool
-    - when we allow JS interop on a managed thread, we need a way how to clean up the JS state
+- emscripten pre-allocates pool of web worker to be used as pthreads.
+    - Because they could only be created asynchronously, but `pthread_create` is synchronous call
+    - Because they are slow to start
+- those pthreads have stateful JS context `self`, which is re-used when mapped to C# thread pool
+- when we allow JS interop on a managed thread, we need a way how to clean up the JS state
 
 **5)** Blazor's `renderBatch` is using direct memory access
 
@@ -272,7 +272,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - variation on **(13)** or **(14)** where we get rid of per-parameter calls to Mono
 - benefit: get closer to purity of sidecar design without loosing perf
     - this could be done later as purity optimization
-- in this design the mono could be started on deputy thread 
+- in this design the mono could be started on deputy thread
 - UI would not be mono attached thread.
 - See [details](#Get_rid_of_Mono_GC_boundary_breach)
 
