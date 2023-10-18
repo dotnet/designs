@@ -512,8 +512,12 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - what's overall perf impact for Blazor's `renderBatch` ?
 
 ## Performance
+- as compared to ST build for dotnet wasm
 - the dispatch between threads (caused by JS object thread affinity) will have negative performance impact on the JS interop
 - in case of HTTP/WS clients used via Streams, it could be surprizing
+- browser performance is lower when working with SharedArrayBuffer
+- Mono performance is lower because there are GC safe-points and locks in the VM code
+- startup is slower because creation of WebWorker instances is slow
 
 ## Spin-waiting in JS
 - if we want to keep synchronous JS APIs to work on UI thread, we have to spin-wait
