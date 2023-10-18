@@ -587,7 +587,6 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
  - This will also start in Blazor project, but UI rendering would not work.
  - we have pre-allocated pool of browser Web Workers which are mapped to pthread dynamically.
  - we can configure pthread to keep running after synchronous thread_main finished. That's necessary to run any async tasks involving JavaScript interop.
- - GC is running on UI thread/worker.
  - legacy interop has problems with GC boundaries.
  - JSImport & JSExport work
  - There is private JSSynchronizationContext implementation which is too synchronous
