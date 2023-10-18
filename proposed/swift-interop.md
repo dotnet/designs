@@ -118,6 +118,7 @@ early drafts).
 - @dotnet/macios
 - @JulieLeeMSFT
 - @davidortinau
+- @jkotas
 
 ## Design
 
