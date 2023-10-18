@@ -313,7 +313,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - calling functions which return `Task` could be aggressively async
         - unless the synchronous part of the implementation could throw exception
         - which maybe our HTTP/WS could do ?
-        - could this difference we ignored ?
+        - could this difference be ignored ?
 - `JSExport`/`Function`
     - we already are on correct thread in JS, unless this is UI thread
     - would anything improve if we tried to be more async ?
@@ -417,28 +417,54 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - because UI is not managed thread there
 - `emscripten_dispatch_to_thread_async` - in deputy design
     - can dispatch async call to C function on the timer loop of target pthread
-    - doesn't block and doesn't propagate exceptions
-    - needs to deal with `stackalloc` in C# generated stub
-        - probably by re-ordering Roslyn generated code
-    - when the method is async
-        - extract GCHandle of the `TaskCompletionSource`
-        - copy "stack frame" and pass it to
-        - asynchronously schedule to the target pthread via `emscripten_dispatch_to_thread_async`
-        - unpack the "stack frame"
-            - using local Mono `cwraps` for marshaling
-        - capture JS result/exception
-        - use stored `TaskCompletionSource` to resolve the `Task` on target thread
-    - when the method is sync
-        - inside `JSFunctionBinding.InvokeJS`:
-        - create internal `TaskCompletionSource`
-        - use async dispatch above
-        - block-wait on `Task.Wait` until it's done.
-        - return sync result
-    - or when the method is sync
-        - do something similar in C or JS
+    - doesn't block and doesn't propagate results and exceptions
     - this would not work in sidecar design
-        - because UI is not managed thread there
-        - Mono cwraps are not available either
+        - because UI is not pthread there
+    - from JS (UI) to C# managed main
+        - only necessary for deputy/sidecar, not for HTTP
+        - async
+            - `malloc` stack frame and do JS side of marshaling
+            - re-order `marshal_task_to_js` before `invoke_method_and_handle_exception`
+                - pre-create `JSHandle` of a `promise_controller`
+                - pass `JSHandle` instead of receiving it
+            - send the message via `emscripten_dispatch_to_thread_async`
+            - return the promise immediately
+            - await until `mono_wasm_resolve_or_reject_promise` is sent back
+                - this need to be also dispatched
+                - how could we make that dispatch same for HTTP cross-thread by `JSObject` affinity ?
+            - any errors in messaging will `abort()`
+        - sync
+            - dispatch C function
+            - which will lift Atomic semaphore at the end
+            - spin-wait for semaphore
+            - stack-frame could stay on stack
+        - synchronously returning `null` `Task?`
+            - pass `slot.ElementType = MarshalerType.Discard;` ?
+            - `abort()` ?
+            - `resolve(null)` ?
+            - `reject(null)` ?
+    - from C# to JS (UI)
+        - async
+            - needs to deal with `stackalloc` in C# generated stub, by copying the buffer
+        - sync
+            - inside `JSFunctionBinding.InvokeJS`:
+            - create internal `TaskCompletionSource`
+            - use async dispatch above
+            - block-wait on `Task.Wait` until it's done.
+                - !! this would not keep receiving JS loop events !!
+            - return sync result
+        - implementation calls
+            - `BindJSFunction`, `mono_wasm_bind_js_function` -  many out params, need to be sync call to UI
+            - `BindCSFunction`, `mono_wasm_bind_cs_function` -  many out params, need to be sync call to UI
+            - `ReleaseCSOwnedObject`, `mono_wasm_release_cs_owned_object` -  async message to UI
+            - `ResolveOrRejectPromise`, `mono_wasm_resolve_or_reject_promise` -  async message to UI
+            - `InvokeJSFunction`, `mono_wasm_invoke_bound_function` -  depending on signature, via FuncJS.ResMarshaler
+            - `InvokeImport`, `mono_wasm_invoke_import` -  depending on signature, could be sync or async message to UI
+            - `InstallWebWorkerInterop`, `mono_wasm_install_js_worker_interop` - could become async
+            - `UninstallWebWorkerInterop`, `mono_wasm_uninstall_js_worker_interop` - could become async
+            - `RegisterGCRoot`, `mono_wasm_register_root` -  could stay on deputy
+            - `DeregisterGCRoot`, `mono_wasm_deregister_root` -  could stay on deputy
+            - hybrid globalization, could probably stay on deputy
 - `emscripten_sync_run_in_main_runtime_thread` - in deputy design
     - can run sync method in UI thread
 - "comlink" - in sidecar design
@@ -459,12 +485,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 ## Get rid of Mono GC boundary breach
 - related to design **(16)**
 - `Task`/`Promise`
-    - `create_task_callback`, `mono_wasm_marshal_promise`
-    - `JavaScriptImports.MarshalPromise`
-    - this will need to create something like `GCHandle`/`JSHandle` on the opposite direction and send it instead of creating it with extra call
-    - which means that we need richer interop stack frame slot, because we need to pack more information
-        - this is doable by making `MarshalerType` `byte`-based instead of `Int32`-based. This will be also good for better nested generic types if we proceed with it.
-    - this problem with "who owns the proxy", I'm still confused about it after implementing 80% prototype.
+    - improved in https://github.com/dotnet/runtime/pull/93010
 - `MonoString`
     - `monoStringToString`, `stringToMonoStringRoot`
     - `mono_wasm_string_get_data_ref`
