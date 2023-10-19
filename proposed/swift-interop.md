@@ -117,6 +117,7 @@ early drafts).
 - @kotlarmilos
 - @dotnet/macios
 - @JulieLeeMSFT
+- @amanasifkhalid
 - @davidortinau
 - @jkotas
 
@@ -178,6 +179,18 @@ In the Swift language, tuples are "exploded" out in the calling convention. Each
 ##### Automatic Reference Counting and Lifetime Management
 
 Swift has a very strongly-defined lifetime and ownership model. This model is specified in the Swift ABI and is similar to Objective-C's ARC (Automatic Reference Counting) system. The Binding Tools for Swift tooling handles these explicit lifetime semantics with some generated Swift code. In the new Swift/.NET interop, management of these lifetime semantics will be done by the Swift projection and not by the raw calling-convention support.
+
+##### Structs
+
+Like .NET, Swift has both struct types and class types. Unlike .NET, Swift's struct types have strong lifetime semantics more similar to C++ types than .NET structs. At the Swift ABI layer, there are broadly three types of structs: "POD/Trivial" structs, "Bitwise Takable/Movable" structs, and non-bitwise movable structs. The [Swift documentation](https://github.com/apple/swift/blob/main/docs/ABIStabilityManifesto.md#layout-and-properties-of-types) covers these different kinds of structs. Let's look at how we could map each of these categories of structs into .NET.
+
+"POD/Trivial" structs have no memory management required and no special logic for copying/moving/deleting the struct instance. Structs of this category can be represented as C# structs with the same field layout.
+
+"Bitwise Takable/Movable" structs have some memory management logic and require calls to Swift's ref-counting machinery to maintain expected lifetimes. Structs of this category can be projected into C# as a struct. When creating this C# struct, we would semantically treat each field as a separate local, create the C# projection of it, and save this "local" value into a field in the C# struct.
+
+Structs that are non-bitwise-movable are more difficult. They cannot be moved by copying their bits; their copy constructors must be used in all copy scenarios. When mapping these structs to C#, we must take care that we do not copy the underlying memory and to call the deallocate function when the C# usage of the struct falls out of scope. These use cases best match up to C# class semantics, not struct semantics.
+
+We plan to interop with Swift's Library Evolution mode, which brings an additional wrinkle into the Swift struct story. Swift's Library Evolution mode abstracts away all type layout and semantic information unless a type is explicitly marked as `@frozen`. In the Library Evolution case, all structs have "opaque" layout, meaning that their exact layout and category cannot be determined until runtime. As a result, we need to treat all "opaque" layout structs as possibly non-bitwise-movable at compile time as we will not know until runtime what the exact layout is. Swift/C++ interop does not use the Library Evolution mode, so it is not limited by opaque struct layouts. On the bright side, all "opaque" layout structs are passed as pointers in the calling convention, which helps simplify signature construction in the higher-level case. The size and layout information of a struct is available in its [Value Witness Table](https://github.com/apple/swift/blob/main/docs/ABIStabilityManifesto.md#value-witness-table), so we can look up this information at runtime for allocating struct instances and manipulating struct memory correctly.
 
 ### Projecting Swift into .NET
 
