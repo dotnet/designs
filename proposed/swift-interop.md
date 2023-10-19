@@ -111,15 +111,15 @@ think should be involved in the design process and ensure they are involved
 early drafts).
 -->
 
-- @dotnet/interop-contrib
-- @lambdageek
-- @SamMonoRT
-- @kotlarmilos
-- @dotnet/macios
-- @JulieLeeMSFT
-- @amanasifkhalid
-- @davidortinau
-- @jkotas
+- [@dotnet/interop-contrib](https://github.com/orgs/dotnet/teams/interop-contrib)
+- [@dotnet/macios](https://github.com/orgs/dotnet/teams/macios)
+- [@lambdageek](https://github.com/lambdageek)
+- [@SamMonoRT](https://github.com/SamMonoRT)
+- [@kotlarmilos](https://github.com/kotlarmilos)
+- [@JulieLeeMSFT](https://github.com/JulieLeeMSFT)
+- [@amanasifkhalid](https://github.com/amanasifkhalid)
+- [@davidortinau](https://github.com/davidortinau)
+- [@jkotas](https://github.com/jkotas)
 
 ## Design
 
