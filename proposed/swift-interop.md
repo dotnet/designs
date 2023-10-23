@@ -161,6 +161,8 @@ The projection tooling will not ship as part of the runtime. It should be availa
 
 - How does this interop interact with the existing Objective-C interop experience?
     - This interop story will exist separately from the Objective-C interop story. We will not provide additional support for passing representations of Swift types to Objective-C projections or vice-versa. We may re-evaluate this based on user pain points and cost.
+- Library Evolution mode seems to add a lot of complexity. Do we need to interact with it for our v1 solution?
+    - We need to use LibraryEvolution mode for our Swift interop as that is the only ABI-stable story for Swift. Otherwise we'd need to re-compile the Swift code per-OS-version for each possible target OS, instead of building the managed code once for all target iOS or macOS versions (which is how .NET generally works today). Also, we wouldn't be able to use the documented `.swiftinterface` files. We'd need to use the compiler-specific `.swiftmodule` files or parse Swift code directly, both of which are much more expensive. Additionally, many core Swift libraries are only exposed with Library Evolution enabled.
 
 ## Related GitHub Issues
 
