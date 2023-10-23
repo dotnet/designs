@@ -37,7 +37,7 @@ C# and Swift are different languages with different language semantics. It is no
 
 ## Design
 
-We plan to split the work into at least three separate components. There will be work at the runtime layer to handle the basic calling-convention and register-allocation work to enable calling basic Swift functions without needing to write custom C or Assembly code or wrapping every Swift function with a C-style shape. Up-stack, there will be suite of code-generation tools to provide a higher-level projection of Swift concepts into .NET. Finally, the product will include some mechanism to easily reference Swift libraries from .NET on platforms that natively provide a Swift runtime and libraries, Apple platforms in particular. 
+We plan to split the work into at least three separate components. There will be work at the runtime layer to handle the basic calling-convention and register-allocation work to enable calling basic Swift functions without needing to write custom C or Assembly code or wrapping every Swift function with a C-style shape. Upstack, there will be suite of code-generation tools to provide a higher-level projection of Swift concepts into .NET. Finally, the product will include some mechanism to easily reference Swift libraries from .NET on platforms that natively provide a Swift runtime and libraries, Apple platforms in particular. 
 
 ### Runtime
 
