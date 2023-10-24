@@ -37,7 +37,7 @@ C# and Swift are different languages with different language semantics. It is no
 
 ## Design
 
-We plan to split the work into at least three separate components. There will be work at the runtime layer to handle the basic calling-convention and register-allocation work to enable calling basic Swift functions without needing to write custom C or Assembly code or wrapping every Swift function with a C-style shape. Upstack, there will be suite of code-generation tools to provide a higher-level projection of Swift concepts into .NET. Finally, the product will include some mechanism to easily reference Swift libraries from .NET on platforms that natively provide a Swift runtime and libraries, Apple platforms in particular. 
+We plan to split the work into at least three separate components. There will be work at the runtime layer to handle the basic calling-convention and register-allocation work to enable calling basic Swift functions without needing to write custom C or Assembly code or wrapping every Swift function with a C-style shape. Upstack, there will be suite of code-generation tools to provide a higher-level projection of Swift concepts into .NET. Finally, the product will include some mechanism to easily reference Swift libraries from .NET on platforms that natively provide a Swift runtime and libraries, Apple platforms in particular.
 
 ### Runtime
 
@@ -55,44 +55,52 @@ Swift also provides a strong Objective-C interop story through the `@objc` attri
 
 We have a few options for supporting the Self register in the calling convention:
 
-1. Use an attribute like `[SwiftSelf]` on a parameter to specify it should go in the self register.
-2. Specify that combining the `Swift` calling convention with the `MemberFunction` calling convention means that the first argument is the `self` argument.
-3. Use a `SwiftSelf` argument to represent which parameter should go into the self register.
+1. Specify that combining the `Swift` calling convention with the `MemberFunction` calling convention means that the first argument is the `self` argument.
+2. Use a `SwiftSelf` argument to represent which parameter should go into the self register.
 
-The first option seems like a natural fit, but there is one significant limitation: Attributes cannot be used in function pointers. Function pointers are a vital scenario for us to support as we want to support virtual method tables as they are used in scenarios like protocol witness tables. The second option is a natural fit as the `MemberFunction` calling convention combined with the various C-based calling conventions specifies that there is a `this` argument as the first argument. Defining `Swift` + `MemberFunction` to imply/require the `self` argument is a great conceptual extension of the existing model.
+The first option is a natural fit as the `MemberFunction` calling convention combined with the various C-based calling conventions specifies that there is a `this` argument as the first argument. Defining `Swift` + `MemberFunction` to imply/require the `self` argument is a great conceptual extension of the existing model.
 
-In Swift, sometimes the `self` register is used for non-instance state. For example, in static functions, the type metadata is passed as the `self` argument. Since static functions are not member functions, we may want to not use the `MemberFunction` calling convention. Alternatively, we could provide a `SwiftSelf` type to specify "this argument goes in the self register". Specifying the type twice in a signature would generate an `InvalidProgramException`. This would allow the `self` argument to be specified anywhere in the argument list.
+In Swift, sometimes the `self` register is used for non-instance state. For example, in static functions, the type metadata is passed as the `self` argument. Since static functions are not member functions, we may want to not use the `MemberFunction` calling convention. Alternatively, we could provide a `SwiftSelf` type to specify "this argument goes in the self register". Specifying the type twice in a signature would generate an `InvalidProgramException`. This would allow the `self` argument to be specified anywhere in the argument list. Alternatively, many sections of the Swift ABI documentation, as well as the Clang docs refer to this parameter as the "context" argument instead of the "self" argument, so an alternative name could be `SwiftContext`.
 
 For reference, explicitly declaring a function with the Swift or SwiftAsync calling conventions in Clang requires the "context" argument, the value that goes in the "self" register, as the last parameter or the penultimate parameter followed by the error parameter.
 
 The self register, like the error register and the async context register discussed later, is always a pointer-sized value. As a result, if we introduce any special intrinsic types for the calling convention, we don't need to make the type generic as we can always use a `void*` to represent the value at the lowest level.
 
+We have rejected the following designs for the reasons mentioned below:
+
+1. Use an attribute like `[SwiftSelf]` on a parameter to specify it should go in the self register.
+
+Rejected Option 1 seems like a natural fit, but there is one significant limitation: Attributes cannot be used in function pointers. Function pointers are a vital scenario for us to support as we want to support virtual method tables as they are used in scenarios like protocol witness tables.
+
 ###### Error register
 
 We have many options for handling the error register in the Swift calling convention:
 
+1. Use a special type like `SwiftError` on a `ref` or `out` parameter to indicate the error parameter.
+2. Use a special type like `SwiftError*` to indicate the error parameter;
+
+Both options characteristics: They both express that the to-be-called Swift function uses the Error Register in the signature and they both require signature manipulation in the JIT/AOT compilers. The first option represents the "error return" as a managed `ref` or `out` parameter. Like with `SwiftSelf`, we would throw an `InvalidProgramException` for a signature with multiple `SwiftError` parameters.
+
+Option 2 provides an alternative to Option 2 as `ref` and `out` parameters are not supported in `UnmanagedCallersOnly` methods. Option 1 likely provides more possible JIT optimizations as managed pointers are more easily reasoned about in some of our JIT/AOT intermediate representations, but supporting it in all of our goal scenarios (P/Invoke, UnmanagedCallersOnly, function pointers) would require some minor language changes to allow the managed pointers in the `UnmanagedCallersOnly` signature for these special types. Option 2 (`SwiftError*`) does not require any language changes.
+
+We've rejected the following designs for the reasons mentioned below:
+
 1. Use an attribute like `[SwiftError]` on a `ref` or `out` parameter to indicate the error parameter.
-2. Use a special type like `SwiftError` on a `ref` or `out` parameter to indicate the error parameter.
-3. Use a special type like `SwiftError*` to indicate the error parameter;
-4. Use a special return type `SwiftReturn<T>` to indicate the error parameter and combine it with the return value.
-5. Use special helper functions `Marshal.Get/SetLastSwiftError` to get and set the last Swift error. Our various compilers will automatically emit a call to `SetLastSwiftError` from Swift functions and emit a call to `GetLastSwiftError` in the epilog of `UnmanagedCallersOnly` methods. The projection generation will emit calls to `Marshal.Get/SetLastSwiftError` to get and set these values to and from exceptions.
-6. Implicitly transform the error register into an exception at the interop boundary.
+2. Use a special return type `SwiftReturn<T>` to indicate the error parameter and combine it with the return value.
+3. Use special helper functions `Marshal.Get/SetLastSwiftError` to get and set the last Swift error. Our various compilers will automatically emit a call to `SetLastSwiftError` from Swift functions and emit a call to `GetLastSwiftError` in the epilog of `UnmanagedCallersOnly` methods. The projection generation will emit calls to `Marshal.Get/SetLastSwiftError` to get and set these values to and from exceptions.
+4. Implicitly transform the error register into an exception at the interop boundary.
 
-We have a prototype that uses the first option; however, using an attribute has the same limitations as the attribute option for the self register. As a result, we should consider an alternative option.
+We have a prototype that uses Rejected Option 1; however, using an attribute has the same limitations as the attribute option for the self register.
 
-Options 2 through 4 have similar characteristics: They both express that the to-be-called Swift function uses the Error Register in the signature and they both require signature manipulation in the JIT/AOT compilers. Option 2 is likely cheaper, as the argument with `ref/out SwiftError` type can easily be associated with the error register. Like with `SwiftSelf`, we would throw an `InvalidProgramException` for a signature with multiple `SwiftError` parameters.
+Rejected Option 2 provides a more functional-programming-style API that is more intuitive than the `SwiftError` options above, but likely more expensive to implement. As a result, Option 2 would be better as a higher-level option and not the option implemented by the JIT/AOT compilers.
 
-Option 3 provides an alternative to Option 2 as `ref` and `out` parameters are not supported in `UnmanagedCallersOnly` methods. Option 2 likely provides more possible JIT optimizations as managed pointers are more easily reasoned about in some of our JIT/AOT intermediate representations, but supporting it in all of our goal scenarios (P/Invoke, UnmanagedCallersOnly, function pointers) would require some minor language changes to allow the managed pointers in the `UnmanagedCallersOnly` signature for these special types. Option 3 does not require any language changes.
+Rejected Option 3 provides an alternative approach. As the "Error Register" is always register-sized, we can use runtime-supported helper functions to stash away and retrieve the error register. Unlike options 2 or 3, we don't need to do any signature manipulation as the concept of "this Swift call can return an error" is not represented in the signature. Responsibility to convert the returned error value into a .NET type, such as an exception, would fall to the projection tooling. Since option 4 does not express whether or not the target function throws at the signature level, the JIT/AOT compilers would always need to emit the calls to the helpers when compiling calls to and from Swift code. If the projection of Swift types into .NET will always use exception and not pass Swift errors as the error types directly, then Option 4 reduces the design burden on the runtime teams by removing the type that would only be used at the lowest level of the Swift/.NET interop. However, Option 4 would leave some performance on the table as it would effectively require us to store and read the error value into thread-local storage instead of reading the error value from the register directly.
 
-Option 4 provides a more functional-programming-style API that is more intuitive, but likely more expensive to implement. As a result, Option 4 would be better as a higher-level option and not the option implemented by the JIT/AOT compilers.
-
-Option 5 provides an alternative approach. As the "Error Register" is always register-sized, we can use runtime-supported helper functions to stash away and retrieve the error register. Unlike options 2 or 3, we don't need to do any signature manipulation as the concept of "this Swift call can return an error" is not represented in the signature. Responsibility to convert the returned error value into a .NET type, such as an exception, would fall to the projection tooling. Since option 4 does not express whether or not the target function throws at the signature level, the JIT/AOT compilers would always need to emit the calls to the helpers when compiling calls to and from Swift code. If the projection of Swift types into .NET will always use exception and not pass Swift errors as the error types directly, then Option 4 reduces the design burden on the runtime teams by removing the type that would only be used at the lowest level of the Swift/.NET interop. However, Option 4 would leave some performance on the table as it would effectively require us to store and read the error value into thread-local storage instead of reading the error value from the register directly.
-
-Option 6 would be most similar to the Objective-C interop experience. However, this experience would require more work in the JIT/AOT compilers and would make the translation between .NET exception and Swift error codes inflexible. Modern .NET interop solutions generally push error-exception translation mechanisms to be controlled by higher-level interop code generators instead of the runtime for flexibility. Not selecting this option would require all `CallConvSwift` `UnmanagedCallersOnly` methods to wrap their contents in a `try-catch` to translate any exceptions. This is already done for the COM source generator and had to be done by Binding Tools for Swift, so the pattern has a lot of implementation expertise.
+Rejected Option 4 would be most similar to the Objective-C interop experience. However, this experience would require more work in the JIT/AOT compilers and would make the translation between .NET exception and Swift error codes inflexible. Modern .NET interop solutions generally push error-exception translation mechanisms to be controlled by higher-level interop code generators instead of the runtime for flexibility. Not selecting this option would require all `CallConvSwift` `UnmanagedCallersOnly` methods to wrap their contents in a `try-catch` to translate any exceptions. This is already done for the COM source generator and had to be done by Binding Tools for Swift, so the pattern has a lot of implementation expertise.
 
 ##### Async Context Register
 
-In the SwiftAsync calling convention, there is also an Async Context register, similar to the Self and Error registers. Like the error register, the async context must be passed by a pointer value. As a result, similar options apply here, with the same constraints.
+In the SwiftAsync calling convention, there is also an Async Context register, similar to the Self and Error registers. Like the error register, the async context must be passed by a pointer value. As a result, similar options apply here, with the same constraints. Additionally, we don't already have an existing `CallConvAsync` calling convention modifier, so going the calling convention route like proposed for the self register is not practical. As a result, we will likely need to use a special type like `SwiftAsyncContext` to represent the async context register, similar to the proposals for the error register.
 
 ##### Tuples
 
