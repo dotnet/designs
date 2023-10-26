@@ -296,7 +296,9 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - all of them need to be used and disposed on correct thread
     - how to dispatch to correct thread is one of the questions here
 - all of them are registered to 2 GCs
-    - maybe `Dispose` could be schedule asynchronously instead of blocking Mono GC
+    - `Dispose` need to be schedule asynchronously instead of blocking Mono GC
+        - because of the proxy thread affinity, but the target thread is suspended during GC, so we could not dispatch to it, at that time.
+        - the JS handles need to be freed only after both sides unregistered it (at the same time).
 - `JSObject`
     - have thread ID on them, so we know which thread owns them
 - `JSException`
