@@ -520,6 +520,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - browser performance is lower when working with SharedArrayBuffer
 - Mono performance is lower because there are GC safe-points and locks in the VM code
 - startup is slower because creation of WebWorker instances is slow
+- VFS access is slow because it's dispatched to UI thread
 
 ## Spin-waiting in JS
 - if we want to keep synchronous JS APIs to work on UI thread, we have to spin-wait
@@ -565,6 +566,10 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - TODO: which implementation keeps this working ? Which worker is the target ?
 - `JSImport` used for logging: `globalThis.console.debug`, `globalThis.console.error`, `globalThis.console.info`, `globalThis.console.warn`, `Blazor._internal.dotNetCriticalError`
     - probably could be any JS context
+
+## Virtual filesystem
+- we use emscripten's VFS, which is JavaScript implementation in the UI thread.
+- the POSIX operations are synchronously dispatched to UI thread.
 
 ## WebPack, Rollup friendly
 - it's not clear how to make this single-file
