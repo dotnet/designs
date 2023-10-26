@@ -521,6 +521,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - Mono performance is lower because there are GC safe-points and locks in the VM code
 - startup is slower because creation of WebWorker instances is slow
 - VFS access is slow because it's dispatched to UI thread
+- console output is slow because it's POSIX stream is dispatched to UI thread, call per `put_char`
 
 ## Spin-waiting in JS
 - if we want to keep synchronous JS APIs to work on UI thread, we have to spin-wait
