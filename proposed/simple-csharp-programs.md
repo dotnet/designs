@@ -1,6 +1,6 @@
 # Simple C# Programs
 
-This speclet defines "Simple C# Programs" and covers what they can do from the user's standpoint. It does **not** get into detailed design points, a deep dive of a particular mechanisms, etc. The goal is to drive consensus on the user experience and then walk back towards the right design and implementation.
+This speclet defines "Simple C# Programs" and covers what they can do from the user's standpoint. It does **not** get into detailed design points, a deep dive of a particular mechanism, etc. The goal is to drive consensus on the user experience and then walk back towards the right design and implementation.
 
 It is also designed to be incremental. Not everything written here must be implemented. For example, we could ship a version without support for packages/frameworks.
 
@@ -18,7 +18,7 @@ If you look at online guides for the above languages, they tend to start people 
 
 In the C# world, we start people off with (3) with the base tooling, the .NET CLI.
 
-This is problematic, because these people **do not expect that they need to do (3) to get started**. The tools don't support their instincts and there is very little information online to support them.
+This is problematic because these people **do not expect that they need to do (3) to get started**. The tools don't support their instincts and there is very little information online to support them.
 
 Of course, REPLs are another great way to get started. But they are outside the scope of this document.
 
@@ -212,7 +212,7 @@ Only `dotnet run` and `dotnet build` are supported with Simple C# Programs. All 
 
 ## Synthesized project file
 
-Behind the scenes, a likely implementation will involved a synethesized project file. This would then have all of the information to make the `dotnet` commands work, and open us up to allowing more `dotnet` commands in the future.
+Behind the scenes, a likely implementation will involve a synethesized project file. This would then have all of the information to make the `dotnet` commands work, and open us up to allowing more `dotnet` commands in the future.
 
 A synthesized project file could live either in memory or in the temp folder.
 
@@ -418,7 +418,7 @@ The current walkthrough proposed `"#r "nuget:..."` for packages.
 
 Syntax could change:
 
-* Use a `#!r`-style syntax, similar to the `#!` directive
+* Use a `#!r` -style syntax, similar to the `#!` directive
 * Use a custom directive like `#nuget`
 
 Naming could change:
@@ -453,9 +453,9 @@ This isn't the first proposal that deals with trying to cut down the number of c
 
 ### A note on .NET Interactive
 
-.NET Interactive _may_ be able to service these goals, but since it is currently focused on notebooks-based programming it doesn't really address the same scenario like JavaScript, Python, and Ruby. It is highly relevant for people who are used to notebook environments, and since notebooks are breaking into educational spaces, it may also play a big role in getting people started there.
+.NET Interactive _may_ be able to service these goals, it may also play a big role in getting people started.
 
-But if a JS/Python/Ruby programmer is looking to try out C# for the first time, the way that they know how to start with a language is not well supported by our tooling.
+But if a JS/Python/Ruby programmer is looking to try out C# for the first time, the way that they know how to start with a language may be not well supported by our tooling.
 
 ### A note on F#
 
