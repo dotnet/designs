@@ -592,6 +592,9 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - we could synchronously wait for another thread to do async operations
 - to fetch another DLL which was not pre-downloaded
 
+## New pthreads
+- with deputy design we could set `PTHREAD_POOL_SIZE_STRICT=0` and enable threads to be created dynamically
+
 # Current state 2023 Sep
  - we already ship MT version of the runtime in the wasm-tools workload.
  - It's enabled by `<WasmEnableThreads>true</WasmEnableThreads>` and it requires COOP HTTP headers.
