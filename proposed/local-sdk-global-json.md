@@ -19,7 +19,7 @@ These properties will be considered by the resolver host when attempting to loca
 ## Motivation
 There is currently a disconnect between the ways the .NET SDK is deployed in practice and what the host resolver can discover when searching for compatible SDKs. By default the host resolver is only going to search for SDKS in machine wide locations: `C:\Program Files\dotnet`, `%PATH%`, etc ...  The .NET SDK though is commonly deployed to local locations: `%LocalAppData%\Microsoft\dotnet`, `$HOME/.dotnet`. Many repos embrace this and restore the correct .NET for their builds into a local `.dotnet` directory.
 
-The behavior of the host resolver is incompatible with local based deployments. It simply will not find these deployments and instead search in machine wide locations. That means tools like Visual Studio and VS Code simply do not work with local deployment by default. Developers must take additional steps like manipulating `%PATH%` before launching these editors. That reduces the usefulness of items like the quick launch bar, short cuts, etc ...
+The behavior of the host resolver is incompatible with local based deployments. It will not find these deployments without additional environment variable configuration and instead search in machine wide locations. That means tools like Visual Studio and VS Code simply do not work with local deployment by default. Developers must take additional steps like manipulating `%PATH%` before launching these editors. That reduces the usefulness of items like the quick launch bar, short cuts, etc ...
 
 This is further complicated when developers mix local and machine wide installations. The host resolver will find the first `dotnet` according to its lookup rules and search only there for a compatible SDK. Once developers manipulate `%PATH%` to prefer local SDKS the resolver will stop considering machine wide SDKS. That can lead to situations where there is machine wide SDK that works for a given global.json but the host resolver will not consider it because the developer setup `%PATH%` to consider a locally installed SDK. That can be very frustrating for end users.
 
@@ -57,7 +57,7 @@ In this configuration the host resolver would find a compatible SDK if it exists
 
 The values in the `additionalLocations` property can be a relative or absolute path. When a relative path is used it will be resolved relative to the location of global.json. These values also support the following substitutions:
 
-- `"$local$"`: this matches the local installation point of .NET SDK for the current operating system: `%LocalAppData%\Microsoft\dotnet`` on Windows and `$HOME/.dotnet`` on Linux/macOS.
+- `"$user$"`: this matches the user-local installation point of .NET SDK for the current operating system: `%LocalAppData%\Microsoft\dotnet`` on Windows and `$HOME/.dotnet`` on Linux/macOS.
 - `"$machine$"`: this matches the machine installation point of .NET for the current operating system.
 - `%VARIABLE%/$VARIABLE`: environment variables will be substituted. Either the Windows or Unix format can be used here and will be normalized for the operating system the host resolver executes on.
 
@@ -77,7 +77,7 @@ Our installation tooling tends to avoid redundant installations. For example if 
 
 As a result solutions like "just use .dotnet if it exists" fall short. It will work in a lot of casse but will fail in more complex scenarios. To completely close the disconnect here we need to consider all the possible locations.
 
-### Do we need additionalLocationsOnly?
+### Do we need additionalPathsOnly?
 The necessity of this property is questionable. The design includes it for completeness and understanding that the goal of some developers is complete isolation from machine state. As long as we're considering designs that embrace local deployment, it seemed sensible to extend the design to embrace _only_ local deployment.
 
 At the same time the motivation for this is much smaller. It would be reasonable to cut this from the design and consider it at a future time when the motivation is higher.
