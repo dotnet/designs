@@ -343,6 +343,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
     - or we could throw PNSE, but it may be difficult for user code to
         - know what thread created the client
         - have means how to dispatch the call there
+    - other unknowing users are `XmlUrlResolver`, `XmlDownloadManager`, `X509ResourceClient`, ...
 - because we could have blocking wait now, we could also implement synchronous APIs of HTTP/WS
     - so that existing user code bases would just work without change
     - at the moment they throw PNSE
