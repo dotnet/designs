@@ -71,7 +71,7 @@ In a scenario where the `.dotnet` directory had 7.0.200 SDK but there was a mach
 
 The values in the `additionalPaths` property can be a relative or absolute path. When a relative path is used it will be resolved relative to the location of global.json. These values also support the following substitutions:
 
-- `"$user$"`: this matches the user-local installation point of .NET SDK for the current operating system: `%LocalAppData%\Microsoft\dotnet`` on Windows and `$HOME/.dotnet`` on Linux/macOS.
+- `"$user$"`: this matches the user-local installation point of .NET SDK for the current operating system: `%LocalAppData%\Microsoft\dotnet` on Windows and `$HOME/.dotnet` on Linux/macOS.
 - `"$machine$"`: this matches the machine installation point of .NET for the current operating system.
 - `%VARIABLE%/$VARIABLE`: environment variables will be substituted. Either the Windows or Unix format can be used here and will be normalized for the operating system the host resolver executes on.
 
