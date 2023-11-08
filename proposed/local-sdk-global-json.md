@@ -40,10 +40,10 @@ This is not a problem specific to the .NET team. Indeed this problem is felt sha
 ## Detailed Design
 The global.json file will support two new properties under the `sdk` object:
 
-- `"additionalLocations"`: this is a list of paths that the host resolver should consider when looking for compatible SDKs. Relative paths will be interpreted relative to the global.json file.
-- `"additionalLocationOnly"`: when true the resolver will _only_ consider paths in `additionalLocations`. It will not consider any machine wide locations (unless they are specified in `additionalLocations`). The default for this property is `false`.
+- `"additionalPaths"`: this is a list of paths that the host resolver should consider when looking for compatible SDKs. Relative paths will be interpreted relative to the global.json file.
+- `"additionalPathsOnly"`: when true the resolver will _only_ consider paths in `additionalPaths`. It will not consider any machine wide locations (unless they are specified in `additionalPaths`). The default for this property is `false`.
 
-The `additionalLocations` works similar to how multi-level lookup works. It adds additional locations that the host resolver should consider when trying to resolve a compatible .NET SDK. For example:
+The `additionalPaths` works similar to how multi-level lookup works. It adds additional locations that the host resolver should consider when trying to resolve a compatible .NET SDK. For example:
 
 ```json
 {
@@ -55,15 +55,15 @@ The `additionalLocations` works similar to how multi-level lookup works. It adds
 
 In this configuration the host resolver would find a compatible SDK if it exists in `.dotnet` or a machine wide location.
 
-The values in the `additionalLocations` property can be a relative or absolute path. When a relative path is used it will be resolved relative to the location of global.json. These values also support the following substitutions:
+The values in the `additionalPaths` property can be a relative or absolute path. When a relative path is used it will be resolved relative to the location of global.json. These values also support the following substitutions:
 
 - `"$user$"`: this matches the user-local installation point of .NET SDK for the current operating system: `%LocalAppData%\Microsoft\dotnet`` on Windows and `$HOME/.dotnet`` on Linux/macOS.
 - `"$machine$"`: this matches the machine installation point of .NET for the current operating system.
 - `%VARIABLE%/$VARIABLE`: environment variables will be substituted. Either the Windows or Unix format can be used here and will be normalized for the operating system the host resolver executes on.
 
-The host resolver will consider the `additionalLocations` in the order they are defined and will stop at the first match. If none of the locations have a matching SDK then it it will fall back to considering machine wide installations (unless `additionalLocationsOnly` is `true`).
+The host resolver will consider the `additionalPaths` in the order they are defined and will stop at the first match. If none of the locations have a matching SDK then it it will fall back to considering machine wide installations (unless `additionalPathsOnly` is `true`).
 
-This design requires us to only change the host resolver. That means other tooling like Visual Studio, VS Code, MSBuild, etc ... would transparently benefit from this change. Repositories could update global.json to have `additionalLocations` support `.dotnet` and Visual Studio would automatically find it without any design changes.
+This design requires us to only change the host resolver. That means other tooling like Visual Studio, VS Code, MSBuild, etc ... would transparently benefit from this change. Repositories could update global.json to have `additionalPaths` support `.dotnet` and Visual Studio would automatically find it without any design changes.
 
 ## Considerations
 ### Installation Points
