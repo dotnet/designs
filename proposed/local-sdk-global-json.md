@@ -1,4 +1,3 @@
-
 Provide SDK hint paths in global.json
 ===
 
@@ -31,7 +30,7 @@ This disconnect between the resolver and deployment has lead to customers introd
 
 These scripts are not one offs, they are increasingly common items in repos in `github.com/dotnet` to attempt to fix the disconnect. Even so many of these solutions are incomplete because they themselves only consider local deployment. They dont't fully support the full set of ways the SDK can be deployed.
 
-This is not a problem specific to the .NET team. Indeed this problem is felt sharply there due to arcade infrastructure using xcopy style deployment into `.dotnet`. Our customers feel this problem as well. Consider the following examples:
+This problem also manifests in how customers naturally want to use our development tools like Visual Studio or VS Code. It's felt sharply on the .NET team, or any external customer who wants to contribute to .NET, due to how arcade infrastructure uses xcopy deployment into `.dotnet`. External teams like Unity also feel this pain in their development:
 
 - This [issue](https://github.com/dotnet/sdk/issues/8254) from 2017 attempting to solve this problsem. It gets several hits a year from customers who are similarly struggling with our toolings inability to handle local deployment.
 - This [internal discussion](https://teams.microsoft.com/l/message/19:ed7a508bf00c4b088a7760359f0d0308@thread.skype/1698341652961?tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47&groupId=4ba7372f-2799-4677-89f0-7a1aaea3706c&parentMessageId=1698341652961&teamName=.NET%20Developer%20Experience&channelName=InfraSwat&createdTime=1698341652961) from a C# team member. They wanted to use VS as the product is shipped to customers and got blocked when we shipped an SDK that didn't have a corresponding MSI and hence VS couldn't load Roslyn anymore.
@@ -53,15 +52,28 @@ The `additionalPaths` works similar to how multi-level lookup works. It adds add
 }
 ```
 
-In this configuration the host resolver would find a compatible SDK if it exists in `.dotnet` or a machine wide location.
+In this configuration the host resolver would find a compatible SDK if it exists in `.dotnet` or a machine wide location. The host resolver will consider the `additionalPaths` in the order they are defined and will stop at the first match. If none of the locations have a matching SDK then
+ will fall back to the existing SDK resolution strategy: `%PATH%` followed by machine wide installations.
+
+This lookup will stop on the first match which means it won't necessarily find the best match. Consider a scenario with a global.json that has:
+
+```json
+{
+  "sdk": {
+    "additionalPaths": [ ".dotnet" ],
+    "version": "7.0.200",
+    "rollForward": "latestFeature"
+  }
+}
+```
+
+In a scenario where the `.dotnet` directory had 7.0.200 SDK but there was a machine wide install of 7.0.300 SDK, the host resolver would pick 7.0.200 out of `.dotnet`. That location is considered first, it has a matching SDK and hence discovery stops there.
 
 The values in the `additionalPaths` property can be a relative or absolute path. When a relative path is used it will be resolved relative to the location of global.json. These values also support the following substitutions:
 
 - `"$user$"`: this matches the user-local installation point of .NET SDK for the current operating system: `%LocalAppData%\Microsoft\dotnet`` on Windows and `$HOME/.dotnet`` on Linux/macOS.
 - `"$machine$"`: this matches the machine installation point of .NET for the current operating system.
 - `%VARIABLE%/$VARIABLE`: environment variables will be substituted. Either the Windows or Unix format can be used here and will be normalized for the operating system the host resolver executes on.
-
-The host resolver will consider the `additionalPaths` in the order they are defined and will stop at the first match. If none of the locations have a matching SDK then it it will fall back to considering machine wide installations (unless `additionalPathsOnly` is `true`).
 
 This design requires us to only change the host resolver. That means other tooling like Visual Studio, VS Code, MSBuild, etc ... would transparently benefit from this change. Repositories could update global.json to have `additionalPaths` support `.dotnet` and Visual Studio would automatically find it without any design changes.
 
@@ -81,3 +93,13 @@ As a result solutions like "just use .dotnet if it exists" fall short. It will w
 The necessity of this property is questionable. The design includes it for completeness and understanding that the goal of some developers is complete isolation from machine state. As long as we're considering designs that embrace local deployment, it seemed sensible to extend the design to embrace _only_ local deployment.
 
 At the same time the motivation for this is much smaller. It would be reasonable to cut this from the design and consider it at a future time when the motivation is higher.
+
+### Best match or first match?
+This proposal is designed at giving global.json more control over how SDKs are found. If the global.json asked for a specific path to be considered and it has a matching SDK but a different SDK was chosen, that seems counter intuitive. Even in the case where the chosen SDK was _better_. This is a motivating scenario for CI where certainty around SDK is often more desirable than _better_. This is why the host discovery stops at first match vs. looking at all location and choosing the best match.
+
+Best match is a valid approach though. Can certainly see the argument for some customers wanting that. Feel like it cuts against the proposal a bit because it devalues `additionalPaths` a bit. If the resolver is switched to best match then feel like the need for `additionalPathsOnly` is much stronger. There would certainly be a customer segment that wanted to isolate from machine state in that case.
+
+
+
+The host resolver search stops at the first matching SDK. This proposal
+
