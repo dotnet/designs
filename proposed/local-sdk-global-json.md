@@ -99,7 +99,14 @@ This proposal is designed at giving global.json more control over how SDKs are f
 
 Best match is a valid approach though. Can certainly see the argument for some customers wanting that. Feel like it cuts against the proposal a bit because it devalues `additionalPaths` a bit. If the resolver is switched to best match then feel like the need for `additionalPathsOnly` is much stronger. There would certainly be a customer segment that wanted to isolate from machine state in that case.
 
+### Other Designs
+https://github.com/dotnet/designs/blob/main/accepted/2022/version-selection.md#local-dotnet
 
+This is a proposal similar in nature to this one. There are a few differences:
 
-The host resolver search stops at the first matching SDK. This proposal
+1. This proposal is more configurable and supports all standard local installation points, not just the `.dotnet` variant.
+2. This proposal doesn't change what SDK is chosen: the rules for global.json on what SDKs are allowed still apply. It simply changes the locations where the SDK is looked for.
+3. No consideration for changing the command line. This is completely driven through global.json changes.
+
+Otherwise the proposals are very similar in nature.
 
