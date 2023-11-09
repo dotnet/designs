@@ -88,7 +88,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 ## (14) Deputy + emscripten dispatch to UI + JSWebWorker + without sync JSExport
 
 This is Pavel's preferred design based on experiments and tests so far.
-For other possible design options [see below](#Interesting_combinations).
+For other possible design options [see below](#Interesting-combinations).
 
 - Emscripten startup on UI thread
     - C functions of emscripten
@@ -652,6 +652,6 @@ There are few downsides to them
 - in this design the mono could be started on deputy thread
     - this will keep UI responsive during startup
 - UI would not be mono attached thread.
-- See [details](#Get_rid_of_Mono_GC_boundary_breach)
+- See [details](#Get-rid-of-Mono-GC-boundary-breach)
 
 Related Net8 tracking https://github.com/dotnet/runtime/issues/85592
