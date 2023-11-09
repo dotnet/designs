@@ -83,6 +83,38 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 **6)** Dynamic creation of new WebWorker requires async operations on emscripten main thread.
 - we could pre-allocate fixed size pthread pool. But one size doesn't fit all and it's expensive to create too large pool.
 
+# Summary
+
+## (14) Deputy + emscripten dispatch to UI + JSWebWorker + without sync JSExport
+
+This is Pavel's preferred design based on experiments and tests so far.
+For other possible design options [see below](#Interesting_combinations).
+
+- Emscripten startup on UI thread
+    - C functions of emscripten
+- MonoVM startup on UI thread
+    - non-GC C functions of mono are still available
+    - there is risk that UI will be suspended by pending GC
+    - it keeps `renderBatch` working as is
+    - it could be later optimized for purity to **(16)**. Pavel would like this.
+    - but it's difficult to get rid of many mono C functions we currently use
+- managed `Main()` would be dispatched onto dedicated web worker called "deputy thread"
+    - because the UI thread would be mostly idling, it could
+    - render UI, keep debugger working
+    - dynamically create pthreads
+- sync JSExports would not be supported on UI thread
+    - later sync calls could opt-in and we implement **(13)** via spin-wait
+- JS interop only on dedicated `JSWebWorker`
+
+## Sidecar options
+
+There are few downsides to them
+- if we keep main managed thread and emscripten thread the same, pthreads can't be created dynamically
+    - we could upgrade it to design **(15)** and have extra thread for running managed `Main()`
+- we will have to implement extra layer of dispatch from UI to sidecar
+    - this could be pure JS via `postMessage`, which is slow and can't do spin-wait.
+    - we could have `SharedArrayBuffer` for the messages, but we would have to implement (another?) marshaling.
+
 ## Define terms
 - UI thread
     - this is the main browser "thread", the one with DOM on it
@@ -110,182 +142,6 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
         - doesn't implement spin-wait
     - we already have prototype of the similar functionality
         - which can spin-wait
-
-## Implementation options (only some combinations are possible)
-- how to deal with blocking C# code on UI thread
-    - **A)** pretend it's not a problem (this we already have)
-    - **B)** move user C# code to web worker
-    - **C)** move all Mono to web worker
-- how to deal with blocking in synchronous JS calls from UI thread (like `onClick` callback)
-    - **D)** pretend it's not a problem (this we already have)
-    - **E)** throw PNSE when synchronous JSExport is called on UI thread
-    - **F)** dispatch calls to synchronous JSExport to web worker and spin-wait on JS side of UI thread.
-- how to implement JS interop between managed main thread and UI thread (DOM)
-    - **G)** put it out of scope for MT, manually implement what Blazor needs
-    - **H)** pure JS dispatch between threads, [comlink](https://github.com/GoogleChromeLabs/comlink) style
-    - **I)** C/emscripten dispatch of infrastructure to marshal individual parameters
-    - **J)** C/emscripten dispatch of method binding and invoke, but marshal parameters on UI thread
-    - **K)** pure C# dispatch between threads
-- how to implement JS interop on non-main web worker
-    - **L)** disable it for all non-main threads
-    - **M)** disable it for managed thread pool threads
-    - **N)** allow it only for threads created as dedicated resource `WebWorker` via new API
-    - **O)** enables it on all workers (let user deal with JS state)
-- how to dispatch calls to the right JS thread context
-    - **P)** via `SynchronizationContext` before `JSImport` stub, synchronously, stack frames
-    - **Q)** via `SynchronizationContext` inside `JSImport` C# stub
-    - **R)** via `emscripten_dispatch_to_thread_async` inside C code of ``
-- how to implement GC/dispose of `JSObject` proxies
-    - **S)** per instance: synchronous dispatch the call to correct thread via `SynchronizationContext`
-    - **T)** per instance: async schedule the cleanup
-    - at the detach of the thread. We already have `forceDisposeProxies`
-    - could target managed thread be paused during GC ?
-- where to instantiate initial user JS modules (like Blazor's)
-    - **U)** in the UI thread
-    - **V)** in the deputy/sidecar thread
-- where to instantiate `JSHost.ImportAsync` modules
-    - **W)** in the UI thread
-    - **X)** in the deputy/sidecar thread
-    - **Y)** allow it only for dedicated `JSWebWorker` threads
-    - **Z)** disable it
-    - same for `JSHost.GlobalThis`, `JSHost.DotnetInstance`
-- how to implement Blazor's `renderBatch`
-    - **a)** keep as is, wrap it with GC pause, use legacy JS interop on UI thread
-    - **b)** extract some of the legacy JS interop into Blazor codebase
-    - **c)** switch to Blazor server mode. Web worker create the batch of bytes and UI thread apply it to DOM
-- where to create HTTP+WS JS objects
-    - **d)** in the UI thread
-    - **e)** in the managed main thread
-    - **f)** in first calling `JSWebWorker` managed thread
-- how to dispatch calls to HTTP+WS JS objects
-    - **g)** try to stick to the same thread via `ConfigureAwait(false)`.
-        - doesn't really work. `Task` migrate too freely
-    - **h)** via C# `SynchronizationContext`
-    - **i)** via `emscripten_dispatch_to_thread_async`
-    - **j)** via `postMessage`
-    - **k)** same whatever we choose for `JSImport`
-    - note there are some synchronous calls on WS
-- where to create the emscripten instance
-    - **l)** could be on the UI thread
-    - **m)** could be on the "sidecar" thread
-- where to start the Mono VM
-    - **n)** could be on the UI thread
-    - **o)** could be on the "sidecar" thread
-- where to run the C# main entrypoint
-    - **p)** could be on the UI thread
-    - **q)** could be on the "deputy" or "sidecar" thread
-- where to implement sync-to-async: crypto/DLL download/HTTP APIs/
-    - **r)** out of scope
-    - **s)** in the UI thread
-    - **t)** in a dedicated web worker
-    - **z)** in the sidecar or deputy
-- where to marshal JSImport/JSExport parameters/return/exception
-    - **u)** could be only values types, proxies out of scope
-    - **v)** could be on UI thread (with deputy design and Mono there)
-    - **w)** could be on sidecar (with double proxies of parameters via comlink)
-    - **x)** could be on sidecar (with comlink calls per parameter)
-
-# Interesting combinations
-
-## (8) Minimal support
-- **A,D,G,L,P,S,U,Y,a,f,h,l,n,p,v**
-- this is what we [already have today](#Current-state-2023-Sep)
-- it could deadlock or die,
-- JS interop on threads requires lot of user code attention
-- Keeps problems **1,2,3,4**
-
-## (9) Sidecar + no JS interop + narrow Blazor support
-- **C,E,G,L,P,S,U,Z,c,d,h,m,o,q,u**
-- minimal effort, low risk, low capabilities
-- move both emscripten and Mono VM sidecar thread
-- no user code JS interop on any thread
-- internal solutions for Blazor needs
-- Ignores problems **1,2,3,4,5**
-
-## (10) Sidecar + only async just JS proxies UI + JSWebWorker + Blazor WASM server
-- **C,E,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q,w**
-- no C or managed code on UI thread
-    - this architectural clarity is major selling point for sidecar design
-- no support for blocking sync JSExport calls from UI thread (callbacks)
-    - it will throw PNSE
-- this will create double proxy for `Task`, `JSObject`, `Func<>` etc
-    - difficult to GC, difficult to debug
-- double marshaling of parameters
-- Solves **1,2** for managed code.
-- Avoids **1,2** for JS callback
-    - emscripten main loop stays responsive only when main managed thread is idle
-- Solves **3,4,5**
-
-## (11) Sidecar + async & sync just JS proxies UI + JSWebWorker + Blazor WASM server
-- **C,F,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q,w**
-- no C or managed code on UI thread
-- support for blocking sync JSExport calls from UI thread (callbacks)
-    - at blocking the UI is at least well isolated from runtime code
-    - it makes responsibility for sync call clear
-- this will create double proxy for `Task`, `JSObject`, `Func<>` etc
-    - difficult to GC, difficult to debug
-- double marshaling of parameters
-- Solves **1,2** for managed code
-    - unless there is sync `JSImport`->`JSExport` call
-- Ignores **1,2** for JS callback
-    - emscripten main loop stays responsive only when main managed thread is idle
-- Solves **3,4,5**
-
-## (12) Deputy + managed dispatch to UI + JSWebWorker + with sync JSExport
-- **B,F,K,N,Q,S/T,U,W,a/b/c,d+f,h,l,n,s/z,v**
-- this uses `JSSynchronizationContext` to dispatch calls to UI thread
-    - this is "dirty" as compared to sidecar because some managed code is actually running on UI thread
-    - it needs to also use `SynchronizationContext` for `JSExport` and callbacks, to dispatch to deputy.
-- blazor render could be both legacy render or Blazor server style
-    - because we have both memory and mono on the UI thread
-- Solves **1,2** for managed code
-    - unless there is sync `JSImport`->`JSExport` call
-- Ignores **1,2** for JS callback
-    - emscripten main loop could deadlock on sync JSExport
-- Solves **3,4,5**
-
-## (13) Deputy + emscripten dispatch to UI + JSWebWorker + with sync JSExport
-- **B,F,J,N,R,T,U,W,a/b/c,d+f,i,l,n,s,v**
-- is variation of **(12)**
-    - with emscripten dispatch and marshaling in UI thread
-- this uses `emscripten_dispatch_to_thread_async` for `call_entry_point`, `complete_task`, `cwraps.mono_wasm_invoke_method_bound`, `mono_wasm_invoke_bound_function`, `mono_wasm_invoke_import`, `call_delegate_method` to get to the UI thread.
-- it uses other `cwraps` locally on UI thread, like `mono_wasm_new_root`, `stringToMonoStringRoot`, `malloc`, `free`, `create_task_callback_method`
-    - it means that interop related managed runtime code is running on the UI thread, but not the user code.
-    - it means that parameter marshalling is fast (compared to sidecar)
-        - this deputy design is major selling point #2
-    - it still needs to enter GC barrier and so it could block UI for GC run shortly
-- blazor render could be both legacy render or Blazor server style
-    - because we have both memory and mono on the UI thread
-- Solves **1,2** for managed code
-    - unless there is sync `JSImport`->`JSExport` call
-- Ignores **1,2** for JS callback
-    - emscripten main loop could deadlock on sync JSExport
-- Solves **3,4,5**
-
-## (14) Deputy + emscripten dispatch to UI + JSWebWorker + without sync JSExport
-- **B,F,J,N,R,T,U,W,a/b/c,d+f,i,l,n,s,v**
-- is variation of **(13)**
-    - without support for synchronous JSExport
-- Solves **1,2** for managed code
-    - emscripten main loop stays responsive
-    - unless there is sync `JSImport`->`JSExport` call
-- Avoids **2** for JS callback
-    - by throwing PNSE
-- Solves **3,4,5**
-
-## (15) Deputy + Sidecar + UI thread
-- 2 levels of indirection.
-- benefit: blocking JSExport from UI thread doesn't block emscripten loop
-- downside: complex and more resource intensive
-
-## (16) Deputy without Mono, no GC barrier breach for interop
-- variation on **(13)** or **(14)** where we get rid of per-parameter calls to Mono
-- benefit: get closer to purity of sidecar design without loosing perf
-    - this could be done later as purity optimization
-- in this design the mono could be started on deputy thread
-    - this will keep UI responsive during startup
-- UI would not be mono attached thread.
-- See [details](#Get_rid_of_Mono_GC_boundary_breach)
 
 # Details
 
@@ -622,17 +478,180 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
  - Many unit tests fail on MT https://github.com/dotnet/runtime/pull/91536
  - there are MT C# ref assemblies, which don't throw PNSE for MT build of the runtime for blocking APIs.
 
-## Task breakdown
-- [ ] rename `WebWorker` API to `JSWebWorker` ?
-- [ ] `ToManaged(out Task)` to be called before the actual JS method
-- [ ] public API for `JSHost.<Target>SynchronizationContext` which could be used by code generator.
-- [ ] reimplement `JSSynchronizationContext` to be more async
-- [ ] implement Blazor's `WebAssemblyDispatcher` + [feedback](https://github.com/dotnet/aspnetcore/pull/48991)
-- [ ] optional: make underlying emscripten WebWorker pool allocation dynamic, or provide C# API for that.
-- [ ] optional: implement async function/delegate marshaling in JSImport/JSExport parameters.
-- [ ] optional: enable blocking HTTP/WS APIs
-- [ ] optional: enable lazy DLL download by blocking the caller
-- [ ] optional: implement crypto
-- [ ] measure perf impact
+## Implementation options (only some combinations are possible)
+- how to deal with blocking C# code on UI thread
+    - **A)** pretend it's not a problem (this we already have)
+    - **B)** move user C# code to web worker
+    - **C)** move all Mono to web worker
+- how to deal with blocking in synchronous JS calls from UI thread (like `onClick` callback)
+    - **D)** pretend it's not a problem (this we already have)
+    - **E)** throw PNSE when synchronous JSExport is called on UI thread
+    - **F)** dispatch calls to synchronous JSExport to web worker and spin-wait on JS side of UI thread.
+- how to implement JS interop between managed main thread and UI thread (DOM)
+    - **G)** put it out of scope for MT, manually implement what Blazor needs
+    - **H)** pure JS dispatch between threads, [comlink](https://github.com/GoogleChromeLabs/comlink) style
+    - **I)** C/emscripten dispatch of infrastructure to marshal individual parameters
+    - **J)** C/emscripten dispatch of method binding and invoke, but marshal parameters on UI thread
+    - **K)** pure C# dispatch between threads
+- how to implement JS interop on non-main web worker
+    - **L)** disable it for all non-main threads
+    - **M)** disable it for managed thread pool threads
+    - **N)** allow it only for threads created as dedicated resource `WebWorker` via new API
+    - **O)** enables it on all workers (let user deal with JS state)
+- how to dispatch calls to the right JS thread context
+    - **P)** via `SynchronizationContext` before `JSImport` stub, synchronously, stack frames
+    - **Q)** via `SynchronizationContext` inside `JSImport` C# stub
+    - **R)** via `emscripten_dispatch_to_thread_async` inside C code of ``
+- how to implement GC/dispose of `JSObject` proxies
+    - **S)** per instance: synchronous dispatch the call to correct thread via `SynchronizationContext`
+    - **T)** per instance: async schedule the cleanup
+    - at the detach of the thread. We already have `forceDisposeProxies`
+    - could target managed thread be paused during GC ?
+- where to instantiate initial user JS modules (like Blazor's)
+    - **U)** in the UI thread
+    - **V)** in the deputy/sidecar thread
+- where to instantiate `JSHost.ImportAsync` modules
+    - **W)** in the UI thread
+    - **X)** in the deputy/sidecar thread
+    - **Y)** allow it only for dedicated `JSWebWorker` threads
+    - **Z)** disable it
+    - same for `JSHost.GlobalThis`, `JSHost.DotnetInstance`
+- how to implement Blazor's `renderBatch`
+    - **a)** keep as is, wrap it with GC pause, use legacy JS interop on UI thread
+    - **b)** extract some of the legacy JS interop into Blazor codebase
+    - **c)** switch to Blazor server mode. Web worker create the batch of bytes and UI thread apply it to DOM
+- where to create HTTP+WS JS objects
+    - **d)** in the UI thread
+    - **e)** in the managed main thread
+    - **f)** in first calling `JSWebWorker` managed thread
+- how to dispatch calls to HTTP+WS JS objects
+    - **g)** try to stick to the same thread via `ConfigureAwait(false)`.
+        - doesn't really work. `Task` migrate too freely
+    - **h)** via C# `SynchronizationContext`
+    - **i)** via `emscripten_dispatch_to_thread_async`
+    - **j)** via `postMessage`
+    - **k)** same whatever we choose for `JSImport`
+    - note there are some synchronous calls on WS
+- where to create the emscripten instance
+    - **l)** could be on the UI thread
+    - **m)** could be on the "sidecar" thread
+- where to start the Mono VM
+    - **n)** could be on the UI thread
+    - **o)** could be on the "sidecar" thread
+- where to run the C# main entrypoint
+    - **p)** could be on the UI thread
+    - **q)** could be on the "deputy" or "sidecar" thread
+- where to implement sync-to-async: crypto/DLL download/HTTP APIs/
+    - **r)** out of scope
+    - **s)** in the UI thread
+    - **t)** in a dedicated web worker
+    - **z)** in the sidecar or deputy
+- where to marshal JSImport/JSExport parameters/return/exception
+    - **u)** could be only values types, proxies out of scope
+    - **v)** could be on UI thread (with deputy design and Mono there)
+    - **w)** could be on sidecar (with double proxies of parameters via comlink)
+    - **x)** could be on sidecar (with comlink calls per parameter)
+
+# Interesting combinations
+
+## (8) Minimal support
+- **A,D,G,L,P,S,U,Y,a,f,h,l,n,p,v**
+- this is what we [already have today](#Current-state-2023-Sep)
+- it could deadlock or die,
+- JS interop on threads requires lot of user code attention
+- Keeps problems **1,2,3,4**
+
+## (9) Sidecar + no JS interop + narrow Blazor support
+- **C,E,G,L,P,S,U,Z,c,d,h,m,o,q,u**
+- minimal effort, low risk, low capabilities
+- move both emscripten and Mono VM sidecar thread
+- no user code JS interop on any thread
+- internal solutions for Blazor needs
+- Ignores problems **1,2,3,4,5**
+
+## (10) Sidecar + only async just JS proxies UI + JSWebWorker + Blazor WASM server
+- **C,E,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q,w**
+- no C or managed code on UI thread
+    - this architectural clarity is major selling point for sidecar design
+- no support for blocking sync JSExport calls from UI thread (callbacks)
+    - it will throw PNSE
+- this will create double proxy for `Task`, `JSObject`, `Func<>` etc
+    - difficult to GC, difficult to debug
+- double marshaling of parameters
+- Solves **1,2** for managed code.
+- Avoids **1,2** for JS callback
+    - emscripten main loop stays responsive only when main managed thread is idle
+- Solves **3,4,5**
+
+## (11) Sidecar + async & sync just JS proxies UI + JSWebWorker + Blazor WASM server
+- **C,F,H,N,P,S,U,W+Y,c,e+f,h+k,m,o,q,w**
+- no C or managed code on UI thread
+- support for blocking sync JSExport calls from UI thread (callbacks)
+    - at blocking the UI is at least well isolated from runtime code
+    - it makes responsibility for sync call clear
+- this will create double proxy for `Task`, `JSObject`, `Func<>` etc
+    - difficult to GC, difficult to debug
+- double marshaling of parameters
+- Solves **1,2** for managed code
+    - unless there is sync `JSImport`->`JSExport` call
+- Ignores **1,2** for JS callback
+    - emscripten main loop stays responsive only when main managed thread is idle
+- Solves **3,4,5**
+
+## (12) Deputy + managed dispatch to UI + JSWebWorker + with sync JSExport
+- **B,F,K,N,Q,S/T,U,W,a/b/c,d+f,h,l,n,s/z,v**
+- this uses `JSSynchronizationContext` to dispatch calls to UI thread
+    - this is "dirty" as compared to sidecar because some managed code is actually running on UI thread
+    - it needs to also use `SynchronizationContext` for `JSExport` and callbacks, to dispatch to deputy.
+- blazor render could be both legacy render or Blazor server style
+    - because we have both memory and mono on the UI thread
+- Solves **1,2** for managed code
+    - unless there is sync `JSImport`->`JSExport` call
+- Ignores **1,2** for JS callback
+    - emscripten main loop could deadlock on sync JSExport
+- Solves **3,4,5**
+
+## (13) Deputy + emscripten dispatch to UI + JSWebWorker + with sync JSExport
+- **B,F,J,N,R,T,U,W,a/b/c,d+f,i,l,n,s,v**
+- is variation of **(12)**
+    - with emscripten dispatch and marshaling in UI thread
+- this uses `emscripten_dispatch_to_thread_async` for `call_entry_point`, `complete_task`, `cwraps.mono_wasm_invoke_method_bound`, `mono_wasm_invoke_bound_function`, `mono_wasm_invoke_import`, `call_delegate_method` to get to the UI thread.
+- it uses other `cwraps` locally on UI thread, like `mono_wasm_new_root`, `stringToMonoStringRoot`, `malloc`, `free`, `create_task_callback_method`
+    - it means that interop related managed runtime code is running on the UI thread, but not the user code.
+    - it means that parameter marshalling is fast (compared to sidecar)
+        - this deputy design is major selling point #2
+    - it still needs to enter GC barrier and so it could block UI for GC run shortly
+- blazor render could be both legacy render or Blazor server style
+    - because we have both memory and mono on the UI thread
+- Solves **1,2** for managed code
+    - unless there is sync `JSImport`->`JSExport` call
+- Ignores **1,2** for JS callback
+    - emscripten main loop could deadlock on sync JSExport
+- Solves **3,4,5**
+
+## (14) Deputy + emscripten dispatch to UI + JSWebWorker + without sync JSExport
+- **B,F,J,N,R,T,U,W,a/b/c,d+f,i,l,n,s,v**
+- is variation of **(13)**
+    - without support for synchronous JSExport
+- Solves **1,2** for managed code
+    - emscripten main loop stays responsive
+    - unless there is sync `JSImport`->`JSExport` call
+- Avoids **2** for JS callback
+    - by throwing PNSE
+- Solves **3,4,5**
+
+## (15) Deputy + Sidecar + UI thread
+- 2 levels of indirection.
+- benefit: blocking JSExport from UI thread doesn't block emscripten loop
+- downside: complex and more resource intensive
+
+## (16) Deputy without Mono, no GC barrier breach for interop
+- variation on **(13)** or **(14)** where we get rid of per-parameter calls to Mono
+- benefit: get closer to purity of sidecar design without loosing perf
+    - this could be done later as purity optimization
+- in this design the mono could be started on deputy thread
+    - this will keep UI responsive during startup
+- UI would not be mono attached thread.
+- See [details](#Get_rid_of_Mono_GC_boundary_breach)
 
 Related Net8 tracking https://github.com/dotnet/runtime/issues/85592
