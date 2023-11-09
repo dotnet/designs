@@ -1,14 +1,17 @@
 # Multi-threading on a browser
 
 ## Goals
-- CPU intensive workloads on dotnet thread pool
+- CPU intensive workloads on dotnet thread pool.
+- Allow user to start new managed threads using `new Thread` and join it.
+- Add new C# API for creating web workers with JS interop. Allow JS async/promises via external event loop.
 - enable blocking `Task.Wait` and `lock()` like APIs from C# user code on all threads
     - Current public API throws PNSE for it
     - This is core part on MT value proposition.
     - If people want to use existing MT code-bases, most of the time, the code is full of locks.
     - People want to use existing desktop/server multi-threaded code as is.
-- allow HTTP and WS C# APIs to be used from any thread despite underlying JS object affinity
-- JSImport/JSExport interop in maximum possible extent
+- allow HTTP and WS C# APIs to be used from any thread despite underlying JS object affinity.
+- Blazor `BeginInvokeDotNet`/`EndInvokeDotNetAfterTask` APIs work correctly in multithreaded apps.
+- JSImport/JSExport interop in maximum possible extent.
 - don't change/break single threaded build. †
 
 ## Lower priority goals
@@ -22,6 +25,9 @@
     - allow calls to synchronous JSExport from UI thread (callback)
 - don't prevent future marshaling of JS [transferable objects](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects), like streams and canvas.
 - offload CPU intensive part of WASM startup to WebWorker, os that the pre-rendered (blazor) UI could stay responsive during Mono VM startup.
+
+## Non-goals
+- interact with JS on managed threads other than UI thread or dedicated `JSWebWorker`
 
 <sub><sup>† Note: all the text below discusses MT build only, unless explicit about ST build.</sup></sub>
 
