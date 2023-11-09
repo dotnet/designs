@@ -24,10 +24,10 @@
 - sync JS to async JS to sync C#
     - allow calls to synchronous JSExport from UI thread (callback)
 - don't prevent future marshaling of JS [transferable objects](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects), like streams and canvas.
-- offload CPU intensive part of WASM startup to WebWorker, os that the pre-rendered (blazor) UI could stay responsive during Mono VM startup.
+- offload CPU intensive part of WASM startup to WebWorker, so that the pre-rendered (blazor) UI could stay responsive during Mono VM startup.
 
 ## Non-goals
-- interact with JS on managed threads other than UI thread or dedicated `JSWebWorker`
+- interact with JS state on `WebWorker` of managed threads other than UI thread or dedicated `JSWebWorker`
 
 <sub><sup>† Note: all the text below discusses MT build only, unless explicit about ST build.</sup></sub>
 
