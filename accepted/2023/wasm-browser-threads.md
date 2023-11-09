@@ -21,6 +21,7 @@
 - sync JS to async JS to sync C#
     - allow calls to synchronous JSExport from UI thread (callback)
 - don't prevent future marshaling of JS [transferable objects](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects), like streams and canvas.
+- offload CPU intensive part of WASM startup to WebWorker, os that the pre-rendered (blazor) UI could stay responsive during Mono VM startup.
 
 <sub><sup>† Note: all the text below discusses MT build only, unless explicit about ST build.</sup></sub>
 
@@ -72,6 +73,9 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - when we allow JS interop on a managed thread, we need a way how to clean up the JS state
 
 **5)** Blazor's `renderBatch` is using direct memory access
+
+**6)** Dynamic creation of new WebWorker requires async operations on emscripten main thread.
+- we could pre-allocate fixed size pthread pool. But one size doesn't fit all and it's expensive to create too large pool.
 
 ## Define terms
 - UI thread
@@ -273,6 +277,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - benefit: get closer to purity of sidecar design without loosing perf
     - this could be done later as purity optimization
 - in this design the mono could be started on deputy thread
+    - this will keep UI responsive during startup
 - UI would not be mono attached thread.
 - See [details](#Get_rid_of_Mono_GC_boundary_breach)
 
