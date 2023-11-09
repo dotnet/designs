@@ -19,7 +19,7 @@
 - sync C# to async JS
     - dynamic creation of new pthread
     - implement crypto via `subtle` browser API
-    - allow lazy `[DLLImport]` to download from the server
+    - allow MonoVM to lazily download DLLs from the server, instead of during startup.
     - implement synchronous APIs of the HTTP and WS clients. At the moment they throw PNSE.
 - sync JS to async JS to sync C#
     - allow calls to synchronous JSExport from UI thread (callback)
@@ -174,7 +174,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - where to run the C# main entrypoint
     - **p)** could be on the UI thread
     - **q)** could be on the "deputy" or "sidecar" thread
-- where to implement sync-to-async: crypto/DLLImport/HTTP APIs/
+- where to implement sync-to-async: crypto/DLL download/HTTP APIs/
     - **r)** out of scope
     - **s)** in the UI thread
     - **t)** in a dedicated web worker
@@ -599,7 +599,7 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 - we could synchronously wait for another thread to do async operations
 - and use [async API of subtle crypto](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto)
 
-## Lazy DLLImport - download
+## Lazy DLL download
 - once we have have all managed threads outside of the UI thread
 - we could synchronously wait for another thread to do async operations
 - to fetch another DLL which was not pre-downloaded
