@@ -18,7 +18,7 @@ These properties will be considered by the resolver host when attempting to loca
 ## Motivation
 There is currently a disconnect between the ways the .NET SDK is deployed in practice and what the host resolver can discover when searching for compatible SDKs. By default the host resolver is only going to search for SDKS in machine wide locations: `C:\Program Files\dotnet`, `%PATH%`, etc ...  The .NET SDK though is commonly deployed to local locations: `%LocalAppData%\Microsoft\dotnet`, `$HOME/.dotnet`. Many repos embrace this and restore the correct .NET for their builds into a local `.dotnet` directory.
 
-The behavior of the host resolver is incompatible with local based deployments. It will not find these deployments without additional environment variable configuration and instead search in machine wide locations. That means tools like Visual Studio and VS Code simply do not work with local deployment by default. Developers must take additional steps like manipulating `%PATH%` before launching these editors. That reduces the usefulness of items like the quick launch bar, short cuts, etc ...
+The behavior of the host resolver is incompatible with local based deployments. It will not find these deployments without additional environment variable configuration and instead search in machine wide locations. That means tools like Visual Studio and VS Code simply do not work with local deployment by default. Developers must take additional steps like manipulating `%PATH%` before launching these editors. That reduces the usefulness of items like the quick launch bar, short cuts, etc.
 
 This is further complicated when developers mix local and machine wide installations. The host resolver will find the first `dotnet` according to its lookup rules and search only there for a compatible SDK. Once developers manipulate `%PATH%` to prefer local SDKS the resolver will stop considering machine wide SDKS. That can lead to situations where there is machine wide SDK that works for a given global.json but the host resolver will not consider it because the developer setup `%PATH%` to consider a locally installed SDK. That can be very frustrating for end users.
 
@@ -40,7 +40,7 @@ This problem also manifests in how customers naturally want to use our developme
 The global.json file will support two new properties under the `sdk` object:
 
 - `"additionalPaths"`: this is a list of paths that the host resolver should consider when looking for compatible SDKs. Relative paths will be interpreted relative to the global.json file.
-- `"additionalPathsOnly"`: when true the resolver will _only_ consider paths in `additionalPaths`. It will not consider any machine wide locations (unless they are specified in `additionalPaths`). The default for this property is `false`.
+- `"additionalPathsOnly"`: when `true` the resolver will _only_ consider paths in `additionalPaths`. It will not consider any machine wide locations (unless they are specified in `additionalPaths`). The default for this property is `false`.
 
 The `additionalPaths` works similar to how multi-level lookup works. It adds additional locations that the host resolver should consider when trying to resolve a compatible .NET SDK. For example:
 
@@ -52,7 +52,7 @@ The `additionalPaths` works similar to how multi-level lookup works. It adds add
 }
 ```
 
-In this configuration the host resolver would find a compatible SDK if it exists in `.dotnet` or a machine wide location. The host resolver will consider the `additionalPaths` in the order they are defined and will stop at the first match. If none of the locations have a matching SDK then
+In this configuration the host resolver would find a compatible SDK, if it exists in `.dotnet` or a machine wide location. The host resolver will consider the `additionalPaths` in the order they are defined and will stop at the first match. If none of the locations have a matching SDK then
  will fall back to the existing SDK resolution strategy: `%PATH%` followed by machine wide installations.
 
 This lookup will stop on the first match which means it won't necessarily find the best match. Consider a scenario with a global.json that has:
@@ -82,12 +82,12 @@ This design requires us to only change the host resolver. That means other tooli
 One item to keep in mind when considering this area is the .NET SDK can be installed in many locations. The most common are:
 
 - Machine wide
-- User wide: `%LocalAppData%\Microsoft\dotnet`` on Windows and `$HOME/.dotnet`` on Linux/macOS.
+- User wide: `%LocalAppData%\Microsoft\dotnet` on Windows and `$HOME/.dotnet` on Linux/macOS.
 - Repo: `.dotnet`
 
-Our installation tooling tends to avoid redundant installations. For example if restoring a repository that requires 7.0.400, the tooling will not install it locally if 7.0.400 is installed machine wide. It also will not necessarily delete the local `.dotnet` folder or the user wide folder. That means developers end up with .NET SDK installs in all three locations but only the machine wide install has the correct ones.
+Our installation tooling tends to avoid redundant installations. For example, if restoring a repository that requires 7.0.400, the tooling will not install it locally if 7.0.400 is installed machine wide. It also will not necessarily delete the local `.dotnet` folder or the user wide folder. That means developers end up with .NET SDK installs in all three locations but only the machine wide install has the correct ones.
 
-As a result solutions like "just use .dotnet if it exists" fall short. It will work in a lot of casse but will fail in more complex scenarios. To completely close the disconnect here we need to consider all the possible locations.
+As a result solutions like "just use .dotnet, if it exists" fall short. It will work in a lot of casse but will fail in more complex scenarios. To completely close the disconnect here we need to consider all the possible locations.
 
 ### Do we need additionalPathsOnly?
 The necessity of this property is questionable. The design includes it for completeness and understanding that the goal of some developers is complete isolation from machine state. As long as we're considering designs that embrace local deployment, it seemed sensible to extend the design to embrace _only_ local deployment.
