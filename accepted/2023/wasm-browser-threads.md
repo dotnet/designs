@@ -97,7 +97,8 @@ For other possible design options [see below](#Interesting-combinations).
     - there is risk that UI will be suspended by pending GC
     - it keeps `renderBatch` working as is
     - it could be later optimized for purity to **(16)**. Pavel would like this.
-    - but it's difficult to get rid of many mono C functions we currently use
+        - the mono startup is CPU heavy and it blocks rendering even for server side rendered UI.
+        - but it's difficult to get rid of many mono [C functions we currently use](#Move-Mono-startup-to-deputy)
 - managed `Main()` would be dispatched onto dedicated web worker called "deputy thread"
     - because the UI thread would be mostly idling, it could
     - render UI, keep debugger working
@@ -352,8 +353,9 @@ There are few downsides to them
     - doesn't block and doesn't propagate exceptions
     - this is slow
 
-## Get rid of Mono GC boundary breach
+## Move Mono startup to deputy
 - related to design **(16)**
+- Get rid of Mono GC boundary breach
 - `Task`/`Promise`
     - improved in https://github.com/dotnet/runtime/pull/93010
 - `MonoString`
@@ -382,7 +384,7 @@ There are few downsides to them
 - what's overall perf impact for Blazor's `renderBatch` ?
 
 ## Performance
-- as compared to ST build for dotnet wasm
+As compared to ST build for dotnet wasm:
 - the dispatch between threads (caused by JS object thread affinity) will have negative performance impact on the JS interop
 - in case of HTTP/WS clients used via Streams, it could be surprizing
 - browser performance is lower when working with SharedArrayBuffer
@@ -390,6 +392,7 @@ There are few downsides to them
 - startup is slower because creation of WebWorker instances is slow
 - VFS access is slow because it's dispatched to UI thread
 - console output is slow because it's POSIX stream is dispatched to UI thread, call per `put_char`
+- any VFS access is slow because it dispatched to UI thread
 
 ## Spin-waiting in JS
 - if we want to keep synchronous JS APIs to work on UI thread, we have to spin-wait
