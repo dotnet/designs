@@ -249,15 +249,27 @@ There are few downsides to them
     - see `emscripten_dispatch_to_thread_async` below
 
 # Dispatching JSImport - what should happen
-- is normally bound to JS context of the calling managed thread
-- but it could be called with `JSObject` parameters which are bound to another thread
-    - if targets don't match each other throw `ArgumentException` ?
-    - if it's called from thread-pool thread
-        - which is not `JSWebWorker`
-        - should we dispatch it by affinity of the parameters ?
-    - if parameters affinity do match each other but not match current `JSWebWorker`
-        - should we dispatch it by affinity of the parameters ?
-        - this would solve HTTP/WS scenarios
+- when there is no extra code-gen flag
+    - for backward compatibility, dispatch handled by user
+    - assert that we are on `JSWebWorker` or main thread
+    - assert all parameters affinity to current thread
+- when generated with `JSImportAttribute.Affinity==UI`
+    - dispatch to UI thread
+    - assert all parameters affinity to UI thread
+    - could be called from any thread, including thread pool
+    - there is no `JSSynchronizationContext` in deputy's UI, use emscripten.
+    - emscripten can't block caller
+- when generated with `JSImportAttribute.Affinity==ByParams`
+    - dispatch to thread of parameters
+    - assert all parameters have same affinity
+    - could be called from any thread, including thread pool
+- how to obtain `JSHandle` of function in the target thread ?
+    - call `JSFunctionBinding.BindJSFunction` inside of generated dispatch callback
+- how to dispatch to UI in deputy design ?
+    - A) double dispatch, C# -> main, emscripten -> UI
+    - B) make whole dispatch emscripten only, implement blocking wait in C for emscripten sync calls.
+    - C) only allow sync call on non-UI target
+    - see scratch area at the bottom
 
 # Dispatching JSExport - what should happen
 - when caller is UI, we need to dispatch back to managed thread
@@ -269,6 +281,7 @@ There are few downsides to them
 
 # Dispatching call - options
 - `JSSynchronizationContext` - in deputy design
+    - this would not work for dispatch to UI thread as it doesn't have sync context
     - is implementation of `SynchronizationContext` installed to
     - managed thread with `JSWebWorker`
     - or main managed thread
@@ -315,6 +328,7 @@ There are few downsides to them
             - `resolve(null)` ?
             - `reject(null)` ?
     - from C# to JS (UI)
+        - how to obtain JSHandle of function in the target thread ?
         - async
             - needs to deal with `stackalloc` in C# generated stub, by copying the buffer
         - sync
@@ -658,3 +672,122 @@ As compared to ST build for dotnet wasm:
 - See [details](#Get-rid-of-Mono-GC-boundary-breach)
 
 Related Net8 tracking https://github.com/dotnet/runtime/issues/85592
+
+
+---------------------- Scratch area
+
+```cs
+[ThreadStaticAttribute]
+JSFunctionBinding __signature_Log_2101499449;
+
+[global::System.Diagnostics.DebuggerNonUserCode]
+public static partial void Log(JSObject ws)
+{
+    global::System.Span<JSMarshalerArgument> __arguments_buffer = stackalloc JSMarshalerArgument[3];
+    ref JSMarshalerArgument __arg_exception = ref __arguments_buffer[0];
+    __arg_exception.Initialize();
+    ref JSMarshalerArgument __arg_return = ref __arguments_buffer[1];
+    __arg_return.Initialize();
+
+    ref JSMarshalerArgument __ws_native__js_arg = ref __arguments_buffer[2];
+    __ws_native__js_arg.ToJS(ws);
+
+    JSFunctionBinding.Post(ws.SynchronizationContext, static (object? x) => {
+        if (__signature_Log_2101499449 == null)
+        {
+            __signature_Log_2101499449 = JSFunctionBinding.BindJSFunction("xxx", null, new JSMarshalerType[] { JSMarshalerType.Discard, JSMarshalerType.JSObject });
+        }
+        JSFunctionBinding.InvokeJS(__signature_Log_2101499449, x);
+    }, __arguments_buffer);
+}
+```
+
+
+```cs
+[ThreadStaticAttribute]
+JSFunctionBinding __signature_Log_2101499449;
+
+[global::System.Diagnostics.DebuggerNonUserCode]
+public static partial void Log(JSObject ws)
+{
+    global::System.Span<JSMarshalerArgument> __arguments_buffer = stackalloc JSMarshalerArgument[3];
+    ref JSMarshalerArgument __arg_exception = ref __arguments_buffer[0];
+    __arg_exception.Initialize();
+    ref JSMarshalerArgument __arg_return = ref __arguments_buffer[1];
+    __arg_return.Initialize();
+
+    ref JSMarshalerArgument __ws_native__js_arg = ref __arguments_buffer[2];
+    __ws_native__js_arg.ToJS(ws);
+
+    JSFunctionBinding.InvokeJSAt(ws.SynchronizationContext, static () => {
+        if (__signature_Log_2101499449 == null)
+        {
+            __signature_Log_2101499449 = JSFunctionBinding.BindJSFunction("xxx", null, new JSMarshalerType[] { JSMarshalerType.Discard, JSMarshalerType.JSObject });
+        }
+        return __signature_Log_2101499449;
+    }, __arguments_buffer);
+}
+
+
+public static partial string MemberEcho(string message)
+{
+    Span<JSMarshalerArgument> __arguments_buffer = stackalloc JSMarshalerArgument[3];
+
+    __message_native__js_arg.ToJS(message);
+
+    JSFunctionBinding.InvokeJSAtSync(ws.SynchronizationContext, static () => {
+        if (__signature_Log_2101499449 == null)
+        {
+            __signature_Log_2101499449 = JSFunctionBinding.BindJSFunction("xxx", null, new JSMarshalerType[] { JSMarshalerType.Discard, JSMarshalerType.JSObject });
+        }
+        return __signature_Log_2101499449;
+    }, __arguments_buffer);
+
+    __arg_return.ToManaged(out __retVal);
+
+    return __retVal;
+}
+[ThreadStaticAttribute]
+static JSFunctionBinding __signature_MemberEcho_630990033;
+
+Task JSFunctionBinding.InvokeJSAtAsync(IntPtr targetThreadId, Func<IntPtr> jsFuncProvider, Span<JSMarshalerArgument> args){
+    emscripten_dispatch_async(targetThreadId, jsFuncProvider, args);
+    return somePromise;
+}
+
+void JSFunctionBinding.InvokeJSAtSync(IntPtr targetThreadId, Func<IntPtr> jsFuncProvider, Span<JSMarshalerArgument> args){
+    var sem=Semaphore()
+    emscripten_dispatch_async(targetThreadId, jsFuncProvider, args);
+    sem.Wait();
+}
+
+```
+
+
+current in Net7, Net8
+```cs
+[ThreadStaticAttribute]
+static JSFunctionBinding __signature_Log_2101499449;
+
+[global::System.Diagnostics.DebuggerNonUserCode]
+public static partial void Log(string message)
+{
+    if (__signature_Log_2101499449 == null)
+    {
+        __signature_Log_2101499449 = JSFunctionBinding.BindJSFunction("globalThis.console.log", null, new JSMarshalerType[] { JSMarshalerType.Discard, JSMarshalerType.String });
+    }
+
+    global::System.Span<JSMarshalerArgument> __arguments_buffer = stackalloc JSMarshalerArgument[3];
+    ref JSMarshalerArgument __arg_exception = ref __arguments_buffer[0];
+    __arg_exception.Initialize();
+    ref JSMarshalerArgument __arg_return = ref __arguments_buffer[1];
+    __arg_return.Initialize();
+
+    ref JSMarshalerArgument __message_native__js_arg = ref __arguments_buffer[2];
+
+    __message_native__js_arg.ToJS(message);
+    JSFunctionBinding.InvokeJS(__signature_Log_2101499449, __arguments_buffer);
+}
+```
+
+
