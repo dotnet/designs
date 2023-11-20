@@ -292,6 +292,7 @@ There are few downsides to them
         - pass the buffer on each call to the target
         - late bind `JSHandle`
         - store the `JSHandle` on JS side (thread static) associated with method ID
+- TODO: double dispatch in Blazor
 
 
 # Dispatching JSExport - what should happen
@@ -697,33 +698,52 @@ As compared to ST build for dotnet wasm:
 
 Related Net8 tracking https://github.com/dotnet/runtime/issues/85592
 
+## (17) Emscripten em_queue in deputy, managed UI thread
+- is interesting because it avoids cross-thread dispatch to UI
+    - including double dispatch in Blazor's `RendererSynchronizationContext`
+- avoids solving **1,2**
+- low level hacking of emscripten design assumptions
 
 ## Scratch pad 
 
 current generated `JSImport` in Net7, Net8
 ```cs
-[ThreadStaticAttribute]
-static JSFunctionBinding __signature_Log_2101499449;
-
-[global::System.Diagnostics.DebuggerNonUserCode]
-public static partial void Log(string message)
+[DebuggerNonUserCode]
+public static partial Task WebSocketReceive(JSObject webSocket, nint bufferPtr, int bufferLength)
 {
-    if (__signature_Log_2101499449 == null)
+    if (__signature_WebSocketReceive_1144640460 == null)
     {
-        __signature_Log_2101499449 = JSFunctionBinding.BindJSFunction("globalThis.console.log", null, new JSMarshalerType[] { JSMarshalerType.Discard, JSMarshalerType.String });
+        __signature_WebSocketReceive_1144640460 = JSFunctionBinding.BindJSFunction("INTERNAL.ws_wasm_receive", null, new JSMarshalerType[] { 
+            JSMarshalerType.Task(), 
+            JSMarshalerType.JSObject, 
+            JSMarshalerType.IntPtr, 
+            JSMarshalerType.Int32 
+            });
     }
 
-    global::System.Span<JSMarshalerArgument> __arguments_buffer = stackalloc JSMarshalerArgument[3];
+    Span<JSMarshalerArgument> __arguments_buffer = stackalloc JSMarshalerArgument[5];
     ref JSMarshalerArgument __arg_exception = ref __arguments_buffer[0];
     __arg_exception.Initialize();
     ref JSMarshalerArgument __arg_return = ref __arguments_buffer[1];
     __arg_return.Initialize();
+    Task __retVal;
+    
+    ref JSMarshalerArgument __bufferLength_native__js_arg = ref __arguments_buffer[4];
+    ref JSMarshalerArgument __bufferPtr_native__js_arg = ref __arguments_buffer[3];
+    ref JSMarshalerArgument __webSocket_native__js_arg = ref __arguments_buffer[2];
 
-    ref JSMarshalerArgument __message_native__js_arg = ref __arguments_buffer[2];
+    __bufferLength_native__js_arg.ToJS(bufferLength);
+    __bufferPtr_native__js_arg.ToJS(bufferPtr);
+    __webSocket_native__js_arg.ToJS(webSocket);
 
-    __message_native__js_arg.ToJS(message);
-    JSFunctionBinding.InvokeJS(__signature_Log_2101499449, __arguments_buffer);
+    JSFunctionBinding.InvokeJS(__signature_WebSocketReceive_1144640460, __arguments_buffer);
+
+    __arg_return.ToManaged(out __retVal);
+
+    return __retVal;
 }
+
+static JSFunctionBinding __signature_WebSocketReceive_1144640460;
 ```
 
 
