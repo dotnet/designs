@@ -743,6 +743,7 @@ public static partial Task WebSocketReceive(JSObject webSocket, nint bufferPtr, 
     return __retVal;
 }
 
+[ThreadStaticAttribute]
 static JSFunctionBinding __signature_WebSocketReceive_1144640460;
 ```
 
