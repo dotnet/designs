@@ -122,10 +122,12 @@ There are few downsides to them
     - it can't block-wait, only spin-wait
 - "sidecar" thread - possible design
     - is a web worker with emscripten and mono VM started on it
+    - there is no emscripten on UI thread
     - for Blazor rendering MAUI/BlazorWebView use the same concept
     - doing this allows all managed threads to allow blocking wait
 - "deputy" thread - possible design
     - is a web worker and pthread with C# `Main` entrypoint
+    - emscripten startup stays on UI thread
     - doing this allows all managed threads to allow blocking wait
 - "managed thread"
     - is a thread with emscripten pthread and Mono VM attached thread and GC barriers
@@ -745,6 +747,30 @@ public static partial Task WebSocketReceive(JSObject webSocket, nint bufferPtr, 
 
 [ThreadStaticAttribute]
 static JSFunctionBinding __signature_WebSocketReceive_1144640460;
+
+[DebuggerNonUserCode]
+internal static unsafe void __Wrapper_Dummy_1616792047(JSMarshalerArgument* __arguments_buffer)
+{
+    Task<int> meaningPromise;
+    ref JSMarshalerArgument __arg_exception = ref __arguments_buffer[0];
+    ref JSMarshalerArgument __arg_return = ref __arguments_buffer[1];
+
+    ref JSMarshalerArgument __meaningPromise_native__js_arg = ref __arguments_buffer[2];
+    try
+    {
+
+        __meaningPromise_native__js_arg.ToManaged(out meaningPromise, 
+                                                    static (ref JSMarshalerArgument __task_result_arg, out int __task_result) =>
+                                                    {
+                                                        __task_result_arg.ToManaged(out __task_result);
+                                                    });
+        Sample.Test.Dummy(meaningPromise);
+    }
+    catch (global::System.Exception ex)
+    {
+        __arg_exception.ToJS(ex);
+    }
+}
 ```
 
 
