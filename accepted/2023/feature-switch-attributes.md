@@ -57,7 +57,6 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 
 ## Goals
 
-- Teach the ILLink Roslyn analyzer to treat `IsDynamicCodeCompiled` as a guard for `RequiresDynamicCodeAttribute`
 - Allow libraries to define their own feature guard properties
 
   Libraries should be able to introduce their own properties that can act as guards for `RequiresDynamicCodeAttribute`, or for other features that might produce warnings in the analyzer
@@ -67,6 +66,8 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 - Take into account how this would interact with an attribute-based model for feature switches
 
   We will explore what an attribute-based model for feature switches would look like to ensure that it interacts well with a model for feature guards. It's possible that we would design both in conjunction if they are naturally related.
+
+- Teach the ILLink Roslyn analyzer to treat `IsDynamicCodeCompiled` as a guard for `RequiresDynamicCodeAttribute` using the same model we define for third-party libraries
 
 ### Non-goals
 
@@ -410,7 +411,7 @@ The analyzer would validate that `FeatureGuardAttribute` and `FeatureSwitchAttri
 
 We could use this model even for feature switches similar to `StartupHookSupport`, which don't currently have a `StartupHookSupportAttribute`. There's no need to actually annotate related APIs with the attribute if that is overkill for a small feature. In this case the attribute definition would just serve as metadata that allows us to define a feature switch in a uniform way.
 
-Note that this makes it possible to define custom `Requires` attributes for arbitrary features. While the immediate goal of this proposal is not to enable analyzer support for analysis warnings based on such custom attributes, the model intentionally allows for this so that we could easily open up the analyzer to work for custom features. However, initially support for analysis warnings would be limited to `RequiresUnreferencedCodeAttribute`, `RequiresDynamicCodeAttribute`, and `RequiresAssemblyFilesAttribute`.
+Note that this makes it possible to define custom `Requires` attributes for arbitrary features. While the immediate goal of this proposal is not to enable analyzer support for analysis warnings based on such custom attributes, the model intentionally allows for this so that we could easily open up the analyzer to work for custom features. However, initially support for analysis warnings would be limited to `RequiresUnreferencedCodeAttribute`, `RequiresDynamicCodeAttribute`, and `RequiresAssemblyFilesAttribute`. Analyzers currently require all supported diagnostic IDs to be declared up-front, so allowing analysis for arbitrary features would mean that all features share the same analyzer diagnostic ID. We would need to consider solutions to this problem.
 
 ## Comparison with "capability-based analyzer"
 
@@ -549,6 +550,17 @@ We might eventually want to extend the semantics in a few directions:
 
   class RequiresNoDynamicCodeAttribute : RequiresNotAttribute {}
   ```
+
+- Validation or generation of feature switch implementation
+
+  The recommended pattern for implementing feature switches is to check `AppContext`, for example:
+  
+  ```csharp
+  [FeatureSwitch(typeof(RequiresDynamicCodeAttribute))]
+  static bool IsDynamicCodeSupported => AppContext.TryGetSwitch("RuntimeFeature.IsDynamicCodeSupported", out bool isEnabled) ? isEnabled : false;
+  ```
+
+  We could consider adding validation that the body correctly checks `AppContext` for the feature name associated with the feature attribute, or adding a source generator that would generate the implementation from the `FeatureSwitchAttribute`.
 
 - Versioning support for feature attributes/checks/guards
 
