@@ -170,6 +170,8 @@ Better would be for the analyzer to validate that the implementation of a featur
 class Feature {
     [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
     public static bool IsSupported => RuntimeFeature.IsDynamicCodeSupported && SomeOtherCondition(); // OK
+
+    static bool SomeOtherCondition() => // ...
 }
 ```
 
@@ -177,6 +179,8 @@ class Feature {
 class Feature {
     [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
     public static bool IsSupported => SomeOtherCondition(); // warning
+
+    static bool SomeOtherCondition() => // ...
 }
 ```
 
