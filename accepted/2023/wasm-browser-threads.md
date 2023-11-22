@@ -706,10 +706,29 @@ Related Net8 tracking https://github.com/dotnet/runtime/issues/85592
 - avoids solving **1,2**
 - low level hacking of emscripten design assumptions
 
+## (18) Soft deputy
+- keep both Mono and emscripten in the UI thread
+- use `SynchronizationContext` to do the dispatch
+- make it easy and default to run any user code in deputy thread
+    - all Blazor events and callbacks like `onClick` to deputy
+    - move SignalR to deputy
+    - move Blazor entry point to deputy
+- hope that UI thread is mostly idle
+    - enable dynamic thread allocation
+    - throw exceptions in dev loop when UI thread does `lock` or `.Wait` in user code
+
 ## Scratch pad 
 
 current generated `JSImport` in Net7, Net8
+
 ```cs
+
+[JSImport(Dispatch.UI)]
+public static partial Task WebSocketReceive(JSObject webSocket, nint bufferPtr, int bufferLength);
+
+[JSImport(Dispatch.Params)]
+public static partial Task WebSocketReceive(JSObject webSocket, nint bufferPtr, int bufferLength);
+
 [DebuggerNonUserCode]
 public static partial Task WebSocketReceive(JSObject webSocket, nint bufferPtr, int bufferLength)
 {
