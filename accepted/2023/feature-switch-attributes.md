@@ -625,6 +625,38 @@ We might eventually want to extend the semantics in a few directions:
 
 ## Alternate API shapes
 
+### Separate types for feature and Requires attribute
+
+Since not all feature switches are designed to support annotating code with a `RequiresFeatureAttribute`, we could add a level of indirection to separate the definition of a feature from the attribute definition. For example, to support expressing `"System.StartupHookProvider.IsSupported"` as a feature switch without requiring a `RequiresStartupHookSupportAttribute`, we could define a separate type that just acts as metadata representing the feature:
+
+```csharp
+[FeatureName("System.StartupHookProvider.IsSupported")]
+static class StartupHookSupported { }
+
+class StartupHookProvider {
+    [FeatureSwitch(typeof(StartupHookSupported))]
+    [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
+    private static bool IsSupported => // ...
+}
+```
+
+For features that do define an analysis attribute, this could be linked to the feature defining type with another attribute:
+
+```csharp
+[FeatureName("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
+[FeatureRequirement(typeof(RequiresDynamicCode))]
+static class DynamicCodeSupportedFeature { }
+
+class RequiresDynamicCode : Attribute { }
+
+class RuntimeFeature {
+    [FeatureSwitch(typeof(DynamicCodeSupportedFeature))]
+    public static bool IsDynamicCodeSupported => // ...
+}
+```
+
+The advantage of this model is that it doesn't require defining an attribute type, and would allow the name of the type referenced in the `FeatureSwitch` and `FeatureGuard` attributes to be more aligned with the feature name instead of the `Requires` attribute naming convention. However, for the features which do have attributes it is another level of indirection that might not be necessary. Perhaps another option is to allow the referenced type to _optionally_ derive from `RequiresFeatureAttribute`. This would allow the definition of a feature without an attribute type, but would still require giving thought to the name of the feature defining type, in case it was later changed to derive from `RequiresFeatureAttribute` and used for analysis.
+
 ### Feature switches without feature attributes
 
 The proposed model for feature attributes requires introducing a separate attribute type for each feature switch, in order to make the API shapes of `FeatureSwitch` and `FeatureGuard` more uniform by letting them both reference the feature attribute type.
