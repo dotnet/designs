@@ -3,7 +3,7 @@
 .NET has [feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md) which can be set to turn on/off areas of functionality in our libraries, with optional support for removing unused features when trimming or native AOT compiling. What we describe overall as "feature switches" have many pieces which fit together to enable this:
 
 - MSBuild property
-- RuntimHostConfigurationOption MSBuild ItemGroup
+- RuntimeHostConfigurationOption MSBuild ItemGroup
 - `runtimeconfig.json` setting
 - AppContext feature setting
 - **ILLink.Substitutions.xml**
@@ -30,7 +30,7 @@ We'll use the following terms to describe specific bits of functionality related
 
 We'll say that a "feature switch property" is also necessarily a "feature guard property" for its defining feature, but not all "feature guard properties" are "feature switch properties".
 
-A "feature switch property" may also be a "feature guard property" for a feature _other than_ the defining feature. For example, we introduced the feature switch property `StartupHookProvider.IsSupported`, which is defined by the feature switch named `"System.StartupHookProvider.IsSupported"`, but additionally serves as a guard for code in the implementation that has `RequiresUnreferencedCodeAttribute`. Startup hook support is disabled whenever we trim out unreferenced code, but may alse be disabled independently by the feature switch.
+A "feature switch property" may also be a "feature guard property" for a feature _other than_ the defining feature. For example, we introduced the feature switch property `StartupHookProvider.IsSupported`, which is defined by the feature switch named `"System.StartupHookProvider.IsSupported"`, but additionally serves as a guard for code in the implementation that has `RequiresUnreferencedCodeAttribute`. Startup hook support is disabled whenever we trim out unreferenced code, but may also be disabled independently by the feature switch.
 
 Similarly, one could imagine introducing a feature switch for `IsDynamicCodeCompiled`.
 
@@ -187,7 +187,7 @@ We may also want to add support for such validation in ILLink and ILCompiler, th
 
 ### Feature guards and constant propagation
 
-ILLink performs interprocedural constant propagation, but ILCompiler does not. To treat a property as a feature guard, ILCompiler curently requires substitution XML to eliminate guarded branches. A natural use of the attribute-based feature guards is to influence ILCompiler's constant propagation, replacing the use of substitution XML for properties that are feature guards only.
+ILLink performs interprocedural constant propagation, but ILCompiler does not. To treat a property as a feature guard, ILCompiler currently requires substitution XML to eliminate guarded branches. A natural use of the attribute-based feature guards is to influence ILCompiler's constant propagation, replacing the use of substitution XML for properties that are feature guards only.
 
 A separate concept is still required to replace the substitution XML for properties that are feature switches in addition to being feature guards.
 
@@ -245,7 +245,7 @@ A feature switch is also a feature guard for the feature it is defined by. We co
 
 ### Feature guards _may_ also be feature switches
 
-A feature guard might also come with its own independent feature switch. We shoud be careful to avoid violating the assumptions of the feature guard by controlling the property via a feature switch.
+A feature guard might also come with its own independent feature switch. We should be careful to avoid violating the assumptions of the feature guard by controlling the property via a feature switch.
 
 For example, if we had a separate feature switch for `IsDynamicCodeCompiled`, this would allow setting `IsDynamicCodeCompiled` to `true` even when `IsDynamicCodeSupported` is `false`.
 
@@ -340,7 +340,7 @@ Similarly, not all features come with an attribute. Some features don't tie into
   - `GlobalizationMode.Invariant` property
   - `"System.Globalization.Invariant"`
 
-No warnings are produced just because these features are enabled/disabled. Instead, they are designed to be used to change the behavior, and possibly remove unneccessary code when publishing. It's easy to imagine adding an attribute like `RequiresVariantGlobalization` that would be used to annotate APIs that rely on globalization support, such that analysis warnings would prevent accidentally pulling in the globalization stack from code that is supposed to be using invariant globalization. We don't want to do this for every feature; typically we only do this for features that represent large cross-cutting concerns, and are not available with certain app models (trimming, AOT compilation, single-file publishing).
+No warnings are produced just because these features are enabled/disabled. Instead, they are designed to be used to change the behavior, and possibly remove unneccessary code when publishing. It's easy to imagine adding an attribute like `RequiresCultureData` that would be used to annotate APIs that rely on globalization support, such that analysis warnings would prevent accidentally pulling in the globalization stack from code that is supposed to be using invariant globalization. We don't want to do this for every feature; typically we only do this for features that represent large cross-cutting concerns, and are not available with certain app models (trimming, AOT compilation, single-file publishing).
 
 However, any attribute-based model that we pick to represent features should be able to tie in with all three representations.
 
@@ -358,7 +358,6 @@ public class RuntimeFeature
 }
 
 
-```csharp
 [FeatureName("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
 class RequiresDynamicCodeAttribute : RequiresFeatureAttribute { }
 ```
@@ -463,7 +462,7 @@ This is fundamentally the same idea outlined in https://github.com/dotnet/design
 
 ## Comparison with platform compatibility analyzer
 
-The platform compatibility analyzer is semantically very similar to the behavior described here, except that it doesn't come with ILLink/ILCompiler support for removing removing branches that are unreachable when publishing for a given platform.
+The platform compatibility analyzer is semantically very similar to the behavior described here, except that it doesn't come with ILLink/ILCompiler support for removing branches that are unreachable when publishing for a given platform.
 
 "Platforms" (instead of "features") are represented as strings, with optional versions.
 
@@ -487,7 +486,7 @@ The platform compatibility analyzer is semantically very similar to the behavior
 
   The analyzer has built-in knowledge of fact that `IsAndroid` corresponds to the `SupportedOSPlatform("android")`. This is similar to the ILLink analyzer's current hard-coded knowledge of the fact that `IsDynamicCodeSupported` corresponds to `RequiresDynamicCodeAttribute`.
 
-- Platform guards are like feature guards, allowing libraries to incroduce custom guards for existing platforms:
+- Platform guards are like feature guards, allowing libraries to introduce custom guards for existing platforms:
 
   ```csharp
   class Feature {
