@@ -47,7 +47,7 @@ if (RuntimeFeature.IsDynamicCodeSupported)
   UseDynamicCode(); // OK, no warning
 
 if (RuntimeFeature.IsDynamicCodeCompiled)
-  UseDynamicCode(); // OK, no warning in ILCompiler, but warns in analyzer
+  UseDynamicCode(); // OK, no warning in ILCompiler (for now this warns in the analyzer)
 
 [RequiresDynamicCode("Uses dynamically generated code")]
 static void UseDynamicCode() { }
@@ -76,7 +76,7 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 
 - Teach the ILLink Roslyn Analyzer about the substitution XML
 
-  We don't want to teach the analyzer to read the substitution XML. The analyzer is the first interaction that users typically have with trimming and AOT warnings. This should not be burdened by the XML format. Even if we did teach the analyzer about the XML, it would not solve the problem because the analyzer must not globally assume that `IsDynamicCodeSupported` is false as ILCompiler does.
+  We don't want to teach the analyzer to read the substitution XML. The analyzer is the first interaction that users typically have with trimming and AOT warnings. This should not be burdened by the XML format. Even if we did teach the analyzer about the XML, it would not solve the problem; for example, the analyzer must not globally assume that `IsDynamicCodeSupported` is false as ILCompiler does.
 
 - Define a model with the full richness of the supported OS platform attributes
 
@@ -84,7 +84,7 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 
 ## Feature guard attribute
 
-In order to treat a property as a guard for a feature that has a `Requires` attribute, there must be a semantic tie between the guard property and the attribute. ILLink and ILCompiler don't have this requirement because they run on apps, not libraries, so the desired warning behavior just falls out, thanks to branch elimination and the fact that `IsDynamicCodeSupported` is set to false from MSBuild.
+In order to treat a property as a guard for a feature that has a `Requires` attribute, there must be a semantic tie between the guard property and the attribute. ILLink and ILCompiler don't have this requirement because they run on apps, not libraries, so the desired warning behavior just falls out, thanks to substitution XML, branch elimination and the fact that `IsDynamicCodeSupported` is set to false from MSBuild.
 
 We could allow placing `FeatureGuardAttribute` on the property to indicate that it should act as a guard for a particular feature. The intention with any of these approaches is for the guard to prevent analyzer warnings:
 
