@@ -83,6 +83,8 @@ Move all managed user code out of UI/DOM thread, so that it becomes consistent w
 **6)** Dynamic creation of new WebWorker requires async operations on emscripten main thread.
 - we could pre-allocate fixed size pthread pool. But one size doesn't fit all and it's expensive to create too large pool.
 
+**7)** There could be pending HTTP promise (which needs browser event loop to resolve) and blocking `.Wait` on the same thread and same task/chain. Leading to deadlock.
+
 # Summary
 
 ## (14) Deputy + emscripten dispatch to UI + JSWebWorker + without sync JSExport
