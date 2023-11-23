@@ -203,6 +203,7 @@ There are few downsides to them
 - could do full JSImport/JSExport to it's own JS `self` context
 - there is `JSSynchronizationContext`` installed on it
     - so that user code could dispatch back to it, in case that it needs to call `JSObject` proxy (with thread affinity)
+- this thread needs to throw on any `.Wait` because of the problem **7**
 
 ## HTTP and WS clients
 - are implemented in terms of `JSObject` and `Promise` proxies
@@ -280,7 +281,7 @@ There are few downsides to them
     - there are 2 dimensions: the thread and the method
     - there are 2 steps:
     - A) obtain existing `JSHandle` on next call (if available)
-        - to avoid double dispatch, this needs to be accessible 
+        - to avoid double dispatch, this needs to be accessible
             - by any caller thread
             - or by UI thread C code (not managed)
     - B) if this is first call to the method on the target thread, create the target `JSHandle` by binding existing JS function
@@ -719,7 +720,7 @@ Related Net8 tracking https://github.com/dotnet/runtime/issues/85592
     - enable dynamic thread allocation
     - throw exceptions in dev loop when UI thread does `lock` or `.Wait` in user code
 
-## Scratch pad 
+## Scratch pad
 
 current generated `JSImport` in Net7, Net8
 
@@ -736,11 +737,11 @@ public static partial Task WebSocketReceive(JSObject webSocket, nint bufferPtr, 
 {
     if (__signature_WebSocketReceive_1144640460 == null)
     {
-        __signature_WebSocketReceive_1144640460 = JSFunctionBinding.BindJSFunction("INTERNAL.ws_wasm_receive", null, new JSMarshalerType[] { 
-            JSMarshalerType.Task(), 
-            JSMarshalerType.JSObject, 
-            JSMarshalerType.IntPtr, 
-            JSMarshalerType.Int32 
+        __signature_WebSocketReceive_1144640460 = JSFunctionBinding.BindJSFunction("INTERNAL.ws_wasm_receive", null, new JSMarshalerType[] {
+            JSMarshalerType.Task(),
+            JSMarshalerType.JSObject,
+            JSMarshalerType.IntPtr,
+            JSMarshalerType.Int32
             });
     }
 
@@ -750,7 +751,7 @@ public static partial Task WebSocketReceive(JSObject webSocket, nint bufferPtr, 
     ref JSMarshalerArgument __arg_return = ref __arguments_buffer[1];
     __arg_return.Initialize();
     Task __retVal;
-    
+
     ref JSMarshalerArgument __bufferLength_native__js_arg = ref __arguments_buffer[4];
     ref JSMarshalerArgument __bufferPtr_native__js_arg = ref __arguments_buffer[3];
     ref JSMarshalerArgument __webSocket_native__js_arg = ref __arguments_buffer[2];
@@ -780,7 +781,7 @@ internal static unsafe void __Wrapper_Dummy_1616792047(JSMarshalerArgument* __ar
     try
     {
 
-        __meaningPromise_native__js_arg.ToManaged(out meaningPromise, 
+        __meaningPromise_native__js_arg.ToManaged(out meaningPromise,
                                                     static (ref JSMarshalerArgument __task_result_arg, out int __task_result) =>
                                                     {
                                                         __task_result_arg.ToManaged(out __task_result);
