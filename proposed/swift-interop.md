@@ -74,7 +74,7 @@ Rejected Option 1 seems like a natural fit, but there is one significant limitat
 
 Rejected Option 2 is a natural fit as the `MemberFunction` calling convention combined with the various C-based calling conventions specifies that there is a `this` argument as the first argument. Defining `Swift` + `MemberFunction` to imply/require the `self` argument is a great conceptual extension of the existing model. Although, in Swift, sometimes the `self` register is used for non-instance state. For example, in static functions, the type metadata is passed as the `self` argument. Since static functions are not member functions, we may want to not use the `MemberFunction` calling convention. As a result, we have rejected this option.
 
-###### Error register
+##### Error register
 
 We have selected an approach for handling the error register in the Swift calling convention:
 
@@ -105,6 +105,18 @@ Rejected Option 5 would have provided a better ".NET" shape than our selected al
 ##### Async Context Register
 
 In the SwiftAsync calling convention, there is also an Async Context register, similar to the Self and Error registers. Like the error register, the async context must be passed by a pointer value. As a result, similar options apply here, with the same constraints. Additionally, we don't already have an existing `CallConvAsync` calling convention modifier, so going the calling convention route like proposed for the self register is not practical. As a result, we will likely need to use a special type like `SwiftAsyncContext` to represent the async context register, similar to the proposals for the error register and the self register.
+
+##### Value types marked as @frozen
+
+There are two ways for passing value types: `@frozen` and `non-frozen`. With `@frozen` annotation, the size and layout of the struct remain unchanged. Therefore, for value types annotated as `@frozen`, return values are directly passed if they fit within 4 registers. Otherwise, the caller allocates space on the stack for the return value. Typical arguments annotated as `@frozen` are directly passed if they fit within 4 registers; otherwise, they are copied and passed by reference. Furthermore, instance values are passed using standard registers if they fit within 4 registers; otherwise, a copy is passed in the self register.
+
+There are several options for indicating 4 word value types passed by value:
+1. Use a type attribute like `[SwiftFrozen]` to indicate passing and returning by value if they fit within 4 registers
+2. Use a special type named something like `SwiftFrozen` to encapsulate the value type and indicate passing and returning by value if they fit within 4 registers.
+
+Using a type attribute like `[SwiftFrozen]` can provide a clear and concise way to indicate passing by value. It allows for a straightforward approach to handling value types. Delegates in C# often rely on the exact signature of the methods they reference, and introducing custom attributes may not be directly compatible with delegate signatures, potentially requiring additional workarounds or custom delegate types.
+
+Using a special type like `SwiftFrozen` in C# to encapsulate the value type and indicate passing and returning by value can help maintain a cleaner separation of concerns, especially when dealing with delegates. However, this approach may require additional handling during runtime for value unboxing. This extra step can introduce some performance overhead and complexity.
 
 ##### Tuples
 
