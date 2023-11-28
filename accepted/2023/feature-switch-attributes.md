@@ -1,6 +1,20 @@
 # Attribute-based model for feature switches
 
-.NET has [feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md) which can be set to turn on/off areas of functionality in our libraries, with optional support for removing unused features when trimming or native AOT compiling. What we describe overall as "feature switches" have many pieces which fit together to enable this:
+.NET has [feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md) which can be set to turn on/off areas of functionality in our libraries, with optional support for removing unused features when trimming or native AOT compiling.
+
+Feature switches suffer from a poor user experience:
+- defining a feature switch with trimming support requires embedding an unintuitive XML file into the library, and
+- there is no analyzer support for feature switches
+
+This document proposes an attribute-based model for feature switches that will significantly improve the user experience, by removing the need for this XML and enabling analyzer support.
+
+The attribute model is heavily inspired by the capability-based analyzer [draft](https://github.com/dotnet/designs/pull/261).
+
+## Background
+
+### Existing feature switch functionality
+
+What we describe overall as "feature switches" have many pieces which fit together to enable this:
 
 - MSBuild property
 - `RuntimeHostConfigurationOption` MSBuild item group
@@ -11,10 +25,6 @@
 - **Requires attributes**
 
 The bold pieces are the focus of this document. [Feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md) describes how settings flow from the MSBuild property through the `AppContext` (for runtime feature checks) or `ILLink.Substitutions.xml` (for feature settings baked-in when trimming). This document aims to describe an attribute-based model to replace some of the functionality currently implemented via ILLink.Substitutions.xml, used for branch elimination in ILLink and ILCompiler to remove branches that call into `Requires`-annotated code when trimming.
-
-The attribute model is heavily inspired by the capability-based analyzer [draft](https://github.com/dotnet/designs/pull/261).
-
-## Background
 
 ### Terminology
 
@@ -67,8 +77,6 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 
   We will explore what an attribute-based model for feature switches would look like to ensure that it interacts well with a model for feature guards. It's possible that we would design both in conjunction if they are naturally related.
 
-- Teach the ILLink Roslyn analyzer to treat `IsDynamicCodeCompiled` as a guard for `RequiresDynamicCodeAttribute` using the same model we define for third-party libraries
-
 ### Non-goals
 
 - Support branch elimination in the analyzer for all feature switches
@@ -82,6 +90,38 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 - Define a model with the full richness of the supported OS platform attributes
 
   We will focus initially on a model where feature switches are booleans that return `true` if a feature is enabled. We aren't considering supporting version checks, or feature switches of the opposite polarity (where `true` means a feature is disabled/unsupported). We will consider what this might look like just enough to gain confidence that our model could be extended to support these cases in the future, but won't design this fully in the first iteration.
+
+### Use cases for feature guards
+
+- Treat features that depend on the availability of dynamic code support as guards for `RequiresDynamicCodeSupportAttribute`:
+
+  - `RuntimeFeature.IsDynamicCodeCompiled`:
+  - `LambdaExpression.CanCompileToIL`
+  - `DelegateHelpers.CanEmitObjectArrayDelegate`
+  - `CallInstruction.CanCreateArbitraryDelegates`
+
+- Treat features which depend on the availability of unreferenced code as guards for `RequiresUnreferencedCodeAttribute`:
+
+  - `StartupHookProvider.IsSupported`
+  - `ResourceManager.AllowCustomResourceTypes`
+  - `DesigntimeLicenseContextSerializer.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization`
+  - `Marshal.IsBuiltInComSupported`
+  - `InMemoryAssemblyLoader.IsSupported` (for C++/CLI support)
+  - `ComponentActivator.IsSupported`
+  - `JsonSerializer.IsReflectionEnabledByDefault`
+
+### Use cases for feature switches
+
+- Most feature switches (those that are static Boolean properties) could be defined without XML substitutions:
+
+ - All of the feature switches mentioned in [Use cases for feature guards](#use-cases-for-feature-guards)
+ - Most of the features mentioned in https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md
+ - Various features defined outside of dotnet/runtime. Some examples:
+   - `ObjCRuntime.Runtime.IsManagedStaticRegistrar` in [xamarin-macios](https://github.com/xamarin/xamarin-macios/blob/885723b5313788bf645dd06a04b7ae3512b0a152/src/ILLink.Substitutions.ios.xml#L13)
+   - `Android.Runtime.AndroidEnvironment.VSAndroidDesignerIsEnabled` in [xamarin-android](https://github.com/xamarin/xamarin-android/blob/c0aefeaaeef1acbbbbdf7ae589d15133cdc3064f/src/Mono.Android/ILLink/ILLink.Substitutions.xml#L4)
+   - `ComputeSharp.Configuration.IsGpuTimeoutEnabled` in [ComputeSharp](https://github.com/Sergio0694/ComputeSharp/blob/45455abda911d8e73b92e9a17600f862eef8bf57/src/ComputeSharp/Properties/ILLink.Substitutions.xml#L14)
+   - `PictureBox.UseWebRequest` in [winforms](https://github.com/dotnet/winforms/blob/85c155eef5de2dc0163a60147fa9bbc045323ef8/src/System.Windows.Forms/src/ILLink.Substitutions.xml#L5)
+   - `DragDropExtensions.IsExternalDragAndDropSupported` in [uno](https://github.com/unoplatform/uno/blob/5e3a9e6785cc3550d09ec4cf5f3dc63bc93eeaf7/src/Uno.UI/LinkerSubstitution.Wasm.xml#L5)
 
 ## Feature guard attribute
 
@@ -614,14 +654,46 @@ We might eventually want to extend the semantics in a few directions:
   We could consider unifying this model with the platform compatibility analyzer. One difference is that the `SupportedOSPlatformAttribute` takes a string indicating the platform name. We would likely need to extend the understanding of feature attributes to support treating "features" differently based on this string, effectively supporting feature attributes which define not a single feature, but a schema that allows representing a class of features. For example:
 
   ```csharp
-  class OSPlatformAttribute : FeatureAttribute {
-      private protected OSPlatformAttribute([FeatureName] string platformName)
+  class NamedFeatureAttribute : RequiresFeatureAttribute {
+      public string FeatureName { get; }
+
+      public NamedFeatureAttribute(string name) => FeatureName = name;
+  }
+
+  [AttributeUsage(AttributeTargets.Property, Inherited = false)]
+  class FeatureSwitchAttribute : Attribute {
+      public Type FeatureAttributeType { get; }
+
+      public string FeatureName { get; }
+
+      public FeatureSwitchAttribute(Type featureAttributeType) {
+          FeatureAttributeType = featureAttributeType;
+      }
+  }
+  ```
+
+  These could be support defining arbitrary named features, where the platform analyzer attributes are special cases:
+
+  ```csharp
+  class OSPlatformAttribute : NamedFeatureAttribute {
+      private protected OSPlatformAttribute(string platformName) : base(platformName)
       {
           PlatformName = platformName;
       }
 
-      [FeatureName]
       public string PlatformName { get; }
+  }
+  ```
+
+  And this might be used as follows to define a feature switch:
+
+  ```csharp
+  [FeatureSwitch(typeof(SupportedOSPlatform), FeatureName = "ios")]
+  static bool IsIOS => // ...
+
+  [SupportedOSPlatform("ios")]
+  static void ApiOnlyAvailableOnIOS() {
+      // ...
   }
   ```
 
