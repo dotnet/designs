@@ -3,14 +3,14 @@
 .NET has [feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md) which can be set to turn on/off areas of functionality in our libraries, with optional support for removing unused features when trimming or native AOT compiling. What we describe overall as "feature switches" have many pieces which fit together to enable this:
 
 - MSBuild property
-- RuntimeHostConfigurationOption MSBuild ItemGroup
+- `RuntimeHostConfigurationOption` MSBuild item group
 - `runtimeconfig.json` setting
-- AppContext feature setting
+- `AppContext` feature setting
 - **ILLink.Substitutions.xml**
-- **static boolean property**
+- **static Boolean property**
 - **Requires attributes**
 
-The bold pieces are the focus of this document. [Feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md) describes how settings flow from the MSBuild property through the AppContext (for runtime feature checks) or `ILLink.Substitutions.xml` (for feature settings baked-in when trimming). This document aims to describe an attribute-based model to replace some of the functionality currently implemented via ILLink.Substitutions.xml, used for branch elimination in ILLink and ILCompiler to remove branches that call into `Requires`-annotated code when trimming.
+The bold pieces are the focus of this document. [Feature switches](https://github.com/dotnet/designs/blob/main/accepted/2020/feature-switch.md) describes how settings flow from the MSBuild property through the `AppContext` (for runtime feature checks) or `ILLink.Substitutions.xml` (for feature settings baked-in when trimming). This document aims to describe an attribute-based model to replace some of the functionality currently implemented via ILLink.Substitutions.xml, used for branch elimination in ILLink and ILCompiler to remove branches that call into `Requires`-annotated code when trimming.
 
 The attribute model is heavily inspired by the capability-based analyzer [draft](https://github.com/dotnet/designs/pull/261).
 
