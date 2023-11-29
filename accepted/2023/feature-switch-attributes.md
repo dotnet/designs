@@ -93,35 +93,34 @@ The ILLink Roslyn analyzer has built-in support for treating `IsDynamicCodeSuppo
 
 ### Use cases for feature guards
 
-- Treat features that depend on the availability of dynamic code support as guards for `RequiresDynamicCodeSupportAttribute`:
+Treat features that depend on the availability of dynamic code support as guards for `RequiresDynamicCodeSupportAttribute`:
 
-  - `RuntimeFeature.IsDynamicCodeCompiled`:
-  - `LambdaExpression.CanCompileToIL`
-  - `DelegateHelpers.CanEmitObjectArrayDelegate`
-  - `CallInstruction.CanCreateArbitraryDelegates`
+- `RuntimeFeature.IsDynamicCodeCompiled`:
+- `LambdaExpression.CanCompileToIL`
+- `DelegateHelpers.CanEmitObjectArrayDelegate`
+- `CallInstruction.CanCreateArbitraryDelegates`
 
-- Treat features which depend on the availability of unreferenced code as guards for `RequiresUnreferencedCodeAttribute`:
+Treat features which depend on the availability of unreferenced code as guards for `RequiresUnreferencedCodeAttribute`:
 
-  - `StartupHookProvider.IsSupported`
-  - `ResourceManager.AllowCustomResourceTypes`
-  - `DesigntimeLicenseContextSerializer.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization`
-  - `Marshal.IsBuiltInComSupported`
-  - `InMemoryAssemblyLoader.IsSupported` (for C++/CLI support)
-  - `ComponentActivator.IsSupported`
-  - `JsonSerializer.IsReflectionEnabledByDefault`
+- `StartupHookProvider.IsSupported`
+- `ResourceManager.AllowCustomResourceTypes`
+- `DesigntimeLicenseContextSerializer.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization`
+- `Marshal.IsBuiltInComSupported`
+- `InMemoryAssemblyLoader.IsSupported` (for C++/CLI support)
+- `ComponentActivator.IsSupported`
+- `JsonSerializer.IsReflectionEnabledByDefault`
 
 ### Use cases for feature switches
 
-- Most feature switches (those that are static Boolean properties) could be defined without XML substitutions:
-
- - All of the feature switches mentioned in [Use cases for feature guards](#use-cases-for-feature-guards)
- - Most of the features mentioned in https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md
- - Various features defined outside of dotnet/runtime. Some examples:
-   - `ObjCRuntime.Runtime.IsManagedStaticRegistrar` in [xamarin-macios](https://github.com/xamarin/xamarin-macios/blob/885723b5313788bf645dd06a04b7ae3512b0a152/src/ILLink.Substitutions.ios.xml#L13)
-   - `Android.Runtime.AndroidEnvironment.VSAndroidDesignerIsEnabled` in [xamarin-android](https://github.com/xamarin/xamarin-android/blob/c0aefeaaeef1acbbbbdf7ae589d15133cdc3064f/src/Mono.Android/ILLink/ILLink.Substitutions.xml#L4)
-   - `ComputeSharp.Configuration.IsGpuTimeoutEnabled` in [ComputeSharp](https://github.com/Sergio0694/ComputeSharp/blob/45455abda911d8e73b92e9a17600f862eef8bf57/src/ComputeSharp/Properties/ILLink.Substitutions.xml#L14)
-   - `PictureBox.UseWebRequest` in [winforms](https://github.com/dotnet/winforms/blob/85c155eef5de2dc0163a60147fa9bbc045323ef8/src/System.Windows.Forms/src/ILLink.Substitutions.xml#L5)
-   - `DragDropExtensions.IsExternalDragAndDropSupported` in [uno](https://github.com/unoplatform/uno/blob/5e3a9e6785cc3550d09ec4cf5f3dc63bc93eeaf7/src/Uno.UI/LinkerSubstitution.Wasm.xml#L5)
+Most feature switches (those that are static Boolean properties) could be defined without XML substitutions:
+- All of the feature switches mentioned in [Use cases for feature guards](#use-cases-for-feature-guards)
+- Most of the features mentioned in https://github.com/dotnet/runtime/blob/main/docs/workflow/trimming/feature-switches.md
+- Various features defined outside of dotnet/runtime. Some examples:
+  - `ObjCRuntime.Runtime.IsManagedStaticRegistrar` in [xamarin-macios](https://github.com/xamarin/xamarin-macios/blob/885723b5313788bf645dd06a04b7ae3512b0a152/src/ILLink.Substitutions.ios.xml#L13)
+  - `Android.Runtime.AndroidEnvironment.VSAndroidDesignerIsEnabled` in [xamarin-android](https://github.com/xamarin/xamarin-android/blob/c0aefeaaeef1acbbbbdf7ae589d15133cdc3064f/src/Mono.Android/ILLink/ILLink.Substitutions.xml#L4)
+  - `ComputeSharp.Configuration.IsGpuTimeoutEnabled` in [ComputeSharp](https://github.com/Sergio0694/ComputeSharp/blob/45455abda911d8e73b92e9a17600f862eef8bf57/src/ComputeSharp/Properties/ILLink.Substitutions.xml#L14)
+  - `PictureBox.UseWebRequest` in [winforms](https://github.com/dotnet/winforms/blob/85c155eef5de2dc0163a60147fa9bbc045323ef8/src/System.Windows.Forms/src/ILLink.Substitutions.xml#L5)
+  - `DragDropExtensions.IsExternalDragAndDropSupported` in [uno](https://github.com/unoplatform/uno/blob/5e3a9e6785cc3550d09ec4cf5f3dc63bc93eeaf7/src/Uno.UI/LinkerSubstitution.Wasm.xml#L5)
 
 ## Feature guard attribute
 
