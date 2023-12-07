@@ -42,7 +42,35 @@ I propose that we:
 In this scenario Jolene is a developer on a team that uses a CI/CD environment that is
 managed by an external team. The infrastructure team has decided that the version of the .NET SDK that
 will be preinstalled on the environment will be 8.0.200, but this version introduced a new
-warning that is treated as an error by default. Jolene's team doesn't have time to fix the
+warning that is treated as an error by default. At this point, Jolene has a few choices to make about how to resolve this error.
+
+* Resolve the new warning. This may take an indeterminate amount of time, and blocks the teams progress in the meantime.
+* Add a `NoWarn` for the new warning(s) and continue working. This unblocks the team but can be a bit of a whack-a-mole situation, as new warnings will require new `NoWarn`s.
+* Add a `SdkAnalysisLevel` with a value of the SDK she was previously using. This unblocks the team and informs tooling of the desired unified warnings experience that Jolene's team is coming from.
+
+```mermaid
+graph TD
+    classDef good fill:green
+    classDef bad fill:red
+    start([New SDK Update])
+    opt1{Resolve the warning}
+    opt2{Add NoWarn}
+    opt3{Add `SdkAnalysisLevel`}
+    result1[Unknown time, blocks team]
+    class result1 bad
+    result2[Unblocks team, not future-proof]
+    class result2 bad
+    result3[Unblocks team, future-proof]
+    class result3 good
+    start-->opt1
+    start-->opt2
+    start-->opt3
+    opt1-->result1
+    opt2-->result2
+    opt3-->result3
+```
+
+After assessing these choices Jolene's team doesn't have time to fix the
 diagnostic until next month, so for now she instructs the build to behave as if it were
 using the 8.0.100 SDK by setting the `SdkAnalysisLevel` property to `8.0.100` in a
 `Directory.Build.props` file in her repo root:
@@ -72,34 +100,15 @@ this single property was able to control the behavior of the SDK, the compilers,
 have been onboarded to the new scheme, without having to look up, comment out, or add many  `NoWarn` properties
 to their project files.
 
-<!--
-Provide examples of how a user would use your feature. Pick typical scenarios
-first and more advanced scenarios later.
-
-Ensure to include the "happy path" which covers what you expect will satisfy the
-vast majority of your customer's needs. Then, go into more details and allow
-covering more advanced scenarios. Well designed features will have a progressive
-curve, meaning the effort is proportional to how advanced the scenario is. By
-listing easy things first and more advanced scenarios later, you allow your
-readers to follow this curve. That makes it easier to judge whether your feature
-has the right balance.
-
-Make sure your scenarios are written in such a way that they cover sensible end-
-to-end scenarios for the customer. Often, your feature will only cover one
-aspect of an end-to-end scenario, but your description should lead up to your
-feature and (if it's not the end result) mention what the next steps are. This
-allows readers to understand the larger picture and how your feature fits in.
-
-If you design APIs or command line tools, ensure to include some sample code on
-how your feature will be invoked. If you design UI, ensure to include some
-mock-ups. Do not strive for completeness here -- the goal of this section isn't
-to provide a specification but to give readers an impression of your feature and
-the look & feel of it. Less is more.
--->
 
 ## Requirements
 
 ### Goals
+
+* Users have a unified way to manage diagnostics for all the tools in the SDK
+* Tooling has a way to understand what compatibility level a user explicitly wants
+* Users are able to upgrade across SDKs without being forced to immediately resolve warnings
+* Tools bundled in the SDK adopt `SdkAnalysisLevel` as a guideline
 
 <!--
 Provide a bullet point list of aspects that your feature has to satisfy. This
@@ -114,6 +123,10 @@ like. The design section can establish an execution order.
 
 ### Non-Goals
 
+* Users keep using `SdkAnalysisLevel` indefinitely
+* Microsoft-authored tools delivered outside the SDK adhere to `SdkAnalysisLevel`
+* Non-Microsoft authored tools adhere to `SdkAnalysisLevel`
+
 <!--
 Provide a bullet point list of aspects that your feature does not need to do.
 The goal of this section is to cover problems that people might think you're
@@ -124,35 +137,41 @@ are brought that you need to scope out.
 
 ## Stakeholders and Reviewers
 
-<!--
-We noticed that even in the cases where we have specs, we sometimes surprise key
-stakeholders because we didn't pro-actively involve them in the initial reviews
-and early design process.
-
-Please take a moment and add a bullet point list of teams and individuals you
-think should be involved in the design process and ensure they are involved
-(which might mean being tagged on GitHub issues, invited to meetings, or sent
-early drafts).
--->
+| Team | Representatives |
+| ---- | --------------- |
+| SDK | @marcpopmsft @dsplaisted |
+| MSBuild | @rainersigwald @ladipro |
+| NuGet | @aortiz-msft @nkolev92 |
+| Roslyn | @jaredpar @CyrusNajmabadi |
+| F# | @vzarytovskii @KevinRansom |
 
 ## Design
 
-<!--
-This section will likely have various subheadings. The structure is completely
-up to you and your engineering team. It doesn't need to be complete; the goal is
-to provide enough information so that the engineering team can build the
-feature.
+### Valid values of `SdkAnalysisLevel`
 
-If you're building an API, you should include the API surface, for example
-assembly names, type names, method signatures etc. If you're building command
-line tools, you likely want to list all commands and options. If you're building
-UI, you likely want to show the screens and intended flow.
+The implementation of `SdkAnalysisLevel` is itself quite straightforward - the default value of `SdkAnalysisLevel` is always
+the stable 'SDK Feature Band' of the SDK that is currently being run, and the only valid values for the property are other SDK Feature Bands.
+An SDK Feature Band is a Semantic Version of the form `<Major>.<Minor>.<Patch>`, where the `<Patch>` version is a multiple of 100. Some
+valid feature bands for this discussion might be 6.0.100, 7.0.300, or 8.0.200.
 
-In many cases embedding the information here might not be viable because the
-document format isn't text (for instance, because it's an Excel document or in a
-PowerPoint deck). Add links here. Ideally, those documents live next to this
-document.
--->
+### Where to define `SdkAnalysisLevel`
+
+The more interesting question is where such a value might be set. Users typically set values for properties in one of three ways:
+
+* as a MSBuild global property via an environment variable or `-p` option of MSBuild/.NET CLI
+* as a MSBuild local property in a Project file (or MSBuild logic Imported by a project file)
+* as a MSBuild local property in a Directory.Build.props file (this is broadly the same as option 2 but happens implicitly)
+
+If we would like users to be able to set this new property in any of these, the SDK cannot set a default value until after the Project file has been evaluated.
+If we want all of the build logic in `.targets` files to be able to consume or derive from the value then we must set the value as early as possible.
+These two constraints point to setting the property as early as possible during the `.targets` evaluation of the SDK - for this reason
+we should calculate the new property [at the beginning of the base SDK targets](https://github.com/dotnet/sdk/blob/558ea28cd054702d01aac87e547d51be4656d3e5/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L11).
+
+### Relation to existing WarningLevel and AnalysisLevel properties
+
+These properties cover a lot of the same ground, but are defined/imported [too late in project evalation](https://github.com/dotnet/sdk/blob/558ea28cd054702d01aac87e547d51be4656d3e5/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L1315) to be usable by the rest of the SDK. In addition,
+we cannot safely move their evaluation earlier in the overall process due to compatibility concerns. Since `SdkAnalysisLevel` will be defined earlier,
+we should define how it impacts these two. Curently WarningLevel and AnalysisLevel are [hardcoded](https://github.com/dotnet/sdk/blob/558ea28cd054702d01aac87e547d51be4656d3e5/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.Analyzers.targets#L25C6-L25C26) and must be updated with each new SDK. We will change this to infer the AnalysisLevel based on the value of `SdkAnalysisLevel` - the `<Major>` portion of the `SdkAnalysisLevel` will become the value of `AnalysisLevel`, which itself influences the default for `WarningLevel`.
 
 ## Q & A
 
