@@ -144,6 +144,7 @@ are brought that you need to scope out.
 | NuGet | @aortiz-msft @nkolev92 |
 | Roslyn | @jaredpar @CyrusNajmabadi |
 | F# | @vzarytovskii @KevinRansom |
+| PM | @KathleenDollard @MadsTorgersen |
 
 ## Design
 
