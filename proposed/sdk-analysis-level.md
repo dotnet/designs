@@ -163,10 +163,12 @@ The more interesting question is where such a value might be set. Users typicall
 * as a MSBuild local property in a Project file (or MSBuild logic Imported by a project file)
 * as a MSBuild local property in a Directory.Build.props file (this is broadly the same as option 2 but happens implicitly)
 
-If we would like users to be able to set this new property in any of these, the SDK cannot set a default value until after the Project file has been evaluated.
+If we would like users to be able to set this new property in any of these, the SDK cannot determine the 'final' value of `SdkAnalysisLevel` until after the Project file has been evaluated.
 If we want all of the build logic in `.targets` files to be able to consume or derive from the value then we must set the value as early as possible.
 These two constraints point to setting the property as early as possible during the `.targets` evaluation of the SDK - for this reason
 we should calculate the new property [at the beginning of the base SDK targets](https://github.com/dotnet/sdk/blob/558ea28cd054702d01aac87e547d51be4656d3e5/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Sdk.targets#L11).
+
+While an earlier location could be chosen (e.g. Microsoft.NET.Sdk.props) this would open up a layering/timing issue where the value of `SdkAnalysisLevel` could be set to a default, then computed by some other MSBuild props before the users' input had been evaluated. This would be confusing and error-prone for users, and would require a lot of extra work to ensure that the value was always correct. For this reason we choose to set the value in the base SDK targets as described above.
 
 ### Relation to existing WarningLevel and AnalysisLevel properties
 
