@@ -102,12 +102,14 @@ sign code certificate-store --store-location CurrentUser --store-name My --sha1f
 
 ### Goals
 
-* Create a plugin model that enables pluggable signature providers.  A signature provider plugin will offer an alternate implementation of [`System.Security.Cryptography.RSA`](https://learn.microsoft.com/dotnet/api/system.security.cryptography.rsa) and the [`System.Security.Cryptography.X509Certificates.X509Certificate2`](https://learn.microsoft.com/dotnet/api/system.security.cryptography.x509certificates.x509certificate2) corresponding to the private key.
+* Create a plugin model that enables pluggable signature providers.  A signature provider plugin will offer an alternate implementation of [`System.Security.Cryptography.AsymmetricAlgorithm`](https://learn.microsoft.com/dotnet/api/system.security.cryptography.asymmetricalgorithm) and the [`System.Security.Cryptography.X509Certificates.X509Certificate2`](https://learn.microsoft.com/dotnet/api/system.security.cryptography.x509certificates.x509certificate2), if available, corresponding to the private key.  Note that while there may be valid scenarios for signing with a raw asymmetric key pair, some signing operations require a certificate and will fail if a certificate is not available.
 * Make Sign CLI plugin-neutral.  While Sign CLI may install some core plugins (TBD), most plugins should be installed separately from Sign CLI itself, and Sign CLI's only interactions with any plugin should be through this plugin model.
 * Enable Sign CLI and plugins to version and release independently.
 
 ### Non-Goals
 
+* Enable signature formats that require a certificate to sign without a certificate.
+* Enable signature formats to support asymmetric algorithms they do not already support.
 * Create a distribution channel for plugins.  Sign CLI is a .NET tool and is [available on https://nuget.org](https://www.nuget.org/packages/sign/).  Plugin packages can be published to any NuGet feed, including <https://nuget.org>.
 * Create a dynamic discovery mechanism for plugins.  Initially, we'll probably have a web page that lists common plugins and where to get them.
 * Manage (list, update, uninstall) installed plugins.
@@ -130,7 +132,7 @@ This design roughly follows [.NET's existing plugin model](https://learn.microso
 
 We will create a new .NET assembly that contains only public interfaces to be implemented by plugins.  Sign CLI will implement a new command for a plugin that loads and interacts with the plugin implementation entirely by interfaces defined in the interfaces assembly.  This approach will enable Sign CLI and plugins to rev their implementations without either having any extraneous compile-time or runtime dependencies.
 
-Proposed interface:
+Proposed interfaces:
 
 ```C#
 using System.Security.Cryptography;
@@ -138,16 +140,56 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace Sign.Plugins.SignatureProvider.Interfaces
 {
-    public interface ISignatureProviderPlugin
+    /// <summary>
+    /// This is the core plugin interface.  Plugins conforming with this specification must implement this interface.
+    /// </summary>
+    public interface IPlugin
     {
-        Task InitializeAsync(IReadOnlyDictionary<string, string?> arguments, IServiceProvider serviceProvider, CancellationToken cancellationToken);
+        Task InitializeAsync(
+            IReadOnlyDictionary<string, string?> arguments,
+            ServiceProvider serviceProvider,
+            CancellationToken cancellationToken);
+    }
+
+    /// <summary>
+    /// This is the core interface for signature provider plugins.  Plugins conforming with this specification must
+    /// implement this interface.
+    /// </summary>
+    /// <remarks>
+    /// The plugin host will try casting a <see cref="IPlugin" /> instance to this interface to determine if the
+    /// plugin is a signature provider.
+    /// </remarks>
+    public interface ISignatureProvider
+    {
+        Task<AsymmetricAlgorithm> GetAsymmetricAlgorithmAsync(CancellationToken cancellationToken);
+    }
+
+    /// <summary>
+    /// This is an optional interface for a signature provider plugin.
+    /// If the asymmetric key pair returned by <see cref="ISignatureProvider" /> has an associated X.509 certificate,
+    /// the plugin should also implement this interface.
+    /// <summary>
+    /// <remarks>
+    /// The plugin host will try casting a <see cref="ISignatureProvider" /> instance to this interface to determine
+    /// if the plugin is a certificate provider.  A plugin should not implement this interface unless it can provide
+    /// a certificate.  Do not implement this interface and throw <see cref="NotImplementedException" /> to indicate
+    /// non-support.
+    ///
+    /// Some signature formatters work with raw asymmetric key pairs without a certificate.  To support only these
+    /// signature formatters, a plugin need not implement this interface.
+    ///
+    /// Some signature formatters (like Authenticode) do require a certificate and will fail without a certificate.
+    /// To support these signature formatters, the plugin should implement this interface.  Signature formatters may
+    /// fail if they require a certificate but a signature provider plugin does not implement this interface.
+    /// </remarks>
+    public interface ICertificateProvider
+    {
         Task<X509Certificate2> GetCertificateAsync(CancellationToken cancellationToken);
-        Task<RSA> GetRsaAsync(CancellationToken cancellationToken);
     }
 }
 ```
 
-Sign CLI will pass all plugin arguments as a read-only dictionary of name-value pairs.  The plugin is responsible for all argument parsing and validation.
+Sign CLI will pass all plugin arguments as a read-only dictionary of name-value pairs.  The plugin is responsible for argument parsing and validation for all options defined by the plugin.
 
 The new interfaces assembly will be packaged and published to <https://nuget.org>, similar to [NuGetRecommender's contracts-only package](https://www.nuget.org/packages/Microsoft.DataAI.NuGetRecommender.Contracts).  The Sign CLI team will manage the source code repository for this package and publish the package to <https://nuget.org>.
 
@@ -298,13 +340,13 @@ Example:
   "entryPoints": {
     "net6.0": {
         "filePath": "lib/net6.0/Microsoft.Azure.KeyVault.Sign.dll",
-        "implementationTypeName": "Microsoft.Azure.KeyVault.Sign.SignatureProviderPlugin",
-        "interfaceTypeName": "Sign.Plugins.SignatureProvider.Interfaces.ISignatureProviderPlugin"
+        "implementationTypeName": "Microsoft.Azure.KeyVault.Sign.Plugin",
+        "interfaceTypeName": "Sign.Plugins.SignatureProvider.Interfaces.IPlugin"
     },
     "net8.0": {
         "filePath": "lib/net8.0/Microsoft.Azure.KeyVault.Sign.dll",
-        "implementationTypeName": "Microsoft.Azure.KeyVault.Sign.SignatureProviderPlugin",
-        "interfaceTypeName": "Sign.Plugins.SignatureProvider.Interfaces.ISignatureProviderPlugin"
+        "implementationTypeName": "Microsoft.Azure.KeyVault.Sign.Plugin",
+        "interfaceTypeName": "Sign.Plugins.SignatureProvider.Interfaces.IPlugin"
     }
   },
   "parameters": [
@@ -355,16 +397,16 @@ For dependencies in common to both Sign CLI and plugins, Sign CLI should dictate
 
 #### Plugin installation location
 
-By default, plugin packages will install to the directory indicated by [`Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)`](https://learn.microsoft.com/dotnet/api/system.environment.specialfolder#fields).
+By default, plugin packages will install to the directory indicated by [`Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)`](https://learn.microsoft.com/dotnet/api/system.environment.specialfolder#fields).
 
-Example (where `%APPDATA%` is `C:\Users\dtivel\AppData\Roaming`):  `C:\Users\dtivel\AppData\Roaming\Sign\Plugins\SignatureProviders`
+Example (where `%LOCALAPPDATA%` is `C:\Users\dtivel\AppData\Local`):  `C:\Users\dtivel\AppData\Local\Sign\Plugins`
 
 This default location could be overridden with an environment variable or CLI option.
 
-The directory structure for the `SignatureProviders` directory will contain one subdirectory for each lower-cased plugin package ID.  Each plugin package ID directory will contain a subdirectory for each lower-cased plugin package version.  Each version subdirectory will contain the extracted contents of the corresponding plugin package.  Example:
+The directory structure for the `Plugins` directory will contain one subdirectory for each lower-cased plugin package ID.  Each plugin package ID directory will contain a subdirectory for each lower-cased plugin package version.  Each version subdirectory will contain the extracted contents of the corresponding plugin package.  Example:
 
 ```text
-SignatureProviders
+Plugins
 ├─microsoft.azure.keyvault.sign
 │ ├─0.9.1-beta.23274.1
 │ │ └─<package contents>
@@ -431,7 +473,13 @@ sign plugin install Microsoft.Azure.KeyVault.Sign --version 1.0.0
 
 1. Because a plugin package isolates all private dependencies from Sign CLI, a plugin package author is responsible for servicing the plugin package with updates for the plugin and any of its dependencies.
 
-1. Currently, Sign CLI depends on the [`NuGetKeyVaultSignTool`](https://www.nuget.org/packages/NuGetKeyVaultSignTool.Core/3.2.3) package for signing NuGet packages with Azure Key Vault.  Under this proposed specification, Sign CLI must be cloud-provider agnostic.  This dependency should simply take any `RSA` implementation and remove [`RSAKeyVaultProvider`](https://www.nuget.org/packages/RSAKeyVaultProvider/2.1.1) and [`Azure.Security.KeyVault.Certificates`](https://www.nuget.org/packages/Azure.Security.KeyVault.Certificates/4.2.0) package dependencies.
+1. Currently, Sign CLI depends on the [`NuGetKeyVaultSignTool`](https://www.nuget.org/packages/NuGetKeyVaultSignTool.Core/3.2.3) package for signing NuGet packages with Azure Key Vault.  Under this proposed specification, Sign CLI must be cloud-provider agnostic.  This dependency should simply take any `AsymmetricAlgorithm` implementation and remove [`RSAKeyVaultProvider`](https://www.nuget.org/packages/RSAKeyVaultProvider/2.1.1) and [`Azure.Security.KeyVault.Certificates`](https://www.nuget.org/packages/Azure.Security.KeyVault.Certificates/4.2.0) package dependencies.
+
+1. Some asymmetric algorithms require algorithm-specific options.  For example, `System.Security.Cryptography.RSA` may require RSA signature padding; every [`SignData(...)` overload](https://learn.microsoft.com/dotnet/api/system.security.cryptography.rsa.signdata?#overloads) requires a [`System.Security.Cryptography.RSASignaturePadding`](https://learn.microsoft.com/dotnet/api/system.security.cryptography.rsasignaturepadding) argument to indicate either `Pkcs1` (PKCS #1 v1.5) or `Pss` signature padding mode.
+
+   Because the caller --- a signature formatter --- passes the `RSASignaturePadding` argument, it an RSA signature provider plugin should be able to support both options to be generally useful.  While a signature provider plugin could declare an option that sets the signature padding mode at the plugin level, this would effectively override whatever the caller passes and would be generally discouraged.  Plus, arguments for options that a plugin defines are processed only by the plugin, not signature formatters.
+
+   One option might be for Sign CLI itself to declare a new option for RSA signature padding and pass the value to individual signature formatters when RSA signing.  However, some signature formatters may support only 1 RSA signature padding mode, and therefore may not respect a user's choice.
 
 ## Q & A
 
@@ -445,7 +493,7 @@ sign plugin install Microsoft.Azure.KeyVault.Sign --version 1.0.0
 
 1. Q: How will plugins move from one major version of the .NET runtime to the next major version?
 
-   A: The gold standard is to retarget, recompile, and retest on the newer .NET runtime, but that isn't always feasible.  This applies to both plugins and Sign CLI, the plugin host.  [This](https://learn.microsoft.com/en-us/dotnet/core/versions/#net-runtime-compatibility) is a good read.
+   A: The gold standard is to retarget, recompile, and retest on the newer .NET runtime, but that isn't always feasible.  This applies to both plugins and Sign CLI, the plugin host.  [This](https://learn.microsoft.com/dotnet/core/versions/#net-runtime-compatibility) is a good read.
 
    Sign CLI will attempt to load a plugin entry point that best matches Sign CLI's target framework.  Plugins can add support for newer target frameworks at any time, and Sign CLI will load them when Sign CLI adds matching support.
 
@@ -464,6 +512,12 @@ sign plugin install Microsoft.Azure.KeyVault.Sign --version 1.0.0
 1. Q: How do we enable plugin localization?  See [.NET template localization](https://github.com/dotnet/templating/blob/f5fef556632723ecf1387ef1498aa55f54299fba/docs/authoring-tools/Localization.md) for prior art.
 
    A: Localizability is out of scope now, to be addressed in a later specification.
+
+1. Q: Why is `plugin.json` necessary?
+
+   A: `plugin.json` declares which assembly and type for the plugin host to load and what command-line options to offer to users.  This greatly simplifies plugin loading and execution.
+
+   In the future, we could consider tooling to generate `plugin.json` as part of a plugin build.
 
 ## References
 
