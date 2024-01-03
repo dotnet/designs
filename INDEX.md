@@ -100,4 +100,5 @@ Use update-index to regenerate it:
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
 |  | [Swift Interop](proposed/swift-interop.md) | [Andy Gocke](https://github.com/agocke), [Jeremy Koritzinsky](https://github.com/jkoritzinsky) |
 |  | [Target AVX2 in R2R images](proposed/vector-instruction-set-default.md) | [Richard Lander](https://github.com/richlander) |
+|  | [Using vcpkg in .NET projects and the VMR](proposed/vcpkg.md) | [Jeremy Koritzinsky](https://github.com/jkoritzinsky) |
 
