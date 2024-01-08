@@ -106,6 +106,10 @@ When installing a workload, it is installed only for the active workload set ver
 
 ### Workload set / workload manifest garbage collection
 
+- Garbage collection occurs within the scope of a feature band, reference counts are used across feature bands.
+- Baseline workload sets should not be garbage collected.  They will be identified by convention as they should have a `baseline.workloadset.json` file
+- Manifests installed with the SDK need to have feature band reference counts to prevent other feature bands from garbage collecting them.  This should happen normally for MSI-based installs, but file-based installs will need to ship with the appropriate marker files with the path `metadata/workloads/InstalledManifests/v1/<manifestId>/<manifestVersion>/<manifestFeatureBand>/<SDKFeatureBand>`.
+
 
 ### Workload updates
 
@@ -122,3 +126,4 @@ Because of this, we will change CLI workload commands such as `dotnet workload i
 ### Telemetry
 
 We would like to better understand whether people are using SDKs installed by Visual Studio, standalone installs, or both.  We will add this information to the telemetry that we send.  To support this we will update the .NET SDK MSI to conditionally include a `.vs` or `.standalone` file in the SDK folder to identify how it was installed.
+

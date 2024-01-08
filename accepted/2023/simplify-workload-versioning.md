@@ -34,6 +34,22 @@ Currently, we use a 3 part version number for the .NET SDK, for example 8.0.100.
 
 We will create the concept of a "workload set" which has a version number that encapsulates all the workload manifest versions that are released together.  A workload set is essentially a mapping from the workload set version to the different versions for each workload manifest.  For public releases, the workload set version will use the same version number as the .NET SDK.  For example, when .NET SDK 8.0.101 releases, there will be a corresponding workload set version 8.0.101 that corresponds to the versions of the workloads that were released together with that .NET SDK.
 
+## Interim workload set versions
+
+For workload sets released between releases of the .NET SDK, we will use 4-part version numbers.  For example, workload set 8.0.203 would be released together with .NET SDK 8.0.203.  If we want to release another workload set before the 8.0.204 SDK release, then we can designate that workload set as 8.0.203.1 (and 8.0.203.2 if there's another interim workload set, etc.).  This is a departure from Semantic Versioning, but appears to be the best way to have an understandable version number for interim workload set releases.
+
+Note that the (possibly 4-part) workload set version will be what is displayed by the .NET CLI and can be specified in places such as the command line and global.json files, but it won't be used as a literal package verison for any NuGet packages.  NuGet package versions will remain semantically versions.  For the NuGet packages that represent the workload set, there will be a mapping from the workload set version to both the package ID and version, where the feature band is part of the package ID, freeing up space in the version for the additional interim release number.
+
+Some examples of possible workload set versions:
+
+- `8.0.203` - Regular monthly release
+- `8.0.203.1` - Interim workload set release
+- `8.0.204-preview.1` - Preview interim release of changes that are expected to be incuded in 8.0.204
+- `8.0.203.1-preview.1` - Preview interim release of changes that are expected to be released in a workload set before 8.0.204
+- `9.0.100-preview.2` - Workload set for .NET SDK preview release
+- `8.0.201-servicing.23015` - Daily build of dotnet/workload-versions repo
+- `8.0.201-ci.maui.23015` - Workload set corresponding to daily build of maui repo
+
 ## Baseline workload versions
 
 .NET SDK workloads have similar shipping deadlines as the .NET SDK.  That means that the .NET SDK itself can't include final versions of workloads which are built outside of the .NET build, as building and signing off on those workloads happens in parallel with .NET build and signoff.  So the .NET SDK ships with *baseline* workload manifests, which are mainly used to enable the .NET SDK to list which workloads are available, and to know if a project requires a workload which isn't installed.  By default, when a workload is installed via the .NET CLI, the .NET SDK will first look for and update to the latest workload manifests for the current feature band before installing workloads.
