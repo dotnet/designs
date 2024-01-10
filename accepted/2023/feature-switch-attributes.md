@@ -10,6 +10,43 @@ This document proposes an attribute-based model for feature switches that will s
 
 The attribute model is heavily inspired by the capability-based analyzer [draft](https://github.com/dotnet/designs/pull/261).
 
+**Table of Contents**
+
+- [Background](#background)
+  - [Existing feature switch functionality](#existing-feature-switch-functionality)
+  - [Terminology](#terminology)
+  - [Warning behavior](#warning-behavior)
+- [Goals](#goals)
+  - [Non-goals](#non-goals)
+  - [Use cases for feature guards](#use-cases-for-feature-guards)
+  - [Use cases for feature switches](#use-cases-for-feature-switches)
+- [Feature guard attribute](#feature-guard-attribute)
+  - [Danger of incorrect usage](#danger-of-incorrect-usage)
+  - [Validating correctness of feature guards](#validating-correctness-of-feature-guards)
+  - [Feature guards and constant propagation](#feature-guards-and-constant-propagation)
+- [Feature switch attributes](#feature-switch-attributes)
+- [Relationship between feature switches and feature guards](#relationship-between-feature-switches-and-feature-guards)
+  - [Feature switches are also guards](#feature-switches-are-also-guards)
+  - [Feature guards may also be feature switches](#feature-guards-may-also-be-feature-switches)
+  - [Referencing features from FeatureGuard and FeatureSwitch](#referencing-features-from-featureguard-and-featureswitch)
+- [Unified view of features](#unified-view-of-features)
+  - [Unified attribute model for feature switches and guards](#unified-attribute-model-for-feature-switches-and-guards)
+- [Comparison with "capability-based analyzer"](#comparison-with-capability-based-analyzer)
+- [Comparison with platform compatibility analyzer](#comparison-with-platform-compatibility-analyzer)
+- [Namespace and visibility of feature switches](#namespace-and-visibility-of-feature-switches)
+- [Possible future extensions](#possible-future-extensions)
+  - [Feature switches with inverted polarity (false means supported/available)](#feature-switches-with-inverted-polarity-false-means-supportedavailable)
+  - [Feature guards with inverted polarity](#feature-guards-with-inverted-polarity)
+  - [Feature attributes with inverted polarity](#feature-attributes-with-inverted-polarity)
+  - [Validation or generation of feature switch implementation](#validation-or-generation-of-feature-switch-implementation)
+  - [Versioning support for feature attributes/checks/guards](#versioning-support-for-feature-attributeschecksguards)
+  - [Feature attribute schemas](#feature-attribute-schemas)
+- [Alternate API shapes](#alternate-api-shapes)
+  - [Separate types for feature and Requires attribute](#separate-types-for-feature-and-requires-attribute)
+  - [Feature switches without feature attributes](#feature-switches-without-feature-attributes)
+  - [Generic attributes with interface constraint](#generic-attributes-with-interface-constraint)
+- [Implementation notes](#implementation-notes)
+
 ## Background
 
 ### Existing feature switch functionality
@@ -615,7 +652,10 @@ We might eventually want to extend the semantics in a few directions:
   static void UseGlobalization() { }
   ```
 
-### Feature guards with inverted polarity. This could work similarly to feature switches:
+### Feature guards with inverted polarity
+
+  This could work similarly to feature switches:
+
   ```csharp
   class Feature {
       [FeatureGuard("RuntimeFeature.IsDynamicCodeSupported", negativeCheck: true)]
