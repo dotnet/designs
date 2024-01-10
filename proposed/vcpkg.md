@@ -25,6 +25,7 @@ It would also make it easier for us to contribute our own native projects, like 
 ## Requirements
 
 - We must be able to version and patch dependencies ourselves.
+- We must be able to produce private patches that we can consume without public publishing.
 - We must be able to consume dependencies from vcpkg in our projects.
 - It must be possible to use vcpkg in offline build scenarios.
 - It must be possible to use vcpkg in the VMR builds.
@@ -65,6 +66,15 @@ We can either create a new repository for the registry or use the source-build-e
 
 Alternatively, we could build an alternative mechanism in the VMR that pre-clones all dependencies when updating the VMR. This option seems more expensive, and as such we should avoid it if possible.
 
+#### Private patches
+
+We can use the `internal/*` branches of the internal mirror of whichever repository we choose to use for the registry to handle private patches.
+
+When we need to create a patch, we would update the `internal/*` branch to point to private forks of the repos we want to patch or to contain the patch files for the patches we want to apply.
+When we create the internal branch mirrors, we will commit a change that changes each vcpkg manifest to point at the `internal/*` branch of the registry repository instead of the public branch.
+
+After a release, we would need to ensure that we don't push the reference to the internal registry to the public repos. Since the public repositories wouldn't be able to access the internal registry, our CI lanes should prevent this problem.
+
 ### Using vcpkg
 
 All repositories that use vcpkg must use the manifest mode of vcpkg to declare their dependencies. Classic mode is not supported.
@@ -89,3 +99,20 @@ We should be able to utilize this feature for flowing native dependencies that a
 - What is vcpkg's minimum toolset requirements? Do these conflict with the requirements for .NET?
     - Vcpkg requires CMake 3.14 or newer. We require 3.20 or newer, so we should be fine.
     - Vcpkg requires a C++ compiler that supports C++17. Although we don't use C++17, all of the compilers we support do support C++17.
+- Which packages would be migrated to use vcpkg?
+    - In dotnet/runtime, we would migrate the following dependencies:
+        - libunwind
+          - Given that we already have to support a system-provided version of libunwind
+    - In dotnet/runtime, we could migrate the following dependencies:
+        - Rapidjson
+        - zlib
+        - zlib-intel
+        - brotli
+    - If we switch to zlib-ng from zlib and zlib-intel, we would consume zlib-ng through vcpkg.
+    - In dotnet/aspnetcore we would migrate the following dependencies if we were to support vcpkg + MSBuild:
+        - GoogleTest
+    - Some libraries that we're looking at productizing in the future have these dependencies, which we'd also use vcpkg for:
+        - GoogleTest
+        - Google Benchmark
+        - microsoft/WIL
+    - In the future, we may use microsoft/GSL, which we would use vcpkg for.
