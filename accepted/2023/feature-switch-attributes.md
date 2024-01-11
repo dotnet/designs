@@ -361,7 +361,7 @@ class StartupHookProvider
     }
 }
 
-[FeatureName("System.StartupHookProvider.IsSupported")]
+[FeatureSwitchDefinition("System.StartupHookProvider.IsSupported")]
 class RequiresStartupHookSupport : RequiresFeatureAttribute {}
 ```
 
@@ -441,7 +441,7 @@ public class RuntimeFeature
     public static bool IsDynamicCodeSupported => // ...
 }
 
-[FeatureName("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
+[FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
 class RequiresDynamicCodeAttribute : RequiresFeatureAttribute { }
 ```
 
@@ -479,17 +479,17 @@ class FeatureGuardAttribute : Attribute
 }
 
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
-class FeatureNameAttribute : Attribute
+class FeatureSwitchDefinitionAttribute : Attribute
 {
     public string Name { get; }
 
-    public FeatureNameAttribute(string name) {
+    public FeatureSwitchDefinitionAttribute(string name) {
         Name = name;
     }
 }
 ```
 
-The analyzer would validate that `FeatureGuardAttribute` and `FeatureCheckAttribute` attribute arguments are derived classes of `FeatureAttribute`, and that `FeatureNameAttribute` is only placed on derived classes of `FeatureAttribute`.
+The analyzer would validate that `FeatureGuardAttribute` and `FeatureCheckAttribute` attribute arguments are derived classes of `FeatureAttribute`, and that `FeatureSwitchDefinitionAttribute` is only placed on derived classes of `FeatureAttribute`.
 
 We could use this model even for feature switches similar to `StartupHookSupport`, which don't currently have a `StartupHookSupportAttribute`. There's no need to actually annotate related APIs with the attribute if that is overkill for a small feature. In this case the attribute definition would just serve as metadata that allows us to define a feature switch in a uniform way.
 
@@ -594,7 +594,7 @@ Another consequence is that any library can define a feature check that is contr
 Using types to represent features allows the use of access restrictions to signal the intended use of a feature. For example, we might have an internal type representing startup hook support:
 
 ```csharp
-[FeatureName("System.StartupHookProvider.IsSupported")]
+[FeatureSwitchDefinition("System.StartupHookProvider.IsSupported")]
 class RequiresStartupHookSupportAttribute : RequiresFeatureAttribute {}
 
 class StartupHookProvider
@@ -609,7 +609,7 @@ This allows the library that defines the feature `RequiresStartupHookSupportAttr
 However, it would still be possible to get around this restriction by defining a new attribute type that uses the same feature name:
 
 ```csharp
-[FeatureName("System.StartupHookProvider.IsSupported")]
+[FeatureSwitchDefinition("System.StartupHookProvider.IsSupported")]
 class MyLibraryStartupHookSupportAttribute : RequiresFeatureAttribute {} // BAD
 
 class Library
@@ -785,7 +785,7 @@ We might eventually want to extend the semantics in a few directions:
 Since not all feature switches are designed to support annotating code with a `RequiresFeatureAttribute`, we could add a level of indirection to separate the definition of a feature from the attribute definition. For example, to support expressing `"System.StartupHookProvider.IsSupported"` as a feature check without requiring a `RequiresStartupHookSupportAttribute`, we could define a separate type that just acts as metadata representing the feature:
 
 ```csharp
-[FeatureName("System.StartupHookProvider.IsSupported")]
+[FeatureSwitchDefinition("System.StartupHookProvider.IsSupported")]
 static class StartupHookSupported { }
 
 class StartupHookProvider {
@@ -798,7 +798,7 @@ class StartupHookProvider {
 For features that do define an analysis attribute, this could be linked to the feature defining type with another attribute:
 
 ```csharp
-[FeatureName("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
+[FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
 [FeatureRequirement(typeof(RequiresDynamicCode))]
 static class DynamicCodeSupportedFeature { }
 
@@ -811,6 +811,8 @@ class RuntimeFeature {
 ```
 
 The advantage of this model is that it doesn't require defining an attribute type, and would allow the name of the type referenced in the `FeatureCheck` and `FeatureGuard` attributes to be more aligned with the feature name instead of the `Requires` attribute naming convention. However, for the features which do have attributes it is another level of indirection that might not be necessary. Perhaps another option is to allow the referenced type to _optionally_ derive from `RequiresFeatureAttribute`. This would allow the definition of a feature without an attribute type, but would still require giving thought to the name of the feature defining type, in case it was later changed to derive from `RequiresFeatureAttribute` and used for analysis.
+
+We could then also consider allowing `FeatureSwitchDefinition` to omit the feature name string, and infer the feature name from the fully-qualified type name, though one would have to be careful when moving or renaming types.
 
 ### Feature switches without feature attributes
 
@@ -829,7 +831,7 @@ class RuntimeFeature {
 The link between the feature name and `RequiresDynamicCodeAttribute` would be created on the `Requires` attribute definition, for example via another attribute:
 
 ```csharp
-[FeatureName("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
+[FeatureSwitchDefinition("System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported")]
 class RequiresDynamicCodeAttribute : RequiresFeatureAttribute { }
 ```
 
@@ -874,7 +876,7 @@ class Consumer {
 }
 ```
 
-If we went this route, we might define `RequiresFeatureAttribute` (instead of `IfDefinedAttribute`) that takes a string argument, and make the existing `Requires` attributes inherit from it to indicate the feature name, instead of using `FeatureNameAttribute`:
+If we went this route, we might define `RequiresFeatureAttribute` (instead of `IfDefinedAttribute`) that takes a string argument, and make the existing `Requires` attributes inherit from it to indicate the feature name, instead of using `FeatureSwitchDefinitionAttribute`:
 
 ```csharp
 class RequiresFeatureAttribute : Attribute {
