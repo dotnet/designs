@@ -21,6 +21,7 @@ Additionally, [the VMR design documents on external source](https://github.com/d
 For native dependencies, we could alternatively use Vcpkg, a cross-platform C++ package manager provided by another team at Microsoft.
 Vcpkg would make it easier for us to both consume native dependencies in our projects, as many C++ libraries that we may consider using are already available in vcpkg.
 It would also make it easier for us to contribute our own native projects, like the nethost library, back to vcpkg in an official manner.
+Using vcpkg or another package manager would also help us avoid some of the issues we've had with vendoring projects. At least once, we've accidentally disabled SDL-required compiler warnings across the product because of how we hook up our vendored dependencies.
 
 ## Requirements
 
@@ -33,7 +34,8 @@ It would also make it easier for us to contribute our own native projects, like 
 
 ### Goals
 
-- Enable developers of .NET to consume native dependencies from vcpkg.
+- Enable .NET product developers to easily update, patch, or otherwise change native dependencies without increasing repo size or accidentally causing product-wide changes for dependency-specific fixes.
+- Enable our distro partners to easily change dependencies from external dependencies (ie. vendored today) to distro-provided packages with minimal friction.
 
 ### Non-Goals
 
