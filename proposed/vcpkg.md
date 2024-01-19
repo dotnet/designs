@@ -29,6 +29,7 @@ It would also make it easier for us to contribute our own native projects, like 
 - We must be able to consume dependencies from vcpkg in our projects.
 - It must be possible to use vcpkg in offline build scenarios.
 - It must be possible to use vcpkg in the VMR builds.
+- It must be possible to change a dependency to use a distro/system package instead of a vcpkg dependency
 
 ### Goals
 
@@ -93,8 +94,9 @@ We should be able to utilize this feature for flowing native dependencies that a
 ## Q & A
 
 - Why use vcpkg instead of another package manager?
-    - Vcpkg is already used by many teams at Microsoft, and is already used by many of the dependencies that we may want to consume.
+    - Vcpkg is already used by many teams at Microsoft, and is already supported by many of the dependencies that we may want to consume.
     - Vcpkg is cross-platform.
+    - Vcpkg allows us to define custom target triples so we can add support for our packages for our targets.
     - Vcpkg allows CMake consumers to consume dependencies as if they were installed on the machine instead of requiring custom CMake logic to find dependencies. Supporting changing a package between a vcpkg and system dependency would require more work with other package managers.
 - What is vcpkg's minimum toolset requirements? Do these conflict with the requirements for .NET?
     - Vcpkg requires CMake 3.14 or newer. We require 3.20 or newer, so we should be fine.
@@ -102,15 +104,20 @@ We should be able to utilize this feature for flowing native dependencies that a
 - Which packages would be migrated to use vcpkg?
     - In dotnet/runtime, we would migrate the following dependencies:
         - libunwind
-          - Given that we already have to support a system-provided version of libunwind
+          - Given that we already have to support a system-provided version of libunwind, this is a good first product dependency to migrate
     - In dotnet/runtime, we could migrate the following dependencies:
         - Rapidjson
         - zlib
         - zlib-intel
         - brotli
+    - With vcpkg binary caching, we could flow dependencies from the following repos through vcpkg for non-VMR scenarios:
+        - dotnet/llvm-project
+        - dotnet/icu
+        - > For VMR scenarios, we could either "install" these packages in a folder or consume them as source instead of using vcpkg.
     - If we switch to zlib-ng from zlib and zlib-intel, we would consume zlib-ng through vcpkg.
     - In dotnet/aspnetcore we would migrate the following dependencies if we were to support vcpkg + MSBuild:
         - GoogleTest
+        - IISLib (we could pull this from microsoft/IIS.Common with a package we define. A package doesn't currently exist in the vcpkg registry for it.)
     - Some libraries that we're looking at productizing in the future have these dependencies, which we'd also use vcpkg for:
         - GoogleTest
         - Google Benchmark
