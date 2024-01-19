@@ -120,6 +120,12 @@ At the lowest level of the calling convention, we do not consider Library Evolut
 
 For frozen structs and enums, Swift has a complicated lowering process where the struct or enum type's layout are recursively flattened to a sequence of primitives. If this sequence is length 4 or less, the values of this type are split into the elements of this sequence for parameter passing instead of passing the struct as a whole. Structs and enums that cannot be broken down in this way are passed by-reference to their specified frozen layout. Due to high implementation cost in the RyuJIT, in particular in the `UnmanagedCallersOnly` scenario, we should implement this first pass of lowering in the projection layer; the only types allowed for `CallConvSwift` calling convention in method or function pointer signatures are primitives, our special Swift register types, and pointer types. For reference, this lowering pass is done in the Swift compiler when lowering from Swift IL to LLVM IR. This design decision reinforces our direction of having the Runtime layer of Swift interop support similar features as the LLVM IR representation of Swift.
 
+##### SIMD Types
+
+We will pass the `System.Runtime.Intrinsics.VectorX<T>` types in SIMD registers as we do with the managed calling convention. We will treat the `Vector2/3/4` types as non-SIMD types (and block their usage directly in the `CallConvSwift` signature as is the case with other structs).
+
+CoreCLR and NativeAOT currently block the `VectorX<T>` types from P/Invokes as this behavior is currently not well-supported by RyuJIT. Depending on implementation cost and the number of APIs we wish to support, we may want to block the `VectorX<T>` types from `CallConvSwift` initially until we can implement the correct behavior. We can always add support for these types later.
+
 ##### Automatic Reference Counting and Lifetime Management
 
 Swift has a strongly-defined lifetime and ownership model. This model is specified in the Swift ABI and is similar to Objective-C's ARC (Automatic Reference Counting) system. When .NET calls into Swift, the .NET GC is responsible for managing all managed objects. Unmanaged objects from C# should either implement `IDisposable` or utilize a designated thin wrapper over the Swift memory allocator, currently accessible through the `NativeMemory` class, to explicitly release memory. It's important to ensure that when a Swift callee function allocates an "unsafe" or "raw" pointer types, such as UnsafeMutablePointer and UnsafeRawPointer, where explicit control over memory is needed, and the pointer is returned to .NET, the memory is not dereferenced after the call returns. Also, if a C# managed object is allocated in a callee function and returned to Swift, the .NET GC will eventually collect it, but Swift will keep track using ARC, which represents an invalid case and should be handled by projection tools.
@@ -149,6 +155,15 @@ We plan to interop with Swift's Library Evolution mode, which brings an addition
 ##### Tuples
 
 If possible, Swift tuples should be represented as `ValueTuple`s in .NET. If this is not possible, then they should be represented as types with a `Deconstruct` method similar to `ValueTuple` to allow a tuple-like experience in C#.
+
+##### SIMD types
+
+Swift has its own built-in SIMD types; however they're named based on the number of elements, not based on the width of the vector type. For example, Swift has `SIMD2<T>`, `SIMD4<T>`, up to `SIMD64<T>`. When the instantiations of these types correspond to an intrinsic vector type, they are treated as that type. Otherwise, they are treated as a struct of vectors. In .NET, our vector types are named based on their vector with, so `Vector128<T>`, `Vector256<T>`, etc.
+
+For instantiated generic types that are within the size of an processor intrinsic vector type, there exists a correspondence between a Swift SIMD type and a .NET SIMD type. For example, `SIMD4<Int32>` corresponds to `Vector128<Int32>`.
+However, this correspondence breaks down for SIMD types larger than the largest vector register width (i.e. larger than 512 bytes) or for unconstrained generic types like `SIMD4<T>`. These cases; however, should be quite rare. In the "too-large" case, the values are passed into Swift as though the type is a struct of vectors. In the case of unconstrained generic types, the SIMD values are passed indirectly. Both of these cases are suboptimal and we don't know of any public Swift APIs that fall into either of these scenarios.
+
+We recommend that the projection tooling will map each Swift SIMD instantiation to the corresponding `VectorX<T>` type in .NET. For cases where there is no corresponding type or where an API takes or returns an unconstrained generic `SIMDX<T>` value, we can map the APIs to regular projected structs for the SIMD types based on the above rules.
 
 #### Projection Tooling Components
 
