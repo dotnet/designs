@@ -116,6 +116,7 @@ We should be able to utilize this feature for flowing native dependencies that a
         - dotnet/llvm-project
         - dotnet/icu
         - > For VMR scenarios, we could either "install" these packages in a folder or consume them as source instead of using vcpkg.
+        - > We'd still need to ship the existing packages that we ship to end users, but we would remove the internal consumption of those packages.
     - If we switch to zlib-ng from zlib and zlib-intel, we would consume zlib-ng through vcpkg.
     - In dotnet/aspnetcore we would migrate the following dependencies if we were to support vcpkg + MSBuild:
         - GoogleTest
