@@ -124,7 +124,7 @@ The projection tooling will provide blittable representations of any projected f
 
 ##### SIMD Types
 
-We will pass the `System.Runtime.Intrinsics.VectorX<T>` types in SIMD registers as we do with the managed calling convention. We will treat the `Vector2/3/4` types as non-SIMD types as we will not project any Swift SIMD types to these types (see the SIMD Types section in the projection design).
+We will pass the `System.Runtime.Intrinsics.VectorX<T>` types in SIMD registers in the same way the default unmanaged calling convention specifies. We will treat the `Vector2/3/4` types as non-SIMD types as we will not project any Swift SIMD types to these types (see the SIMD Types section in the projection design).
 
 CoreCLR and NativeAOT currently block the `VectorX<T>` types from P/Invokes as this behavior is currently not well-supported by RyuJIT. As the target libraries for .NET 9 do not use the Swift `SIMDX<T>` types, we can defer SIMD support until a future release of Swift interop. Unlike the existing P/Invoke blocking behavior however, we should block these types in the JIT if possible as the existing `VectorX<T>` blocking for P/Invokes is not robust.
 
