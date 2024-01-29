@@ -118,7 +118,15 @@ When calling a function that returns an opaque struct, the Swift ABI always requ
 
 At the lowest level of the calling convention, we do not consider Library Evolution to be a different calling convention than the Swift calling convention. Library Evolution requires that some types are passed by a pointer/reference, but it does not fundamentally change the calling convention. Effectively, Library Evolution forces the least optimizable choice to be taken at every possible point. As a result, we should not handle Library Evolution as a separate calling convention and instead we can manually handle it at the projection layer.
 
-For frozen structs and enums, Swift has a complicated lowering process where the struct or enum type's layout are recursively flattened to a sequence of primitives. If this sequence is length 4 or less, the values of this type are split into the elements of this sequence for parameter passing instead of passing the struct as a whole. Structs and enums that cannot be broken down in this way are passed by-reference to their specified frozen layout. Due to high implementation cost in the RyuJIT, in particular in the `UnmanagedCallersOnly` scenario, we should implement this first pass of lowering in the projection layer; the only types allowed for `CallConvSwift` calling convention in method or function pointer signatures are primitives, our special Swift register types, and pointer types. For reference, this lowering pass is done in the Swift compiler when lowering from Swift IL to LLVM IR. This design decision reinforces our direction of having the Runtime layer of Swift interop support similar features as the LLVM IR representation of Swift.
+For frozen structs and enums, Swift has a complicated lowering process where the struct or enum type's layout are recursively flattened to a sequence of primitives. If this sequence is length 4 or less, the values of this type are split into the elements of this sequence for parameter passing instead of passing the struct as a whole. Structs and enums that cannot be broken down in this way are passed by-reference to their specified frozen layout. When a frozen struct or enum with a primitive sequence of 4 elements or less is returned from a function, it is returned as if it were a structure of the elements of the primitive sequence. We will implement this pass in the VM/JIT layer. Direct users of the `CallConvSwift` calling convention will be allowed to specify blittable struct types, which the runtime and JIT/AOT compilers will inspect and classify to create identical behavior as the Swift compiler's primitive sequence lowering combined with LLVM calling convention register allocation.
+
+The projection tooling will provide blittable representations of any projected frozen struct or enum types, at minimum for any of these types that are passed by value to any Swift APIs, to support the above ABI handling. These blittable types are not required to be lowered to primitive types; they may have fields of other blittable representations of other Swift types or other blittable structs.  These blittable representations will be the "struct or enum type layouts" mentioned in the paragraph above.
+
+##### SIMD Types
+
+We will pass the `System.Runtime.Intrinsics.VectorX<T>` types in SIMD registers in the same way the default unmanaged calling convention specifies. We will treat the `Vector2/3/4` types as non-SIMD types as we will not project any Swift SIMD types to these types (see the SIMD Types section in the projection design).
+
+CoreCLR and NativeAOT currently block the `VectorX<T>` types from P/Invokes as this behavior is currently not well-supported by RyuJIT. As the target libraries for .NET 9 do not use the Swift `SIMDX<T>` types, we can defer SIMD support until a future release of Swift interop. Unlike the existing P/Invoke blocking behavior however, we should block these types in the JIT if possible as the existing `VectorX<T>` blocking for P/Invokes is not robust.
 
 ##### Automatic Reference Counting and Lifetime Management
 
@@ -149,6 +157,17 @@ We plan to interop with Swift's Library Evolution mode, which brings an addition
 ##### Tuples
 
 If possible, Swift tuples should be represented as `ValueTuple`s in .NET. If this is not possible, then they should be represented as types with a `Deconstruct` method similar to `ValueTuple` to allow a tuple-like experience in C#.
+
+##### SIMD types
+
+Swift has its own built-in SIMD types; however they're named based on the number of elements, not based on the width of the vector type. For example, Swift has `SIMD2<T>`, `SIMD4<T>`, up to `SIMD64<T>`. When the instantiations of these types correspond to an intrinsic vector type, they are treated as that type. Otherwise, they are treated as a struct of vectors. In .NET, our vector types are named based on their vector with, so `Vector128<T>`, `Vector256<T>`, etc.
+
+For instantiated generic types that are within the size of an processor intrinsic vector type, there exists a correspondence between a Swift SIMD type and a .NET SIMD type. For example, `SIMD4<Int32>` corresponds to `Vector128<Int32>`.
+However, this correspondence breaks down for SIMD types larger than the largest vector register width (i.e. larger than 512 bytes) or for unconstrained generic types like `SIMD4<T>`. These cases; however, should be quite rare. In the "too-large" case, the values are passed into Swift as though the type is a struct of vectors. In the case of unconstrained generic types, the SIMD values are passed indirectly. Both of these cases are suboptimal and we don't know of any public Swift APIs that fall into either of these scenarios.
+
+We recommend that the projection tooling will map each Swift SIMD instantiation to the corresponding `VectorX<T>` type in .NET. For cases where there is no corresponding type or where an API takes or returns an unconstrained generic `SIMDX<T>` value, we can map the APIs to regular projected structs for the SIMD types based on the above rules.
+
+As mentioned in the calling-convention section above, none of the libraries we are targetting in .NET 9 expose APIs that take the SIMD types. As a result, we can defer this support until the future and block projecting of SIMD types in the meantime.
 
 #### Projection Tooling Components
 
