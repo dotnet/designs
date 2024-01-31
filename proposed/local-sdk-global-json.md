@@ -133,10 +133,8 @@ global.json. These values also support the following substitutions:
 current operating system: `%LocalAppData%\Microsoft\dotnet` on Windows and
 `$HOME/.dotnet` on Linux/macOS.
 - `"$machine$"`: this matches the machine installation point of .NET for the
-current operating system.
-- `%VARIABLE%/$VARIABLE`: environment variables will be substituted. Either the
-Windows or Unix format can be used here and will be normalized for the operating
-system the host resolver executes on.
+current operating system. This should match how the product is
+[installed][installation-doc] on the current operating system.
 
 This design requires us to only change the host resolver. That means other
 tooling like Visual Studio, VS Code, MSBuild, etc ... would transparently
@@ -196,6 +194,15 @@ feel like the need for `additionalPathsOnly` is much stronger. There would
 certainly be a customer segment that wanted to isolate from machine state in
 that case.
 
+### Environment variables
+
+Previous versions of this proposal included support for using environment
+variables inside `additionalPaths`. This was removed due to lack of motivating
+scenarios and potential for creating user confusion as different machines can
+reasonably have different environment variables.
+
+This could be reconsidered if motivating scenarios are found.
+
 ### Other Designs
 
 [This is a proposal][designs-other] similar in nature to this one. There are a
@@ -219,4 +226,4 @@ Otherwise the proposals are very similar in nature.
 [cases-internal-discussion]: https://teams.microsoft.com/l/message/19:ed7a508bf00c4b088a7760359f0d0308@thread.skype/1698341652961?tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47&groupId=4ba7372f-2799-4677-89f0-7a1aaea3706c&parentMessageId=1698341652961&teamName=.NET%20Developer%20Experience&channelName=InfraSwat&createdTime=1698341652961
 [cases-vscode]: https://github.com/dotnet/vscode-csharp/issues/6471
 [designs-other]: https://github.com/dotnet/designs/blob/main/accepted/2022/version-selection.md#local-dotnet
-
+[installation-doc]: https://github.com/dotnet/designs/blob/main/accepted/2021/install-location-per-architecture.md
