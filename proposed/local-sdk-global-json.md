@@ -8,18 +8,25 @@ This proposal adds two new properties to the `sdk` object in
 ```json
 {
     "sdk": {
-        "additionalPaths": [ ".dotnet" ],
-        "additionalPathsOnly": false,
+        "paths": [ ".dotnet", "$host" ],
+        "errorMessage": "The .NET SDK could not be found, please run ./install.sh."
     }
 }
 ```
 
-These properties will be considered by the resolver host when attempting to
-locate a compatible .NET SDK. This particular configuration would cause the
-local directory `.dotnet` to be considered _in addition_ to the current set of
-locations.
+These properties will be considered by the resolver host during .NET SDK
+resolution. The `paths` property lists the locations that the resolver should
+consider when attempting to locate a compatible .NET SDK. The `errorMessage`
+property controls what the resolver displays when it cannot find a compatible
+.NET SDK.
+
+This particular configuration would cause the local directory `.dotnet` to be
+considered _in addition_ to the current set of locations. Further if resolution
+failed the resolver would display the contents of `errorMessage` instead of
+the default error message.
 
 ## Motivation
+
 There is currently a disconnect between the ways the .NET SDK is deployed in
 practice and what the host resolver can discover when searching for compatible
 SDKs. By default the host resolver is only going to search for SDKs in machine
@@ -80,32 +87,34 @@ because our resolver can't find them.
 
 The global.json file will support two new properties under the `sdk` object:
 
-- `"additionalPaths"`: this is a list of paths that the host resolver should
-consider when looking for compatible SDKs. Relative paths will be interpreted
-relative to the global.json file.
-- `"additionalPathsOnly"`: when `true` the resolver will _only_ consider paths
-in `additionalPaths`. It will not consider any machine wide locations (unless
-they are specified in `additionalPaths`). The default for this property is
-`false`.
+- `"paths"`: this is a list of paths that the host resolver should
+consider when looking for compatible SDKs. In the case this property is `null`
+or not specified, the host resolver will behave as it does today.
+- `"errorMessage"`: when the host resolver cannot find a compatible .NET SDK it
+will display the contents of this property instead of the default error message.
+In the case this property is `null` or not specified, the current error message
+will be displayed.
 
-The `additionalPaths` works similar to how multi-level lookup works. It adds
-additional locations that the host resolver should consider when trying to
-resolve a compatible .NET SDK. For example:
+The values in the `paths` property can be a relative path, absolute path or
+`$host$`.  When a relative path is used it will be resolved relative to the
+location of the containing global.json. The value `$host$` is a special value
+that represents the machine wide installation path of .NET SDK for the
+[current host][installation-doc].
+
+The values in `paths` are considered in the order they are defined. The host
+resolver will stop when it finds the first path with a compatible .NET SDK.
+For example:
 
 ```json
 {
     "sdk": {
-        "additionalPaths": [ ".dotnet" ],
+        "paths": [ ".dotnet", "$host$" ],
     }
 }
 ```
 
-In this configuration the host resolver would find a compatible SDK, if it
-exists in `.dotnet` or a machine wide location. The host resolver will consider
-the `additionalPaths` in the order they are defined and will stop at the first
-match. If none of the locations have a matching SDK then the host resolver will
-fall back to the existing SDK resolution strategy: `%PATH%` followed by machine
-wide installations.
+In this configuration the host resolver would find a compatible .NET SDK, if it
+exists in `.dotnet` or a machine wide location.
 
 This lookup will stop on the first match which means it won't necessarily find
 the best match. Consider a scenario with a global.json that has:
@@ -113,7 +122,7 @@ the best match. Consider a scenario with a global.json that has:
 ```json
 {
   "sdk": {
-    "additionalPaths": [ ".dotnet" ],
+    "paths": [ ".dotnet", "$host$" ],
     "version": "7.0.200",
     "rollForward": "latestFeature"
   }
@@ -122,19 +131,8 @@ the best match. Consider a scenario with a global.json that has:
 
 In a scenario where the `.dotnet` directory had 7.0.200 SDK but there was a
 machine wide install of 7.0.300 SDK, the host resolver would pick 7.0.200 out
-of `.dotnet`. That location is considered first, it has a matching SDK and
+of `.dotnet`. That location is considered first, it has a matching .NET SDK and
 hence discovery stops there.
-
-The values in the `additionalPaths` property can be a relative or absolute path.
-When a relative path is used it will be resolved relative to the location of
-global.json. These values also support the following substitutions:
-
-- `"$user$"`: this matches the user-local installation point of .NET SDK for the
-current operating system: `%LocalAppData%\Microsoft\dotnet` on Windows and
-`$HOME/.dotnet` on Linux/macOS.
-- `"$machine$"`: this matches the machine installation point of .NET for the
-current operating system. This should match how the product is
-[installed][installation-doc] on the current operating system.
 
 This design requires us to only change the host resolver. That means other
 tooling like Visual Studio, VS Code, MSBuild, etc ... would transparently
@@ -165,18 +163,6 @@ As a result solutions like "just use .dotnet, if it exists" fall short. It will
 work in a lot of cases but will fail in more complex scenarios. To completely
 close the disconnect here we need to consider all the possible locations.
 
-### Do we need additionalPathsOnly?
-
-The necessity of this property is questionable. The design includes it for
-completeness and understanding that the goal of some developers is complete
-isolation from machine state. As long as we're considering designs that embrace
-local deployment, it seemed sensible to extend the design to embrace _only_
-local deployment.
-
-At the same time the motivation for this is much smaller. It would be reasonable
-to cut this from the design and consider it at a future time when the motivation
-is higher.
-
 ### Best match or first match?
 
 This proposal is designed at giving global.json more control over how SDKs are
@@ -197,7 +183,7 @@ that case.
 ### Environment variables
 
 Previous versions of this proposal included support for using environment
-variables inside `additionalPaths`. This was removed due to lack of motivating
+variables inside `paths`. This was removed due to lack of motivating
 scenarios and potential for creating user confusion as different machines can
 reasonably have different environment variables.
 
