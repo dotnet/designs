@@ -95,6 +95,7 @@ Use update-index to regenerate it:
 
 |Year|Title|Owners|
 |----|-----|------|
+|  | [Provide SDK hint paths in global.json](proposed/local-sdk-global-json.md) |  |
 |  | [Rate limits](proposed/rate-limit.md) | [John Luo](https://github.com/juntaoluo), [Sourabh Shirhatti](https://github.com/shirhatti) |
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
