@@ -65,22 +65,22 @@ VS so it can find the deployed .NET SDKs.
 These scripts are not one offs, they are increasingly common items in repos in
 `github.com/dotnet` to attempt to fix the disconnect. Even so many of these
 solutions are incomplete because they themselves only consider local deployment.
-They dont't fully support the full set of ways the SDK can be deployed.
+They don't fully support the full set of ways the SDK can be deployed.
 
 This problem also manifests in how customers naturally want to use our
 development tools like Visual Studio or VS Code. It's felt sharply on the .NET
 team, or any external customer who wants to contribute to .NET, due to how
-arcade infrastructure uses xcopy deployment into `.dotnet`. External teams
+.NET Arcade infrastructure uses xcopy deployment into `.dotnet`. External teams
 like Unity also feel this pain in their development:
 
 - This [issue][cases-sdk-issue] from 2017 attempting
-to solve this problsem. It gets several hits a year from customers who are
+to solve this problem. It gets several hits a year from customers who are
 similarly struggling with our toolings inability to handle local deployment.
 - This [internal discussion][cases-internal-discussion] from a C# team member.
 They wanted to use VS as the product is shipped to customers and got blocked
 when we shipped an SDK that didn't have a corresponding MSI and hence VS
 couldn't load Roslyn anymore.
-- [VS code][cases-vscode] having to adjust to consider local directories for SDK
+- [VS Code][cases-vscode] having to adjust to consider local directories for SDK
 because our resolver can't find them.
 
 ## Detailed Design
@@ -92,7 +92,7 @@ consider when looking for compatible SDKs. In the case this property is `null`
 or not specified, the host resolver will behave as it does today.
 - `"errorMessage"`: when the host resolver cannot find a compatible .NET SDK it
 will display the contents of this property instead of the default error message.
-In the case this property is `null` or not specified, the current error message
+In the case this property is `null` or not specified, the default error message
 will be displayed.
 
 The values in the `paths` property can be a relative path, absolute path or
