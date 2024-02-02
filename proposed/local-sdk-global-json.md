@@ -8,7 +8,7 @@ This proposal adds two new properties to the `sdk` object in
 ```json
 {
     "sdk": {
-        "paths": [ ".dotnet", "$host" ],
+        "paths": [ ".dotnet", "$host$" ],
         "errorMessage": "The .NET SDK could not be found, please run ./install.sh."
     }
 }
