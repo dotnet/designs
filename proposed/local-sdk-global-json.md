@@ -29,15 +29,17 @@ the default error message.
 
 There is currently a disconnect between the ways the .NET SDK is deployed in
 practice and what the host resolver can discover when searching for compatible
-SDKs. By default the host resolver is only going to search for SDKs in machine
-wide locations: `C:\Program Files\dotnet`, `%PATH%`, etc ...  The .NET SDK
+SDKs. By default the host resolver is only going to search for SDKs next to
+the running `dotnet`. This often means machine-wide locations, since users
+and tools typically rely on `dotnet` already being on the user's path when
+launching, instead of specifying a full path to the executable. The .NET SDK
 though is commonly deployed to local locations: `%LocalAppData%\Microsoft\dotnet`,
 `$HOME/.dotnet`. Many repos embrace this and restore the correct .NET for their
 builds into a local `.dotnet` directory.
 
 The behavior of the host resolver is incompatible with local based deployments.
 It will not find these deployments without additional environment variable
-configuration and instead search in machine wide locations. That means tools
+configuration and only search next to the running `dotnet`. That means tools
 like Visual Studio and VS Code simply do not work with local deployment by
 default. Developers must take additional steps like manipulating `%PATH%` before
 launching these editors. That reduces the usefulness of items like the quick
@@ -137,8 +139,8 @@ hence discovery stops there.
 This design requires us to only change the host resolver. That means other
 tooling like Visual Studio, VS Code, MSBuild, etc ... would transparently
 benefit from this change. Repositories could update global.json to have
-`additionalPaths` support `.dotnet` and Visual Studio would automatically find
-it without any design changes.
+`paths` support `.dotnet` and Visual Studio would automatically find it without
+any design changes.
 
 ## Considerations
 
@@ -175,8 +177,8 @@ all location and choosing the best match.
 
 Best match is a valid approach though. Can certainly see the argument for some
 customers wanting that. Feel like it cuts against the proposal a bit because it
-devalues `additionalPaths` a bit. If the resolver is switched to best match then
-feel like the need for `additionalPathsOnly` is much stronger. There would
+devalues `paths` a bit. If the resolver is switched to best match then, the need
+for configuration around best versus first match is much stronger. There would
 certainly be a customer segment that wanted to isolate from machine state in
 that case.
 
