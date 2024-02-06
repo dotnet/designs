@@ -182,6 +182,24 @@ for configuration around best versus first match is much stronger. There would
 certainly be a customer segment that wanted to isolate from machine state in
 that case.
 
+### dotnet exec
+
+This proposal only impacts how .NET SDK commands do runtime discovery. The
+command `dotnet exec` is not an .NET SDK command but instead a way to invoke
+the app directly using the runtime installed with `dotnet`.
+
+It is reasonable for complex builds to build and use small tools. For example
+building a tool for linting the build, running complex validation, etc ... To
+work with local SDK discovery these builds need to leverage `dotnet run` to
+execute such tools instead of `dotnet exec`.
+
+```cmd
+# Avoid
+> dotnet exec artifacts/bin/MyTool/Release/net8.0/MyTool.dll
+# Prefer
+> dotnet run --no-build --framework net7.0 src/Tools/MyTool/MyTool.csproj
+```
+
 ### Environment variables
 
 Previous versions of this proposal included support for using environment
