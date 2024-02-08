@@ -33,6 +33,7 @@ The attribute model is heavily inspired by the capability-based analyzer [draft]
   - [Unified attribute model for feature checks and guards](#unified-attribute-model-for-feature-checks-and-guards)
 - [Comparison with "capability-based analyzer"](#comparison-with-capability-based-analyzer)
 - [Comparison with platform compatibility analyzer](#comparison-with-platform-compatibility-analyzer)
+- [Comparison with corelib intrinsics analyzer](#comparison-with-corelib-intrinsics-analyzer)
 - [Namespace and visibility of feature switches](#namespace-and-visibility-of-feature-switches)
 - [Possible future extensions](#possible-future-extensions)
   - [Feature checks with inverted polarity (false means supported/available)](#feature-checks-with-inverted-polarity-false-means-supportedavailable)
@@ -567,7 +568,7 @@ The platform compatibility analyzer is semantically very similar to the behavior
     CallSomeAndroidAPI(); // no warning for guarded call
   ```
 
-  The analyzer has built-in knowledge of fact that `IsAndroid` corresponds to the `SupportedOSPlatform("android")`. This is similar to the ILLink analyzer's current hard-coded knowledge of the fact that `IsDynamicCodeSupported` corresponds to `RequiresDynamicCodeAttribute`.
+  The analyzer has built-in knowledge of the fact that `IsAndroid` corresponds to the `SupportedOSPlatform("android")`. This is similar to the ILLink analyzer's current hard-coded knowledge of the fact that `IsDynamicCodeSupported` corresponds to `RequiresDynamicCodeAttribute`.
 
 - Platform guards are like feature guards, allowing libraries to introduce custom guards for existing platforms:
 
@@ -584,6 +585,100 @@ The platform compatibility analyzer is semantically very similar to the behavior
   ```
 
 The platform compatibility analyzer also has some additional functionality, such as annotating _unsupported_ APIs, and including version numbers.
+
+## Comparison with corelib intrinsics analyzer
+
+The [intrinsics](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/vectors-and-intrinsics.md) analyzer we use for System.Private.CoreLib has a similar set of rules to ensure that code relying on hardware intrinsics is only executed when such support is available.
+
+- `CompExactlyDependsOnAttribute` is similar to the `RequiresDynamicCodeAttribute`, etc, and will produce warnings if the annotated code is called in an unguarded context.
+
+  ```csharp
+  SomeVectorizationHelper(); // warns if Avx2 is not available
+
+  [CompExactlyDependsOn(typeof(Avx2))]
+  static void SomeVectorizationHelper() {
+      // ...
+  }
+  ```
+
+- Intrinsics have `IsSupported` checks that are like feature check properties, and can guard calls to annotated APIs:
+
+  ```csharp
+  if (Avx2.IsSupported)
+      SomeVectorizationHelper(); // no warning for guarded call
+  ```
+
+  The analyzer has built-in knowledge of the fact that `Avx2.IsSupported` corresponds to `CompExactlyDependsOn(typeof(Avx2))`. This is similar to the ILLink analyzer's current hard-coded knowledge of the fact that `IsDynamicCodeSupported`
+  corresponds to `RequiresDynamicCodeAttribute`u.
+
+- Instead of a "guard" concept, subtype and type containment relationships are used to express dependencies between features. The following says that `Avx2` depends on `Avx`, and that `Avx2.X64` depends on `Avx2` (also on `Avx` and `Avx.X64`).
+
+  ```csharp
+  public abstract class Avx2 : Avx
+  {
+      public new abstract class X64 : Avx.X64
+      {
+          // ...
+      }
+      // ...
+  }
+  ```
+
+  This allows an `IsSupported` check to guard features that the containing type depends on:
+
+  ```csharp
+  if (Avx2.IsSupported) {
+      Avx2.DoSomething();
+      Avx.DoSomething();
+  }
+
+  if (Avx2.X64.IsSupported) {
+      Avx2.DoSomething();
+      Avx.X64.DoSomething();
+      Avx.DoSomething();
+  }
+  ```
+
+- Multiple `CompExactlyDependsOn` attribute instances do not express independent requirements. They express an "or" constraint; at least one of the intrinsic capabilities must be available to satisfy the requirement:
+
+  ```csharp
+  if (Avx2.IsSupported)
+      SomeVectorizationHelper();
+
+  [CompExactlyDependsOn(typeof(Avx2))]
+  [CompExactlyDependsOn(typeof(ArmBase))]
+  static void SomeVectorizationHelper() {
+      // ...
+  }
+  ```
+
+  Note that the analyzer doesn't ensure that the implementation really only requires one of the intrinsics capabilities. The following example produces no warnings even though the call to `ArmBase.DoSomething()` is not protected by an `ArmBase.IsSupported` check:
+
+  ```csharp
+  if (Avx2.IsSupported)
+      SomeVectorizationHelper();
+
+  [CompExactlyDependsOn(typeof(Avx2))]
+  [CompExactlyDependsOn(typeof(ArmBase))]
+  static void SomeVectorizationHelper() {
+      Avx2.DoSomething();
+      ArmBase.DoSomething();
+  }
+  ```
+
+  For the `Requires` attribute analysis, multiple attributes are independent, so this would warn:
+
+  ```csharp
+  if (Foo.IsSupported)
+      HelperRequiresFooAndBar(); // Warning about unguarded call to method requiring 'Bar'.
+
+  [RequiresFeature(typeof(Foo))]
+  [RequiresFeature(typeof(Bar))]
+  static void HelperRequiresFooAndBar() {
+      Foo.DoSomething();
+      Bar.DoSomething();
+  }
+  ```
 
 ## Namespace and visibility of feature switches
 
