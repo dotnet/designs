@@ -25,10 +25,10 @@ The attribute model is heavily inspired by the capability-based analyzer [draft]
   - [Validating correctness of feature guards](#validating-correctness-of-feature-guards)
   - [Feature guards and constant propagation](#feature-guards-and-constant-propagation)
 - [Feature check attributes](#feature-check-attributes)
-- [Relationship between feature checks and feature guards](#relationship-between-feature-checks-and-feature-guards)
-  - [Feature checks are also guards](#feature-checks-are-also-guards)
-  - [Feature guards may also be feature checks](#feature-guards-may-also-be-feature-checks)
-  - [Referencing features from FeatureGuard and FeatureCheck](#referencing-features-from-featureguard-and-featurecheck)
+- [Modeling dependencies between features](#modeling-dependencies-between-features)
+  - [Relationship between feature checks and feature guards](#relationship-between-feature-checks-and-feature-guards)
+  - [Feature guards may also have feature switches](#feature-guards-may-also-have-feature-switches)
+  - [Referencing features from `FeatureCheck` and `FeatureDependsOn`](#referencing-features-from-featurecheck-and-featuredependson)
 - [Unified view of features](#unified-view-of-features)
   - [Unified attribute model for feature checks and guards](#unified-attribute-model-for-feature-checks-and-guards)
 - [Comparison with other analyzers](#comparison-with-other-analyzers)
@@ -38,16 +38,15 @@ The attribute model is heavily inspired by the capability-based analyzer [draft]
 - [Namespace and visibility of feature switches](#namespace-and-visibility-of-feature-switches)
 - [Possible future extensions](#possible-future-extensions)
   - [Feature checks with inverted polarity (false means supported/available)](#feature-checks-with-inverted-polarity-false-means-supportedavailable)
-  - [Feature guards with inverted polarity](#feature-guards-with-inverted-polarity)
+  - [Feature dependencies with inverted polarity](#feature-dependencies-with-inverted-polarity)
   - [Feature attributes with inverted polarity](#feature-attributes-with-inverted-polarity)
   - [Validation or generation of feature check implementation](#validation-or-generation-of-feature-check-implementation)
-  - [Versioning support for feature attributes/checks/guards](#versioning-support-for-feature-attributeschecksguards)
+  - [Versioning support for feature attributes/checks](#versioning-support-for-feature-attributeschecks)
   - [Feature attribute schemas](#feature-attribute-schemas)
 - [Alternate API shapes](#alternate-api-shapes)
   - [Separate types for feature and Requires attribute](#separate-types-for-feature-and-requires-attribute)
-  - [Feature switches without feature attributes](#feature-switches-without-feature-attributes)
+  - [Feature switches without feature types](#feature-switches-without-feature-types)
   - [Generic attributes with interface constraint](#generic-attributes-with-interface-constraint)
-- [Implementation notes](#implementation-notes)
 
 ## Background
 
@@ -323,16 +322,48 @@ The attribute needs to reference the feature somehow, whether as:
 
   However, the Roslyn analyzer would have enough information from this attribute alone.
 
-## Relationship between feature checks and feature guards
+## Modeling dependencies between features
 
-### Feature checks are also guards
-A feature check property is also a feature guard for the feature it is defined by. We could encode this in one of two ways:
-- `FeatureCheck` only, with a unified representation that includes the mapping to both the attribute and feature name, or
-- Require both `FeatureCheck` and `FeatureGuard`, where both attributes together provide a mapping to the attribute and the feature name
+`FeatureGuard` expresses that a property depends on another feature. Because this information is on the property, not the type, it supports using the property as a guard, but would not support using a feature type (or feature attribute) as a guard. For example, if we had `RequiresDynamicCodeCompilationAttribute`, we would like this to act as a guard for `RequiresDynamicCode`:
 
-### Feature guards _may_ also be feature checks
+```csharp
+if (RuntimeFeature.IsDynamicCodeCompiled)
+    APIWhichRequiresDynamicCode(); // OK due to `FeatureGuard` on `IsDynamicCodeCompiled`
 
-A feature guard might also independently be a feature check property. We should be careful to avoid violating the assumptions of the feature guard by controlling the property via a feature switch.
+[RequiresDynamicCodeCompilation]
+static void UseDynamicCodeCompilation() {
+    APIWhichRequiresDynamicCode(); // should not warn
+}
+```
+
+To make this work, we could instead place `FeatureDependsOn` at the type level, which along with `FeatureCheck` would convey the same dependency that was previously expressed via `FeatureGuard`:
+
+```csharp
+[RequiresDynamicCodeCompilation]
+static void UseDynamicCodeCompilation() {
+    APIWhichRequiresDynamicCode(); // OK due to `FeatureCheck` and `FeatureDependsOn`
+}
+
+class RuntimeFeature {
+    [FeatureCheck(typeof(RequiresDynamicCodeCompilationAttribute))]
+    public static bool IsDynamicCodeCompiled => IsDynamicCodeSupported;
+}
+
+[FeatureDependsOn(typeof(RequiresDynamicCodeAttribute))]
+class RequiresDynamicCodeCompilationAttribute : Attribute {
+    // ...
+}
+```
+
+### Relationship between feature checks and feature guards
+
+A feature check property is by definition also a feature guard for the feature it is defined by. It may also be a guard for other features that it depends on
+
+`FeatureGuard` would allow the definition of a guard property without a separate feature check. However, we propose modeling feature dependencies at the type level via `FeatureDependsOn`, so that a feature guard property is defined by introducing a feature check for a feature that depends on another feature. In other words, every feature guard is also a feature check, namely one that has dependencies on other features.
+
+### Feature checks _may_ also have feature switches
+
+A feature check might also have a feature switch. We should be careful to avoid violating the assumptions of feature dependencies by controlling the property via a feature switch.
 
 For example, if we had a separate feature switch for `IsDynamicCodeCompiled`, this would allow setting `IsDynamicCodeCompiled` to `true` even when `IsDynamicCodeSupported` is `false`.
 
@@ -342,7 +373,6 @@ This is essentially what we did for features like `StartupHookSupport`, which ca
 class StartupHookProvider
 {
     [FeatureCheck(typeof(RequiresStartupHookSupport))]
-    [FeatureGuard(typeof(RequiresUnreferencedCodeSupport))]
     private static bool IsSupported => AppContext.TryGetSwitch("System.StartupHookProvider.IsSupported", out bool isSupported) ? isSupported : true;
 
     private static void ProcessStartupHooks()
@@ -364,29 +394,30 @@ class StartupHookProvider
 }
 
 [FeatureSwitchDefinition("System.StartupHookProvider.IsSupported")]
-class RequiresStartupHookSupport : RequiresFeatureAttribute {}
+[FeatureDependsOn(typeof(RequiresUnreferencedCodeSupportAttribute))]
+class RequiresStartupHookSupport : Attribute {}
 ```
 
-In this example, `FeatureGuard` would prevent analyzer warnings at the `CallStartupHook` callsite, due to the `IsSupported` check earlier in the method. The default settings for ILCompiler and ILLink ensure the same by setting `"System.StartupHookProvider.IsSupported"` to `false` in trimmed apps from MSBuild.
+In this example, `FeatureDependsOn` would prevent analyzer warnings at the `CallStartupHook` callsite, due to the `IsSupported` check earlier in the method. The default settings for ILCompiler and ILLink ensure the same by setting `"System.StartupHookProvider.IsSupported"` to `false` in trimmed apps from MSBuild.
 
 However, it is possible to bypass the defaults and set `StartupHookSupport` to `true` even in a trimmed app. We rely on trim warnings to alert the app author to the problem in this case.
 
-If we have an attribute-based model for feature guards, we may want to consider inferring these defaults from the `FeatureGuard` instead (so a guard for `RequiresUnreferencedCode` that is also a feature check would be `false` by default whenever "unreferenced code" is unavailable). In the above example, this would mean that ILLink and ILCompiler could treat `System.StartupHook.Provider.IsSupported` as `false` by default without any MSBuild logic.
+We may want to consider inferring these defaults from the `FeatureDependsOn` instead (so a feature that depends on `RequiresUnreferencedCode` would be `false` by default whenever "unreferenced code" is unavailable). In the above example, this would mean that ILLink and ILCompiler could treat `System.StartupHook.Provider.IsSupported` as `false` by default without any MSBuild logic.
 
 The proposal for now is not to infer any defaults and just take care to set appropriate defaults in the SDK. This means that custom feature guards that are also feature switches will still need to do the same. For example, a library that defines a feature switch which guards `RequiresUnreferencedCode` will need to ship with MSBuild targets that disable the feature by default for trimmed apps.
 
-### Referencing features from `FeatureGuard` and `FeatureCheck`
+### Referencing features from `FeatureCheck` and `FeatureDependsOn`
 
 We saw a few cases that required a link between feature guards and the functionality related to feature checks:
 - To support feature guards in the analyzer, there must be a tie to the guarded `Requires` attribute
 - To support eliminating branches guarded by feature guards in ILLink/ILCompiler, there must be a tie to the name of the feature setting.
 - To support detecting incorrect implementations of the feature guard property in the analyzer, there must be a tie to the feature check property of the guarded feature.
 
-| How `FeatureGuard` references the guarded feature | Analyzer | ILLink/ILCompiler |
+| How `FeatureDependsOn` references the guarded feature | Analyzer | ILLink/ILCompiler |
 | - | - | - |
 | Attribute | OK; needs mapping to feature name/property for validation | needs mapping to feature name |
 | Feature switch name | needs mapping to attribute | OK |
-| feature check property | needs mapping to attribute | needs mapping to feature name |
+| Feature check property | needs mapping to attribute | needs mapping to feature name |
 
 | How `FeatureCheck` references the defining feature | Analyzer | ILLink/ILCompiler |
 | - | - | - |
@@ -432,7 +463,7 @@ However, any attribute-based model that we pick to represent features should be 
 
 ### Unified attribute model for feature checks and guards
 
-We would like for the attribute model to have a consistent way to refer to a feature in `FeatureGuardAttribute` or `FeatureCheckAttribute`. The proposal is to support an attribute model for features that have an associated `Requires` attribute, and use that attribute type uniformly to refer to the feature from `FeatureGuardAttribute` and `FeatureCheckAttribute`.
+We would like for the attribute model to have a consistent way to refer to a feature in `FeatureCheckAttribute` or `FeatureDependsOnAttribute`. The proposal is to support an attribute model for features that have an associated `Requires` attribute, and use that attribute type uniformly to refer to the feature.
 
 For example, the feature check property for "dynamic code support" might look like this:
 
@@ -451,47 +482,48 @@ and a feature guard for "dynamic code compilation" might look like this:
 ```csharp
 public class RuntimeFeature
 {
-    [FeatureGuard(typeof(RequiresDynamicCodeAttribute))]
+    [FeatureCheck(typeof(RequiresDynamicCodeCompilationAttribute))]
     public static bool IsDynamicCodeCompiled => // ...
+}
+
+[FeatureDependsOn(typeof(RequiresDynamicCodeAttribute))]
+class RequiresDynamicCodeCompilationAttribute : Attribute
+{
+    // ...
 }
 ```
 
 The attribute definitions to support this might look like this:
 ```csharp
-[AttributeUsage(AttributeTargets.Class, Inherited = false)]
-abstract class RequiresFeatureAttribute : Attribute { }
-
 [AttributeUsage(AttributeTargets.Property, Inherited = false)]
 class FeatureCheckAttribute : Attribute {
-    public Type FeatureAttributeType { get; }
+    public Type FeatureType { get; }
 
-    public FeatureCheckAttribute(Type featureAttributeType) {
-        FeatureAttributeType = featureAttributeType;
+    public FeatureCheckAttribute(Type featureType) {
+        FeatureType = featureType;
     }
 }
 
-[AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = true)]
-class FeatureGuardAttribute : Attribute
+[AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = true)]
+class FeatureDependsOnAttribute : Attribute
 {
-    public Type FeatureAttributeType { get; }
+    public Type FeatureType { get; }
 
-    public FeatureGuardAttribute(Type featureAttributeType) {
-        FeatureAttributeType = featureAttributeType;
+    public FeatureDependsOnAttribute(Type featureType) {
+        FeatureType = featureType;
     }
 }
 
 [AttributeUsage(AttributeTargets.Class, Inherited = false)]
 class FeatureSwitchDefinitionAttribute : Attribute
 {
-    public string Name { get; }
+    public string SwitchName { get; }
 
-    public FeatureSwitchDefinitionAttribute(string name) {
-        Name = name;
+    public FeatureSwitchDefinitionAttribute(string switchName) {
+        SwitchName = switchName;
     }
 }
 ```
-
-The analyzer would validate that `FeatureGuardAttribute` and `FeatureCheckAttribute` attribute arguments are derived classes of `FeatureAttribute`, and that `FeatureSwitchDefinitionAttribute` is only placed on derived classes of `FeatureAttribute`.
 
 We could use this model even for feature switches similar to `StartupHookSupport`, which don't currently have a `StartupHookSupportAttribute`. There's no need to actually annotate related APIs with the attribute if that is overkill for a small feature. In this case the attribute definition would just serve as metadata that allows us to define a feature switch in a uniform way.
 
@@ -543,9 +575,9 @@ This is fundamentally the same idea outlined in https://github.com/dotnet/design
 
   Both models allow multiple "feature check" properties to be defined by the same feature, but the latter can prevent the same property from being marked as the "feature check" for multiple different features that could potentially conflict, if we set `AllowMultiple = false` on `FeatureCheckAttribute`.
 
-- API shape: target of `CapabilityGuard` vs `FeatureGuard`
+- API shape: target of `CapabilityGuard` vs `FeatureDependsOn`
 
-  These are the same idea, and are represented very similarly in both models, targeting the guard property, with `AllowMultiple = true` to support a property that guards multiple features. The capability API draft lists the attribute targets as `AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field`. We might want to start with just `AttributeTargets.Property`.
+  These are similar ideas. Both have `AllowMultiple = true` to support a property that guards multiple features. `CapabilityGuard` has `AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field`, whereas `FeatureDependsOn` would target the feature type (just `AttributeTargets.Class` for now). Targeting the type allows the analyzer to treat feature attributes as guards, the same as feature guard properties.
 
 ### Platform compatibility analyzer
 
@@ -587,6 +619,8 @@ The platform compatibility analyzer is semantically very similar to the behavior
     CallSomeAndroidAPI(); // no warning for guarded call
   ```
 
+  This has the limitation that the dependencies are only understood for the property; there is no way to define a custom OS platform so that `[SupportedOSPlatformGuard("MyPlatform")]` also acts as a guard for another existing platform.
+
 The platform compatibility analyzer also has some additional functionality, such as annotating _unsupported_ APIs, and including version numbers.
 
 ### Corelib intrinsics analyzer
@@ -614,7 +648,7 @@ The [intrinsics](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr
   The analyzer has built-in knowledge of the fact that `Avx2.IsSupported` corresponds to `CompExactlyDependsOn(typeof(Avx2))`. This is similar to the ILLink analyzer's current hard-coded knowledge of the fact that `IsDynamicCodeSupported`
   corresponds to `RequiresDynamicCodeAttribute`u.
 
-- Instead of a "guard" concept, subtype and type containment relationships are used to express dependencies between features. The following says that `Avx2` depends on `Avx`, and that `Avx2.X64` depends on `Avx2` (also on `Avx` and `Avx.X64`).
+- Similar to the `FeatureDependsOn` concept, subtype and type containment relationships are used to express dependencies between features. The following says that `Avx2` depends on `Avx`, and that `Avx2.X64` depends on `Avx2` (also on `Avx` and `Avx.X64`).
 
   ```csharp
   public abstract class Avx2 : Avx
@@ -639,6 +673,21 @@ The [intrinsics](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr
       Avx2.DoSomething();
       Avx.X64.DoSomething();
       Avx.DoSomething();
+  }
+  ```
+
+  We could model these dependencies via `FeatureDependsOn`:
+
+  ```csharp
+  [FeatureDependsOn(typeof(Avx))]
+  public abstract class Avx2 : Avx
+  {
+      [FeatureDependsOn(typeof(Avx2))]
+      [FeatureDependsOn(typeof(Avx.X64))]
+      public new abstract class X64 : Avx.X64
+      {
+          // ...
+      }
   }
   ```
 
@@ -749,14 +798,19 @@ We might eventually want to extend the semantics in a few directions:
   static void UseGlobalization() { }
   ```
 
-### Feature guards with inverted polarity
+### Feature dependencies with inverted polarity
 
   This could work similarly to feature switches:
 
   ```csharp
   class Feature {
-      [FeatureGuard("RuntimeFeature.IsDynamicCodeSupported", negativeCheck: true)]
+      [FeatureCheck(typeof(RequiresFeatureAttribute))]
       public bool IsDynamicCodeUnsupported => !RuntimeFeature.IsDynamicCodeSupported;
+  }
+
+  [FeatureDependsOn(typeof(RequiresDynamicCodeAttribute), disabled: true)]
+  class RequiresFeatureAttribute : Attribute {
+      // ...
   }
   ```
 
@@ -783,7 +837,7 @@ We might eventually want to extend the semantics in a few directions:
 
   We could consider adding validation that the body correctly checks `AppContext` for the feature name associated with the feature attribute, or adding a source generator that would generate the implementation from the `FeaturCheckAttribute`.
 
-### Versioning support for feature attributes/checks/guards
+### Versioning support for feature attributes/checks
 
   The model here would extend naturally to include support for version checks the same way that the platform compatibility analyzer does. Versions would likely be represented as strings because they are encodable in custom attributes:
 
@@ -884,11 +938,11 @@ Since not all feature switches are designed to support annotating code with a `R
 
 ```csharp
 [FeatureSwitchDefinition("System.StartupHookProvider.IsSupported")]
+[FeatureDependsOn(typeof(RequiresUnreferencedCodeAttribute))]
 static class StartupHookSupported { }
 
 class StartupHookProvider {
     [FeatureCheck(typeof(StartupHookSupported))]
-    [FeatureGuard(typeof(RequiresUnreferencedCodeAttribute))]
     private static bool IsSupported => // ...
 }
 ```
@@ -908,13 +962,13 @@ class RuntimeFeature {
 }
 ```
 
-The advantage of this model is that it doesn't require defining an attribute type, and would allow the name of the type referenced in the `FeatureCheck` and `FeatureGuard` attributes to be more aligned with the feature name instead of the `Requires` attribute naming convention. However, for the features which do have attributes it is another level of indirection that might not be necessary. Perhaps another option is to allow the referenced type to _optionally_ derive from `RequiresFeatureAttribute`. This would allow the definition of a feature without an attribute type, but would still require giving thought to the name of the feature defining type, in case it was later changed to derive from `RequiresFeatureAttribute` and used for analysis.
+The advantage of this model is that it doesn't require defining an attribute type, and would allow the name of the type referenced in the `FeatureCheck` and `FeatureDependsOn` attributes to be more aligned with the feature name instead of the `Requires` attribute naming convention. However, for the features which do have attributes it is another level of indirection that might not be necessary. Perhaps another option is to allow the referenced type to _optionally_ derive from `RequiresFeatureAttribute`. This would allow the definition of a feature without an attribute type, but would still require giving thought to the name of the feature defining type, in case it was later changed to derive from `RequiresFeatureAttribute` and used for analysis.
 
 We could then also consider allowing `FeatureSwitchDefinition` to omit the feature name string, and infer the feature name from the fully-qualified type name, though one would have to be careful when moving or renaming types.
 
-### Feature switches without feature attributes
+### Feature switches without feature types
 
-The proposed model for feature attributes requires introducing a separate attribute type for each feature switch. An alternative is to uniformly use the feature name for both `FeatureCheck` and `FeatureGuard`. For example:
+The proposed model for feature attributes requires introducing a separate type for each feature switch. An alternative is to uniformly use the feature name for both `FeatureCheck` and `FeatureGuard`. For example:
 
 ```csharp
 class RuntimeFeature {
@@ -1027,35 +1081,3 @@ This would use the type system to validate that `FeatureCheck` and `FeatureGuard
 The use of an interface method for `FeatureName` would require more work for the tooling to retrieve the string, so we would rather encode this in a custom attribute blob.
 
 The use of generic attributes would also restrict this form of the API to runtimes which supports generic attributes, excluding for example `netstandard2.0` libraries.
-
-## Implementation notes
-
-We can implement this incrementally by separating this into a few implementation phases. The implementation can be split up in numerous ways by, hard-coding various pieces of the associations between feature names and attributes. For example:
-
-- `FeatureGuard` in analyzer for `RequiresDynamicCodeAttribute`
-
-  We can start with only `FeatureGuard` support in the analyzer. If the `FeatureGuardAttribute` references a feature attribute rather than a property or name, this is enough information for the analyzer to silence guarded calls. We can begin by leaving the existing `Requires` feature attributes unmodified, and hard-coding support for only `RequiresDynamicCodeAttribute` as a guarded feature. We can keep the existing hard-coded association between `RequiresDynamicCodeAttribute` and `RuntimeFeature.IsDynamicCodeSupported` to validate the implementation of feature guards for dynamic code.
-
-- `FeatureGuard` in analyzer for other features
-
-  We can also add support for feature guards for `RequiresUnreferencedCodeAttribute` and `RequiresAssemblyFilesAttribute`, but without support for feature switches, and lacking a corresponding `RuntimeFeature` check, these guards would initially produce warnings at the definition site that would need to be suppressed.
-
-- `FeatureGuard` in ILLink/ILCompiler
-
-  We can independently implement support for constant propagation based on `FeatureGuard` in ILCompiler. We could start by adding support for guarding `RequiresDynamicCodeAttribute` only, which would mean treating such feature guards as known `false` constants, replacing XML substitutions that currently serve this purpose. We would rely on the analyzer validation to ensure that this corresponds to `RuntimeFeature.IsDynamicCodeSupported`, and probably not do such validation in ILCompiler.
-
-- `FeatureCheck` in ILLink/ILCompiler for `RequiresDynamicCodeAttribute`
-
-  Once we add a `FeatureCheckAttribute` API, we can begin reading these attributes in ILLink and ILCompiler, and replacing some of the existing XML feature switch definitions for `IsDynamicCodeSupported`.
-
-- `FeatureCheck` in analyzer
-
-  We can teach the analyzer to respect `FeatureCheck`. `FeatureCheck` on `RuntimeFeature.IsDynamicCodeSupported` would replace the initially hard-coded assocaition between this and `RequiresDynamicCodeAttribute`.
-
-- Open up `FeatureGuard` in analyzer in combination with `FeatureCheck`
-
-  Once `FeatureCheck` is supported in the analyzer, the presence of both `FeatureCheck` and `FeatureGuard` on a property will indicate that the switch is meant to be disabled whenever the guarded feature is disabled. We can then silence warnings on feature guards for `RequiresUnreferencedCodeAttribute` guards that have their own feature switches, relying on them being externally disabled for trimmed apps.
-
-- Replace hard-coded support for existing feature attributes
-
-  Once we have an approved API for feature attributes, we can change `RequiresDynamicCodeAttribute`, `RequiresUnreferencedCodeAttribute`, and `RequiresAssemblyFilesAttribute` to be implemented as feature attributes according to the new API. The new API should allow this as a non-breaking change (by deriving from a base class, or annotating the attribute class definitions with another attribute). Then the analyzer, ILLink, and ILCompiler can all be updated to respect this pattern instead of these specific features.
