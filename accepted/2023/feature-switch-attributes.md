@@ -31,9 +31,10 @@ The attribute model is heavily inspired by the capability-based analyzer [draft]
   - [Referencing features from FeatureGuard and FeatureCheck](#referencing-features-from-featureguard-and-featurecheck)
 - [Unified view of features](#unified-view-of-features)
   - [Unified attribute model for feature checks and guards](#unified-attribute-model-for-feature-checks-and-guards)
-- [Comparison with "capability-based analyzer"](#comparison-with-capability-based-analyzer)
-- [Comparison with platform compatibility analyzer](#comparison-with-platform-compatibility-analyzer)
-- [Comparison with corelib intrinsics analyzer](#comparison-with-corelib-intrinsics-analyzer)
+- [Comparison with other analyzers](#comparison-with-other-analyzers)
+  - ["Capability-based analyzer"](#capability-based-analyzer)
+  - [Platform compatibility analyzer](#platform-compatibility-analyzer)
+  - [Corelib intrinsics analyzer](#corelib-intrinsics-analyzer)
 - [Namespace and visibility of feature switches](#namespace-and-visibility-of-feature-switches)
 - [Possible future extensions](#possible-future-extensions)
   - [Feature checks with inverted polarity (false means supported/available)](#feature-checks-with-inverted-polarity-false-means-supportedavailable)
@@ -496,7 +497,9 @@ We could use this model even for feature switches similar to `StartupHookSupport
 
 Note that this makes it possible to define custom `Requires` attributes for arbitrary features. While the immediate goal of this proposal is not to enable analyzer support for analysis warnings based on such custom attributes, the model intentionally allows for this so that we could easily open up the analyzer to work for custom features. However, initially support for analysis warnings would be limited to `RequiresUnreferencedCodeAttribute`, `RequiresDynamicCodeAttribute`, and `RequiresAssemblyFilesAttribute`. Analyzers currently require all supported diagnostic IDs to be declared up-front, so allowing analysis for arbitrary features would mean that all features share the same analyzer diagnostic ID. We would need to consider solutions to this problem.
 
-## Comparison with "capability-based analyzer"
+## Comparison with other analyzers
+
+### "Capability-based analyzer"
 
 This is fundamentally the same idea outlined in https://github.com/dotnet/designs/pull/261. The main difference is that this document approaches the idea specifically from the point of view of trimming support. The hope is that this document provides the motivation for using a unified representation for the attributes that are related to feature switches and trim/AOT analysis.
 
@@ -544,7 +547,7 @@ This is fundamentally the same idea outlined in https://github.com/dotnet/design
 
   These are the same idea, and are represented very similarly in both models, targeting the guard property, with `AllowMultiple = true` to support a property that guards multiple features. The capability API draft lists the attribute targets as `AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field`. We might want to start with just `AttributeTargets.Property`.
 
-## Comparison with platform compatibility analyzer
+### Platform compatibility analyzer
 
 The platform compatibility analyzer is semantically very similar to the behavior described here, except that it doesn't come with ILLink/ILCompiler support for removing branches that are unreachable when publishing for a given platform.
 
@@ -586,7 +589,7 @@ The platform compatibility analyzer is semantically very similar to the behavior
 
 The platform compatibility analyzer also has some additional functionality, such as annotating _unsupported_ APIs, and including version numbers.
 
-## Comparison with corelib intrinsics analyzer
+### Corelib intrinsics analyzer
 
 The [intrinsics](https://github.com/dotnet/runtime/blob/main/docs/design/coreclr/botr/vectors-and-intrinsics.md) analyzer we use for System.Private.CoreLib has a similar set of rules to ensure that code relying on hardware intrinsics is only executed when such support is available.
 
