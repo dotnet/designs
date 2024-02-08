@@ -142,7 +142,7 @@ All designs in this section should be designed such that they are trimming and A
 
 #### Swift to .NET Language Feature Projections
 
-The following subheadings describe the intended projection of Swift types into C#, and can be used as a starting point for potential design improvements.
+The following subheadings describe projections of Swift types into C#. This section illustrates general mechanisms and practices applied in the tooling projection. The complete documentation of the projection tooling will be available at https://github.com/dotnet/runtimelab/tree/feature/swift-bindings/docs.
 
 ##### Structs/Enums
 
@@ -154,39 +154,27 @@ Unlike .NET, Swift's struct types have strong lifetime semantics more similar to
 
 Structs that are non-bitwise-movable are more difficult. They cannot be moved by copying their bits; their copy constructors must be used in all copy scenarios. When mapping these structs to C#, we must take care that we do not copy the underlying memory and to call the deallocate function when the C# usage of the struct falls out of scope. These use cases best match up to C# class semantics, not struct semantics.
 
-We plan to interop with Swift's Library Evolution mode, which brings an additional wrinkle into the Swift struct story. Swift's Library Evolution mode abstracts away all type layout and semantic information unless a type is explicitly marked as `@frozen`. In the Library Evolution case, all structs have "opaque" layout, meaning that their exact layout and category cannot be determined until runtime. As a result, we need to treat all "opaque" layout structs as possibly non-bitwise-movable at compile time as we will not know until runtime what the exact layout is. Swift/C++ interop is not required to use the Library Evolution mode in all cases as it can statically link against Swift libraries, so it is not limited by opaque struct layouts in every case. Every concrete type in Swift has a structure that provides information about how to manipulate values of that type. When a value type has opaque layout, the actual size and layout of fields is not known at compilation time, but only at runtime. The size and layout information of concrete types is available in its [Value Witness Table](https://github.com/apple/swift/blob/main/docs/ABIStabilityManifesto.md#value-witness-table), so we can look up this information at runtime for allocating struct instances and manipulating struct memory correctly.
+We plan to interop with Swift's Library Evolution mode, which brings an additional wrinkle into the Swift struct story. Swift's Library Evolution mode abstracts away all type layout and semantic information unless a type is explicitly marked as `@frozen`. In the Library Evolution case, all structs have "opaque" layout, meaning that their exact layout and category cannot be determined until runtime. The size and layout information of concrete types is available in its [Value Witness Table](https://github.com/apple/swift/blob/main/docs/ABIStabilityManifesto.md#value-witness-table), so we can look up this information at runtime for allocating struct instances and manipulating struct memory correctly. As a result, we need to treat all "opaque" layout structs as possibly non-bitwise-movable at compile time as we will not know until runtime what the exact layout is. Swift/C++ interop is not required to use the Library Evolution mode in all cases as it can statically link against Swift libraries, so it is not limited by opaque struct layouts in every case. Every concrete type in Swift has a structure that provides information about how to manipulate values of that type.
 
-Swift structs and enums can be projected into C# as IDisposable classes.
+Swift structs and enums have richer semantics than in .NET and are projected as C# classes which implement `IDisposable` interface to streamline handling of both simple blittable and more complex scenarios. These C# classes have a single property that holds the data payload for the type. They typically include two constructors: one that corresponds to the init method in the Swift class, and another internal constructor used to create uninitialized types invoked by the marshaler in cases when it is a return value from a function.
 
-Some Swift structs are of scalar types which are essentially structs with one or more fields that contain identical blittable types. On the other hand, there are Swift structs that do not fit the scalar model. Both types are translated to C# as IDisposable classes. The reason for using IDisposable is that Swift structs behave differently from C# value types. They have distinct semantics when they enter and exit scope, potentially involving changes to reference counts or destructors.
-
-Swift enums can be classified as integral when they have an integral raw type or when every element has an integral payload. If an enum's payload types are all identical, it's considered homogeneous. An enum is trivial when it lacks inheritance, raw types, and none of its elements have payloads, or when it's both homogeneous and integral. These trivial enums can be mapped to C# enums, but for simplicity they are instead translated into IDisposable classes. Non-trivial enums are represented in C# as IDisposable classes.
-
-These C# classes typically have a single property, SwiftData, which holds the data payload for the type. They typically include two constructors: one that corresponds to the init method in the Swift class, and another internal constructor used to create uninitialized types invoked by marshaler in cases when it is a return value from a function. To manage memory lifetimes, the class also includes a finalizer to ensure proper memory release.
-
-Additionally, scalar structs and trivial enums require a lowering process. During this process, the layout of the struct or enum type is recursively flattened into a sequence of primitives. If this sequence has a length of 4 or less, the values of this type are split into the elements of this sequence for parameter passing, rather than passing the struct as a whole.
+Swift primitive types are implemented as frozen structs that conform to Swift-specific lowering processes handled by the runtime. However, most of these types are below the size limit for being passed by reference and can fit within the underlying calling convention.
 
 ##### Classes/Protocols
 
-The Swift classes can be mapped to C# classes, but there are distinctions between final and virtual classes. In C#, public Swift classes are represented as final classes, while virtual Swift classes are represented as internal classes. Final classes have a straightforward inheritance model, while virtual classes introduce more complexity, particularly related to subclassing and simulated vtable method. Additionally, a C# binding class contains two static methods: a static factory method used to construct a C# binding instance from a Swift handle, typically used after marshaling from Swift to C#; and a static method used when a Swift handle needs to be constructed from C#. The class implements static abstract interface to avoid use of reflection for methods discovering and to ensure linker-safe construction/compile time resolution.
+A public Swift class is projected as a final C# class, while a virtual Swift class is projected as an internal C# class. A final class has a straightforward inheritance model, while a virtual class introduces more complexity, particularly related to subclassing and simulated vtable methods. Another important type in Swift is protocols. Swift allows any type to implement a protocol and supports retroactive modeling through extensions. Since the protocol's implementation can't be part of the object, Swift uses a [Protocol Witness Table](https://github.com/apple/swift/blob/main/docs/ABIStabilityManifesto.md#protocol-witness-tables), which functions like a vtable for each conformance. A protocol type in Swift is represented using an [existential container](https://github.com/apple/swift/blob/main/docs/ABIStabilityManifesto.md#existential-metadata) that includes payload, type metadata pointer, and a protocol witness table pointer.
 
-Another important aspect of Swift is protocols. Swift allows any type to implement a protocol and supports retroactive modeling through extensions. Since the protocol's implementation can't be part of the object, Swift uses a [Protocol Witness Table](https://github.com/apple/swift/blob/main/docs/ABIStabilityManifesto.md#protocol-witness-tables), which functions like a vtable external to the type. A protocol type in Swift is represented using an [existential container](https://github.com/apple/swift/blob/main/docs/ABIStabilityManifesto.md#existential-metadata) that includes payload, type metadata pointer, and a protocol witness table pointer.
+Projections can utilize [`IUnmanagedVirtualMethodTableProvider` interface](https://learn.microsoft.com/en-us/dotnet/api/system.runtime.interopservices.marshalling.iunmanagedvirtualmethodtableprovider?view=net-8.0) to retrieve vtable for a given target type from an object.
 
-Swift protocols can be mapped to C# interfaces, but there is not always a 1:1 mapping for each protocol. A Swift object that conforms to a protocol routes its methods through a vtable with function pointers in C#. These functions then marshal the call into a C# object. The C# bindings for a protocol include an interface matching the Swift protocol and a proxy class that contains the interface implementation and implements the interface itself. The proxy class serves as an interface implementation when there is either a C# type that needs to look like a Swift type of a Swift type that needs to look like a C# type. The proxy class in C# implements a static constructor for vtable setup, a vtable parallel to Swift's, static methods for each vtable entry, and a static property for accessing the protocol witness table.
-
-Swift wrappers define a vtable structure that acts as a proxy for C# to receive and respond to calls made by Swift for each method in a Swift protocol. 
+This subheading will be updated with more details on projection once simpler types are reviewed, like structs and enums.
 
 ##### Tuples/Closures
 
-If possible, Swift tuples should be represented as `ValueTuple`s in .NET. If this is not possible, then they should be represented as types with a `Deconstruct` method similar to `ValueTuple` to allow a tuple-like experience in C#.
+A Swift tuple can be projected as `ValueTuple` type in C#. Swift uses two types of closures: escaping and non-escaping. Escaping closures can exist beyond their original context, while non-escaping closures should not persist beyond their declaration context and cannot reference external data. The Swift compiler has a mechanism to convert a non-escaping closure into an escaping one within the scope of another closure.
 
-Swift uses two types of closures: escaping and non-escaping. Escaping closures can exist beyond their original context, while non-escaping closures should not persist beyond their declaration context and cannot reference external data. The Swift compiler has a mechanism to convert a non-escaping closure into an escaping one within the scope of another closure.
+This subheading will be updated with more details on projection once simpler types are reviewed, like structs and enums.
 
-Any escaping closure can be mapped into C# as `(args) -> return` into `(UnsafeMutablePointer<return>, OpaquePointer) -> ()`. This transformation allows C# to call it as an `Action<IntPtr, IntPtr>`.
-
-##### Error handling
-
-The tooling will support the conversion of errors and exceptions between Swift and C#. The Swift runtime library implementation in C# is available at https://github.com/xamarin/binding-tools-for-swift/tree/main/SwiftRuntimeLibrary.å
+##### SIMD types
 
 Swift has its own built-in SIMD types; however they're named based on the number of elements, not based on the width of the vector type. For example, Swift has `SIMD2<T>`, `SIMD4<T>`, up to `SIMD64<T>`. When the instantiations of these types correspond to an intrinsic vector type, they are treated as that type. Otherwise, they are treated as a struct of vectors. In .NET, our vector types are named based on their vector with, so `Vector128<T>`, `Vector256<T>`, etc.
 
@@ -199,19 +187,19 @@ As mentioned in the calling-convention section above, none of the libraries we a
 
 #### Projection Tooling Components
 
-The projection tooling will be based on the [Binding Tools for Swift](https://github.com/xamarin/binding-tools-for-swift) (BTfS). The BTfS contains a set of tools that can consume a compiled Apple Swift library and generate wrappers (bindings) that allow it to be surfaced as a .NET library. This tool will be implemented as a self-hosted .NET CLI tool, automating the generation of wrappers by parsing the Swift library interface. It generates C# bindings that can be utilized as a .NET library. The projection tooling will utilize the runtime core interop source-gen infrastructure to implement marshalling codegen. Sharing the code will allow the Swift interop story to gain/share improvements and features with the rest of the interop source generators.
+The projection tooling will be based on the [Binding Tools for Swift](https://github.com/xamarin/binding-tools-for-swift). The tooling will contain components that can consume a compiled Apple Swift library interface (`.swiftinterface`) and generate C# bindings that allow it to be surfaced as a .NET library. The tool will not generate any Swift wrappers and it's users responsibility to provide Swift wrappers for cases where direct binding is not possible. The projection tooling will utilize the runtime core interop source-gen infrastructure to implement marshalling codegen. 
 
-The projection tooling should be split into these components.
+The projection tooling is split into these components.
 
 ##### Importing Swift into .NET
 
 Importing Swift into .NET is done through the following steps:
 
-1. The tool analyzes a `.swiftmodule` file (similar to a C header file) and maps entry points to mangled names.
-2. Then, the tool aggregates the public API; it take in a `.swiftmodule` file generated by the Swift compiler.
+1. The tool analyzes a `.swiftinterface` file (similar to a C header file) and maps entry points to mangled names.
+2. Then, the tool aggregates the public API; it take in a `.swiftinterface` file generated by the Swift compiler.
 3. Finally, the tool generates C# bindings source code based on the aggregated public API and compiles them.
 
-The projection tooling currently generates Swift wrappers when direct P/Invoke from C# into Swift is not feasible. One of the objectives of this effort is to reduce the need for Swift wrappers. In cases where it is impossible to avoid using Swift wrappers, the responsibility will be on users to generate them.
+The projection tooling should provide projections of Swift primitive types and expose runtime functions for metadata handling.
 
 ##### Exporting .NET to Swift
 
@@ -220,19 +208,19 @@ There are two components to exporting .NET to Swift: Implementing existing Swift
 For implementing existing Swift types in .NET, we will require one of the following tooling options:
 
 1. A Roslyn source generator to generate any supporting code needed to produce any required metadata, such as type metadata and witness tables, to pass instances of Swift-type-implementing .NET types defined in the current project to Swift.
-2. An IL-post-processing tool to generate the supporting code and metadata from the compiled assembly. 
+2. An IL-post-processing tool to generate the supporting code and metadata from the compiled assembly.
 
-If we were to use an IL-post-processing tool here, we would break Hot Reload in assemblies that implement Swift types, even for .NET-only code, due to introducing new tokens that the Hot Reload "client" (aka Roslyn) does not know about. As a result, we should prefer the Roslyn source generator approach. The existing tool [supports exporting .NET types to Swift](https://github.com/xamarin/binding-tools-for-swift/blob/main/docs/FutureIdeas.md#exposing-c-to-swift) that can work as a source generator.
-
-For a C# class that can be inherited gets implemented in C#, the tool generates a mirror class in Swift and overrides it with another class that vectors all the calls through a simulated vtable. This class implements the constructor and overrides the virtual methods by sending calls to a function pointer which ends up in C#.
+If we want to use an IL-post-processing tool here, we would break Hot Reload in assemblies that implement Swift types, even for .NET-only code, due to introducing new tokens that the Hot Reload "client" (aka Roslyn) does not know about.
 
 ### Distribution
 
-The calling convention work will be implemented by the .NET runtimes in [dotnet/runtime](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Runtime/InteropServices/Swift/SwiftTypes.cs). The projection tooling will be implemented and shipped as part of the Xamarin publishing infrastructure. The projection tooling will be accessible as a .NET CLI tool and distributed as a NuGet package. It should either be automatically included as part of the TPMs for Apple platforms or should be easily referencable.
+The projection tooling will be implemented as a .NET CLI tool and integrated into the Xamarin publishing infrastructure. It will be included in the macios workload for Apple platforms and also available as a standalone package independent of MAUI framework.
+
+The calling convention work will be implemented in the [dotnet/runtime](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Runtime/InteropServices/Swift/SwiftTypes.cs) repository. 
 
 ### Validation
 
-The interop will be showcased through MAUI samples. List of libraries and MAUI samples to support in .NET 9 are outlined in https://github.com/dotnet/runtime/issues/95636.
+The interop will be showcased through CryptoKit library in the runtime repository and MAUI libraries and samples: https://github.com/dotnet/runtime/issues/95636.
 
 ## Q & A
 
