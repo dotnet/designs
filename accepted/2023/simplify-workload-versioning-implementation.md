@@ -22,6 +22,23 @@ We intend that building the workloadversions repo should be quick (~1 hour) so t
 
 The Workload set NuGet package for file-based installs will be named `Microsoft.NET.Workloads.<Feature band>`.  Similar to the workload manifest NuGet packages the json file will be included in a `data` subfolder in the NuGet package.  The version number of the package will be the version of the workload set.
 
+### Workload set package versions
+
+The (possibly 4-part) workload set version will be what is displayed by the .NET CLI and can be specified in places such as the command line and global.json files, but it won't be used as a literal package verison for any NuGet packages.  NuGet package versions will remain semantic versions.  For the NuGet packages that represent the workload set, there will be a mapping from the workload set version to both the package ID and version, where the feature band is part of the package ID, freeing up space in the version for the additional interim release number.
+
+Since the minor version of the SDK version (and hence workload set version) is expected to remain 0, for the workload set package versions we will omit that part of the version and shift the other parts over.  For example, for workload set 8.0.203, the workload set package version would be 8.203.0.  For workload set 8.0.203.1, the workload set package version would be 8.203.1.  Because the SDK feature band is part of the workload set package ID, this mapping will still work even if we do end up having a minor release of the SDK in the future.
+
+| SDK Version | Workload set version | Workload set Package ID | Workload set package version |
+|-------------|----------------------|-------------------------|------------------------------|
+| 8.0.200     | 8.0.200              | Microsoft.Net.Workloads.8.0.200 | 8.200.0 |
+| 8.0.201     | 8.0.201              | Microsoft.Net.Workloads.8.0.200 | 8.201.0 |
+| 8.0.203     | 8.0.203.1            | Microsoft.Net.Workloads.8.0.200 | 8.203.1 |
+| 9.0.100-preview.2 | 9.0.100-preview.2  | Microsoft.Net.Workloads.9.0.100-preview.2 | 9.100.0 |
+| 8.0.201     | 8.0.201.1-preview    | Microsoft.Net.Workloads.8.0.200 | 8.201.1-preview |
+| 8.0.201     | 8.0.201.1-preview.2    | Microsoft.Net.Workloads.8.0.200 | 8.201.1-preview.2 |
+| 8.0.201-servicing.23015    | 8.0.201-servicing.23015  | Microsoft.Net.Workloads.8.0.200 | 8.201.0-servicing.23015 |
+
+
 ### Workload set disk layout
 
 Workload version information will be stored in `dotnet\sdk-manifests\<Feature Band>\workloadsets\<Workload Set Version>`, for example `dotnet\sdk-manifests\8.0.200\workloadsets\8.0.201`.   In this folder will be one or more files ending in `.workloadset.json` which will specify the versions of each manifest that should be used.  These `.json` files will use the same format as rollback files currently use.  For example, the following file would specify that the android manifest should be version 33.0.4 from the 8.0.200 feature band, while the mono toolchain manifest should be version 8.0.3 from the 8.0.100 band:
@@ -32,6 +49,8 @@ Workload version information will be stored in `dotnet\sdk-manifests\<Feature Ba
   "microsoft.net.workload.mono.toolchain": "8.0.3/8.0.100"
 }
 ```
+
+Note that the workload set version that is part of the path is the user-facing, possibly 4-part workload set version, not the workload set package version.  The file-based installation code will need to apply the mapping when installing the workload sets, as will the MSI authoring code in dotnet/arcade.
 
 ### Workload manifest layout
 

@@ -38,8 +38,6 @@ We will create the concept of a "workload set" which has a version number that e
 
 For workload sets released between releases of the .NET SDK, we will use 4-part version numbers.  For example, workload set 8.0.203 would be released together with .NET SDK 8.0.203.  If we want to release another workload set before the 8.0.204 SDK release, then we can designate that workload set as 8.0.203.1 (and 8.0.203.2 if there's another interim workload set, etc.).  This is a departure from Semantic Versioning, but appears to be the best way to have an understandable version number for interim workload set releases.
 
-Note that the (possibly 4-part) workload set version will be what is displayed by the .NET CLI and can be specified in places such as the command line and global.json files, but it won't be used as a literal package verison for any NuGet packages.  NuGet package versions will remain semantically versions.  For the NuGet packages that represent the workload set, there will be a mapping from the workload set version to both the package ID and version, where the feature band is part of the package ID, freeing up space in the version for the additional interim release number.
-
 Some examples of possible workload set versions:
 
 - `8.0.203` - Regular monthly release
