@@ -226,12 +226,12 @@ public readonly ref struct ReadOnlyTensorSpan<T>
     public ref readonly T this[params ReadOnlySpan<nint> indices] { get; }
 
     public void Clear();
-    public void CopyTo(ReadOnlyTensorSpan<T> destination);
+    public void CopyTo(TensorSpan<T> destination);
     public void Fill(T value);
     public Enumerator GetEnumerator();
     public ref readonly T GetPinnableReference();
     public ReadOnlyTensorSpan<T> Slice(params ReadOnlySpan<Range<nint>> ranges);
-    public bool TryCopyTo(ReadOnlyTensorSpan<T> destination);
+    public bool TryCopyTo(TensorSpan<T> destination);
 
     public ref struct Enumerator
     {
