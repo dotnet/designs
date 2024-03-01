@@ -33,7 +33,7 @@ Since the minor version of the SDK version (and hence workload set version) is e
 | 8.0.200     | 8.0.200              | Microsoft.Net.Workloads.8.0.200 | 8.200.0 |
 | 8.0.201     | 8.0.201              | Microsoft.Net.Workloads.8.0.200 | 8.201.0 |
 | 8.0.203     | 8.0.203.1            | Microsoft.Net.Workloads.8.0.200 | 8.203.1 |
-| 9.0.100-preview.2 | 9.0.100-preview.2  | Microsoft.Net.Workloads.9.0.100-preview.2 | 9.100.0 |
+| 9.0.100-preview.2 | 9.0.100-preview.2.39041  | Microsoft.Net.Workloads.9.0.100-preview.2 | 9.100.0-preview.2.39041 |
 | 8.0.201     | 8.0.201.1-preview    | Microsoft.Net.Workloads.8.0.200 | 8.201.1-preview |
 | 8.0.201     | 8.0.201.1-preview.2    | Microsoft.Net.Workloads.8.0.200 | 8.201.1-preview.2 |
 | 8.0.201-servicing.23015    | 8.0.201-servicing.23015  | Microsoft.Net.Workloads.8.0.200 | 8.201.0-servicing.23015 |
