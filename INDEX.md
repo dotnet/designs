@@ -102,4 +102,5 @@ Use update-index to regenerate it:
 |  | [SDK Analysis Level Property and Usage](proposed/sdk-analysis-level.md) | (PM) [Chet Husk](https://github.com/baronfel), (Engineering) [Daniel Plaisted](https://github.com/dsplaisted) |
 |  | [Swift Interop](proposed/swift-interop.md) | [Andy Gocke](https://github.com/agocke), [Jeremy Koritzinsky](https://github.com/jkoritzinsky) |
 |  | [Target AVX2 in R2R images](proposed/vector-instruction-set-default.md) | [Richard Lander](https://github.com/richlander) |
+|  | [Using vcpkg in .NET projects and the VMR](proposed/vcpkg.md) | [Jeremy Koritzinsky](https://github.com/jkoritzinsky) |
 
