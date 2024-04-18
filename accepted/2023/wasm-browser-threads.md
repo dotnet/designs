@@ -115,9 +115,9 @@ For other possible design options we considered [see below](#Alternatives).
     - is helper thread which allows `Task` to be resolved by UI's `Promise` even when deputy thread is blocked in `.Wait`
 - JS interop from any thread is marshaled to UI thread's JavaScript
 - HTTP and WS clients are implemented in JS of UI thread
-- There is draft of `JSWebWorker` API 
+- There is draft of `JSWebWorker` API
     - it allows C# users to create dedicated JS thread
-    - the `JSImport` calls are dispatched to it if you are on the that thread 
+    - the `JSImport` calls are dispatched to it if you are on the that thread
     - or if you pass `JSObject` proxy with affinity to that thread as `JSImport` parameter.
     - The API was not made public in Net9 yet
 - calling synchronous `JSExports` is not supported on UI thread
