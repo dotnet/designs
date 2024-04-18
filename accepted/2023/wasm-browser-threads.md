@@ -209,8 +209,6 @@ For other possible design options we considered [see below](#Alternatives).
 - there is `JSSynchronizationContext`` installed on it
     - so that user code could dispatch back to it, in case that it needs to call `JSObject` proxy (with thread affinity)
 - this thread needs to throw on any `.Wait` because of the problem **7**
-- alternatively we could disable C# code on this thread and treat it similar to UI thread
-- alternatively we could have I/O threads
 
 ## HTTP and WS clients
 - are implemented in terms of `JSObject` and `Promise` proxies
@@ -228,13 +226,6 @@ For other possible design options we considered [see below](#Alternatives).
     - so that existing user code bases would just work without change
     - this would also require separate thread, doing the async job
     - we could use I/O thread for it
-
-## JSImport calls on threads without JSWebWorker
-- those are
-    - thread-pool threads
-    - main managed thread in deputy design
-- we dispatch it to UI thread
-    - easy to understand default behavior
 
 ## Performance
 As compared to ST build for dotnet wasm:
