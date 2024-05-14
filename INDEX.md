@@ -85,6 +85,7 @@ Use update-index to regenerate it:
 | 2023 | [Experimental APIs](accepted/2023/preview-apis/preview-apis.md) | [Immo Landwerth](https://github.com/terrjobst) |
 | 2023 | [Multi-threading on a browser](accepted/2023/wasm-browser-threads.md) | [Pavel Savara](https://github.com/pavelsavara) |
 | 2023 | [net8.0-browser TFM for applications running in the browser](accepted/2023/net8.0-browser-tfm.md) | [Javier Calvarro](https://github.com/javiercn) |
+| 2023 | [Sign CLI Signature Provider Plugins](accepted/2023/sign-signature-provider-plugins.md) | [Damon Tivel](https://github.com/dtivel), [Claire Novotny](https://github.com/clairernovotny) |
 
 ## Drafts
 
