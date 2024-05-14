@@ -1,5 +1,7 @@
 # Multi-threading on a browser
 
+**Owner** [Pavel Savara](https://github.com/pavelsavara) |
+
 ## Table of content
 - [Goals](#goals)
 - [Key ideas](#key-ideas)
