@@ -55,7 +55,7 @@ colleagues and she remembers that they used .NET Standard 1.4 because at some
 point her team also maintained a Windows Phone app (which, to everybody's
 disappointment no longer exists).
 
-Jack decides to upgrade the project to .NET Standard 2.0. She later realizes
+Jackie decides to upgrade the project to .NET Standard 2.0. She later realizes
 that this was a good idea because it enables her to use many of the
 `Microsoft.Extensions` libraries that make her life a lot easier, specifically
 configuration and DI.
