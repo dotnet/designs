@@ -22,7 +22,7 @@ However, we have found that many customers still target .NET Standard 1.x. We
 found out the reasons boil down to one of two things:
 
 1. Targeting the lowest possible versions is considered better
-2. It was like and there is no reason to change
+2. It was already like that and there is no reason to change
 
 The first argument has merit in a world where .NET Standard continues to produce
 new versions. Since that's no longer the case you might as well update to a
@@ -44,7 +44,7 @@ because code completion simply didn't advertise them.
 Jackie is assigned a work item to add a feature that requires writing code in
 the shared business logic project. That project happens to target .NET Standard
 1.4. She doesn't know why because the project was built before her time on the
-team.  The fist time she compiles in Visual Studio she sees a warning:
+team.  The first time she compiles in Visual Studio she sees a warning:
 
 > warning NETSDK1234: Contoso.BusinessLogic.csproj: Targeting .NET Standard
 > prior to 2.0 is no longer recommended. See \<URL\> for more details.
