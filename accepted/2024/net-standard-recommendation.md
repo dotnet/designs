@@ -96,6 +96,51 @@ The .NET SDK will check the `TargetFramework` property. If it uses
 
 ## Q & A
 
+## What is the downside of targeting .NET Standard 1.x?
+
+There is a major difference in how tooling works for .NET Standard 1.x vs 2.x:
+
+* .NET Standard 1.x was based on packages, that is, if you target .NET Standard
+  1.x you end up referencing about ~70-100 packages (depending on whether you
+  also target a specific runtime identifier). Those are also persisted in the
+  resulting NuGet package which causes consumers having to restore them as well.
+
+* .NET Standard 2.x doesn't use packages; the resulting NuGet package doesn't
+  depend on any packages, just like targeting specific frameworks generally
+  doesn't.
+
+In principle we could change the way tooling works for .NET Standard 1.x but we
+don't really see the value for two reasons:
+
+1. The additional platforms that .NET Standard 1.x reaches are mostly out of    
+   support.
+
+2. [.NET Standard itself is no longer updated][net-standard-future]. We believe
+   the new OS-specific frameworks starting with .NET 5 are a much easier and
+   better model therefore supersede .NET Standard.
+
+If you target .NET Standard 1.x you're limiting yourself to a subset of .NET
+Framework 4.5, which shipped about 12 years ago. A lot of innovation has
+happened since then that you're missing out on. If you need to support older
+frameworks that Microsoft doesn't support, this might be an intentional choice
+in which case suppressing the warning makes total sense.
+
+However, we believe the vast majority of people don't have such a requirement
+and would be better off targeting .NET Standard 2.0 or .NET 5+ instead.
+
+## Should I drop .NET Standard altogether?
+
+If you need to produce a NuGet package that works on .NET Framework as well as
+modern .NET flavors then using .NET Standard 2.0 is still the best solution for
+you -- and your consumers.
+
+If you drop .NET Standard and instead just multi-target for .NET Framework and
+.NET 5+, you force your consumers to do the same, which is generally not
+necessary and thus very much undesirable.
+
+However, if you don't have to support .NET Framework then you're likely better
+off just targeting .NET 5+.
+
 ### Didn't you promise that .NET Standard is supported forever?
 
 We promised that future .NET implementations will continue to support
