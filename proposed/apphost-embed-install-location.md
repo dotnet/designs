@@ -53,9 +53,9 @@ location is:
 Every `apphost` already has a placeholder that gets rewritten to contain the app
 binary path during build (that is, `dotnet build`). This proposal adds another
 placeholder which would represent the optional configuration of search locations
-and embedded relative path to an install location. Like the existing placeholder
-placeholder, it would conditionally be rewritten during build based on the app's
-settings. This is similar to the proposal in [dotnet/runtime#64430](https://github.com/dotnet/runtime/issues/64430),
+and embedded relative path to an install location. Same as existing placeholder,
+it would conditionally be rewritten during build based on the app's settings.
+This is similar to the proposal in [dotnet/runtime#64430](https://github.com/dotnet/runtime/issues/64430),
 but with additional configuration of which search locations to use.
 
 ### Configuration of search locations
@@ -66,14 +66,14 @@ are deployed - for example, [dotnet/runtime#86801](https://github.com/dotnet/run
 We can allow selection of which search locations the `apphost` will use. When
 search locations are configured, only the specified locations will be searched.
 
-```c++
+```c
 enum search_location
 {
-    default = 0,
-    app_local = 1 << 0,
-    embedded = 1 << 1,
-    environment_variables = 1 << 2,
-    global = 1 << 3,
+    sl_default = 0,
+    sl_app_local = 1 << 0,
+    sl_embedded = 1 << 1,
+    sl_environment_variables = 1 << 2,
+    sl_global = 1 << 3,
 };
 ```
 
@@ -107,7 +107,7 @@ The install location could be specified via a property in the project:
 Setting this implies `AppHostDotNetSearch=Embedded`. If `AppHostDotNetSearch` is
 explicitly set to a value that does not include `Embedded`, `AppHostDotNetRoot`
 is meaningless - the SDK will not write the relative path into the `apphost`
-nd the `apphost` will not check for an embedded relative path.
+and the `apphost` will not check for an embedded relative path.
 
 ## Updated behaviour
 
