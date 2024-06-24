@@ -54,7 +54,8 @@ Every `apphost` already has a placeholder that gets rewritten to contain the app
 binary path during build (that is, `dotnet build`). This proposal adds another
 placeholder which would represent the optional configuration of search locations
 and embedded relative path to an install location. Same as existing placeholder,
-it would conditionally be rewritten during build based on the app's settings.
+it would conditionally be rewritten based on the app's settings. For this case,
+it would [only be done on `publilsh`](#writing-options-on-publish) currently.
 This is similar to the proposal in [dotnet/runtime#64430](https://github.com/dotnet/runtime/issues/64430),
 but with additional configuration of which search locations to use.
 
@@ -134,17 +135,16 @@ effective behaviour remains as in the [current state](#state-in-net-8).
 
 ## Considerations
 
-### Writing embedded options on build
+### Writing options on publish
 
-This proposal writes the install location options in the `apphost` on `build`.
-Without SDK support for constructing the layout, this means that if a developer
-specifies an embedded relative install location path, it is up to them to create
-a layout with the runtime in the expected location relative to the app output as
-part of their build. Otherwise, running the app immediately after build would
-not work. Another possible option is to only rewrite on `publish`, but that may
-introduce another confusing difference between `build` and `publish`. Currently,
-the `apphost` is the same between `build` and `publish` (with the exception of
-single-file, which is only a `publish` scenario).
+This proposal writes the install location options in the `apphost` on `publish`.
+Without SDK support for constructing the layout, updating on `build` would cause
+the app to stop working in inner dev loop scenarios (running from output folder,
+`dotnet run`, F5) unless they create a layout with the runtime in the expected
+location relative to the app output as part of their build. This introduces a
+difference  between `build` and `publish` for `apphost` (currently, it is the
+same between `build` and `publish` - with the exception of single-file, which is
+nly a `publish` scenario), but once SDK support is added it can be reconciled.
 
 ### Other hosts
 
