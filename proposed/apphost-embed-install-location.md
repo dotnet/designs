@@ -53,9 +53,9 @@ location is:
 Every `apphost` already has a placeholder that gets rewritten to contain the app
 binary path during build (that is, `dotnet build`). This proposal adds another
 placeholder which would represent the optional configuration of search locations
-and embedded relative path to an install location. Same as existing placeholder,
-it would conditionally be rewritten based on the app's settings. For this case,
-it would [only be done on `publilsh`](#writing-options-on-publish) currently.
+and app-relative path to an install location. Same as existing placeholder, it
+would conditionally be rewritten based on the app's settings. This rewrite would
+[only be done on `publish`](#writing-options-on-publish) of the app currently.
 This is similar to the proposal in [dotnet/runtime#64430](https://github.com/dotnet/runtime/issues/64430),
 but with additional configuration of which search locations to use.
 
@@ -67,48 +67,35 @@ are deployed - for example, [dotnet/runtime#86801](https://github.com/dotnet/run
 We can allow selection of which search locations the `apphost` will use. When
 search locations are configured, only the specified locations will be searched.
 
-```c
-enum search_location
-{
-    sl_default = 0,
-    sl_app_local = 1 << 0,
-    sl_embedded = 1 << 1,
-    sl_environment_variables = 1 << 2,
-    sl_global = 1 << 3,
-};
-```
-
-The behaviour corresponding to the `default` value is defined by the `apphost`.
-It is currently `app_local | environment_variables | global`.
-
 The search location could be specified via a property in the project:
 
 ```xml
 <AppHostDotNetSearch>Global</AppHostDotNetSearch>
 ```
 
-where the valid values are `AppLocal`, `Embedded`, `EnvironmentVariables`, or
+where the valid values are `AppLocal`, `AppRelative`, `EnvironmentVariables`, or
 `Global`. Multiple values can be specified, delimited by semi-colons.
 
 When a value is specified, only those locations will be used. For example, if
 `Global` is specified, `apphost` will only look at global install locations, not
-app-local, at any embedded path, or at environment variables.
+app-local, at any app-relative path, or at environment variables.
 
-### Embedded relative path to install location
+### App-relative path to install location
 
-When a relative path is embedded and the `apphost` is [configured to look at it](#configuration-of-search-locations),
-that path will be used as the .NET install root when running the application.
+When a relative path is written into an `apphost` which is [configured to look
+at it](#configuration-of-search-locations), that path will be used as the .NET
+install root when running the application.
 
 The install location could be specified via a property in the project:
 
 ```xml
-<AppHostDotNetRoot>./path/to/runtime</AppHostDotNetRoot>,
+<AppHostRelativeDotNet>./relative/path/to/runtime</AppHostRelativeDotNet>,
 ```
 
-Setting this implies `AppHostDotNetSearch=Embedded`. If `AppHostDotNetSearch` is
-explicitly set to a value that does not include `Embedded`, `AppHostDotNetRoot`
-is meaningless - the SDK will not write the relative path into the `apphost`
-and the `apphost` will not check for an embedded relative path.
+Setting this implies `AppHostDotNetSearch=AppRelative`. If `AppHostDotNetSearch`
+is explicitly set to a value that does not include `AppRelative`, then setting
+`AppHostRelativeDotNet` is meaningless - the SDK will not write the relative
+path into the `apphost` and the `apphost` will not check for a relative path.
 
 ## Updated behaviour
 
@@ -117,8 +104,8 @@ install location would be:
 
   1. App-local, if search location not configured
       - Look for the runtime in the app's folder (self-contained apps)
-  2. Embedded, if specified as a search location
-      - Use the path embedded into `apphost`, relative to the app location
+  2. App-relative, if specified as a search location
+      - Use the path written into `apphost`, relative to the app location
   3. Environment variables, if search location not configured or if set as a
   search location
       - Read the `DOTNET_ROOT_<arch>` and `DOTNET_ROOT` environment variables
@@ -130,7 +117,7 @@ install location would be:
   search location
       - Fall back to a well-known default install location based on the platform
 
-Be default - that is, without any embedded install location options - the
+Be default - that is, without any configured install location options - the
 effective behaviour remains as in the [current state](#state-in-net-8).
 
 ## Considerations
@@ -155,4 +142,4 @@ but we do not have feedback for scenarios using them. They also do not have the
 app-local search or the existing requirment of being partially re-written via a
 known placeholder. Changing them would add significant complexity without a
 compelling scenario. If we see confusion here, we could add an SDK warning if
-`AppHostDotNetRoot` or `AppHostDotNetSearch` is set for those projects.
+`AppHostRelativeDotNet` or `AppHostDotNetSearch` is set for those projects.
