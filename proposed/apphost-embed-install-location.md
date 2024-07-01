@@ -92,8 +92,15 @@ The install location could be specified via a property in the project:
 <AppHostRelativeDotNet>./relative/path/to/runtime</AppHostRelativeDotNet>,
 ```
 
-Setting this implies `AppHostDotNetSearch=AppRelative`. If `AppHostDotNetSearch`
-is explicitly set to a value that does not include `AppRelative`, then setting
+Setting this implies `AppHostDotNetSearch=AppRelative`. This means that only the
+relative path will be considered. If a .NET install is not found at the relative
+path, other locations - environment variables, global install locations - will
+not be considered and the app will fail to run.
+
+`AppHostDotNetSearch` could also be explicitly set to include a fallback - for
+example, `AppHostDotNetSearch=AppRelative;Global` would look at the relative
+path and, if it is not found, the global locations. If `AppHostDotNetSearch` is
+explicitly set to a value that does not include `AppRelative`, then setting
 `AppHostRelativeDotNet` is meaningless - the SDK will not write the relative
 path into the `apphost` and the `apphost` will not check for a relative path.
 
