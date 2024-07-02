@@ -146,7 +146,7 @@ This proposal is only for `apphost`. It is not relevant for `singlefilehost`, as
 that has the runtime itself statically linked. Other hosts (`comhost`, `ijwhost`)
 are also not included. In theory, other hosts could be given the same treatment,
 but we do not have feedback for scenarios using them. They also do not have the
-app-local search or the existing requirment of being partially re-written via a
+app-local search or the existing requirement of being partially re-written via a
 known placeholder. Changing them would add significant complexity without a
 compelling scenario. If we see confusion here, we could add an SDK warning if
 `AppHostRelativeDotNet` or `AppHostDotNetSearch` is set for those projects.
