@@ -98,6 +98,7 @@ Use update-index to regenerate it:
 
 |Year|Title|Owners|
 |----|-----|------|
+|  | [Add ability to embed install location options in apphost](proposed/apphost-embed-install-location.md) |  |
 |  | [Provide SDK hint paths in global.json](proposed/local-sdk-global-json.md) |  |
 |  | [Rate limits](proposed/rate-limit.md) | [John Luo](https://github.com/juntaoluo), [Sourabh Shirhatti](https://github.com/shirhatti) |
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
