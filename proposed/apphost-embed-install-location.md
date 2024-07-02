@@ -1,7 +1,7 @@
 # Add ability to embed install location options in apphost
 
 There have been numerous requests around being able to customize how/where the
-.NET root path will be determined for a an application. This document describes
+.NET root path will be determined for an application. This document describes
 a proposed mechanism for basic configuration of how `apphost` will search for
 the .NET install location.
 
@@ -43,7 +43,7 @@ location is:
   2. Environment variables
       - Read the `DOTNET_ROOT_<arch>` and `DOTNET_ROOT` environment variables
   3. Global install (registered)
-      - Check for a registered install - registry key on Windows or a install
+      - Check for a registered install - registry key on Windows or an install
       location file on non-Windows
   4. Global install (default)
       - Fall back to a well-known default install location based on the platform
@@ -89,7 +89,7 @@ install root when running the application.
 The install location could be specified via a property in the project:
 
 ```xml
-<AppHostRelativeDotNet>./relative/path/to/runtime</AppHostRelativeDotNet>,
+<AppHostRelativeDotNet>./relative/path/to/runtime</AppHostRelativeDotNet>
 ```
 
 Setting this implies `AppHostDotNetSearch=AppRelative`. This means that only the
@@ -120,11 +120,11 @@ install location would be:
   a search location
       - Check for a registered install - registry key on Windows or a install
       location file on non-Windows
-  5. Global install(default), if search location not configured or if set as a
+  5. Global install (default), if search location not configured or if set as a
   search location
       - Fall back to a well-known default install location based on the platform
 
-Be default - that is, without any configured install location options - the
+By default - that is, without any configured install location options - the
 effective behaviour remains as in the [current state](#state-in-net-8).
 
 ## Considerations
@@ -138,12 +138,12 @@ the app to stop working in inner dev loop scenarios (running from output folder,
 location relative to the app output as part of their build. This introduces a
 difference  between `build` and `publish` for `apphost` (currently, it is the
 same between `build` and `publish` - with the exception of single-file, which is
-nly a `publish` scenario), but once SDK support is added it can be reconciled.
+only a `publish` scenario), but once SDK support is added it can be reconciled.
 
 ### Other hosts
 
 This proposal is only for `apphost`. It is not relevant for `singlefilehost`, as
-that has the runtime itself statically linked. Other hosts (`comhost`,`ijwhost`)
+that has the runtime itself statically linked. Other hosts (`comhost`, `ijwhost`)
 are also not included. In theory, other hosts could be given the same treatment,
 but we do not have feedback for scenarios using them. They also do not have the
 app-local search or the existing requirment of being partially re-written via a
