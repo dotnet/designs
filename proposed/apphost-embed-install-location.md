@@ -104,6 +104,13 @@ explicitly set to a value that does not include `AppRelative`, then setting
 `AppHostRelativeDotNet` is meaningless - the SDK will not write the relative
 path into the `apphost` and the `apphost` will not check for a relative path.
 
+The path must not be rooted and will be considered relative to the app location
+(the location of the `apphost` itself) at run time. For example, when running
+`C:\dir\app.exe` or `/home/dir/app` with `AppHostRelativeDotNet` set to:
+  - `my_dotnet`: the app will look at `C:\dir\my_dotnet` or `/home/dir/my_dotnet`
+  - `./my_dotnet`: the app will look at `C:\dir\my_dotnet` or `/home/dir/my_dotnet`
+  - `../my_dotnet` the app will look at `C:\my_dotnet` or `/home/my_dotnet`
+
 ## Updated behaviour
 
 At a high level, the updated process and priority for `apphost` determining the
