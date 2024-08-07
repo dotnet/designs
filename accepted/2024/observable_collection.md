@@ -108,6 +108,16 @@ exceptions.
 
 ## Options to avoid breaking consumers
 
+The most likely candidate for accommodating consumers is this:
+
+1. Global switch to turn off bulk updates
+2. Per instance switch to turn off bulk updates
+
+We could decide to ship (1) first and see whether that's sufficient and add (2)
+if deemed necessary.
+
+Below are a list of all options that were identified, with their 
+
 * **Do nothing**. We could just do nothing and simply let customers report bugs
   for controls that don't support bulk notifications. Strictly speaking, this
   isn't a behavioral change as existing code won't start raising bulk events
