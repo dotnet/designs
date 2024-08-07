@@ -171,7 +171,8 @@ exceptions.
   - Pro: Consumers opt-into bulk events by subscribing to a different event.
     This allows a single instance of `ObservableCollection<T>` to be bound to
     multiple UI elements and leverage bulk updates when it's supported while
-    falling back when it's not.
+    falling back when it's not. This would also allow change of semantics to
+    allow for non-contiguous updates, for instance.
   - Con: Complicates that API; requires all consumers to explicitly opt-in, even
     if happen to already support bulk notifications. Will likely take longer to
     be supported by UI frameworks.
