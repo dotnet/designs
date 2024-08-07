@@ -157,7 +157,7 @@ exceptions.
   controls whether the collection view will translate bulk events to individual
   events.
   - Pro: Simpler API for the base, with an opt-out switch at the level of WPF.
-  - Con: Needs more investigation to determine feasibility.
+  - Con: Needs more investigation to determine feasibility, would only be helpful for WPF
 
 * **Separate API**. We could add a new interface
   `IBatchedNotifyCollectionChanged` interface that `ObservableCollection<T>`
