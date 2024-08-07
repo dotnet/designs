@@ -174,7 +174,8 @@ exceptions.
     falling back when it's not. This would also allow change of semantics to
     allow for non-contiguous updates, for instance.
   - Con: Complicates that API; requires all consumers to explicitly opt-in, even
-    if happen to already support bulk notifications. Will likely take longer to
-    be supported by UI frameworks.
+    if happen to already support bulk notifications. Would also likely require
+    adding a corresponding interface to WinUI that .NET can project to. Will
+    likely take longer to be supported by UI frameworks.
 
 [issue]: https://github.com/dotnet/runtime/issues/18087
