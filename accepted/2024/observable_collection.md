@@ -142,15 +142,20 @@ exceptions.
     the problem without requiring changes from the UI framework.
   - Con: More complex state, might not play well with WPF's `CollectionView`.
 
-* **Event enumerator**. We could expose a method on
+* ~~**Event enumerator**. We could expose a method on
   `NotifyCollectionChangedEventArgs` that returns an
   `IEnumerable<NotifyCollectionChangedEventArgs>`. For single item events it
   returns itself, otherwise it creates a new event arg per item. This requires
   UI controls to make code changes if they don't support bulk notifications, but
-  the change is fairly targeted.
-  - Pro: Simple API
-  - Con: Still breaks consumers, just provides an easier path to adapt to the
-    new behavior without having to full support bulk notifications.
+  the change is fairly targeted.~~
+  - ~~Pro: Simple API~~
+  - ~~Con: Still breaks consumers, just provides an easier path to adapt to the
+    new behavior without having to fully support bulk notifications.~~
+  - > [!NOTE]
+    > Doesn't seem feasible. Handlers of the event likely assume the collection
+    > was just changed to include the one modification. Just translating the
+    > event would mean they get a series of events but the handler sees the
+    > final collection in all invocations.
 
 * **Handling it at the CollectionView level**. WPF seems to have an indirection
   between the data-bound UI controls and the observable collections via the
