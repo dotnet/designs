@@ -182,5 +182,10 @@ exceptions.
     if happen to already support bulk notifications. Would also likely require
     adding a corresponding interface to WinUI that .NET can project to. Will
     likely take longer to be supported by UI frameworks.
+  - > [!NOTE]
+    > For the same reason event adapters aren't viable just having a new
+    > interface is probably not sufficient. Rather, we'd need a different
+    > implementation like `BulkObservableCollection<T>`. However, for WinUI
+    > we likely also still need an interface too.
 
 [issue]: https://github.com/dotnet/runtime/issues/18087
