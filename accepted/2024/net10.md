@@ -1,6 +1,6 @@
 # Parsing `net10`
 
-**Owner** [Immo Landwerth](https://github.com/terrjobst)
+**Owner** [Immo Landwerth](https://github.com/terrajobst)
 
 NuGet's framework name parser is fairly old and stems from a world where only
 .NET Framework exists. In fact, the early versions of NuGet didn't even support
