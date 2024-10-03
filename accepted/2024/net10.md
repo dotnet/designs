@@ -61,6 +61,23 @@ The next version where this is a problem is .NET 20, which will ship in 2035
 period ought to be enough to avoid this problem. In fact, we should consider
 making omitting a version number a build break in, say, .NET 12.
 
+### Usage
+
+| LinkText                                                                                                  | Hits |
+| --------------------------------------------------------------------------------------------------------- | ---- |
+| [net5](https://github.com/search?q=net5%3C%2FTargetFramework%3E+lang%3Axml&type=code)                     | 916  |
+| [net6](https://github.com/search?q=net6%3C%2FTargetFramework%3E+lang%3Axml&type=code)                     | 2.3k |
+| [net7](https://github.com/search?q=net7%3C%2FTargetFramework%3E+lang%3Axml&type=code)                     | 520  |
+| [net8](https://github.com/search?q=net8%3C%2FTargetFramework%3E+lang%3Axml&type=code)                     | 704  |
+| [net9](https://github.com/search?q=net9%3C%2FTargetFramework%3E+lang%3Axml&type=code)                     | 9    |
+| [net5.0](https://github.com/search?q=net5.0%3C%2FTargetFramework%3E+lang%3Axml&type=code)                 | 142k |
+| [net6.0](https://github.com/search?q=net6.0%3C%2FTargetFramework%3E+lang%3Axml&type=code)                 | 436k |
+| [net7.0](https://github.com/search?q=net7.0%3C%2FTargetFramework%3E+lang%3Axml&type=code)                 | 138k |
+| [net8.0](https://github.com/search?q=net8.0%3C%2FTargetFramework%3E+lang%3Axml&type=code)                 | 381k |
+| [net9.0](https://github.com/search?q=net9.0%3C%2FTargetFramework%3E+lang%3Axml&type=code)                 | 4.3k |
+| [netstandard2](https://github.com/search?q=netstandard2%3C%2FTargetFramework%3E+lang%3Axml&type=code)     | 83   |
+| [netstandard2.0](https://github.com/search?q=netstandard2.0%3C%2FTargetFramework%3E+lang%3Axml&type=code) | 132k |
+
 ## Q & A
 
 ### What about `net10.0`
