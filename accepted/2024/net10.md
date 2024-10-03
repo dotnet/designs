@@ -63,14 +63,14 @@ making omitting a version number a build break in, say, .NET 12.
 
 ### Usage
 
-| GitHub Usage of a Framework             | Hits1 | Hits2 | Percent |
-| --------------------------------------- | ----: | ----: | ------- |
-| [`net5`] vs [`net5.0`]                  |   916 |  142k |         |
-| [`net6`] vs [`net6.0`]                  |  2.3k |  436k |         |
-| [`net7`] vs [`net7.0`]                  |   520 |  138k |         |
-| [`net8`] vs [`net8.0`]                  |   704 |  381k |         |
-| [`net9`] vs [`net9.0`]                  |     9 |  4.3k |         |
-| [`netstandard2`]  vs [`netstandard2.0`] |    83 |  132k |         |
+| GitHub Usage of a Framework             | Without `.0` | With `.0` | Percent |
+| --------------------------------------- | -----------: | --------: | ------- |
+| [`net5`] vs [`net5.0`]                  |          916 |      142k | 0.6%    |
+| [`net6`] vs [`net6.0`]                  |         2.3k |      436k | 0.5%    |
+| [`net7`] vs [`net7.0`]                  |          520 |      138k | 0.4%    |
+| [`net8`] vs [`net8.0`]                  |          704 |      381k | 0.2%    |
+| [`net9`] vs [`net9.0`]                  |            9 |      4.3k | 0.2%    |
+| [`netstandard2`]  vs [`netstandard2.0`] |           83 |      132k | 0.1%    |
 
 [`net5`]: https://github.com/search?q=net5%3C%2FTargetFramework%3E+lang%3Axml&type=code
 [`net6`]: https://github.com/search?q=net6%3C%2FTargetFramework%3E+lang%3Axml&type=code
