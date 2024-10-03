@@ -37,8 +37,8 @@ those are still supported and actively used.
 
 Here is the proposal:
 
-* Make `net10` mean .NET 10 but keep all higher versions as-is (`net20` still
-  means .NET Framework 2.0).
+* Make `net10` mean .NET 10 and `net11` mean .NET 11 but keep all higher
+  versions as-is (`net20` still means .NET Framework 2.0).
 * The .NET SDK produces a warning if the `<TargetFramework>` property doesn't
   contain a period.
 
@@ -48,4 +48,7 @@ This results in two things:
 2. People making the mistake today don't get unintelligible errors which makes
    the warning more visible
 
-The next version where this is a problem is .NET 20, which will ship in 2035 (assuming we keep the schedule). I think 10 years of warning people to include a period ought to be enough to avoid this problem. In fact, we should consider making omitting a version number a build break in, say, .NET 12.
+The next version where this is a problem is .NET 20, which will ship in 2035
+(assuming we keep the schedule). I think 10 years of warning people to include a
+period ought to be enough to avoid this problem. In fact, we should consider
+making omitting a version number a build break in, say, .NET 12.
