@@ -75,7 +75,8 @@ The reason to issue the warning is to avoid any ambiguities moving forward.
 ### Usage
 
 Below is a comparison how much a given TFM syntax is being used on GitHub. As
-you can see, for modern TFMs syntax wit an explicit period is most widely used.
+you can see, for modern TFMs, the syntax with an explicit period is most widely
+used.
 
 | GitHub Usage of a TFM syntax                          | `netX` | `netXY` | `netX.Y` |
 | ----------------------------------------------------- | -----: | ------- | -------: |
@@ -108,8 +109,8 @@ you can see, for modern TFMs syntax wit an explicit period is most widely used.
 [`netstandard20`]: https://github.com/search?q=netstandard20%3C%2FTargetFramework%3E+lang%3Axml&type=code
 [`netstandard2.0`]: https://github.com/search?q=netstandard2.0%3C%2FTargetFramework%3E+lang%3Axml&type=code
 
-For .NET Framework frameworks the most dominant syntax is used is without
-periods, which is to be expected given that was the encouraged syntax:
+For .NET Framework, the most dominant TFM syntax is the one without periods,
+which is to be expected given that was the encouraged syntax:
 
 | GitHub Usage of a TFM syntax  | `netX` | `netXY` | `netX.Y` |
 | ----------------------------- | -----: | ------: | -------: |
