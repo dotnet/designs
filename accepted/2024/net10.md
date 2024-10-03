@@ -63,20 +63,27 @@ making omitting a version number a build break in, say, .NET 12.
 
 ### Usage
 
-| GitHub Usage of a Framework                                                                                 | Hits |
-| ----------------------------------------------------------------------------------------------------------- | ---: |
-| [`net5`](https://github.com/search?q=net5%3C%2FTargetFramework%3E+lang%3Axml&type=code)                     |  916 |
-| [`net6`](https://github.com/search?q=net6%3C%2FTargetFramework%3E+lang%3Axml&type=code)                     | 2.3k |
-| [`net7`](https://github.com/search?q=net7%3C%2FTargetFramework%3E+lang%3Axml&type=code)                     |  520 |
-| [`net8`](https://github.com/search?q=net8%3C%2FTargetFramework%3E+lang%3Axml&type=code)                     |  704 |
-| [`net9`](https://github.com/search?q=net9%3C%2FTargetFramework%3E+lang%3Axml&type=code)                     |    9 |
-| [`net5.0`](https://github.com/search?q=net5.0%3C%2FTargetFramework%3E+lang%3Axml&type=code)                 | 142k |
-| [`net6.0`](https://github.com/search?q=net6.0%3C%2FTargetFramework%3E+lang%3Axml&type=code)                 | 436k |
-| [`net7.0`](https://github.com/search?q=net7.0%3C%2FTargetFramework%3E+lang%3Axml&type=code)                 | 138k |
-| [`net8.0`](https://github.com/search?q=net8.0%3C%2FTargetFramework%3E+lang%3Axml&type=code)                 | 381k |
-| [`net9.0`](https://github.com/search?q=net9.0%3C%2FTargetFramework%3E+lang%3Axml&type=code)                 | 4.3k |
-| [`netstandard2`](https://github.com/search?q=netstandard2%3C%2FTargetFramework%3E+lang%3Axml&type=code)     |   83 |
-| [`netstandard2.0`](https://github.com/search?q=netstandard2.0%3C%2FTargetFramework%3E+lang%3Axml&type=code) | 132k |
+| GitHub Usage of a Framework             | Hits1 | Hits2 | Percent |
+| --------------------------------------- | ----: | ----: | ------- |
+| [`net5`] vs [`net5.0`]                  |   916 |  142k |         |
+| [`net6`] vs [`net6.0`]                  |  2.3k |  436k |         |
+| [`net7`] vs [`net7.0`]                  |   520 |  138k |         |
+| [`net8`] vs [`net8.0`]                  |   704 |  381k |         |
+| [`net9`] vs [`net9.0`]                  |     9 |  4.3k |         |
+| [`netstandard2`]  vs [`netstandard2.0`] |    83 |  132k |         |
+
+[`net5`]: https://github.com/search?q=net5%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`net6`]: https://github.com/search?q=net6%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`net7`]: https://github.com/search?q=net7%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`net8`]: https://github.com/search?q=net8%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`net9`]: https://github.com/search?q=net9%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`net5.0`]: https://github.com/search?q=net5.0%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`net6.0`]: https://github.com/search?q=net6.0%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`net7.0`]: https://github.com/search?q=net7.0%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`net8.0`]: https://github.com/search?q=net8.0%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`net9.0`]: https://github.com/search?q=net9.0%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`netstandard2`]: https://github.com/search?q=netstandard2%3C%2FTargetFramework%3E+lang%3Axml&type=code
+[`netstandard2.0`]: https://github.com/search?q=netstandard2.0%3C%2FTargetFramework%3E+lang%3Axml&type=code
 
 ## Q & A
 
