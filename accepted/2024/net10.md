@@ -60,3 +60,16 @@ The next version where this is a problem is .NET 20, which will ship in 2035
 (assuming we keep the schedule). I think 10 years of warning people to include a
 period ought to be enough to avoid this problem. In fact, we should consider
 making omitting a version number a build break in, say, .NET 12.
+
+## Q & A
+
+### What about `net10.0`
+
+That is the preferred syntax and will continue to work. The point of this work
+is not to make `net10` work because it's nicer -- it's to promote "framework
+names should be specified with a period", but we don't want to make this an
+error (because many, many people use `net472` today) but a warning. However,
+when using `net10` will most likely fail because the SDK doesn't support
+targeting it, which will drown out the warning telling you to use period.
+Failing it only for `net10` would be possible but feel odd because we'd prefer
+periods for all framework names, not just for `net10.0`.
