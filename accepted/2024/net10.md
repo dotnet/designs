@@ -10,11 +10,19 @@ In this world, version numbers were represented without periods, for example,
 `net20` would be .NET Framework 2.0 while `net35` referred to .NET Framework
 3.5.
 
-And here lies the problem: next year we're shipping .NET 10. It's reasonable for people to put `net10` in the project file. This will produce some interesting error messages:
+And here lies the problem: next year we're shipping .NET 10. It's reasonable for
+people to put `net10` in the project file. This will produce some interesting
+error messages:
 
-> **error MSB3645**: .NET Framework v3.5 Service Pack 1 was not found. In order to target ".NETFramework,Version=v1.0", .NET Framework v3.5 Service Pack 1 or later must be installed.
+> **error MSB3645**: .NET Framework v3.5 Service Pack 1 was not found. In order
+> to target ".NETFramework,Version=v1.0", .NET Framework v3.5 Service Pack 1 or
+> later must be installed.
 >
-> **error MSB3644**: The reference assemblies for .NETFramework,Version=v1.0 were not found. To resolve this, install the Developer Pack (SDK/Targeting Pack) for this framework version or retarget your application. You can download .NET Framework Developer Packs at https://aka.ms/msbuild/developerpacks
+> **error MSB3644**: The reference assemblies for .NETFramework,Version=v1.0
+> were not found. To resolve this, install the Developer Pack (SDK/Targeting
+> Pack) for this framework version or retarget your application. You can
+> download .NET Framework Developer Packs at
+> https://aka.ms/msbuild/developerpacks
 
 It's not exactly terrible, but many people will find this confusing as it's not
 obvious that the fix is to change the framework from `net10` to `net10.0`.
