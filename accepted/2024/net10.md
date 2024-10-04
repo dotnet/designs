@@ -187,7 +187,7 @@ targeting it, which will drown out the warning telling you to use period.
 Failing it only for `net10` would be possible but feel odd because we'd prefer
 periods for all framework names, not just for `net10.0`.
 
-# Why don't we make `net10` just work work?
+### Why don't we make `net10` just work?
 
 Considering that .NET Framework 1.0 is out of support for a while and Visual
 Studio doesn't even support building for anything older than .NET Framework 2.0,
