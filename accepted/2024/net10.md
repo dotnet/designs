@@ -49,7 +49,7 @@ unambiguous.
 Proposal:
 
 * Fail the build if the TFM is `net10` or `net11` with an error message
-  > This framework syntax is unsupported because it's unambiguous. If you mean
+  > This framework syntax is unsupported because it's ambiguous. If you mean
   > .NET Framework 1.0, use `net1.0`. If you mean .NET 10, use `net10.0`.
 * If the TFM is neither `net10` nor `net11`, produce a warning if it doesn't
   contain a period:
