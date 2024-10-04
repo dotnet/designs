@@ -57,10 +57,10 @@ Proposal:
   > version components.
 
 The reason to fail the build is because in practice someone trying to target
-.NET 10 will most likely fail anyway because the either don't have the .NET
-Framework 3.5 targeting pack -- or worse -- they do, but the code doesn't
-compile because it's meant for modern .NET Core, not a 25 year old .NET
-Framework 1.0. By failing it early it turns an unintelligible error message into
+.NET Framework 1.0 will most likely fail anyway because the either don't have
+the .NET Framework 3.5 targeting pack -- or worse -- they do, but the code
+doesn't compile because it's meant for modern .NET Core, not a 25 year old .NET
+Framework 1.0. By failing early it turns an unintelligible error message into
 something actionable.
 
 The reason to issue the warning is to avoid any ambiguities moving forward. 
