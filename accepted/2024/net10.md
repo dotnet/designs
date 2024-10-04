@@ -193,7 +193,7 @@ Considering that .NET Framework 1.0 is out of support for a while and Visual
 Studio doesn't even support building for anything older than .NET Framework 2.0,
 it seems very doable to make `net10` mean .NET 10.
 
-There are two downsides to this:
+There are three downsides to this:
 
 1. It makes a syntax work that we don't want to promote
 2. The other (widely used) monikers `net20`, `net452`, `net48`, need to continue
