@@ -274,8 +274,6 @@ We'll have the following TFMs:
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-tvos     | xamarin.tvos                                               |                                   |
 |                 | (+everything else inherited from net5.0)                   |                                   |
-| net5.0-watchos  | xamarin.watchos                                            |                                   |
-|                 | (+everything else inherited from net5.0)                   |                                   |
 | net5.0-windows  | netcoreapp1..3.1                                           | WinForms + WPF                    |
 |                 | (+everything else inherited from net5.0)                   |                                   |
 | Tizen, Unity... | Will follow the Xamarin model                              |                                   |
@@ -397,7 +395,6 @@ net5.0-android  | Yes
 net5.0-ios      | Yes
 net5.0-macos    | Yes
 net5.0-tvos     | Yes
-net5.0-watchos  | Yes
 net5.0-windows  | No
 
 Please note that by being able to put the OS version into the TFM one can also

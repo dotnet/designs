@@ -405,9 +405,6 @@ namespace System
         public static bool IsTvOS();
         public static bool IsTvOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
 
-        public static bool IsWatchOS();
-        public static bool IsWatchOSVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
-
         public static bool IsWindows();
         public static bool IsWindowsVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0);
     }

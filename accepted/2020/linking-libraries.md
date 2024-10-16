@@ -13,7 +13,7 @@ the internet, for example Xamarin and Blazor applications. End users on a slow
 or limited network will be less likely to install and use applications that are
 too large. Additionally, there may be store or device limitations on how big an
 acceptable application can be, e.g. how large an of application can be installed
-over a cellular network; or installed on watchOS.
+over a cellular network.
 
 Trimming a framework-dependent application can also be advantageous since the
 application may depend on libraries and only use a small subset of the
