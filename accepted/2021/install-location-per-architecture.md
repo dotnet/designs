@@ -37,8 +37,8 @@ otherwise the apphost will use the global install location lookup.
 
 On Windows the multi-arch situation already exists with x86 and x64 architectures.
 Each installs into a different location and is registered accordingly.
-The registration mechanism in registry includes the architecture,
-the key path is `HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation`.
+Install locations are registered in the 32-bit registry under
+`HKLM\SOFTWARE\dotnet\Setup\InstalledVersions\<arch>\InstallLocation`.
 
 This means that x86 apphost looks only for x86 install location and similarly
 x64 apphost looks only for x64 install location. Adding another architecture
