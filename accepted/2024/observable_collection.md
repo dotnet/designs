@@ -151,7 +151,7 @@ Below are a list of all options that were identified, with their
   - Pro: Core API is simple while providing an affordance to the user to solve
     the problem without requiring changes from the UI framework.
   - Con: More complex state, might not play well with WPF's `CollectionView`.
-  - > [!NOTE]
+    > [!NOTE]
     > Doesn't seem feasible. Handlers of the event likely assume the collection
     > was just changed to include the one modification. Just translating the
     > event would mean they get a series of events but the handler sees the
@@ -166,7 +166,7 @@ Below are a list of all options that were identified, with their
   - Pro: Simple API
   - Con: Still breaks consumers, just provides an easier path to adapt to the
     new behavior without having to fully support bulk notifications.
-  - > [!NOTE]
+    > [!NOTE]
     > Doesn't seem feasible. Handlers of the event likely assume the collection
     > was just changed to include the one modification. Just translating the
     > event would mean they get a series of events but the handler sees the
@@ -192,7 +192,7 @@ Below are a list of all options that were identified, with their
     if happen to already support bulk notifications. Would also likely require
     adding a corresponding interface to WinUI that .NET can project to. Will
     likely take longer to be supported by UI frameworks.
-  - > [!NOTE]
+    > [!NOTE]
     > For the same reason event adapters aren't viable just having a new
     > interface is probably not sufficient. Rather, we'd need a different
     > implementation like `BulkObservableCollection<T>`. However, for WinUI
