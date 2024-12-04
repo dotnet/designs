@@ -47,6 +47,7 @@ The goal of this document is to explore ways to address this request.
     - WinForms team
     - WPF team
     - WinUI team
+    - UWP team
     - MAUI team
 * External UI platforms
     - Avalonia
