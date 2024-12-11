@@ -188,6 +188,36 @@ The following should be possible:
 $ ./hello.cs arg1 arg2`
 ```
 
+### Configure the usings
+
+Maybe we could introduce a using directive likes the reference above
+
+sample:
+
+```csharp
+#!/path/to/dotnet
+# u: System.Text.Json
+
+Console.WriteLine(JsonSerializer.Serialize(new { Text = "Hello World" }));
+```
+
+In case we have some using conflict, we need to support remove specific using:
+
+```csharp
+# u: -System.Text
+
+// ...
+```
+
+And we may could also support static using and alias:
+
+```csharp
+# u: static System.Console
+# u: SystemJsonSerializer = System.Text.Json.JsonSerializer
+
+WriteLine(SystemJsonSerializer.Serialize(new { Text = "Hello World" }));
+```
+
 ### Running or building a specific file
 
 If you have multiple C# files in the same directory, `dotnet run` and `dotnet build` won't work by default. You'll need to specify the file you wish to run:
