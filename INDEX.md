@@ -81,8 +81,11 @@ Use update-index to regenerate it:
 | 2021 | [TFM for .NET nanoFramework](accepted/2021/nano-framework-tfm/nano-framework-tfm.md) | [Immo Landwerth](https://github.com/terrajobst), [Laurent Ellerbach](https://github.com/Ellerbach), [José Simões](https://github.com/josesimoes) |
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
 | 2022 | [.NET 7 Version Selection Improvements](accepted/2022/version-selection.md) | [Rich Lander](https://github.com/richlander) |
+| 2023 | [.NET 8.0 Polyfill](accepted/2023/net8.0-polyfills/net8.0-polyfills.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2023 | [Experimental APIs](accepted/2023/preview-apis/preview-apis.md) | [Immo Landwerth](https://github.com/terrjobst) |
+| 2023 | [Multi-threading on a browser](accepted/2023/wasm-browser-threads.md) | [Pavel Savara](https://github.com/pavelsavara) |
 | 2023 | [net8.0-browser TFM for applications running in the browser](accepted/2023/net8.0-browser-tfm.md) | [Javier Calvarro](https://github.com/javiercn) |
+| 2024 | [.NET Standard Targeting Recommendations](accepted/2024/net-standard-recommendation.md) | [Immo Landwerth](https://github.com/terrajobst), [Viktor Hofer](https://github.com/ViktorHofer) |
 
 ## Drafts
 
@@ -95,7 +98,12 @@ Use update-index to regenerate it:
 
 |Year|Title|Owners|
 |----|-----|------|
+|  | [Add ability to embed install location options in apphost](proposed/apphost-embed-install-location.md) |  |
+|  | [Provide SDK hint paths in global.json](proposed/local-sdk-global-json.md) |  |
 |  | [Rate limits](proposed/rate-limit.md) | [John Luo](https://github.com/juntaoluo), [Sourabh Shirhatti](https://github.com/shirhatti) |
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
+|  | [SDK Analysis Level Property and Usage](proposed/sdk-analysis-level.md) | (PM) [Chet Husk](https://github.com/baronfel), (Engineering) [Daniel Plaisted](https://github.com/dsplaisted) |
+|  | [Swift Interop](proposed/swift-interop.md) | [Andy Gocke](https://github.com/agocke), [Jeremy Koritzinsky](https://github.com/jkoritzinsky) |
+|  | [Target AVX2 in R2R images](proposed/vector-instruction-set-default.md) | [Richard Lander](https://github.com/richlander) |
 

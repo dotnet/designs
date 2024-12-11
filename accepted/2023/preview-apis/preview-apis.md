@@ -224,8 +224,14 @@ both options are being presented to the consumer.
 
 ### Compiler Behavior
 
+*For more details on the compiler behavior, see [C# spec][csharp-spec].*
+
 The compiler will raise a diagnostic when an experimental API is used, using the
-supplied diagnostic ID. The severity is always error.
+supplied diagnostic ID.
+
+> [!NOTE]
+> The severity is warning, because errors cannot be suppressed. However, the
+> warning is promoted to an error for purpose of reporting.
 
 The semantics are identical to how obsolete is tracked, except there is no
 special treatment when both caller and callee are in the same assembly -- any
@@ -254,6 +260,7 @@ the usual means (i.e. `#pragma` or project-wide `NoWarn`).
     - We should point users to this new attribute (`ExperimentalAttribute`)
 
 [preview-features]: ../../2021/preview-features/preview-features.md
+[csharp-spec]: https://github.com/dotnet/csharplang/blob/main/proposals/csharp-12.0/experimental-attribute.md
 
 ## Q & A
 
