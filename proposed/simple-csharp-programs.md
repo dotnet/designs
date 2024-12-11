@@ -137,17 +137,31 @@ The `#r "nuget:..."` syntax is already supported by C# today in .NET Interactive
 
 ### Coding against a framework/sdk like ASP.NET Core
 
-You can also reference a framework/sdk (nomenclature up for debate) via a `#!` directive:
+The syntax for coding against a framework/sdk could be similar to the `#r "nuget:"` syntax shown earlier.
+
+You can also reference a framework/sdk likes following:
 
 ```csharp
-#!/path/to/dotnet-aspnet
+#!/path/to/dotnet
+#r "sdk: web"
 
 var app = WebApplication.CreateBuilder(args);
 app.MapGet("/", () => "Hello World");
 await app.RunAsync();
 ```
 
-The `dotnet-aspnet` gesture indicates two things to the build/run mechanism:
+or
+
+```csharp
+#!/path/to/dotnet
+#r "framework: aspnet"
+
+var app = WebApplication.CreateBuilder(args);
+app.MapGet("/", () => "Hello World");
+await app.RunAsync();
+```
+
+The `sdk: web`/`framework: aspnet` indicates two things to the build/run mechanism:
 
 * ASP.NET Core gets loaded and referenced
 * Applicable implicit ASP.NET Core `using`s are brought into scope
@@ -159,17 +173,16 @@ $ dotnet run
 Listening on localhost://12345
 ```
 
-The syntax for coding against a framework/sdk could also be more similar to the `#r "nuget:"` syntax shown earlier instead of being a `#!` directive.
+or assume the file name is `hello-aspnet.cs`, just run `./hello-aspnet.cs`
+
+```bash
+$ ./hello-aspnet.cs
+Listening on localhost://12345
+```
 
 ### Arguments also work
 
 The following should be possible:
-
-```bash
-$ dotnet run arg1 arg2
-```
-
-or
 
 ```bash
 $ ./hello.cs arg1 arg2`
@@ -192,19 +205,19 @@ $ dotnet build hello.cs
 
 `dotnet build` could in theory work here, as it could just build an executable for each file. But symmetry with `dotnet run` is probably preferred.
 
-Multiple arguments should also work, but you'll still have to pass the file name:
+Multiple arguments should also work, but you'll still have to pass the file name, considering maybe there're some arguments for `dotnet run` commands, we could place the arguments behind the `--` separator:
 
 ```bash
-$ dotnet run hello.cs arg1 arg2
+$ dotnet run hello.cs -- arg1 arg2
 ```
 
 ### TFM chosen at build time
 
 For both `dotnet run` and `dotnet build`, a TFM to build against must be selected.
 
-It will be the latest TFM available in the installed SDK. So if you have the .NET 7 SDK, it will be built and run against `net7`.
+It will be the latest TFM available in the installed SDK. So if you have the .NET 8 SDK, it will be built and run against `net8`.
 
-There is no ability to select a different TFM.
+We could use the latest TFM always, could also respect the `global.json` to choose a target framework if there're more requests.
 
 ## `dotnet` command support
 
@@ -277,7 +290,7 @@ To support this, the C# experience in VSCode would have to know what to load/run
 This phase would bring in support for referencing packages and coding against a framewor/sdk:
 
 * `#r "nuget:..."` or similar directive that resolves packages. Also works in tooling, so you get IntelliSense for the package
-* `#!/usr/bin/share/dotnet-aspnet` or `#r "framework:..."` support, allowing you to run against ASP.NET Core (`server.cs`)
+* `#r "sdk:..."` or `#r "framework:..."` support, allowing you to run against ASP.NET Core (`server.cs`)
 
 This would require some design work to arrive at the best syntax and semantics. It is also expected that tooling works when these are incorporated.
 
@@ -358,27 +371,6 @@ utils.cs
 
 In Directory Two, the `utils.cs` file is used by `reboot-server.cs`. A developer may expect to be able to just run `dotnet run` in that directory and have the program execute. But if they are in Directory One, they would have to be explicit about which file they are running.
 
-### Coding against a framework alternative syntax
-
-The walkthrough proposes the `#!` directive `#!/path/to/dotnet-aspnet`, but the .NET CLI doesn't have a command to "pull in the ASP.NET Core references", so it wouldn't map to something like that.
-
-An alternative could be to extend `#r` like so:
-
-* `#r "framework:aspnet"`
-* `#r "sdk:aspnet"`
-* etc.
-
-This could cleanly separate the "tell the compiler which references to pull in" world from the "short-cut having to use `dotnet`" world like so:
-
-```csharp
-#!/path/to/dotnet
-#r "framework:aspnet"
-
-var app = WebApplication.CreateBuilder(args);
-app.MapGet("/", () => "Hello World");
-await app.RunAsync();
-```
-
 ### `#!` and its semantics
 
 The `#!` directives in the walkthrough all point at `/path/to/dotnet`. This path may be different depending on your development OS (e.g., Fedora).
@@ -388,7 +380,6 @@ What this means is that it identifies the .NET environment and implies a default
 It could be extended/changed in a few ways:
 
 * `/path/to/dotnet run` makes it explicit that the command is to run the file
-* `/path/to/dotnet-aspnet` is an alternative to `#!aspnet` that brings ASP.NET Core into scope for the file (substitute a different framework/sdk here)
 
 In effect, the `#!` directive's semantics could span a spectrum of "I need the path and command to literally execute this file" towards "I add context that affects the references available to this file".
 
@@ -429,12 +420,12 @@ However, that seems unlikely given that the current syntax is already shipping i
 
 ### Should there be support for a user-specified TFM?
 
-So far, the assumption is that a Simple C# Program will simply execute against the TFM in the SDK it's built from. If you run from a .NET 7 SDK, it targets .NET 7. There's no way to configure that unless you use a project file.
+So far, the assumption is that a Simple C# Program will simply execute against the TFM in the SDK it's built from. If you run from a .NET 8 SDK, it targets .NET 8. There's no way to configure that unless you use a project file.
 
 Another alternative is to use a hashbang like `dotnet-script` to support a specific TFM, like so:
 
 ```csharp
-#!net5
+#!net8
 using System;
 
 Console.WriteLine("Hello, world!");
