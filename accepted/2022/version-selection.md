@@ -40,8 +40,8 @@ Attempting to install dotnet from public_location.
 dotnet-install: Note that the intended use of this script is for Continuous Integration (CI) scenarios, where:
 dotnet-install: - The SDK needs to be installed without user interaction and without admin rights.
 dotnet-install: - The SDK installation doesn't need to persist across multiple CI runs.
-dotnet-install: Attempting to download using primary link https://dotnetcli.azureedge.net/dotnet/Sdk/6.0.100/dotnet-sdk-6.0.100-linux-x64.tar.gz
-dotnet-install: Extracting zip from https://dotnetcli.azureedge.net/dotnet/Sdk/6.0.100/dotnet-sdk-6.0.100-linux-x64.tar.gz
+dotnet-install: Attempting to download using primary link https://builds.dotnet.microsoft.com/dotnet/Sdk/6.0.100/dotnet-sdk-6.0.100-linux-x64.tar.gz
+dotnet-install: Extracting zip from https://builds.dotnet.microsoft.com/dotnet/Sdk/6.0.100/dotnet-sdk-6.0.100-linux-x64.tar.gz
 dotnet-install: Adding to current process PATH: `/iot/.dotnet`. Note: This change will be visible only when sourcing script.
 dotnet-install: Installation finished successfully.
   Determining projects to restore...
