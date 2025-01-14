@@ -180,7 +180,7 @@ For example, this historical use of [`release-index.json` uses the `current` lab
     "latest-sdk": "5.0.402",
     "product": ".NET",
     "support-phase": "current",
-    "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/5.0/releases.json"
+    "releases.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/5.0/releases.json"
 },
 ```
 
@@ -227,7 +227,7 @@ The new format will look like the following:
     "support-phase": "active",
     "release-type": "lts",
     "eol-date": "2024-11-12",
-    "releases.json": "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/6.0/releases.json"
+    "releases.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/6.0/releases.json"
 },
 ```
 
