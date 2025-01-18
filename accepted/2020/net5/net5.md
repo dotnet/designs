@@ -375,21 +375,31 @@ was supported by the corresponding `netX.Y` version.
 > correctly. This is how P/Invokes, WinRT, iOS, and Android bindings work
 > today.*
 
-For example, say that when .NET 5 ships, the version of iOS that we include
-bindings for is iOS 13. That would mean that `net5.0-ios` and `net5.0-ios13.0`
-mean the exact same thing. Now lets say that Apple ships a new iOS 14 before
+For example, say that when .NET 5 ships, the version of Android that we include
+bindings for is API level 31. That would mean that `net5.0-android` and `net5.0-android31.0`
+mean the exact same thing. Now lets say that Google ships a new API Level 32 before
 .NET 6 is ready. We'd release a new version of the .NET 5 SDK that adds support
-for iOS 14. On machines with that SDK `net5.0-ios` still means `net5.0-ios13.0`.
+for API level 32. On machines with that SDK `net5.0-android` still means `net5.0-android31.0`.
 
 Please note that this mapping is specific for `net5.0`. When .NET 6 ships, we
-could decide that `net6.0-ios` means `net6.0-ios14.0`. But even when you use the
-.NET 6 SDK, when targeting .NET 5, `net5.0-ios` also still means
-`net5.0-ios13.0`. So these mappings are immutable.
+could decide that `net6.0-android` means `net6.0-android32.0`. But even when you use the
+.NET 6 SDK, when targeting .NET 5, `net5.0-android` also still means
+`net5.0-android31.0`. So these mappings are immutable.
 
 We have done this to simplify the experience for application models where the OS
 version is largely irrelevant, for example WinForms and WPF. Whether or not the
 template will put an OS version in the `<TargetFramework>` is up to each
 application model. Based on conversations, it seems we'll be landing on this:
+
+> *Note: On Apple platforms (iOS, macOS, tvOS and Mac Catalyst) and on .NET 9 or later,
+> the above logic is applied only for library projects. For executable projects,
+> the default OS version is automatically updated to the latest supported OS version.
+> This means that updating the iOS workload in .NET 9 may result in a higher default
+> iOS version, if we've added support for a new version of iOS in that workload.*
+>
+> *The reason for this difference in behavior is that Apple will often auto-update Xcode
+> and/or macOS, and in order to use the new Xcode or macOS, it's necessary to build
+> with bindings that support the new Xcode/OS.*
 
 TFM             | Project file includes OS version
 ----------------|---------------------------------
