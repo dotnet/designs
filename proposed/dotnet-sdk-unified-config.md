@@ -56,11 +56,11 @@ We should encourage tools to stake a claim on a top-level 'namespace' for keys i
 
 The `poohbear.config` file should be parseable by tooling and pleasant to read and edit by users.
 
-The choice of format is in some ways limited by engineering considerations. The easiest thing would be to choose a format that is already supported by the BCL, which would lead us to JSON or XML. Both of these formats have downsides, though: JSON doesn't support comments and has an anemic data model, and XML is historically verbose and difficult to parse in a consistent way.
+The choice of format is in some ways limited by engineering considerations. The easiest thing would be to choose a format that is already supported by the BCL, which would lead us to JSON, XML, or INI. JSON and XML formats have downsides, though: JSON doesn't support comments and has an anemic data model, and XML is historically verbose and difficult to parse in a consistent way.
 
 The recent wave of programming languages and programming-related tools have popularized the use of more human-readable formats like YAML, TOML, and INI. These formats are more human-readable and have more expressive power than JSON or XML. None of them have parsers in the BCL, though, which would mean that we would have to write our own parser or use a third-party library. Writing a parser is a potentially error-prone task, and using a third-party library would require onboarding the parser to source build as well as doing a thorough security audit. YAML specifically has such a lax parser that it might be a security risk to use it.
 
-My personal suggestion is that we should use INI or TOML and advocate for parsers for these in the BCL. TOML is widely used, being used for the huge python ecosystem and the up and coming Rust ecosystem, and strikes a good balance between human-readability and expressiveness.
+My personal suggestion is that we should use TOML and advocate for a parser for it in the BCL. TOML is widely used, being used for the huge python ecosystem and the up and coming Rust ecosystem, and strikes a good balance between human-readability and expressiveness. The [toml spec][toml-spec] includes a [comparison][toml-comparison] between TOML and other formats.
 
 ### Tooling support
 
@@ -93,4 +93,6 @@ We do not aim to provide 'build configurations' - descriptions of projects to bu
   * settings related to the behavior of `dotnet test`
 
 
+[toml-spec]: https://github.com/toml-lang/toml
+[toml-comparison]: https://github.com/toml-lang/toml?tab=readme-ov-file#comparison-with-other-formats
 [^1]: Name is a placeholder, and will be replaced with a more appropriate name before implementation. A final name might change the extension to represent the file type chosen.
