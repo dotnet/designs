@@ -98,7 +98,7 @@ Use update-index to regenerate it:
 
 |Year|Title|Owners|
 |----|-----|------|
-|  | [A unified configuration file and experience for the .NET SDK](proposed/dotnet-sdk-unified-config.md) |  |
+|  | [A unified configuration file and experience for the .NET SDK](proposed/dotnet-sdk-unified-config.md) | [Chet Husk](https://github.com/baronfel), [Daniel Plaisted](https://github.com/dsplaisted) |
 |  | [Add ability to embed install location options in apphost](proposed/apphost-embed-install-location.md) |  |
 |  | [Provide SDK hint paths in global.json](proposed/local-sdk-global-json.md) |  |
 |  | [Rate limits](proposed/rate-limit.md) | [John Luo](https://github.com/juntaoluo), [Sourabh Shirhatti](https://github.com/shirhatti) |
