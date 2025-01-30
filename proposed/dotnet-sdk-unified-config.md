@@ -60,7 +60,7 @@ The choice of format is in some ways limited by engineering considerations. The 
 
 The recent wave of programming languages and programming-related tools have popularized the use of more human-readable formats like YAML, TOML, and INI. These formats are more human-readable and have more expressive power than JSON or XML. None of them have parsers in the BCL, though, which would mean that we would have to write our own parser or use a third-party library. Writing a parser is a potentially error-prone task, and using a third-party library would require onboarding the parser to source build as well as doing a thorough security audit. YAML specifically has such a lax parser that it might be a security risk to use it.
 
-My personal suggestion is that we should use TOML and advocate for a parser for it in the BCL. TOML is widely used, being used for the huge python ecosystem and the up and coming Rust ecosystem, and strikes a good balance between human-readability and expressiveness. The [toml spec][toml-spec] includes a [comparison][toml-comparison] between TOML and other formats.
+My personal suggestion is that we should use [TOML][toml] and advocate for a parser for it in the BCL. TOML is in wide use in the [Python][python-why-toml] and Rust ecosystems. It strikes a good balance between human-readability and expressiveness. The [toml spec][toml-spec] includes a [comparison][toml-comparison] between TOML and other formats.
 
 ### Tooling support
 
@@ -83,7 +83,7 @@ With adoption, we could soft-deprecate some of the sources of standalone configu
 We do not aim to replace solutions with this config file.
 We do not aim to provide 'build configurations' - descriptions of projects to build and properties to apply to that build.
 
-## Suggested configuration keys/namespaces for v1
+### Suggested configuration keys/namespaces for v1
 
 > TBD, perhaps as part of discussion
 
@@ -92,7 +92,25 @@ We do not aim to provide 'build configurations' - descriptions of projects to bu
 * test
   * settings related to the behavior of `dotnet test`
 
+### Prior art
 
-[toml-spec]: https://github.com/toml-lang/toml
+The most direct analogue to this is perhaps the [Cargo .config file][cargo-config]. This file doesn't contain any data about the project(s) being built, but instead contains configuration data for the `cargo` tool itself. Some use cases supported by this file include:
+
+* command aliases
+* flags that control the behavior of 'cargo build'
+* authentication/credential provider configuration
+* behavior flags for specific cargo subcommands (e.g. what version control to use when creating a new project)
+* http client behaviors
+* dependency resolver behaviors
+* console output behaviors
+
+All of these have parallels in the dotnet CLI and tools that ship with the SDK.
+
+
+
+[cargo-config]: https://doc.rust-lang.org/cargo/reference/config.html#configuration-format
+[toml]: https://toml.io
+[toml-spec]: https://toml.io/en/v1.0.0
 [toml-comparison]: https://github.com/toml-lang/toml?tab=readme-ov-file#comparison-with-other-formats
+[python-why-toml]: https://peps.python.org/pep-0518/#other-file-formats
 [^1]: Name is a placeholder, and will be replaced with a more appropriate name before implementation. A final name might change the extension to represent the file type chosen.
