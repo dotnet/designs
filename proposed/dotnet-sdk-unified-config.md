@@ -64,23 +64,57 @@ My personal suggestion is that we should use [TOML][toml] and advocate for a par
 
 ### Tooling support
 
-CLI commands (dotnet config) a la `git config` will be provided to allow users to set and get configuration values. This will allow users to set configuration values without having to edit the file directly. We should allow reading
+#### CLI command
+CLI commands (dotnet config) a la `git config` will be provided to allow users to set and get configuration values. This will allow users to set configuration values without having to edit the file directly. We should allow reading of configuration values via a CLI command to provide a least-common-denominator access mechanism.
 
-We should provide a library to parse the file and integrate its data into `Microsoft.Extensions.Configuration` so that tools can easily consume the configuration data.
+`dotnet config get <key> [--local|--global]`
+
+For example, to get the 'realized' value of the `dotnet.telemetry` key for a given repo, you could run the following command in that repo:
+```shell
+> dotnet config get dotnet.telemetry
+true
+```
+and the following command would get the user-global value only
+```shell
+> dotnet config get dotnet.telemetry --global
+false
+```
+
+The [git config][git-config] command is a good source of inspiration.
+
+
+#### Programmatic access
+
+We (BCL) should provide a library to parse the file and integrate its data into `Microsoft.Extensions.Configuration` so that tools can easily consume the configuration data.
+
+#### IDE onboarding
 
 We must ensure that both the CLI and VS support the configuration file and the configuration system.
 
+#### Usage within the dotnet CLI and supporting tools
+Inside the `dotnet` CLI (and tools that ship within the CLI), we will initialize a `ConfigurationBuilder` with the `poohbear.config` file and merge it with the user's `poohbear.config` file. We will also seed that builder with environment variables. Tools that need the configuration within the `dotnet` CLI will read the appropriate values and apply them to their execution.
+
 ### Secondary goals
 
-Because the configuration file will be read into a Microsoft.Extensions.Configuration context this opens up the possibility for environment variables to be implicitly defined for all configuration keys. This would allow users to set configuration values via environment variables, which is a common pattern and an improvement from the mismatched support for environment variables that we have today.
+Because the configuration file will be read into a Microsoft.Extensions.Configuration context, this opens up the possibility for environment variables to be implicitly defined for all configuration keys. This would allow users to set configuration values via environment variables, which is a common pattern and an improvement from the mismatched support for environment variables that we have today.
 
 ### Future work
 
-With adoption, we could soft-deprecate some of the sources of standalone configuration mentioned above. Each configuration file could migrate to one or more namespaced keys in the `poohbear.config` file. For example, .NET SDK tools could live in a `local-tools` namespace that listed the tools and versions.
+With adoption, we could soft-deprecate some of the sources of standalone configuration mentioned above. Each configuration file could migrate to one or more namespaced keys in the `poohbear.config` file. For example, .NET SDK tools could live in a `dotnet.tools.<toolid>` namespace that listed the tools and any tool-specific configuration.
+
+```toml
+[dotnet.tools.dotnet-ef]
+version = "9.0.1"
+
+[dotnet.tools.fsautocomplete]
+version = "0.75.0"
+roll-forward = true
+```
 
 ### Non-goals
 
 We do not aim to replace solutions with this config file.
+
 We do not aim to provide 'build configurations' - descriptions of projects to build and properties to apply to that build.
 
 ### Suggested configuration keys/namespaces for v1
@@ -106,11 +140,11 @@ The most direct analogue to this is perhaps the [Cargo .config file][cargo-confi
 
 All of these have parallels in the dotnet CLI and tools that ship with the SDK.
 
-
-
 [cargo-config]: https://doc.rust-lang.org/cargo/reference/config.html#configuration-format
-[toml]: https://toml.io
-[toml-spec]: https://toml.io/en/v1.0.0
-[toml-comparison]: https://github.com/toml-lang/toml?tab=readme-ov-file#comparison-with-other-formats
+[git-config]: https://git-scm.com/docs/git-config
 [python-why-toml]: https://peps.python.org/pep-0518/#other-file-formats
+[toml-comparison]: https://github.com/toml-lang/toml?tab=readme-ov-file#comparison-with-other-formats
+[toml-spec]: https://toml.io/en/v1.0.0
+[toml]: https://toml.io
+
 [^1]: Name is a placeholder, and will be replaced with a more appropriate name before implementation. A final name might change the extension to represent the file type chosen.
