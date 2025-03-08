@@ -1,5 +1,5 @@
 
-# Annotating unsafe code with CallerUnsafe
+# Annotating unsafe code with RequiresUnsafe
 
 ## Background
 
@@ -25,15 +25,15 @@ Mechanically, this would be done with a new attribute:
 
 ```C#
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor)]
-public sealed class CallerUnsafe : System.Attribute
+public sealed class RequiresUnsafe : System.Attribute
 {
     public WarnByDefault { get; init; } = true;
 }
 ```
 
-This would be the dual of the existing `unsafe` context. The `unsafe` context eliminates unsafe errors, indicating that the code outside of the unsafe context should be considered safe. The `CallerUnsafe` attribute does the opposite: it indicates that the code inside is unsafe unless specific obligations are met. These obligations cannot be represented in C#, so they must be listed in documentation and manually verified by the user of the unsafe code. Only when all obligations are discharged can the code be wrapped in an `unsafe` context to eliminate any warnings.
+This would be the dual of the existing `unsafe` context. The `unsafe` context eliminates unsafe errors, indicating that the code outside of the unsafe context should be considered safe. The `RequiresUnsafe` attribute does the opposite: it indicates that the code inside is unsafe unless specific obligations are met. These obligations cannot be represented in C#, so they must be listed in documentation and manually verified by the user of the unsafe code. Only when all obligations are discharged can the code be wrapped in an `unsafe` context to eliminate any warnings.
 
-The `WarnByDefault` flag is needed for backwards-compatibility. If an existing API is unsafe, adding warnings would be a breaking change. If `WarnByDefault` is set to `false`, warnings are not produced unless a project-level property, `ShowAllCallerUnsafeWarnings`, is set to true.
+The `WarnByDefault` flag is needed for backwards-compatibility. If an existing API is unsafe, adding warnings would be a breaking change. If `WarnByDefault` is set to `false`, warnings are not produced unless a project-level property, `ShowAllRequiresUnsafeWarnings`, is set to true.
 
 ### Implementation
 
@@ -41,7 +41,7 @@ Since only warnings are an output of the above design, the feature could be impl
 
 ### Definition of Unsafe
 
-`CallerUnsafe` is only useful if there is an accepted definition of what is considered unsafe. For .NET there are two properties that we already consider safe code to preserve:
+`RequiresUnsafe` is only useful if there is an accepted definition of what is considered unsafe. For .NET there are two properties that we already consider safe code to preserve:
 
 * Memory safety
 * No access to uninitialized memory
