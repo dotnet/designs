@@ -21,40 +21,83 @@ We want to achieve all of the following goals:
 
 We need to be able to annotate code as unsafe, even if it doesn't use pointers.
 
-Mechanically, this would be done with a new attribute:
+Mechanically, this would be done with a modification to the C# language and a new property to the compilation. When the compilation property "EnableRequiresUnsafe" is set to true, the `unsafe` keyword on C# _members_ would require that the call appear in an unsafe context. An `unsafe` block would be unchanged -- the statements in the block would be in an unsafe context, while the code outside would have no requirements.
+
+For example, the code below would produce an error:
+
+```C#
+void Caller()
+{
+    M(); // error, the call to M() is not in an unsafe context
+}
+
+unsafe void M() { }
+```
+
+This can be addressed by callers in two ways:
+
+```C#
+unsafe void Caller1()
+{
+    M();
+}
+void Caller2()
+{
+    unsafe
+    {
+        M();
+    }
+}
+unsafe void M() { }
+```
+
+In the case of `Caller1`, the call to `M()` doesn't produce an error because it is inside an unsafe context. However, calls to `Caller1` will now produce an error for the same reason as `M()`.
+
+`Caller2` will also not produce an error because `M()` is in an unsafe context. However, this code creates a responsibility for the programmer: by presenting a safe API around an unsafe call, they are asserting that all safety concerns of `M()` have been addressed.
+
+Notably, unsafe did not change the requirement that the code in the block must be correct. It merely offset the responsibility from the language and the runtime to the user in verification.
+
+For more precise details on the error semantics of unsafe blocks and unsafe members, the rules will mirror the rules defined for "Requires" attributes defined in [Feature attribute semantics](https://github.com/dotnet/runtime/blob/main/docs/design/tools/illink/feature-attribute-semantics.md#requiresfeatureattribute). The only addition is the presence of the `unsafe` block, which effectively provides a local `Requires` context.
+
+## Implementation
+
+In addition to compiler enforcement, the following attribute will be added for annotating unsafe members. It is an error to use this attribute directly in C#. Instead, the `unsafe` keyword should be used.
 
 ```C#
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor)]
-public sealed class RequiresUnsafe : System.Attribute
+public sealed class RequiresUnsafeAttribute : System.Attribute
 {
-    public WarnByDefault { get; init; } = true;
 }
 ```
 
-This would be the dual of the existing `unsafe` context. The `unsafe` context eliminates unsafe errors, indicating that the code outside of the unsafe context should be considered safe. The `RequiresUnsafe` attribute does the opposite: it indicates that the code inside is unsafe unless specific obligations are met. These obligations cannot be represented in C#, so they must be listed in documentation and manually verified by the user of the unsafe code. Only when all obligations are discharged can the code be wrapped in an `unsafe` context to eliminate any warnings.
+### Globally-valid properties
 
-The `WarnByDefault` flag is needed for backwards-compatibility. If an existing API is unsafe, adding warnings would be a breaking change. If `WarnByDefault` is set to `false`, warnings are not produced unless a project-level property, `ShowAllRequiresUnsafeWarnings`, is set to true.
-
-### Implementation
-
-Since only warnings are an output of the above design, the feature could be implemented as an analyzer for C#.
-
-### Definition of Unsafe
-
-`RequiresUnsafe` is only useful if there is an accepted definition of what is considered unsafe. For .NET there are two properties that we already consider safe code to preserve:
+The overall goal is to ensure .NET code is "valid," in the sense that certain properties are always true. Generating a complete list of such properties is out of scope of this document. However, at least the following properties are required:
 
 * Memory safety
 * No access to uninitialized memory
 
-In this document **memory safety** is strictly defined as: safe code can never acquire a reference to memory that is not managed by the application. "Managed" here does not refer to solely to heap-allocated, garbage collected memory, but also includes stack-allocated variables that are considered allocated by the runtime.
+In this document **memory safety** is strictly defined as: code can never acquire a reference to memory that is not managed by the application. "Managed" here does not refer to solely to heap-allocated, garbage collected memory, but also includes stack-allocated variables that are considered allocated by the runtime.
 
-No access to uninitialized memory means that all managed memory is either never read before it has been initialized by C# code, or it has been initialized to a zero value.
+No access to uninitialized memory means that all memory is either never read before it has been initialized, or it has been initialized to a zero value.
 
-Some examples of APIs or features that are unsafe due to exposing uninitialized memory include:
+These properties are particularly important for security purposes. Any methods that can potentially violate these guarantees should be unsafe. Additionally, all such methods should have documentation that describes what conditions need to be satisfied to ensure that these guarentees are preserved.
 
-* ArrayPool.Rent
-* The `stackalloc` C# feature used with `SkipLocalsInit` and no initializer
+These properties are guaranteed by "safe" code through a combination of compiler and .NET runtime enforcement. For `unsafe` code, these properties must be guaranteed by the programmer.
 
-### Detailed semantics
+`unsafe` members are used to identify the places that cannot be automatically checked by the compiler and runtime for validity. Inside unsafe blocks, the programmer is responsible for ensuring that all requirements of the unsafe code are met, and that all code outside the block will have validity properly enforced by the system.
 
-The exact rules on when a warning would be produced will follow the rules defined for "Requires" attributes defined in [Feature attribute semantics](https://github.com/dotnet/runtime/blob/main/docs/design/tools/illink/feature-attribute-semantics.md#requiresfeatureattribute).
+
+### Examples and APIs
+
+**ArrayPool.Rent**
+
+This method is unsafe because it returns an array with unintialized memory. Code must not read the contents of the returned array without initialization.
+
+**stackalloc**
+
+This language feature is unsafe if used in a `SkipLocalsInit` context because the stack allocated buffer is uninitialized. If an initializer is used and the converted type is `Span<T>`, this code is safe.
+
+**P/Invoke**
+
+All P/Invoke methods are unsafe because they may compromise memory safety if the callee function does not match the P/Invoke method specification.
