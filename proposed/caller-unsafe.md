@@ -1,5 +1,5 @@
 
-# Annotating unsafe code with RequiresUnsafe
+# Annotating members as `unsafe`
 
 ## Background
 
