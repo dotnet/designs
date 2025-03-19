@@ -77,7 +77,7 @@ The overall goal is to ensure .NET code is "valid," in the sense that certain pr
 * Memory safety
 * No access to uninitialized memory
 
-In this document **memory safety** is strictly defined as: code can never acquire a reference to memory that is not managed by the application. "Managed" here does not refer to solely to heap-allocated, garbage collected memory, but also includes stack-allocated variables that are considered allocated by the runtime, or memory that is acquired for legal use by the runtime through any other means.
+In this document **memory safety** is strictly defined as: code can never acquire a reference to memory that is not managed by the runtime. "Managed" here does not refer to solely to heap-allocated, garbage collected memory, but also includes stack-allocated variables that are considered allocated by the runtime, or memory that is acquired for legal use by the runtime through any other means.
 
 No access to uninitialized memory means that all memory is either never read before it has been initialized, or it has been initialized to a zero value.
 
