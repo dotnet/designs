@@ -21,7 +21,7 @@ We want to achieve all of the following goals:
 
 We need to be able to annotate code as unsafe, even if it doesn't use pointers.
 
-Mechanically, this would be done with a modification to the C# language and a new property to the compilation. When the compilation property "EnableRequiresUnsafe" is set to true, the `unsafe` keyword on C# _members_ would require that the call appear in an unsafe context. An `unsafe` block would be unchanged -- the statements in the block would be in an unsafe context, while the code outside would have no requirements.
+Mechanically, this would be done with a modification to the C# language and a new property to the compilation. When the compilation property "EnableRequiresUnsafe" is set to true, the `unsafe` keyword on C# _members_ would require that their uses appear in an unsafe context. An `unsafe` block would be unchanged -- the statements in the block would be in an unsafe context, while the code outside would have no requirements.
 
 For example, the code below would produce an error:
 
