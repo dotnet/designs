@@ -86,6 +86,7 @@ Use update-index to regenerate it:
 | 2023 | [Multi-threading on a browser](accepted/2023/wasm-browser-threads.md) | [Pavel Savara](https://github.com/pavelsavara) |
 | 2023 | [net8.0-browser TFM for applications running in the browser](accepted/2023/net8.0-browser-tfm.md) | [Javier Calvarro](https://github.com/javiercn) |
 | 2024 | [.NET Standard Targeting Recommendations](accepted/2024/net-standard-recommendation.md) | [Immo Landwerth](https://github.com/terrajobst), [Viktor Hofer](https://github.com/ViktorHofer) |
+| 2025 | [Provide SDK hint paths in global.json](accepted/2025/local-sdk-global-json.md) | [Jared Parsons](https://github.com/jaredpar) |
 
 ## Drafts
 
@@ -99,7 +100,6 @@ Use update-index to regenerate it:
 |Year|Title|Owners|
 |----|-----|------|
 |  | [Add ability to embed install location options in apphost](proposed/apphost-embed-install-location.md) |  |
-|  | [Provide SDK hint paths in global.json](proposed/local-sdk-global-json.md) |  |
 |  | [Rate limits](proposed/rate-limit.md) | [John Luo](https://github.com/juntaoluo), [Sourabh Shirhatti](https://github.com/shirhatti) |
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
