@@ -2,6 +2,8 @@
 
 **Status**: Implemented for .NET 10 in [runtime](https://github.com/dotnet/runtime/pull/113512) with supporting work in [SDK](https://github.com/dotnet/sdk/pull/47664)
 
+**Owner** [Jared Parsons](https://github.com/jaredpar)
+
 ## Summary
 
 This proposal adds two new properties to the `sdk` object in
