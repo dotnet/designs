@@ -5,7 +5,7 @@
 
 C# has had the `unsafe` feature since 1.0. There are two different syntaxes for the feature: a block syntax that can be used inside methods and a modifier that can appear on members and types. The original semantics only concern pointers. An error is produced if a variable of pointer type appears outside an unsafe context. For the block syntax, this is anywhere inside the block; for members this is inside the member; for types this is anywhere inside the type. Pointer operations are not fully validated by the type system, so this feature is useful at identifying areas of code needing more validation. Unsafe has subsequently been augmented to also turn off lifetime checking for ref-like variables, but the fundamental semantics are unchanged -- the `unsafe` context serves only to avoid an error that would otherwise occur.
 
-While existing `unsafe` is useful, it is limited by only applying to pointers and ref-like lifetimes. Many methods may be considered unsafe, but the unsafety may not be related to pointers or ref-like lifetimes. For example, almost all methods in the System.RuntimeServices.CompilerServices.Unsafe class has the same safety issues as pointers, but do not require an `unsafe` block. The same is true of the System.RuntimeServices.CompilerServices.Marshal class.
+While existing `unsafe` is useful, it is limited by only applying to pointers and ref-like lifetimes. Many methods may be considered unsafe, but the unsafety may not be related to pointers or ref-like lifetimes. For example, almost all methods in the System.RuntimeServices.CompilerServices.Unsafe class have the same safety issues as pointers, but do not require an `unsafe` block. The same is true of the System.RuntimeServices.CompilerServices.Marshal class.
 
 ## Goals
 
@@ -77,7 +77,7 @@ The overall goal is to ensure .NET code is "valid," in the sense that certain pr
 * Memory safety
 * No access to uninitialized memory
 
-In this document **memory safety** is strictly defined as: code can never acquire a reference to memory that is not managed by the runtime. "Managed" here does not refer to solely to heap-allocated, garbage collected memory, but also includes stack-allocated variables that are considered allocated by the runtime, or memory that is acquired for legal use by the runtime through any other means.
+In this document **memory safety** is strictly defined as: code never accesses memory that is not managed by the runtime. "Managed" here does not refer to solely to heap-allocated, garbage collected memory, but also includes stack-allocated variables that are considered allocated by the runtime, or memory that is acquired for legal use by the runtime through any other means.
 
 No access to uninitialized memory means that all memory is either never read before it has been initialized, or it has been initialized to a zero value.
 
