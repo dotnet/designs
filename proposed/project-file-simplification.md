@@ -1,6 +1,6 @@
 # Project file simplification and improved change management
 
-// Contents of Type should match template name as much as possible
+**Owner** (PM) [KathleenDollard](https://github.com/KathleenDollard) | (Engineering) [Rainer Sigwald](https://github.com/RainerSigwald) and [Daniel Plaisted](https://github.com/dsplaisted)
 
 ## Summary
 [summary]: #summary
@@ -26,19 +26,19 @@ There would be no change to existing projects. They will continue to work as tod
 
 The fundamental benefit of this effort is to speed up and remove friction for users that wish to adopt tooling improvements quickly, while also allowing users to delay incorporating change until it is not disruptive. To do this, we need to allow developers a friction free experience on upgrade, which means that with no more work than previously they have control over the upgrade process.
 
-All breaking changes and new warning are introduced because we believe the positive impact outweighs the pain of the change. If a change is not breaking and does not add new warnings, we just add the feature and they are available when the user upgrades. If the change breaks everyone, we are unlikely to make the change. This proposal affects the occasional features that may break a few projects some of the time.
+All breaking changes and new warnings are introduced because we believe the positive impact outweighs the pain of the change. If a change is not breaking and does not add new warnings, we just add the feature and they are available when the user upgrades. If the change breaks everyone, we are unlikely to make the change. This proposal affects the occasional features that may break a few projects some of the time.
 
 The break may be a new warning. We treat new warnings as breaking changes because they can be disruptive to projects that rely on `TreatWarningsAsErrors` to guard against regressions in their own code. We want to make it easy for users to incorporate changes and warnings as quickly and smoothly as possible to achieve these benefits. An example of a new feature that created new warnings and clearly benefits almost all projects is the `NuGetAudit` flag which informs you if you are using a vulnerable package directly or transitively.
 
-We realize that your capacity to accommodate change and possible changes to your code varies widely by team, time of year, business considerations, and whether your already working on the code. These changes also affect all of the projects you are working on or building. Thus, breaks and warning that occur on tooling upgrades are undesirable.
+We realize that your capacity to accommodate change and possible changes to your code varies widely by team, time of year, business considerations, and whether your already working on the code. These changes also affect all of the projects you are working on or building. Thus, breaks and warnings that occur on tooling upgrades are undesirable.
 
 Your approach to upgrading the `TargetFramework` of your project varies from wanting the newest features and performance improvements as quickly as possible to postponing as long as possible to ease the upgrade effort.
 
 ### Motivation for `Base` attribute
 
-A new `Base` attribute on the `Project` element of the project file, `Directory.Build.props`, or an `Import` file and will specify defaults for all common project properties. This means the project file will contain two attributes and the things you add, such as packages. In cases where common properties like `Nullable` have been moved to `Directory.Build.props`, or an `Import` file, that file can be simplified.
+A new `Base` attribute on the `Project` element of the project file, `Directory.Build.props`, or an `Import` file will specify defaults for all common project properties. This means the project file will contain two attributes and the things you add, such as packages. In cases where common properties like `Nullable` have been moved to `Directory.Build.props`, or an `Import` file, that file can be simplified.
 
-When a there is a breaking change or a new warning, there is a new MSBuild property (as today). For breaking changes or new warnings, the feature will be turned off if it `false` or the equivalent `disable`. The defaults specified by `Base` will turn on the features we strongly recommend. If you disagree with this for your project, you can reset the value to `false`.
+When there is a breaking change or a new warning, there is a new MSBuild property (as today). For breaking changes or new warnings, the feature will be turned off if it `false` or the equivalent `disable`. The defaults specified by `Base` will turn on the features we strongly recommend. If you disagree with this for your project, you can reset the value to `false`.
 
 The key element of the `Base` design is that it is versioned and released with each SDK. This allows you to initially experiment with, and then adopt all the breaking changes and new warnings with a single value. The proposed structure of this version is the corresponding SDK version number, such as `10.0.100`, with a possible simplification to just `10`. The `Base` defaults include the `TargetFramework` so the user manages a single version number, in most cases.
 
@@ -48,7 +48,7 @@ However, key to this design is that `Base` is not required to match either your 
 <Project Base="11.0.100" 
          Type="Console"> 
    <PropertyGroup>
-        <TargetFramework>net10<TargetFramework>
+        <TargetFramework>net10.0<TargetFramework>
    </PropertyGroup>
 </Project> 
 ```
@@ -139,7 +139,7 @@ To illustrate precedence, consider this non-trivial, but expected to be a real-w
 </Project> 
 ```
 
-In this case, `TargetFramework` should be set to `net11` because it is closer to te user.
+In this case, `TargetFramework` should be set to `net11` because it is closer to the user.
 
 We are particularly concerned about precedence being predictable because the results may be subtle or _spooky action at a distance_ because the properties set may affect a very different part of the build. Also, debugging MSBuild via binlogs and the structured log viewer is a skill many of our users do not have because they rarely or never need to debug MSBuild logic.
 
@@ -160,7 +160,7 @@ However, this would result in a more complicated `Base`. See [Simple supporting 
 
 #### Simple supporting files
 
-Introducing new default values, mostly or completely controlled by the .NET teams, is likely to lead users to want to understand what is being set. Simple supporting files for `Base` and `Type` will allow users to open the file and understand the source of truth for controlling new features, warnings, and breaking changes. Unless another format is compelling, the simplest seems to be the project or `.props` file format. This means default values would appear in a `<PropertyGroup`. There will likely be restrictions in which XML elements are valid in this file.
+Introducing new default values, mostly or completely controlled by the .NET teams, is likely to lead users to want to understand what is being set. Simple supporting files for `Base` and `Type` will allow users to open the file and understand the source of truth for controlling new features, warnings, and breaking changes. Unless another format is compelling, the simplest seems to be the project or `.props` file format. This means default values would appear in a `<PropertyGroup>`. There will likely be restrictions in which XML elements are valid in this file.
 
 It is likely that these default values will need to be conditional, because they should not overwrite user values, and it will be difficult or impossible to guarantee bases are evaluated before any user entries (see [`Base` values must not overwrite user values](#base-values-must-not-overwrite-user-values)). This conditionality should not appear as MSBuild conditions in the base files to override complicating them. An indicator that the property is treated special should be included for clarity.
 
@@ -170,7 +170,7 @@ An example of what this might look like:
 <Project>
    <PropertyGroup>
       <!-- Additional values -->
-      <TargetFramework TreatAsDefault=true>net10</TargetFramework>
+      <TargetFramework TreatAsDefault="true">net10</TargetFramework>
    </PropertyGroup>
 </Project>
 ```
@@ -206,14 +206,14 @@ An example of this would be:
 <!-- 10.0.100 Base file expresses -->
 <Project> 
     <PropertyGroup>
-        <TargetFramework TreatAsDefault=true>net10</TargetFramework>
+        <TargetFramework TreatAsDefault="true">net10</TargetFramework>
     </PropertyGroup>
 </Project> 
 ```
 
 Here the `TargetFramework` is set by the user in their `Directory.Build.props` to a different value than in the `Base` file. `MessageText` will not reflect the `TargetFramework` that is used for most of the build.
 
-This can happen in MSBuild today. There is nothing fundamentally knew by using `Base`. However, we think it will be more likely to occur. We also believe it will become more valuable to put conditionals or use the property values in `Import` files, although we are still looking for specific scenarios.
+This can happen in MSBuild today. There is nothing fundamentally new by using `Base`. However, we think it will be more likely to occur. We also believe it will become more valuable to put conditionals or use the property values in `Import` files, although we are still looking for specific scenarios.
 
 Being able to reset values that provide defaults in the `Base` is a core aspect of the feature. This retains the user as the primary decision maker for their project.
 
@@ -221,15 +221,17 @@ We could add a new feature to MSBuild that would catch this scenario (see [Immut
 
 We can give warnings or errors for torn state if we recognize when values have been read. If we have a marking we can raise a warning or error if the property is reset. You can imagine a dictionary of property names for those that have been read, although the implementation is not determined.
 
-This would be a breaking change, because a user may be successful evaluating a project that has a torn state - even if it is fragile. As such we would provide a property that turns on the test for torn state, and it would be off by default. In the `Base` for .NET 10, we would enable the torn state test.
+This would be a breaking change, because a user may be successfully evaluating a project that has a torn state - even if it is fragile. As such we would provide a property that turns on the test for torn state, and it would be off by default. In the `Base` for .NET 10, we would enable the torn state test.
 
 #### User customization
 
 We have received several requests for customization for `Base` files. Our initial response is to clarify our intent in `Base` files and how they differ from `Import` files. `Import` files are a long-standing feature of MSBuild and allow project's to incorporate MSBuild elements from another file. This feature is widely used in large repos and we have no plans for any changes to it.
 
-`Base` files are intended as a mechanism to give user's more control of the changes Microsoft to rolls out.Fundamentally, any user entered properties will overwrite any Microsoft supplied properties - you're in control of your build. With this context, we think that `Import` is a better solution for customizing at a repo level and do not plan to support custom `Base` files at this time. We are interested in hearing about any compelling scenarios.
+`Base` files are intended as a mechanism to give users more control of the changes Microsoft rolls out. Fundamentally, any user entered properties will overwrite any Microsoft supplied properties - you're in control of your build. With this context, we think that `Import` is a better solution for customizing at a repo level and do not plan to support custom `Base` files at this time. We are interested in hearing about any compelling scenarios.
 
 `Import` and `Base` will work well together and the `Base` attribute can appear in any `Import` file.
+
+[ The open question on NuGet package props will determine whether those customizations are supported. ]
 
 #### Multiple `Base` files
 
@@ -269,7 +271,7 @@ From a user perspective, the `Type` attribute is a friendlier alternative to the
 
 It is an error for a `Type` attribute to appear anywhere but a project file `Project` element. For example, it cannot appear in `Directory.Build.props`, The reason for this restriction is that the logic run when the `Type` attribute appears determines the SDK (the tasks and targets) that are used. `Directory.Build.props` is located as part of an SDK task.
 
-There is a file delivered as part of the SDK that provides the `Type` information. The effect of this file will be the same as if it was a props file with an `SDK` attribute on the `Project` element and a series of properties. It is an error for a `Type` file to be missing the SDK, to contain any MSBuild element except `PropertyGroup`. Since we will create and deliver these files, we might not do the work to enforce this restriction. The purpose of this restriction is that SDKs already allow adding information to the build, and anything more complex is probably better done via an SDK.
+There is a file delivered as part of the SDK that provides the `Type` information. The effect of this file will be the same as if it was a `props` file with an `SDK` attribute on the `Project` element and a series of properties. It is an error for a `Type` file to be missing the SDK or to contain any MSBuild element except `PropertyGroup`. Since we will create and deliver these files, we might not do the work to enforce this restriction. The purpose of this restriction is that SDKs already allow adding information to the build, and anything more complex is probably better done via an SDK.
 
 ### Upgrade tooling
 
@@ -312,14 +314,14 @@ For example, if the 11.0.100 version of `Base` had two new enabled properties `U
 ```XML
 <Project Base="11.0.100" 
          Type="Console">
-    <PropertyGroup Label="These properties added on upgrade from 10.0.100 to 11.0.100"
+    <PropertyGroup Label="These properties added on upgrade from 10.0.100 to 11.0.100">
        <UseFeatureA>disable</UseFeatureA>
        <UseFeatureB>disable</UseFeatureB>
     </PropertyGroup>
 </Project> 
 ```
 
-This approach is simple for a project file. It might be extended to complex repos by placing the `PropertyGroup` containing the new properties at the start of whichever file (project file, `Directory.Build.props` or `Import` file) the `Base` attribute appeared in. However, the command would probably be run in the same directory as the file containing the `Base` attribute and specify the file if there were multiple props files.
+This approach is simple for a project file. It might be extended to complex repos by placing the `PropertyGroup` containing the new properties at the start of whichever file (project file, `Directory.Build.props` or `Import` file) the `Base` attribute appeared in. However, the command would probably be run in the same directory as the file containing the `Base` attribute and specify the file if there were multiple `props` files.
 
 #### Interactive upgrade
 
@@ -332,20 +334,44 @@ This approach is simple for a project file. It might be extended to complex repo
 ## Drawbacks
 [drawbacks]: #drawbacks
 
-This introduces a new concept to .NET users, and some additional complexity in the overall MSBuild evaluation. Users would see this in areas such as understanding binlogs. We think the trade off is worthwhile because users get small clean project files the ability to control new warnings/breaking changes independent of both SDK version and TargetFramework.
+This introduces a new concept to .NET users, and some additional complexity in the overall MSBuild evaluation. Users would see this in areas such as understanding binlogs. We think the trade off is worthwhile because users get small clean project files with the ability to control new warnings/breaking changes independent of both SDK version and `TargetFramework`.
 
 ## Alternatives
 [alternatives]: #alternatives
 
-We could continue to tie new features to TFM. THe drawback is that users generally upgrade their TFM to keep their projects in support. While this avoids breaking changes/warnings occurring on tooling upgrade, it may either delay adopting desirable new features, or result in breaking changes/warnings happening when the user is just trying to stay in support.
+We could continue to tie new features to TFM. The drawback is that users generally upgrade their TFM to keep their projects in support. While this avoids breaking changes/warnings occurring on tooling upgrade, it may either delay adopting desirable new features, or result in breaking changes/warnings happening when the user is just trying to stay in support.
 
 ## Open questions
 [open]: #open-questions
 
-### What capacity to pin and float should we offer for `Base` versions?
+### Questions on variations to the Base Id
+
+#### What capacity to pin and float should we offer for `Base` versions? 
+
+#### What should the default be if the user abbreviates, such as 10?
+
+#### Should the Id be in the form 10.0.1xx
+
+The Id proposed use the full SDK version (10.0.100) which might incorrectly indicate that it does not float across servicing releases.
+
+#### Should pinning and floating syntax match `global.json`?
 
 ### What about multi-targeting?
+
+This is important to Maui and folks that target down-level TFMs. 
+
+Also, if Base declares `TargetFramework`, how will that interact with `TargetFrameworks` if multi-targeted.
 
 ### Should we restrict `Type` to the project file?
 
 Stated differently, should we allow `Type` to be in  `Directory.Build.props`. Since `Type` determines the SDK and that contains the targets that run most build operations, this is tricky. Also, it may be best for users to see this in the project file for clarity.
+
+### Should props files in NuGet packages be able to specify `Base`?
+
+This could provide a Base not intended by the user. In what scenarios would this be problematic.
+
+### Should `.props` files contained in NuGet packages have precedence over `Base` values? 
+
+The argument for is that this is a convenient delivery mechanism for sharing customized props and targets.
+
+
