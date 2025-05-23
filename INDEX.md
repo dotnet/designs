@@ -87,6 +87,7 @@ Use update-index to regenerate it:
 | 2023 | [net8.0-browser TFM for applications running in the browser](accepted/2023/net8.0-browser-tfm.md) | [Javier Calvarro](https://github.com/javiercn) |
 | 2024 | [.NET Standard Targeting Recommendations](accepted/2024/net-standard-recommendation.md) | [Immo Landwerth](https://github.com/terrajobst), [Viktor Hofer](https://github.com/ViktorHofer) |
 | 2025 | [Provide SDK hint paths in global.json](accepted/2025/local-sdk-global-json.md) | [Jared Parsons](https://github.com/jaredpar) |
+| 2025 | [Direct tool execution](accepted/2025/direct-tool-execution.md) | [Marc Paine](https://github.com/marcpopMSFT) |
 
 ## Drafts
 
