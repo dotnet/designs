@@ -63,9 +63,7 @@ Recall that the tool manifest file has a section that looks like this:
 
 Currently, the only supported value for `Runner` is `dotnet`, which means that the `EntryPoint` is a DLL that can be launched with the `dotnet` executable.  When a global tool is installed, the .NET SDK will create a version of the .NET apphost (called a shim) in the global tools folder.  This shim has a filename matching the tool command name so that the tool can be launched from the path.  The shim also has the relative path to the tool entry point embedded in it so that it can launch the correct tool.  Tools can also include their own shims so that they can be properly signed.
 
-To support NativeAOT .NET apps (or non .NET apps), we should support an additional `executable` runner for executables that can be launched natively by the operating system.  On Unix-like operating systems, we can create a symlink in the global tools folder to the tool entry point executable.  On Windows, we may create a batch file that launches the entry point executable.  If this has drawbacks we might create a new type of shim/launcher.
-
-An alternative would be to copy the whole entry point executable to the global tools folder.  However, there might be other files in the same folder that the tool depends on, so we don't currently plan to do this.
+To support NativeAOT .NET apps (or non .NET apps), we should support an additional `executable` runner for executables that can be launched natively by the operating system.  On Unix-like operating systems, we can create a symlink in the global tools folder to the tool entry point executable.  On Windows, we will create a batch file that launches the entry point executable.  If this has drawbacks we might create a new type of shim/launcher.
 
 ## Tool manifest format version
 
@@ -88,4 +86,17 @@ The package name for the RID-specific packages will be `<ToolPackageName>.<Runti
 
 Note that NativeAOT is not generally supported for target platforms other than the current platform.  So creating a NativeAOT .NET Tool will involve building the RID-specific packages on separate machines and building a primary package that refers to them.
 
-Packing a project with `PackAsTool` set to true will pack the publish output.  However, for NativeAOT, the `_IsPublishing` property needs to be set to true.  This is normally set to true when invoking `dotnet publish`.  We may need to add an `_IsPacking` property that is set to true when running `dotnet pack`, and have logic in the SDK to set `_IsPublishing` to true if `PackAsTool` and `_IsPacking` are both set to true.
+Packing a project with `PackAsTool` set to true will pack the publish output.  However, for NativeAOT, the `_IsPublishing` property needs to be set to true.  This is normally set to true when invoking `dotnet publish`.  There is a similar `_IsPacking` property, so in the SDK targets we will set `_IsPublishing` to true if `_isPacking` and `PackAsTool` are set to true.  This means that `dotnet pack` will work correctly, however `dotnet build /t:Pack` will have similar problems that `dotnet build /t:Publish` currently has.
+
+## Generalized support for RID-specific dependencies
+
+A common piece of feedback has been that we should have a general way to express RID-specific dependencies that would also work for normal NuGet packages.  Some related issues:
+
+- https://github.com/NuGet/Home/issues/10571
+- https://github.com/NuGet/Home/issues/1660
+
+It would be good to support RID-specific NuGet package dependencies.  However, I don't believe we should try to have a unified mechanism that applies both to normal NuGet packages referenced via PackageReference as well as .NET Tool packages.
+
+Package dependencies can form an arbitrarily complex graph.  That graph is walked during NuGet restore, which needs to select a single version of each dependency in the case of "diamond dependencies."  Assets from all of the resolved packages are merged and typically included in the app that is being built.
+
+These behaviors don't apply to .NET Tools.  We don't want to support an arbitrary graph or resolve which version to use based on different dependencies.  We don't want to merge the assets of multiple packages-- we want to be able to resolve a single package and run the tool directly from that package (which is what we do for local tools and will do for one-shot tools).
