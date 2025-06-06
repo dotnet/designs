@@ -49,9 +49,12 @@ Note: The version option would work the same as other dotnet tool commands suppo
 ## Detailed Design
 
 - When invoked, `dotnet tool exec` will:
-  1. Check if the specified tool and version are present in the NuGet cache.
-  2. If not present, download and install the tool package to the cache.
-  3. Launch the tool with the provided arguments.
+  1. Check if the specified tool is already installed locally and run it as a local tool
+  2. Check if the specified tool and version are present in the NuGet cache.
+  3. If not present, ask the user for permission download and install the tool package to the NuGet cache.
+    3a. No permission is requested if the tool is already installed locally or in the NuGet cache
+    3b. A command line parameter can provide the user approval for automated execution (ie -y / --yes)
+  4. Launch the tool with the provided arguments.
 - The tool is not added to any manifest and is not available globally or locally after execution.
 - The command supports passing all arguments after `--` directly to the tool.
 - Tools executed via `dotnet tool exec` are always installed to the NuGet cache, leveraging existing NuGet cache policies and avoiding the need for a manifest. This simplifies the process and ensures ephemeral tool usage.
@@ -60,6 +63,7 @@ Note: The version option would work the same as other dotnet tool commands suppo
 
 - The tool is ephemeral and not discoverable via `dotnet tool list`.
 - Caching behavior follows standard NuGet cache policies.
+- There should be minimal impact to the state of the machine beyond the install to the NuGet cache.
 
 ### Calling by Command vs. Package
 
@@ -73,7 +77,7 @@ We could support a standard naming convention for the package like "dotnet-<comm
 
 This proposal introduces a new launcher script, `dnx`, which acts as a thin wrapper for `dotnet tool exec`. The script will be installed as `dnx.cmd` on Windows and as an executable `dnx` (no extension) on non-Windows platforms, and will reside alongside the `dotnet` host executable.
 
-When invoked, `dnx` will forward all arguments to `dotnet tool dnx` which will handle parsing the arguments and passing them through to `dotnet tool exec`, enabling a familiar and concise entry point for running .NET tools directly. The script will not contain any additional logic, ensuring consistency and simplifying maintenance across platforms.
+When invoked, the `dnx` script will forward all arguments to a .NET CLI command `dotnet dnx` which will initially just be an alias for `dotnet tool exec`, enabling a familiar and concise entry point for running .NET tools directly. The script will not contain any additional logic, ensuring consistency and simplifying maintenance across platforms.
 
 ## Motivation
 
@@ -88,8 +92,10 @@ This also helps with:
 ## Detailed Design
 
 - On Windows, `dnx.cmd` will be installed next to `dotnet.exe`.
+  - For administrative installations, the script will be delivered via a standalone, upgradeable MSI installer included in the .NET SDK bundle, similar to the approach used for the host. As a versionless file, the most recently executed installer (including repairs) will take precedence.
 - On non-Windows platforms, an executable file named `dnx` (no extension) will be installed next to the `dotnet` host and marked as executable.
-- The script will invoke `dotnet tool exec` with all arguments passed through unchanged.
+- The script will invoke `dotnet dnx` with all arguments passed through unchanged.
+  - This will allow us to make future changes to the logic within the SDK which is versioned rather than the script which is versionless and could end up easily being overwritten
 - No additional logic or parameter parsing is performed by the script.
 - All logic is handled in the .NET SDK CLI logic, not the shell script, to ensure maintainability and platform consistency.
 
