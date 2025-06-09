@@ -24,7 +24,7 @@ The `dotnet tool exec` command will support the following parameters:
 
 | Parameter                | Description                                                                                  |
 |--------------------------|----------------------------------------------------------------------------------------------|
-| `<package-id>`           | The NuGet package ID of the tool to execute.                                                 |
+| `<package-id>`           | The NuGet package ID of the tool to execute.  Supports <package-id>@<version> format to install a specific version without using the --version flag  |
 | `--version <version>`    | (Optional) The specific version of the tool to run. If not specified, the latest is used.    |
 | `--prerelease`           | (Optional) Allows installing and running prerelease versions.                                |
 | `--framework <tfm>`      | (Optional) Specifies the target framework to use for the tool.                               |
@@ -81,7 +81,7 @@ When invoked, the `dnx` script will forward all arguments to a .NET CLI command 
 
 ## Motivation
 
-The `dnx` command provides a short, memorable alias for running .NET tools, inspired by the historical DNX (DotNet Execution Environment) command. It simplifies tool invocation, especially in cross-platform scripts and documentation, and provides a consistent experience across operating systems.
+The `dnx` command provides a short, memorable alias for running .NET tools, inspired by the historical DNX (DotNet Execution Environment) command. It simplifies tool invocation, especially in cross-platform scripts and documentation, and provides a consistent experience across operating systems. This command took inspiration from the npx command hence picking a similar name to reduce friction for developers trying it out.
 
 This also helps with:
 
