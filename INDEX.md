@@ -88,6 +88,7 @@ Use update-index to regenerate it:
 | 2024 | [.NET Standard Targeting Recommendations](accepted/2024/net-standard-recommendation.md) | [Immo Landwerth](https://github.com/terrajobst), [Viktor Hofer](https://github.com/ViktorHofer) |
 | 2025 | [dotnet tool exec and dnx](accepted/2025/direct-tool-execution.md) | : [Marc Paine](https://github.com/marcpopMSFT) |
 | 2025 | [Provide SDK hint paths in global.json](accepted/2025/local-sdk-global-json.md) | [Jared Parsons](https://github.com/jaredpar) |
+| 2025 | [RID-Specific .NET Tool Packages](accepted/2025/rid-specific-tool-packages.md) | [Daniel Plaisted](https://github.com/dsplaisted) |
 
 ## Drafts
 
