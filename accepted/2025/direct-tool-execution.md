@@ -24,7 +24,7 @@ The `dotnet tool exec` command will support the following parameters:
 
 | Parameter                | Description                                                                                  |
 |--------------------------|----------------------------------------------------------------------------------------------|
-| `<package-id>`           | The NuGet package ID of the tool to execute.  Supports <package-id>@<version> format to install a specific version without using the --version flag  |
+| `<package-id>`           | The NuGet package ID of the tool to execute.  Supports `<package-id>@<version>` format to install a specific version without using the --version flag  |
 | `--version <version>`    | (Optional) The specific version of the tool to run. If not specified, the latest is used.    |
 | `--prerelease`           | (Optional) Allows installing and running prerelease versions.                                |
 | `--framework <tfm>`      | (Optional) Specifies the target framework to use for the tool.                               |
@@ -69,7 +69,7 @@ Note: The version option would work the same as other dotnet tool commands suppo
 
 There is the potential of supporting calling a tool by its command name rather than the package ID. This approach could improve usability, but it is potentially problematic because .NET tools do not have a standard naming convention for commands, and there are existing protections on nuget.org to guard against spelling errors and package squatting that apply only to package IDs. Further discussion and feedback are needed to determine the best approach for this scenario.
 
-We could support a standard naming convention for the package like "dotnet-<command>" as that's used in dotnet-ef and many other tools but that would open the question of what to do about existing tools.
+We could support a standard naming convention for the package like `dotnet-<command>` as that's used in dotnet-ef and many other tools but that would open the question of what to do about existing tools.
 
 ---
 
