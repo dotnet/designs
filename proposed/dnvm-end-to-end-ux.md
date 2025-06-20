@@ -1,80 +1,106 @@
 # DNVM / Dotnet Bootstrapper End-to-End
 
-`DNVM` was replaced by the `.NET CLI` as `dotnet` in `2017`.
-`DNVM` is a standalone project that is not officially supported, but internally used.
+The officially supported `DNVM` and `DNX` project was replaced by the `.NET CLI` as `dotnet` in `2017`.
+
+As of 2025, `DNVM` is an unofficial product, but internally developed and leveraged.
+
 We are proposing an official `DNVM` product (name subject to change).
 This is an offering similar to `nvm` or `rustup` but for `.NET`.
-There have already been many internal documents/discussions. This is a 'strawman proposal' for us to dig at further.
+There have already been many internal documents/discussions. This is a 'strawman proposal' for us to dig at further. For all mentions of the term `dnvm`, this is subject to change to an applicable product name.
 
-## Installation Experience
+## 🗃️ Installation Experience
 
-`dotnet install`
-`dotnet install <channel>`
+```
+dotnet install
+dotnet install <channel>
+```
 
-#### MVP:
-`dotnet install` -> installs latest STS SDK, or the 'latest' acceptable SDK based on `global.json`. The installation modifies the user-level `PATH`. (This is complicated and will get its own section.)
+### MVP:
+`dotnet install` → installs latest STS SDK, or the 'latest' acceptable SDK based on `global.json` if specified. The installation modifies the user-level `PATH`. (This is complicated and will get its own document.)
 * `global.json` lookup will follow the semantics of existing products.
-That is, to look at the `cwd`, and then look up until the `root` directory.
+  That is, to look at the `cwd`, and then look up until the `repo root` directory.
 
-`dotnet install 9.0` -> installs latest 9.0 SDK. Equivalent to `rollForward: latestFeature` in `global.json.`
+| Command | Description |
+|---------|-------------|
+| `dotnet install 9.0` | Installs latest 9.0 SDK. Equivalent to `rollForward: latestFeature` in `global.json` |
+| `dotnet install latest` | Installs latest STS SDK |
+| `dotnet install preview` | Installs latest preview SDK |
+| `dotnet install 9.0.102` | Installs fully specified version. Equivalent to `rollForward: disable` |
 
-`dotnet install latest` -> installs latest STS SDK.
-`dotnet install preview` -> installs latest preview SDK.
+### Installation Location:
 
-`dotnet install 9.0.102` -> installs fully specified version. Equivalent to `rollForward: disable`.
+**Priority order:**
+1. `-i --install-path` The custom directory specified by the user.
+2. `global.json path value`. The `global.json` contains a `paths` key with several paths to .NET SDKs. Utilize the first one available to install, but scan every directory to check if the install already exists.
+3. `Environment Variable`. `DOTNET_HOME/installs`. `DOTNET_HOME` is an `environment variable` which defaults to a user folder that is shared across repositories and is set when the program hits its 'first run.' If the environment variable is unspecified, the default of `DOTNET_HOME` is still utilized.
 
-##### Installation Location:
-
-Priority order:
-`-d --directory` The custom directory specified by the user.
-
-`global.json path value`. The `global.json` contains a `paths` key with several paths to .NET SDKs. Utilize the first one available to install, but scan every
-directory to check if the install already exists.
-
-`Environment Variable`. `DOTNET_HOME/installs`. `DOTNET_HOME` is an `environment variable` which defaults to a user folder that is shared across repositories and is set when the program hits its 'first run.' If the environment variable is unspecified, the default of `DOTNET_HOME` is still utilized.
-
-Defaults of `DOTNET_HOME`:
+#### Defaults of `DOTNET_HOME`:
 `Root Directory` + `Application Directory`
 
-`Root Directory` Specification:
+##### `Root Directory` Specification Version A (Simplified):
 
-`Windows`: `%DOTNET_CLI_HOME%` -> `%LOCALAPPDATA%` -> `%USERPROFILE%`
-`Mac`: `$DOTNET_CLI_HOME` -> `$HOME` -> `/Users/$USER` -> `/Users`
-`Linux`: `$DOTNET_CLI_HOME` (if specified) -> `$XDG_RUNTIME_DIR` (if specified) -> `$HOME` (if specified - akin to `~/` but not shell dependent) -> `/home/$USER` -> `/home`,
+| OS | Path Resolution Order |
+|----|----------------------|
+| **Windows** | `%LOCALAPPDATA%`
+| **Mac** | `$HOME`
+| **Linux** | `$HOME`
 
+##### `Application Directory`:
+| OS | Directory |
+|----|-----------|
+| **Windows** | `/dnvm` |
+| **Mac** | `/dnvm` |
+| **Linux** | `/dnvm` |
 
-`Application Directory`:
-`Windows`: `/dnvm`
-`Mac`: `/dnvm`
-`Linux`: `/.local/dnvm`
+##### :star: `Root Directory` Specification Version B (Nuanced):
 
-#### Additional Features
-`dotnet install 9` -> installs latest 9.X SDK.
-`dotnet install 9.0.1xx` -> installs latest 9.0.100 SDK. Equivalent to `rollForward: latestFeature` in `global.json`.
+| OS | Path Resolution Order |
+|----|----------------------|
+| **Windows** | `%DOTNET_CLI_HOME%` → `%LOCALAPPDATA%` → `%USERPROFILE%` |
+| **Mac** | `$DOTNET_CLI_HOME` → `$HOME` → `/Users/$USER` → `/Users` |
+| **Linux** | `$DOTNET_CLI_HOME` → `$XDG_RUNTIME_DIR` → `$HOME` → `/home/$USER` → `/home` |
 
+##### `Application Directory`:
+| OS | Directory |
+|----|-----------|
+| **Windows** | `/dnvm` |
+| **Mac** | `/Library/Application\ Support/dnvm/` |
+| **Linux** | `/.local/dnvm` |
 
-#### Nice to Have:
-`dotnet install lts` -> Installs latest LTS SDK. Updates are impacted as such.
-`dotnet install sts` -> Similar to the above but for STS.
+### Additional Features
+| Command | Description |
+|---------|-------------|
+| `dotnet install 9` | Installs latest 9.X SDK |
+| `dotnet install 9.0.1xx` | Installs latest 9.0.100 SDK. Equivalent to `rollForward: latestFeature` in `global.json` |
 
+### Nice to Have:
+| Command | Description |
+|---------|-------------|
+| `dotnet install lts` | Installs latest LTS SDK. Updates are impacted as such |
+| `dotnet install sts` | Similar to the above but for STS |
 
-#### Future Options
-`-f --force` Install even when the SDK already exists.
-`-d --directory` Install at the specified directory.
-`-v --verbose` Show logging messages in stdout.
-`-h --help` Show help.
-`-u --url` Use a custom `cdn` `releases.json` for locked down systems.
+### Future Options
+| Option | Description |
+|--------|-------------|
+| `-f --force` | Install even when the SDK already exists |
+| `-i --install-path` | Install at the specified directory |
+| `-v --verbose` | Show logging messages in stdout |
+| `-a --architecture` | Install for another architecture besides the detected system architecture |
+| `-h --help` | Show help |
+| `-u --url` | Use a custom `cdn` `releases.json` for locked down systems |
 
 `dotnet sdk install <channel>` - noun first equivalent.
 The SDK has recently prioritized `noun` first equivalent command options:
 `https://github.com/dotnet/sdk/issues/9650`
 
-Additional Possibilities:
-`dotnet runtime install <channel>`
-`dotnet runtime install --aspnet`
-`dotnet runtime install --windesktop`
+### Additional Possibilities:
+```
+dotnet runtime install <channel>
+dotnet runtime install --aspnet
+dotnet runtime install --windesktop
+```
 
-#### Implementation Detail
+### Implementation Detail
 
 For every install made through `dnvm`, the `global.json` `sdk`, `path`, `rollForward` value is recorded in a shared `dnvm-manifest.json` file, stored at the root of `DOTNET_HOME`.
 
@@ -82,12 +108,65 @@ The `timestamp` of the last modified date of `global.json` is also stored, as we
 
 The `dnvm-manifest.json` also stores each `install` along with the `path` and `dependents` of that install, as `global.json` files or as a `dnvm` dependent (fully specified static version).
 
-#### Install Terminology
+#### Example dnvm-manifest.json:
 
-`Channel` is an overloaded term and previous products have been blocked from using the term `channel.`
+```json
+{
+  "globalJsonReferences": [
+    {
+      "filePath": "C:\\projects\\myproject\\global.json",
+      "timestamp": "2025-04-15T14:30:22.1234567Z",
+      "sdk": {
+        "version": "9.0.100",
+        "rollForward": "latestFeature",
+        "allowPrerelease": false,
+        "paths": ["C:\\Program Files\\dotnet\\sdk"]
+      },
+    },
+  ],
+  "installations": [
+    {
+      "version": "9.0.100",
+      "mode": "sdk",
+      "architecture": "x64",
+      "path": "C:\\Users\\username\\dnvm\\installs\\9.0.100",
+      "channel": "unspecified",
+      "dependents": [
+        {
+          "type": "globalJson",
+          "path": "C:\\projects\\myproject\\global.json"
+        }
+      ]
+    },
+    {
+      "version": "9.0.200-preview.1",
+      "mode": "sdk",
+      "architecture": "x64"
+      "path": "C:\\Users\\username\\dnvm\\installs\\9.0.200-preview.1",
+      "channel": "preview",
+      "dependents": [
+        {
+          "type": "dnvm",
+          "path": "C:\\Users\\User\\AppData\\Local\\dnvm\\installs\\9.0.200-preview.1\\dotnet.exe"
+        }
+      ]
+    }
+  ]
+}
+```
+
+This manifest tracks:
+1. All referenced `global.json` files with their SDK requirements and timestamps
+2. All SDK installations with their paths and dependent references
+3. The source/channel of each installation
+4. Dependencies linking installations to `global.json` files or direct DNVM commands
+
+### Install Terminology
+
+`Channel` is an overloaded term and previous products have been blocked from using the term `channel`.
 
 Channel is already used by Visual Studio.
-It is also used by DNVM to describe an SDK as 'latest' or 'sts.'
+It is also used by the existing DNVM to describe an SDK as 'latest' or 'sts.'
 Utilizing the name `channel` will require approval and a lot of effort as several product naming teams are against this terminology.
 
 In the broadest interpretation, a `channel` may end up meaning several things:
@@ -99,13 +178,14 @@ Other names:
 - Release
 - Install
 
-#### Competitor Offerings
+### Competitor Offerings
 
 #### DNVM (https://github.com/dn-vm/dnvm/tree/main/src/dnvm)
 
 `dnvm install` Only supports a fully specified SDK version.
 `dnvm track <channel>` supports installing an SDK based on the channel.
-Channels:
+
+**Channels:**
 `lts`, `sts`, `preview`, `latest`.
 
 Installs created with a fully specified version are not update-able.
@@ -134,28 +214,32 @@ Installs are in `~/.cargo/bin`.
 
 More information on other internal docs.
 
-## Update Experience
+## ♻️ Update Experience
 
-## MVP
+### MVP
 `dotnet update` Updates all SDKS / Runtimes managed by `dnvm`. Uninstalls the older SDKs that are not installed as fully specified versions. Older SDKs are defined by ones that are no longer needed as specified by the summation of all known `global.json` files.
 
 For each possible update, `-y`, `-n` prompt is given.
 
 #### Options
-`-y --yes` auto accept.
-`-w --what-if` show what would be updated, basically like auto 'no'.
-`-h --help` Show help.
-`-u --url` Use a custom `cdn` `releases.json` for locked down systems.
+| Option | Description |
+|--------|-------------|
+| `-y --yes` | Auto accept |
+| `-w --what-if` | Show what would be updated, basically like auto 'no' |
+| `-h --help` | Show help |
+| `-u --url` | Use a custom `cdn` `releases.json` for locked down systems |
 
 #### Nice to Have
-`dotnet update version` only update the specified SDK managed by `dnvm`.
-`dotnet self update` - updates the `dnvm` product.
+| Command | Description |
+|---------|-------------|
+| `dotnet update version` | Only update the specified SDK managed by `dnvm` |
+| `dotnet self update` | Updates the `dnvm` product |
 
 #### Notes
 `dotnet track` is not provided.
 `dotnet untrack` is not provided.
 
-## Uninstall Experience
+## 🗑️ Uninstall Experience
 
 `dotnet uninstall <channel>` - Uninstalls the specified SDK. Uninstall is simply a file deletion. No updates to the `PATH` are made.
 
@@ -166,7 +250,3 @@ Example: `dotnet uninstall latest`.
 `dotnet uninstall 8.0` would uninstall all `8.0` SDKs that are not installed via a `fully specified` mechanism.
 
 `dotnet uninstall latest` will prompt with `-y` or `-n` if `global.json` dependencies are still on the machine for this SDK.
-
-## PATH
-
-## Installation Mechanism
