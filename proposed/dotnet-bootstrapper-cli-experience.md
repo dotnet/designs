@@ -20,7 +20,7 @@ dotnet install <channel>
 ```
 
 ### MVP:
-`dotnet install` → installs latest STS SDK, or the 'latest' acceptable SDK based on `global.json` if specified. The installation modifies the user-level `PATH`. (This is complicated and will get its own document.)
+`dotnet install` → installs latest STS/LTS SDK, or the 'latest' acceptable SDK based on `global.json` if specified. The installation modifies the user-level `PATH`. (This is complicated and will get its own document.)
 * `global.json` lookup will follow the semantics of existing products.
   That is, to look at the `cwd`, and then look up until the `repo root` directory.
 
