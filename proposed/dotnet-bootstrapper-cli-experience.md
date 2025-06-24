@@ -10,7 +10,7 @@ We are proposing an official `DNVM` product (name subject to change).
 This is an offering similar to `nvm` or `rustup` but for `.NET`.
 There have already been many internal documents/discussions. This is a 'strawman proposal' for us to dig at further. For all mentions of the term `dnvm`, this is subject to change to an applicable product name.
 
-The `dnvm` product will be AOT bundled alongside the apphost to enable shipment via an external standalone executable, that is also callable from within the .NET SDK. The implementation details of this will be settled and discussed within another document, but it's necessary to remark on this here to explain the usage of 'dotnet' as a root command.
+The `dnvm` product will be AOT bundled alongside the dotnet executable (application host) to enable shipment via an external standalone executable, that is also callable from within the .NET SDK. The implementation details and acquisition of this will be settled and discussed within another document, but it's necessary to remark on this here to explain the usage of 'dotnet' as a root command.
 
 ## 🗃️ Installation Experience
 
@@ -21,13 +21,18 @@ dotnet install <channel>
 
 ### MVP:
 `dotnet install` → installs latest STS SDK, or the 'latest' acceptable SDK based on `global.json` if specified. The installation modifies the user-level `PATH`. (This is complicated and will get its own document.)
+
+The SDK installed will be based on the zip installs provided in https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json.
+
+This tooling will not support admin installs. We should make an effort to reduce the security context/elevation privileges for this tool, such as by spawning it as a standard user process.
+
 * `global.json` lookup will follow the semantics of existing products.
   That is, to look at the `cwd`, and then look up until the `repo root` directory.
 
 | Command | Description |
 |---------|-------------|
 | `dotnet install 9.0` | Installs latest 9.0 SDK. Equivalent to `rollForward: latestFeature` in `global.json` |
-| `dotnet install latest` | Installs latest STS/LTS SDK |
+| `dotnet install latest` | Installs latest STS/LTS SDK that's not a preview SDK |
 | `dotnet install preview` | Installs latest preview SDK |
 | `dotnet install 9.0.102` | Installs fully specified version. Equivalent to `rollForward: disable` |
 
@@ -74,8 +79,10 @@ dotnet install <channel>
 ### Additional Features
 | Command | Description |
 |---------|-------------|
-| `dotnet install 9` | Installs latest 9.X SDK |
-| `dotnet install 9.0.1xx` | Installs latest 9.0.100 SDK. Equivalent to `rollForward: latestFeature` in `global.json` |
+| `dotnet install 9` | Installs latest 9.X SDK, `rollForward: latestMinor` |
+| `dotnet install 9.0.1xx` | Installs latest 9.0.100 SDK. Equivalent to `rollForward: latestPatch` in `global.json` |
+
+We should make an effort to align these with the GitHub actions/setup-dotnet conventions.
 
 ### Nice to Have:
 | Command | Description |
@@ -92,6 +99,8 @@ dotnet install <channel>
 | `-a --architecture` | Install for another architecture besides the detected system architecture |
 | `-h --help` | Show help |
 | `-u --url` | Use a custom `cdn` `releases.json` for locked down systems |
+
+For installations that do not match the system architecture, we can mimic the behavior of the global installers, which would be to create an 'x64' folder at the root of the install folder that contains the 'x64' binaries, if the machine is 'arm64'. The same would be true for 'x86' on 'x64.'
 
 `dotnet sdk install <channel>` - noun first equivalent.
 The SDK has recently prioritized `noun` first equivalent command options:
@@ -245,7 +254,7 @@ For each possible update, `-y`, `-n` prompt is given.
 
 ## 🗑️ Uninstall Experience
 
-`dotnet uninstall <channel>` - Uninstalls the specified SDK. Uninstall is simply a file deletion. No updates to the `PATH` are made.
+`dotnet uninstall <channel>` - Uninstalls the specified SDK. Uninstall is simply a file deletion. No updates to the `PATH` are made, except in the case that this is the final remaining installation, in which case `DOTNET_HOME` is removed from the `PATH` to ensure the machine state remains unchanged.
 
 `dotnet prune` - Prunes older SDKs, akin to `dnvm prune`.
 
