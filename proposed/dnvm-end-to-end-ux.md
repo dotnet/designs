@@ -250,3 +250,9 @@ Example: `dotnet uninstall latest`.
 `dotnet uninstall 8.0` would uninstall all `8.0` SDKs that are not installed via a `fully specified` mechanism.
 
 `dotnet uninstall latest` will prompt with `-y` or `-n` if `global.json` dependencies are still on the machine for this SDK.
+
+## Additional Thoughts
+
+`dotnet --info` should include DNVM's architecture and version.
+
+Self-updating: This will be discussed in another document. In this context, DNVM will become an AOT app or something runs along side the host.
