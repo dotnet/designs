@@ -1,4 +1,6 @@
-# DNVM / Dotnet Bootstrapper End-to-End
+# DNVM / Dotnet Bootstrapper End-to-End CLI Experience
+
+Initial Context:
 
 The officially supported `DNVM` and `DNX` project was replaced by the `.NET CLI` as `dotnet` in `2017`.
 
@@ -8,6 +10,8 @@ We are proposing an official `DNVM` product (name subject to change).
 This is an offering similar to `nvm` or `rustup` but for `.NET`.
 There have already been many internal documents/discussions. This is a 'strawman proposal' for us to dig at further. For all mentions of the term `dnvm`, this is subject to change to an applicable product name.
 
+The `dnvm` product will be AOT bundled alongside the apphost to enable shipment via an external standalone executable, that is also callable from within the .NET SDK. The implementation details of this will be settled and discussed within another document, but it's necessary to remark on this here to explain the usage of 'dotnet' as a root command.
+
 ## 🗃️ Installation Experience
 
 ```
@@ -16,14 +20,14 @@ dotnet install <channel>
 ```
 
 ### MVP:
-`dotnet install` → installs latest STS SDK, or the 'latest' acceptable SDK based on `global.json` if specified. The installation modifies the user-level `PATH`. (This is complicated and will get its own document.)
+`dotnet install` → installs latest STS/LTS SDK, or the 'latest' acceptable SDK based on `global.json` if specified. The installation modifies the user-level `PATH`. (This is complicated and will get its own document.)
 * `global.json` lookup will follow the semantics of existing products.
   That is, to look at the `cwd`, and then look up until the `repo root` directory.
 
 | Command | Description |
 |---------|-------------|
 | `dotnet install 9.0` | Installs latest 9.0 SDK. Equivalent to `rollForward: latestFeature` in `global.json` |
-| `dotnet install latest` | Installs latest STS SDK |
+| `dotnet install latest` | Installs latest STS/LTS SDK |
 | `dotnet install preview` | Installs latest preview SDK |
 | `dotnet install 9.0.102` | Installs fully specified version. Equivalent to `rollForward: disable` |
 
@@ -96,8 +100,8 @@ The SDK has recently prioritized `noun` first equivalent command options:
 ### Additional Possibilities:
 ```
 dotnet runtime install <channel>
-dotnet runtime install --aspnet
-dotnet runtime install --windesktop
+dotnet runtime install --aspnetcore
+dotnet runtime install --windowsdesktop
 ```
 
 ### Implementation Detail
@@ -141,7 +145,7 @@ The `dnvm-manifest.json` also stores each `install` along with the `path` and `d
     {
       "version": "9.0.200-preview.1",
       "mode": "sdk",
-      "architecture": "x64"
+      "architecture": "x64",
       "path": "C:\\Users\\username\\dnvm\\installs\\9.0.200-preview.1",
       "channel": "preview",
       "dependents": [
@@ -167,7 +171,7 @@ This manifest tracks:
 
 Channel is already used by Visual Studio.
 It is also used by the existing DNVM to describe an SDK as 'latest' or 'sts.'
-Utilizing the name `channel` will require approval and a lot of effort as several product naming teams are against this terminology.
+Utilizing the name `channel` may be tricky.
 
 In the broadest interpretation, a `channel` may end up meaning several things:
 - `Support Phase` and or `Release Type` (`lts` / `sts` / `preview`)
@@ -176,7 +180,7 @@ In the broadest interpretation, a `channel` may end up meaning several things:
 
 Other names:
 - Release
-- Install
+- Ring
 
 ### Competitor Offerings
 
