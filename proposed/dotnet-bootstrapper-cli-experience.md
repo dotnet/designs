@@ -182,7 +182,7 @@ Other names:
 - Release
 - Ring
 
-### Competitor Offerings
+### Related Offerings
 
 #### DNVM (https://github.com/dn-vm/dnvm/tree/main/src/dnvm)
 
