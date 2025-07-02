@@ -38,10 +38,23 @@ https://github.com/dn-vm/dnvm/issues/201
 The Windows API for setting the user path does a `COM` broadcast to every single open window on the OS and waits for a response. `chrome.exe`, for example, hangs for 1 minute when receiving this broadcast, which means setting the API for setting the system PATH can take a minute of dead-waiting.
 
 
-### Update the Installers / VS to Set the User PATH :star:
+### Update the Installers / Visual Studio :star:
 
-The second issue is that this is a large breaking change, many users rely on the system PATH to be set by the installers/VS at this time. Existing user tooling may break VS if we change this behavior. We can set an environment variable such as `DOTNET_USE_USER_PATH` if a bootstrapper is installed, to tell the MSI/VS/Source-Build installers to not set the system path to narrow this scope, but this still introduces complexities with VS and the tool, and could be another justification to not interface as `dotnet`.
+One option is to set the machine into a 'local' SDK mode that users could opt into. This 'mode' would tell the system-wide installers (both `pkg` and `msi`) not to system `PATH`. The advantage of this is that dotnet installations created by `b` would work even if Visual Studio updates. Another advantage of changing the behavior based on a user action is that this change would not break existing installations of VS or existing code/tooling scenarios without user interaction. The disadvantage is that Visual Studio / other tooling would no longer be able to find its SDKs once this mode was enabled.
 
+In this scenario:
+1. When the user interfaces with the tool `b`, to install an SDK, they are prompted about the change to `local` installs.
+2. On Windows, a registry key is set in `HKLM` (the registry hive for local user contexts). `b` must elevate to enable this registry edit when prompting the user.
+
+A registry key is preferred over an environment variable because it is an admin-protected context. We don't want user-local controllable behavior to influence/break the behavior of an administrative installer, as that is a security concern. A policy key may also be used, but a policy key is essentially equivalent to a registry key in this context.
+
+On OS X, we could set this via a protected sentinel file.
+
+3. The `PATH` is updated to a host that contains the local installs managed by `b`. Visual Studio and the other installers will no longer set the System `PATH` unless the registry key is changed, which the option to undo this would be available, perhaps via an `uninstall all` or `reset` CLI feature from `b`.
+
+4. The `global.json` `paths` feature would still enable other scenarios like for Visual Studio. Visual Studio is making efforts to migrate to remove the .NET SDK from its tooling. In this sense, it may be possible to enable both scenarios correctly when this happens.
+
+If we tried this approach as a prototype, and the experience was not pleasant, that may allow us to consider another option with better understanding, such as MLL.
 
 ### Multi-level-lookup
 
@@ -49,20 +62,28 @@ The second issue is that this is a large breaking change, many users rely on the
 
 This would enable the lookup to work without modification to the `PATH`. We could add back this feature to a limited extent. However, `DOTNET_MULTILEVEL_LOOKUP` was deprecated and the feature removed in .NET 7 due to the user confusion it caused when it would find global SDKs in a user local context, as well as for performance reasons. The `host` team expressed concern that this feature caused a lot of grief when it was available. In one way of looking at it, by having some installers set the system path, the installers are fighting one another, so this is an 'installer' problem.
 
-### Fail on Windows if System PATH set, if `paths` in `global.json` is not set
+### Require `paths` in `global.json`
 
 In this approach, we prioritize defined and replicable behavior over the easier UX behavior. System administrator installs are created in predictable locations, especially those from Visual Studio and/or package manager feeds.
 
-What we could do is look for those feeds per install operation and decline to do anything when a user tries to run `b install`. The error message would point the user towards leveraging the `sdk: paths []` option in their repository's `global.json` file, which would specify to the host or `dotnet.exe` where to look for the installs of the .NET SDK or .NET runtimes. The host is already aware of this as of .NET 10.
+What we could do is look for those installations per install operation and decline to do anything when a user tries to run `b`. The error message would point the user towards leveraging the `sdk: paths []` option in their project or repositories `global.json` file, which would specify to the host or `dotnet.exe` where to look for the installs of the .NET SDK or .NET runtimes. The host is already aware of this as of .NET 10.
 
-This is subject to backlash, especially as only 2 to 6% of users are on a `global.json` according to internal metrics.
+Only 2 to 6% of users are on a `global.json` according to internal metrics, so this gesture will create additional work when using `dotnet`.
 
-However, there is precedence in the sense that `nvm` is a Linux and macOS only tool, from an official standpoint. An alternative would be to make `dotnet install` only applicable to Linux and macOS. In this case, I would be more strongly opposed to using `dotnet` as the root command, and instead leaning towards making this an 'opinionated' installer that resolves the Linux and macOS scenario. This creates a split between OS support.
+### Fail on Windows
 
-### First-Run Experience
+`b` could simply not function on Windows due to concerns of breaking VS. The easiest way to do that is to not ship it on Windows, so users never experience a failure gesture. If `b` is included in the `SDK`, that is more difficult, and a failure message is likely necessary.
 
-The SDK, or another tool, could try to replicate the behavior of `DOTNET_MULTILEVEL_LOOKUP` when selected. This approach would require there to be an SDK that is sufficient for the use case according to the muxer, so I'm not sure about this one.
+There is precedence in the sense that the official `nvm` tool is Linux and macOS only. However, this creates a fractured experience using `dotnet` based upon the OS, which is something we have tried to move away from.
 
-### Require Elevation
+### Require `use` Command
+
+We could modify the host to accept a specific installation to use. This could be enabled via `b use 9.0.1xx`, which would create a folder containing the local install or use some other mechanism to specify to the host an exact install of the SDK to use in the context of the specified terminal. The `global.json` can already do this by pinning an SDK and setting the `paths` feature, so the value of this is murky.
+
+### Shadow `dotnet` Commands
+
+The tooling could be written such that it calls into the `dotnet.exe`, but specifies a `DOTNET_ROOT` that leverages the local installs. This would require `b` to use a different name than `dotnet`. This approach does not break any existing scenarios and is impervious to VS but it would require significant user and branding changes to adopt to this new pattern, which would also cannibalize the existing `dotnet` verbiage.
+
+### Set the System PATH
 
 We could detect if a global installation is present like in the `Fail` category, but instead of failing, require elevation to continue, and then set the system `PATH`. However, this would cause Visual Studio to fail, if those SDKs did not meet the requirements for its installation. In this case, it may be possible to 'move' or re-install those SDKs demanded by Visual Studio into the local directory. Whether VS could run under those local SDKs or not would require more investigation. Of course, the tool could also support administrator installation and uninstallation. But that is rapidly expanding the scope of the toolchain and not the original intention of the design.
