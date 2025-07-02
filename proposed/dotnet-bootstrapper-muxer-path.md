@@ -1,6 +1,6 @@
 # `dotnet install` interface as `DNVM` and `PATH` Management
 
-The idea of a .NET bootstrapper ala `nvm` is proposed with a designed CLI in [`dotnet-bootstrapper-cli-experience.md`](./dotnet-bootstrapper-cli-experience.md). This document expands upon how this application could be implemented.
+The idea of a .NET bootstrapper ala `nvm` is proposed with a designed CLI in [`dotnet-bootstrapper-cli-experience.md`](./dotnet-bootstrapper-cli-experience.md). This document expands upon how this application could be implemented and suggests several approaches to be discussed and evaluated. Proposals with a :star: are ones that I have selected but are not decided.
 
 ## Interfacing as `dotnet`
 
@@ -27,6 +27,10 @@ In theory, this is 'doable' for .NET 10 in terms of changing the muxer to know a
 The muxer would become a bootstrapper and the muxer itself. It would cease to become C++ and become ported C# code that is run as native AOT code. This is high-risk and also likely still lower performance than a C++ application.
 
 
+### Don't Interface as `dotnet` :star:
+
+To unblock this experience, we may select to interface as another application executable, say, `dotget`, with the future potential once this product stabilizes to follow the product of adding a binary that lives 'alongside' the muxer.
+
 ## PATH Issue
 
 Visual Studio and the MSI or 'global' .NET Installer set the System `PATH` on Windows and not the user level `PATH`. The system `PATH` always takes precedence over the user `PATH`. If `dnvm` sets the user path to enable a folder of local .NET SDKs to be discovered by the `dotnet.exe` application host at `DOTNET_ROOT`, via the `PATH`, those installs would become 'undetectable' to the runtime, debugger, etc when Visual Studio would update and modify the System `PATH`.
@@ -45,7 +49,7 @@ This is subject to backlash, especially as only 2 to 6% of users are on a `globa
 
 However, there is precedence in the sense that `nvm` is a Linux and macOS only tool, from an official standpoint. An alternative would be to make `dotnet install` only applicable to Linux and macOS. In this case, I would be more strongly opposed to using `dotnet` as the root command, and instead leaning towards making this an 'opinionated' installer that resolves the Linux and macOS scenario. This creates a split between OS support.
 
-### Update the Installers / VS to Set the User PATH
+### Update the Installers / VS to Set the User PATH :star:
 
 The Windows official guidance is to set the system level PATH, not to set the global `PATH`. However, there are some possible issues with setting the system `PATH`. For one, we believe that the Windows API for setting the user path does a `COM` broadcast to every single open window on the OS and waits for a response. `chrome.exe`, for example, hangs for 1 minute when receiving this broadcast, which means setting the API for setting the system PATH can take a minute, mostly dead waiting.
 
