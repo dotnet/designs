@@ -39,7 +39,7 @@ The Windows API for setting the user path does a `COM` broadcast to every single
 
 https://github.com/dotnet/runtime/blob/a87fd8bc2fe1bfa3a96d85b05d20a8341c1eb895/src/libraries/System.Private.CoreLib/src/System/Environment.Win32.cs#L58
 
-### Update the Installers / Visual Studio :star:
+### Update the Installers / Visual Studio
 
 One option is to set the machine into a 'local' SDK mode that users could opt into. This 'mode' would tell the system-wide installers (both `pkg` and `msi`) not to system `PATH`. The advantage of this is that dotnet installations created by `b` would work even if Visual Studio updates. Another advantage of changing the behavior based on a user action is that this change would not break existing installations of VS or existing code/tooling scenarios without user interaction. The disadvantage is that Visual Studio / other tooling would no longer be able to find its SDKs once this mode was enabled.
 
