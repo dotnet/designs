@@ -37,6 +37,7 @@ https://github.com/dn-vm/dnvm/issues/201
 
 The Windows API for setting the user path does a `COM` broadcast to every single open window on the OS and waits for a response. `chrome.exe`, for example, hangs for 1 minute when receiving this broadcast, which means setting the API for setting the system PATH can take a minute of dead-waiting.
 
+https://github.com/dotnet/runtime/blob/a87fd8bc2fe1bfa3a96d85b05d20a8341c1eb895/src/libraries/System.Private.CoreLib/src/System/Environment.Win32.cs#L58
 
 ### Update the Installers / Visual Studio :star:
 
@@ -56,25 +57,29 @@ On OS X, we could set this via a protected sentinel file.
 
 If we tried this approach as a prototype, and the experience was not pleasant, that may allow us to consider another option with better understanding, such as MLL.
 
+A disadvantage of this setup is that .NET Installers leveraged by VS that are older and do not respect the setting would still break `b`. This is difficult to resolve without utilizing the application host or `dotnet.exe`. The application host always runs on the latest version, which enables it to prevent older installers from breaking `b`.
+
 ### Multi-level-lookup
 
-`DOTNET_MULTILEVEL_LOOKUP` was designed to enable or disable the host/muxer/`dotnet.exe`'s ability to find SDKs or Runtimes in other locations. We could re-enable the muxer to look specifically at the directory of local installs that are placed by the bootstrapper or `b`, as proposed to be `DOTNET_HOME` in the other specification, [`dotnet-bootstrapper-cli-experience.md`](./dotnet-bootstrapper-cli-experience.md).
+`DOTNET_MULTILEVEL_LOOKUP` was designed to enable or disable the host/muxer/`dotnet.exe`'s ability to find SDKs or Runtimes in other locations. We could re-enable the muxer to look specifically at the directory of local installs that are placed by `b`, as proposed to be `DOTNET_HOME` in the other specification, [`dotnet-bootstrapper-cli-experience.md`](./dotnet-bootstrapper-cli-experience.md).
 
-This would enable the lookup to work without modification to the `PATH`. We could add back this feature to a limited extent. However, `DOTNET_MULTILEVEL_LOOKUP` was deprecated and the feature removed in .NET 7 due to the user confusion it caused when it would find global SDKs in a user local context, as well as for performance reasons. The `host` team expressed concern that this feature caused a lot of grief when it was available. In one way of looking at it, by having some installers set the system path, the installers are fighting one another, so this is an 'installer' problem.
+This would enable the lookup to work without modification to the `PATH`. We could add back this feature to a limited extent. However, `DOTNET_MULTILEVEL_LOOKUP` was deprecated and the feature removed in .NET 7 due to the user confusion it caused when it would find global SDKs in a user local context, as well as for performance reasons. The `host` team expressed concern that this feature caused a lot of grief when it was available. In one way of looking at it, by having some installers set the system path, the installers are fighting one another, so this is an 'installer' problem. However, it is not easy to provide a satisfying experience using both installation types (local and global) together without this modification.
 
 ### Require `paths` in `global.json`
 
-In this approach, we prioritize defined and replicable behavior over the easier UX behavior. System administrator installs are created in predictable locations, especially those from Visual Studio and/or package manager feeds.
+In this approach, we prioritize defined and replicable behavior. System administrator installs are created in predictable locations, especially those from Visual Studio and/or package manager feeds.
 
-What we could do is look for those installations per install operation and decline to do anything when a user tries to run `b`. The error message would point the user towards leveraging the `sdk: paths []` option in their project or repositories `global.json` file, which would specify to the host or `dotnet.exe` where to look for the installs of the .NET SDK. The host is already aware of this as of .NET 10.
+What we could do is look for those installations and decline to do anything when a user tries to run `b` if they are present on disk. The error message would point the user toward leveraging the `sdk: paths []` option in their project or repositories `global.json` file, which would specify to the host or `dotnet.exe` where to look for the installs of the .NET SDK. The host is already aware of this as of .NET 10.
 
-Only 2 to 6% of users are on a `global.json` according to internal metrics, so this gesture will create additional work when using `dotnet`.
+Only ~4% of users are on a `global.json` according to internal metrics, so this gesture will create additional work when using `dotnet` for a large number of customers.
 
 ### Fail on Windows
 
-`b` could simply not function on Windows due to concerns of breaking VS. The easiest way to do that is to not ship it on Windows, so users never experience a failure gesture. If `b` is included in the `SDK`, that is more difficult, and a failure message is likely necessary.
+`b` could simply not function on Windows due to concerns of breaking VS. The easiest way to do that is to not ship it on Windows, so users never experience a failure gesture. This does not solve the problem on OS X, but it is of lesser concern since VS is not in the picture. VS Code sets the System `PATH` as well on Mac, but it is easier to change it to not rely on this.
 
-There is precedence in the sense that the official `nvm` tool is Linux and macOS only. However, this creates a fractured experience using `dotnet` based upon the OS, which is something we have tried to move away from.
+If `b` is included in the `SDK`, that it will by default be part of the windows experience, thus a failure message is necessary.
+
+There is precedence in the sense that the official `nvm` tool is Linux and macOS only. However, this creates a fractured experience using `dotnet` based upon the OS.
 
 ### Require `use` Command
 
@@ -86,4 +91,6 @@ The tooling could be written such that it calls into the `dotnet.exe`, but speci
 
 ### Set the System PATH
 
-We could detect if a global installation is present like in the `Fail` category, but instead of failing, require elevation to continue, and then set the system `PATH`. However, this would cause Visual Studio to fail, if those SDKs did not meet the requirements for its installation. In this case, it may be possible to 'move' or re-install those SDKs demanded by Visual Studio into the local directory. Whether VS could run under those local SDKs or not would require more investigation. Of course, the tool could also support administrator installation and uninstallation. But that is rapidly expanding the scope of the toolchain and not the original intention of the design.
+We could detect if a global installation is present like in the `Fail` category, but instead of failing, require elevation to continue, and then set the system `PATH`. However, this would cause Visual Studio to fail, if those SDKs did not meet the requirements for its installation. In this case, it may be possible to 'move' or re-install those SDKs demanded by Visual Studio into the local directory, but that will not work without substantial change from VS, and it would still break existing VS instances.
+
+Of course, the tool could also support administrator installation and uninstallation. But that is rapidly expanding the scope of the toolchain and not the original intention of the design.
