@@ -14,13 +14,19 @@ There have been several methods suggested to handle this, which are listed below
 
 ## Existing Tooling Behavior
 
-The .NET Installers currently set the System Level `PATH` on Windows. These installers are also leveraged via VS, so their setup also sets the system level `PATH`.
+The .NET Installers currently set the System Level `PATH` on Windows if the installer matches the native architecture. These installers are also leveraged via VS, so their setup also sets the system level `PATH`.
+
+https://github.com/dotnet/runtime/blob/main/src/installer/pkg/sfx/installers/host.wxs
 
 The source-built SDKs installed via a package manager are installed to `/usr/lib/dotnet` or `/usr/lib64/dotnet` when using the built-in feeds. The `dotnet` exectuable is found because a `symlink` is added to represent `dotnet` in `/usr/bin/dotnet` which points to the `lib` folder. In this sense, the `PATH` does not need to be updated, and it does not get updated. (Previous behavior installed to `/usr/share/dotnet`.) There is no distinction between a system and user level `PATH`.
 
 When utilizing `snap`, they are installed as a `symlink` to `snap/bin/dotnet` to `/usr/bin/snap`. The `PATH` is not modified as `snap/bin` is included, and snap knows how to resolve the `dotnet` executable.
 
-On Mac, there is a 'system' `PATH` defined in `/etc/paths` and `etc/paths.d/`, which the `path_helper` utility reads. These environment variables apply across core system utilities and developer tooling. `zsh` uses `~./zshrc` as a bash_profile to load user level `PATH` settings and other contexts. It is generally considered bad practice to edit a user's `SHELL` profile without permission.
+On Mac, there is a 'system' `PATH` defined in `/etc/paths` and `etc/paths.d/`, which the `path_helper` utility reads. The `pkg` installer sets the System `PATH` if the installer matches the native architecture.
+
+https://github.com/dotnet/runtime/blob/b79c4fbf284a6b002f46b1fc95ee39e545687515/src/installer/pkg/sfx/installers/osx_scripts/host/postinstall#L25
+
+ These environment variables apply across core system utilities and developer tooling. `zsh` uses `~./zshrc` as a bash_profile to load user level `PATH` settings and other contexts. It is generally considered bad practice to edit a user's `SHELL` profile without permission.
 
 ## How to set the `PATH`:
 
