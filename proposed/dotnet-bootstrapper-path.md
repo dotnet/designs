@@ -66,7 +66,7 @@ This would enable the lookup to work without modification to the `PATH`. We coul
 
 In this approach, we prioritize defined and replicable behavior over the easier UX behavior. System administrator installs are created in predictable locations, especially those from Visual Studio and/or package manager feeds.
 
-What we could do is look for those installations per install operation and decline to do anything when a user tries to run `b`. The error message would point the user towards leveraging the `sdk: paths []` option in their project or repositories `global.json` file, which would specify to the host or `dotnet.exe` where to look for the installs of the .NET SDK or .NET runtimes. The host is already aware of this as of .NET 10.
+What we could do is look for those installations per install operation and decline to do anything when a user tries to run `b`. The error message would point the user towards leveraging the `sdk: paths []` option in their project or repositories `global.json` file, which would specify to the host or `dotnet.exe` where to look for the installs of the .NET SDK. The host is already aware of this as of .NET 10.
 
 Only 2 to 6% of users are on a `global.json` according to internal metrics, so this gesture will create additional work when using `dotnet`.
 
