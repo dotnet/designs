@@ -71,18 +71,15 @@ The root element of the tool manifest has a Version attribute.  Currently this i
 
 ## Production
 
-A tool project will be able to specify the runtime identifiers to create RID-specific packages for using the `ToolPackageRuntimeIdentifier` item.  For example:
+A tool project will be able to specify the runtime identifiers to create RID-specific packages for using the `RuntimeIdentifiers` property.  For example:
 
 ```xml
-<ItemGroup>
-	<ToolPackageRuntimeIdentifier Include="win-x64"/>
-	<ToolPackageRuntimeIdentifier Include="linux-x64"/>
-</ItemGroup>
+<PropertyGroup>
+	<RuntimeIdentifiers>linux-x64;linux-arm64;win-x64;win-arm64;osx-arm64</RuntimeIdentifiers>
+</PropertyGroup>
 ```
 
-If `ToolPackageRuntimeIdentifier` is non-empty, then packing the project without a RuntimeIdentifier will create the primary package, and packing the project with a RuntimeIdentifier will create the corresponding RID-specific package.  If feasible, we could do an automatic inner pack of the ToolPackageRuntimeIdentifiers before creating the primary tool package.
-
-The package name for the RID-specific packages will be `<ToolPackageName>.<RuntimeIdentifier>`.  If not specified, the version number of the RID-specific package will be the same as that of the primary package.  `Version` metadata on the `ToolPackageRuntimeIdentifier` item can be used to set the RID-specific package version.
+The package name for the RID-specific packages will be `<ToolPackageName>.<RuntimeIdentifier>`.
 
 Note that NativeAOT is not generally supported for target platforms other than the current platform.  So creating a NativeAOT .NET Tool will involve building the RID-specific packages on separate machines and building a primary package that refers to them.
 
