@@ -31,7 +31,7 @@ https://github.com/dotnet/runtime/blob/b79c4fbf284a6b002f46b1fc95ee39e545687515/
 ## How to set the `PATH`:
 
 There are some possible issues with setting the user `PATH`.
-The C# API for doing so is slow, which is documented in this issue:
+The .NET API for doing so is slow, which is documented in this issue:
 
 https://github.com/dn-vm/dnvm/issues/201
 
