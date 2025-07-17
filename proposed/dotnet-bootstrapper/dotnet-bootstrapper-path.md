@@ -8,7 +8,7 @@ One of the core differences in our ecosystem compared to other toolchains is the
 
 Please see the `Technical Details` section for more context.
 
-## Proposals
+## Proposal
 
 ### Update the Installers / Visual Studio
 
