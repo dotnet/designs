@@ -2,9 +2,9 @@
 
 ## Introduction
 
-How can we enable an `nvm` or `rustUp` like experience for `dotnet`? In this document, the command to do so will be aliased as `bootstrapper`, and we will only discuss PATH concerns. This may be `dotnet` going forward, or something else.
+How can we enable an `nvm` or `rustUp` like experience for `dotnet` that manages user directory installs of zip/tar SDKs? In this document, the interface to do so will be aliased as the `bootstrapper`, and we will exclusively address issues related to the PATH environment variable and how such a tool could work with VS.
 
-One of the core differences in our ecosystem compared to other toolchains is the inclusion of .NET in VS. Visual Studio and the MSI or 'global' .NET Installer set the System `PATH` on Windows and not the user level `PATH`. The system `PATH` always takes precedence over the user `PATH`, which is how other toolchains manage user local install folders. Below are proposals to remedy this situation.
+One of the core differences in our ecosystem compared to other toolchains is the inclusion of .NET in VS. The MSI 'admin' .NET Installers, which are included with Visual Studio, set the System `PATH` on Windows to the Program Files directory. The system `PATH` always takes precedence over the user `PATH`. Consequently, the existing behavior can block a user level `PATH`, and in this sense, a `PATH` that points to a user specific folder. Below are proposals to remedy this situation.
 
 Please see the `Technical Details` section for more context.
 
@@ -12,24 +12,22 @@ Please see the `Technical Details` section for more context.
 
 ### Update the Installers / Visual Studio
 
-:star: A framing document and prototype made by the .NET SDK team relies on and suggests this proposal. We believe this to be the best proposal.
-
-One option is to set the machine into a 'local' SDK mode that users could opt into when users engage with `bootstrapper` to do their first local install. This 'mode' would tell the system-wide installers (both `pkg` and `msi`) to not set the system `PATH`.
+Since user installs and admin installs don't work well together (only one can be the default), we would allow users to opt in to (or out of) a 'user' SDK mode, where the user install takes precedence over the 'admin' install. That could happen when they run the `bootstrapper` to do their first local install. This 'mode' would tell the system-wide installers (both `pkg` and `msi`) to not set the system `PATH`. Enabling the 'user' mode would require admin privelleges.
 
 In this scenario:
 
-1. When the user interfaces with the `bootstrapper`, to install an SDK, they are prompted about the change to `local` installs. They are also informed about the impact this has on VS and can pick an update cadence.
+1. When the user interfaces with the `bootstrapper`, to install an SDK, they are prompted about the change to `local` installs. They are also informed about the impact this has on VS. IT administrators can set a Policy Key to block this gesture.
 
 2. On Windows, if the user chooses to switch to user SDK mode, the installer will elevate, remove the admin dotnet path from the system PATH, and set a registry key which prevents further admin installs of dotnet from modifying the system path.
 
 > 📓 Technical Details:
 > A registry key is preferred over an environment variable because it is an admin-protected context. We don't want user-local controllable behavior to influence/break the behavior of an administrative installer, as that is a security concern. A policy key may also be used, but a policy key is essentially equivalent to a registry key in this context.
 >
-> On Unix, we could set this via a protected sentinel file.
+> On Mac (Linux does not have a machine wide PATH problem to the same extent, though we may need to ask to configure .rc shell files), we could set this via a protected sentinel file.
 
 3. Under step 2, the `PATH` is updated to a dotnet application host (dotnet.exe) that contains the local installs managed by `bootstrapper`. Visual Studio and the other installers will no longer set the System `PATH` until the registry key or sentinel change is reverted. The option to undo this would be available, by removing the key, perhaps via an `uninstall all` or `reset` CLI feature from `bootstrapper`. The exact semantics of such are not pertinent here.
 
-4. The existing `global.json` `paths` feature would still enable other scenarios like for Visual Studio to specify any SDK. In this sense, it is already possible to enable local .NET SDKs to work with VS.
+4. The existing `global.json` `paths` feature would still enable other scenarios like for Visual Studio to specify any other SDK, such as an admin location SDK. However, environment variables are not yet supported, so a hard-coded drive letter would be necessary. That is not ideal, and we would push for a change to environment variable support if technically secure.
 
 5. The user is prompted to see if they would like to install the local versions of the administrative installs currently managed by Visual Studio/MU/Package Manager, as well as the update channel they prefer for those installs (ala global.json `rollFoward` values, as described in the cli-experience document.)
 
@@ -37,15 +35,15 @@ In this scenario:
 > We can check the registry key hive as Visual Studio includes a reference count of which SDKs it manages and the file system admin locations in other scenarios. This prevents disrupting Visual Studio functionality as the local installs would match all of the SDKs that it had previously depended upon. This does consume extra disk space. If the user installs a newer SDK, Visual Studio would use that SDK, which is consistent with current behavior.
 
 > 📓 Technical Details: Update
-> Upon the action of step 5, we would need to take on the responsibility of updating these SDKs. Managing a daemon is resource-intensive, so it may not be optimal. SDL requirements specify a required update policy; we cannot hook into MU and IT administrators rely on administrative install behaviors. One approach is to mimic the update behavior of Visual Studio upon every interaction with `bootstrapper` by suggesting updates and asking the user to specify an update cadence when the new local mode is applied. IT administrators should be able to enforce a policy that requires a specific update cadence, and the provided update cadence should be compliant with SDL requirements, such as checking for updates on a daily cadence when the tool is used. Visual Studio would need to trigger this check as well to maintain compliance.
+> Upon the action of step 5, we would need to take on the responsibility of updating these SDKs. Managing a daemon is resource-intensive, so we decided against this. SDL requirements specify a required update policy; we cannot hook into MU and IT administrators rely on administrative install behaviors. One approach is to mimic the update behavior of Visual Studio upon every interaction with `bootstrapper` by suggesting updates and asking the user to specify an update cadence when the new local mode is applied, whenever the user runs `dotnet`. The update logic can be a hook added to commands such as `build` asynchronously, and should be toggle-able via an admin setting (registry key). Visual Studio would need to trigger this check as well to maintain compliance, since it can be launched before our tooling would get to take any update action.
 
 #### Advantages and Disadvantages
 
-The advantage of this is that dotnet installations created by `bootstrapper` would work even if Visual Studio updates. Another advantage of changing the behavior based on a user action is that this change would not break existing installations of VS or existing code/tooling scenarios without user interaction. It's then possible to educate the user about their decision to change the PATH behavior.
+The advantage of this is that dotnet installations created by `bootstrapper` would work even if Visual Studio updates. Another advantage of changing the behavior based on a user action is that this change would not break existing installations of VS or existing code/tooling scenarios without user interaction. It's then possible to educate the user about their decision to change the PATH behavior and install what is necessary to not disrupt VS.
 
-The disadvantage is that Visual Studio / other tooling would no longer be able to find its SDKs once this mode was enabled, so the SDK update that is included with VS would not take effect without additional action. The SDK included with VS is an administrative install, which is managed by MU. This means MU would also lose authority to update VS's SDKs; MU (Microsoft Update) and other related IT update mechanisms are tied to MSI or administrative installs, so there is no easy way to hook a local installation mechanism into that toolchain. This is addressed shortly.
+The disadvantage is that Visual Studio / other tooling would no longer be able to find their own SDKs once this mode was enabled, so the SDK update that is included with VS would not take effect without additional action. The SDK included with VS is an administrative install, which is managed by MU. This means MU would also lose authority to update VS's SDKs; MU (Microsoft Update) and other related IT update mechanisms are tied to MSI or administrative installs, so there is no easy way to hook a local installation mechanism into that toolchain. Our suggestion there would be for IT Admins to block the local mode.
 
-A disadvantage of this setup is that older .NET Installers that do not respect the setting would still interfere with `bootstrapper` by modifying the system `PATH`. (For example, the `pkg` installer uses `tee` which overwrites the `PATH` file rather than just appending to it.) While we can potentially service these installers, older versions would still cause this issue. Addressing this comprehensively would require modifying the application host or `dotnet.exe`, which is not achievable within the .NET 10 timeframe and would need to be targeted for .NET 11. The advantage is that the application host always runs on the latest version, which would enable it to handle older installers appropriately.
+A disadvantage of this setup is that older .NET Installers that do not respect the setting may still interfere with `bootstrapper` by modifying the system `PATH`. (For example, the `pkg` installer uses `tee` which overwrites the `PATH` file rather than just appending to it.) While we can potentially service these installers, older versions would still could this issue if they don't use the updated component. Addressing this comprehensively would require modifying the application host or `dotnet.exe`, which is not achievable within the .NET 10 timeframe and would need to be targeted for .NET 11. The advantage is that the application host always runs on the latest version, which would enable it to handle older installers appropriately.
 
 > 📓 Technical Detail: VS Behavior with Local Installs:
 >
@@ -53,11 +51,13 @@ A disadvantage of this setup is that older .NET Installers that do not respect t
 
 ## Other options considered
 
-### Multi-level-lookup
+### Allow user and admin installs to work together
 
-`DOTNET_MULTILEVEL_LOOKUP` was designed to enable or disable the host/muxer/`dotnet.exe`'s ability to find SDKs or Runtimes in other locations. We could re-enable the muxer to look specifically at the directory of local installs that are placed by `bootstrapper`, as proposed to be `DOTNET_HOME` in the other specification, [`dotnet-bootstrapper-cli-experience.md`](./dotnet-bootstrapper-cli-experience.md).
+Instead of switching to a mode where only user installs are available, we could have a way that both user installs and admin installs would be accessible.  This would reduce the impact to Visual Studio, essentially installing a user install of .NET would be no different than installing the same version as an admin install.  In either case, installing a new version would simply make an additional SDK version available, without removing access to any versions already installed.
 
-This would enable the lookup to work without modification to the `PATH`. We could add back this feature in a limited capacity and only with explicit user consent. However, `DOTNET_MULTILEVEL_LOOKUP` was deprecated and removed in .NET 7 due to user confusion (when it would find global SDKs in a user local context) and for performance reasons. The `host` team and others indicated that this feature presented significant challenges when it was available. When installers set conflicting paths, it creates coordination issues between different installation mechanisms, so it may be better to view this as an installer problem like above.
+A feature called `DOTNET_MULTILEVEL_LOOKUP` was deprecated and removed in .NET 7 due to user confusion (when it would find global SDKs in a user local context) and for performance reasons. The `host` team and others indicated that this feature presented significant challenges when it was available. When installers set conflicting paths, it creates coordination issues between different installation mechanisms, so it may be better to view this as an installer problem like above.
+
+We believe we could add a new feature that would allow local and admin installs to be used together, but that would avoid some of the issues that multi-level lookup had, since we have control over an interactive experience to inform the user about the behavior. However, it would still add complexity and given the negative experience around multi-level lookup, it might not completely mitigate all the issues. So, we propose to go with the simpler option of allowing the user to switch to a mode where user installs are used instead of admin installs.  If we get significant feedback that users would like to have both types available together, we can consider adding support for that.
 
 ### Require `paths` in `global.json`
 
@@ -68,7 +68,7 @@ What we could do is look for those installations and decline to do anything when
 > 📓 Usage Statistic:
 > Only ~4% of users are on a `global.json` according to internal metrics, so this gesture will create additional work when using `dotnet` for a large number of customers.
 
-The downside of this approach is that it creates an additional step for a significant number of .NET users. Requiring extra configuration files to function properly presents a usability challenge and increases the barrier to entry for new users. However, the `paths` feature itself provides considerable value for repository-specific SDK management, which is why it has already been implemented and made available.
+The downside of this approach is that it creates an additional step for a significant number of .NET users. Requiring extra configuration files to function properly presents a usability challenge and increases the barrier to entry for new users. However, the `paths` feature itself provides considerable value for repository-specific SDK management, which is why it has already been implemented and made available. Another downside, however, is the lack of environment variable support. This means we cant use something like `LOCALAPPDATA` or `ProgramFiles`.
 
 ### Fail on Windows
 
@@ -102,8 +102,6 @@ On the other hand, if `bootstrapper` set the system `PATH`, it would modify the 
 
 An additional concern would be the `source-built` SDKs and the `pkg` installer.
 
-There have been several methods suggested to handle this, which are listed below.
-
 ### Existing Tooling Behavior
 
 The .NET Installers currently set the System Level `PATH` on Windows if the installer matches the native architecture. These installers are also leveraged via VS, so their setup also sets the system level `PATH`.
@@ -114,7 +112,7 @@ The source-built SDKs installed via a package manager are installed to `/usr/lib
 
 When utilizing `snap`, they are installed as a `symlink` to `snap/bin/dotnet` to `/usr/bin/snap`. The `PATH` is not modified as `snap/bin` is included, and snap knows how to resolve the `dotnet` executable.
 
-On Mac, there is a 'system' `PATH` defined in `/etc/paths` and `etc/paths.d/`, which the `path_helper` utility reads. The `pkg` installer sets the System `PATH` if the installer matches the native architecture.
+On Mac, there is a 'system' `PATH` defined in `/etc/paths` and `etc/paths.d/`, which the `path_helper` utility reads. The `pkg` installer sets the System `PATH` if the installer matches the native architecture. This file should be owned by `root`.
 
 https://github.com/dotnet/runtime/blob/b79c4fbf284a6b002f46b1fc95ee39e545687515/src/installer/pkg/sfx/installers/osx_scripts/host/postinstall#L25
 
