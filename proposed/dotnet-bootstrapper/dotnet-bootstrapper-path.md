@@ -31,7 +31,7 @@ In this scenario:
 
 4. The existing `global.json` `paths` feature would still enable other scenarios like for Visual Studio to specify any SDK. In this sense, it is already possible to enable local .NET SDKs to work with VS.
 
-5. The user is prompted to see if they would like to install the local versions of the administrative installs currently managed by Visual Studio/MU/Package Manager, as well as the update option they prefer for those installs (ala global.json `rollFoward` values, as described in the cli-experience document.)
+5. The user is prompted to see if they would like to install the local versions of the administrative installs currently managed by Visual Studio/MU/Package Manager, as well as the update channel they prefer for those installs (ala global.json `rollFoward` values, as described in the cli-experience document.)
 
 > 📓 Technical Details: Admin Install Detection
 > We can check the registry key hive as Visual Studio includes a reference count of which SDKs it manages and the file system admin locations in other scenarios. This prevents disrupting Visual Studio functionality as the local installs would match all of the SDKs that it had previously depended upon. This does consume extra disk space. If the user installs a newer SDK, Visual Studio would use that SDK, which is consistent with current behavior.
