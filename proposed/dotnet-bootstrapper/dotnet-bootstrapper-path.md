@@ -20,7 +20,7 @@ In this scenario:
 
 1. When the user interfaces with the `bootstrapper`, to install an SDK, they are prompted about the change to `local` installs. They are also informed about the impact this has on VS and can pick an update cadence.
 
-2. On Windows, a registry key is set in `HKLM` (the registry hive for local user contexts). `bootstrapper` must elevate to enable this registry edit when prompting the user.
+2. On Windows, if the user chooses to switch to user SDK mode, the installer will elevate, remove the admin dotnet path from the system PATH, and set a registry key which prevents further admin installs of dotnet from modifying the system path.
 
 > 📓 Technical Details:
 > A registry key is preferred over an environment variable because it is an admin-protected context. We don't want user-local controllable behavior to influence/break the behavior of an administrative installer, as that is a security concern. A policy key may also be used, but a policy key is essentially equivalent to a registry key in this context.
