@@ -51,6 +51,8 @@ A disadvantage of this setup is that older .NET Installers that do not respect t
 >
 > Finally, we should consider where else VS may be impacted. Some code within Visual Studio is hard-coded to use the administrative installs, such as the template engine. The template engine is a standalone component, and it is ok for this tool to run with the admin logic.
 
+## Other options considered
+
 ### Multi-level-lookup
 
 `DOTNET_MULTILEVEL_LOOKUP` was designed to enable or disable the host/muxer/`dotnet.exe`'s ability to find SDKs or Runtimes in other locations. We could re-enable the muxer to look specifically at the directory of local installs that are placed by `bootstrapper`, as proposed to be `DOTNET_HOME` in the other specification, [`dotnet-bootstrapper-cli-experience.md`](./dotnet-bootstrapper-cli-experience.md).
