@@ -147,11 +147,11 @@ To make this work, changes will be needed on both the consumption and packaging 
 
 ### Consumption changes for tools
 
-* No changes required - as long as a package has the DotNetTool package type, `dnx` and all other tool-interaction commands will use the package as a tool.
+* No changes required - as long as a package has the DotnetTool package type, `dnx` and all other tool-interaction commands will use the package as a tool.
 
 ### Consumption changes for libraries
 
-The primary change that will be required is to loosen the checks made by the [CompatibilityChecker](https://github.com/NuGet/NuGet.Client/blob/4ce65d4a1c482eda1c8656fc032d1f5cf247763a/src/NuGet.Core/NuGet.Commands/RestoreCommand/CompatibilityChecker.cs) to allow using packages with the explicit PackageType of `Dependency` as a library - regardless of their other attributes. Today, this checking takes many characteristics of the package into account, but it has a [hard deny](https://github.com/NuGet/NuGet.Client/blob/4ce65d4a1c482eda1c8656fc032d1f5cf247763a/src/NuGet.Core/NuGet.Commands/RestoreCommand/CompatibilityChecker.cs#L339-L347) for `DotNetTool` packages. If this restriction is removed, the package can be used as a library without any other changes.
+The primary change that will be required is to loosen the checks made by the [CompatibilityChecker](https://github.com/NuGet/NuGet.Client/blob/4ce65d4a1c482eda1c8656fc032d1f5cf247763a/src/NuGet.Core/NuGet.Commands/RestoreCommand/CompatibilityChecker.cs) to allow using packages with the explicit PackageType of `Dependency` as a library - regardless of their other attributes. Today, this checking takes many characteristics of the package into account, but it has a [hard deny](https://github.com/NuGet/NuGet.Client/blob/4ce65d4a1c482eda1c8656fc032d1f5cf247763a/src/NuGet.Core/NuGet.Commands/RestoreCommand/CompatibilityChecker.cs#L339-L347) for `DotnetTool` packages. If this restriction is removed, the package can be used as a library without any other changes. Packages with no package type will continue to be treated as Dependency packages.
 
 ### Packaging changes
 
