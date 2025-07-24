@@ -10,7 +10,7 @@ This proposal introduces a new packaging model for .NET that allows developers t
 
 ## Motivation
 
-.NET tools provide a convenient way to distribute and consume command-line utilities, but they exist in isolation from the libraries they might be built upon. This proposal introduces "combined packages" that contain both executable tool functionality and traditional library assets (lib/, ref/, analyzer/, build/ items), enabling developers to both invoke functionality directly via `dnx` and reference the same package as a dependency in their projects. This mirrors patterns common in Node.js (`npm run <command>` / `npm bin <command>`) and Go (`go install` for CLI, regular import for library usage), bringing similar convenience to the .NET ecosystem.
+.NET tools provide a convenient way to distribute and consume command-line utilities, but they exist in isolation from the libraries they might be built upon. This means that a developer must create multiple packages, push multiple package ids to feeds, consumers must search for and use seemingly-random package names, etc. Our current model forces a package author to choose which _modality_ of package consumption (tool or reference) gets the 'nice' package name, while the other unused modality gets whatever is left. Allowing for the nice/concise/expected package name to fill both needs helps with name recognition and makes a tool/library appear more cohesive. This mirrors patterns common in Node.js (`npm run <command>` / `npm bin <command>`) and Go (`go install` for CLI, regular import for library usage), bringing similar convenience to the .NET ecosystem.
 
 ## Scenarios and User Experience
 
@@ -155,7 +155,8 @@ The primary change that will be required is to loosen the checks made by the [Co
 
 ### Packaging changes
 
-In order to create a combined package, we effectively need to call the standard library packing process _and_ the tool-specific packing process. This is easy enough - the tool packing process itself hooks into existing Packaging extensibility points - the nitpicky points are in how the users projects need to be laid out to efficiently create the combined package.
+In order to create a combined package, we effectively need to call the standard library packing process _and_ the tool-specific packing process. This is easy enough - the tool packing process itself hooks into existing Packaging extensibility points - the nitpicky points are in how the users projects need to be laid out to efficiently create the combined package. A worked example of
+what this might look like in practice can be found at [baronfel/multi-rid-tool#1](https://github.com/baronfel/multi-rid-tool/pull/1).
 
 #### Managing the project type
 
