@@ -101,6 +101,7 @@ Use update-index to regenerate it:
 
 |Year|Title|Owners|
 |----|-----|------|
+|  | [.NET SDK Acquisition and Management Tool](proposed/cli-acquisition-tool.md) | [Chet Husk](https://github.com/baronfel), [Daniel Plaisted](https://github.com/dsplaisted) |
 |  | [Add ability to embed install location options in apphost](proposed/apphost-embed-install-location.md) |  |
 |  | [Rate limits](proposed/rate-limit.md) | [John Luo](https://github.com/juntaoluo), [Sourabh Shirhatti](https://github.com/shirhatti) |
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
