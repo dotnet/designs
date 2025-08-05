@@ -4,6 +4,8 @@
 
 Users of the .NET SDK today face a wide array of choices when getting our tooling, with multiple distribution channels that release at different cadences.
 While these options serve specific needs, several important user cohorts are not well served and have asked for a more unified approach to getting started with our tooling.
+
+
 This proposal introduces a standalone install and SDK management tool (tentatively named `dnup`) that provides a unified interface for acquiring and managing .NET tooling across all supported platforms, focusing on user-local installations that can be managed (largely) without elevation.
 
 This tool is especially critical for users that are
