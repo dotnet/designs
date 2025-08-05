@@ -144,7 +144,7 @@ This shell-specific configuration will need to be independently run via a comman
 
 These installs will be located at a default _user-local hive_ instead of a globally-reachable system hive.
 This will allow users to manage new tooling versions without needing to elevate.
-he tool will support being configured to install to other locations via configuration file, so that simple use of the tool remains consistent.
+The tool will support being configured to install to other locations via configuration file, so that simple use of the tool remains consistent.
 
 ### Install provenance
 
