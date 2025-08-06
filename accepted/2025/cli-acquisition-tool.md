@@ -92,6 +92,7 @@ Since 8.0.404 is pinned by a specific repo, that version is not updated/removed,
 - **New User Onboarding**: Streamline the getting-started experience, especially for users coming from Node.js or Rust ecosystems
 - **Version Management**: Support multiple concurrent SDK versions with ability to pin specific versions for projects
 - **Ease of updates**: Notify users when updates are available, and make it easy to get those updates
+- **Awareness of vulnerabilities**: Surface information on support status, vulnerabilities/CVEs, and other data to help users make an update decision
 - **IDE Integration**: Enable seamless integration with VS Code, Visual Studio, and other development environments
 - **Cross-platform Consistency**: Provide consistent experience across Windows, macOS, and Linux
 - **global.json Support**: Detect and respect project-specific SDK version requirements
