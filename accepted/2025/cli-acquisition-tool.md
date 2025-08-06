@@ -25,13 +25,13 @@ She navigates to `get.dot.net` and clicks the prominent link for `dnup-init`.
 She then clicks the downloaded executable, which runs the bootstrap process where she is prompted through an interactive setup:
 
 ```bash
-Where should we install .NET to? *(~/Library/Application Support/dnup)*
+Where should we install .NET to? *(~/Library/Application Support/dotnet)*
 > <enter>
 What version should we install? *(latest)*
 > <enter>
 Should we set up your environment/PATH automatically? *(Y/n)*
 > <enter>
-Installing .NET SDK 10.0.100 to ~/Library/Application Support/dnup
+Installing .NET SDK 10.0.100 to ~/Library/Application Support/dotnet
 ...............complete
 Configuring environment to use dnup
 ...
@@ -215,3 +215,9 @@ _Where_ the SDK is resolved from is largely orthogonal to _how compatible_ that 
 Users with existing package manager installations will continue to use those tools.
 `dnup` will provide guidance when detecting unsupported installation types, and may offer to seed the user-local hive with the same versions so that there are no functionality gaps when starting with `dnup`.
 It _will not_ be able to manage global installations in the initial scope. This includes uninstallation of global installs, which will be left to the user to perform.
+
+### When can I use this?
+
+The SDK team plans to release an initial version of `dnup` covering environment setup and basic install functionality as soon as possible. We then want to gather feedback from users and iterate on the feature set until the tool is a consistent, one-stop-shop for acquiring and managing .NET tooling of all kinds.
+
+The end goal is to stabilize the core workflows and experiences enough to justify the tool being as assumed part of the `dotnet` CLI's tooling capabilities - we want the SDK to be able to rely on `dnup` and use it to orchestrate more complex workspace-wide gestures like a toolset-level `dotnet restore` kind of operation that gets all of the SDKs and Runtimes needed for a workspace.
