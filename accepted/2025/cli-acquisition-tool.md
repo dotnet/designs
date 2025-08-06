@@ -101,7 +101,7 @@ Since 8.0.404 is pinned by a specific repo, that version is not updated/removed,
 
 - **Package Manager Integration/Global Installations**: Will not support installers beyond .zip/.tar installs initially
 - **Replace dotnet.exe**: The bootstrapper will not be dotnet.exe itself
-- **NuGet/Tools Support**: This is likely in scope of a standalone `dnx` or AOT'd `dotnet` CLI, and isn't the role of a bootstrapper
+- **NuGet/Tools Support**: Tools are not in scope for `dnup` - instead they would belong to a NAOT `dnx` or NAOT'd `dotnet` CLI
 - **SDK Size Reduction**: Size reduction will be tackled separately, focused on deduplication and factoring out slices of functionality
 
 ## Stakeholders and Reviewers
