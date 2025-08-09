@@ -204,7 +204,7 @@ _Where_ the SDK is resolved from is largely orthogonal to _how compatible_ that 
   - The dotnet-core-uninstall tool, which is currently a separate tool that is not well integrated with the rest of the .NET ecosystem
   - The VS Code SDK Install extension, which does a lot of this same logic but is tied to VS Code only
 - Enabling higher-level `dotnet`-CLI-driven workflows
-    - auto-acquire missing Runtimes for a worksapce
+    - auto-acquire missing Runtimes for a workspace
     - add new Runtime to a project and ensure it's available locally
 - Auto-acquire .NET Runtimes for framework-dependent .NET Tools
 - Breaking out the .NET SDK into smaller components to enable pay-as-you-go behaviors
