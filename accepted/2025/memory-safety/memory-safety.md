@@ -19,6 +19,7 @@ We expect that code safety requirements will become more strict over time and th
 
 Minimum requirements:
 
+- Document [Unsafe code best practices](https://learn.microsoft.com/dotnet/standard/unsafe-code/best-practices)
 - Introduce new [C# unsafe annotation and compiler feedback](https://github.com/dotnet/designs/pull/330).
 - Annotate unsafe public APIs in dotnet/runtime libraries so that the compiler can provide feedback about their use.
 
