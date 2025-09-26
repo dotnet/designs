@@ -11,7 +11,7 @@ This proposal introduces a standalone install and SDK management tool (tentative
 This tool is especially critical for users that are
 
 * new users, especially those from the Node or Rust ecosystems
-* Linux users who typically use packages from their distro, as not all distro maintainers support feature bands beyond 1xx
+* Linux users who typically use packages from their distro, as not all distro maintainers support feature bands beyond 1xx (though this _may_ change with the advent of the VMR in .NET 10).
 * macOS users, who can access all feature bands but have no way of cleaning up old installations (ignoring the dotnet-core-uninstall tool)
 * users who manually perform _any_ SDK installations and therefore are responsible for clean up
 
@@ -57,7 +57,7 @@ DevKit then continues initialization and Hector is able to begin development.
 
 Ricardo wants to check what .NET versions have security vulnerabilities and update them.
 He asks his local GitHub Copilot which installed .NET versions are out of date.
-The agent talks to an acquisition MCP server that lets him know he has two older .NET versions that have known vulnerabilities and asks him if he wants to update.
+The agent talks to an acquisition MCP server that lets him know he has two older .NET versions that have known vulnerabilities and asks him if he wants to update - this MCP server may be powered in part by asking `dnup` to check and return information about available updates, or the LLM could call out to `dnup` directly for this same information.
 Then it calls `dnup update` to update to the latest version for each.
 
 ### Onboarding to a repository using .NET
@@ -102,7 +102,7 @@ Since 8.0.404 is pinned by a specific repo, that version is not updated/removed,
 
 - **Package Manager Integration/Global Installations**: Will not support installers beyond .zip/.tar installs initially
 - **Replace dotnet.exe**: The bootstrapper will not be dotnet.exe itself
-- **NuGet/Tools Support**: Tools are not in scope for `dnup` - instead they would belong to a NAOT `dnx` or NAOT'd `dotnet` CLI
+- **NuGet/Tools Support**: Tools are not in scope for `dnup` - instead they would belong to a Native AOT `dnx` or Native AOT'd `dotnet` CLI
 - **SDK Size Reduction**: Size reduction will be tackled separately, focused on deduplication and factoring out slices of functionality
 
 ## Stakeholders and Reviewers
@@ -110,6 +110,7 @@ Since 8.0.404 is pinned by a specific repo, that version is not updated/removed,
 - **.NET SDK Team**: Core implementation and CLI design
 - **VS Code C# Extension Team**: Integration scenarios and user experience
 - **Visual Studio Team**: Ensuring compatibility with existing VS workflows
+- **Aspire Team**: Initial consumer - hide the `dotnet` toolchain to simplify onboarding for polyglot developers
 - **Security Team**: Signature verification and SDL compliance
 - **.NET Foundation**: Community feedback and adoption strategy
 - **Documentation Team**: Getting started guides and migration documentation
@@ -135,11 +136,13 @@ On first-run, `dnup-init` will configure the users' environment to support user-
 * on Windows `dnup-init` will request to elevate to set a Windows Registry key that will prevent global .NET installers from setting the global .NET Install location on the System `PATH` (which would always overwrite the user `PATH`).
   * this behavior _may_ be optional - we may choose to only run it by default if the user has a global .NET install already
 
-This configuration will be necessity be shell-specific, so the tool will need to detect the user's shell and modify the appropriate profile file (e.g. `.bashrc`, `.zshrc`, etc.) to set the `DOTNET_ROOT` and `PATH` variables.
+This configuration will is shell-specific, so the tool will need to detect the user's shell and modify the appropriate profile file (e.g. `.bashrc`, `.zshrc`, etc.) to set the `DOTNET_ROOT` and `PATH` variables.
 We have some prior art in the `dotnet` CLI codebase for detecting the shell that is in use, which can be reused here.
 The different shells (and to some extent different OS platforms) have different ways of distributing such changes, so the tool will need to know about those to be a bit opinionated about how it makes these changes.
 
 This shell-specific configuration will need to be independently run via a command, because the user may choose a different shell after the initial setup.
+
+Post-MVP we may need to consider cross-architecture toolchain support. In that scenario `dnup` would set not only the `DOTNET_ROOT` and `PATH` variables, but also the relevant `DOTNET_ROOT_<ARCH>` variables required to light up support in the `dotnet` muxer for detecting and using cross-arch tools.
 
 ### Install locations
 
@@ -149,8 +152,10 @@ The tool will support being configured to install to other locations via configu
 
 ### Install provenance
 
-The data about installs will be sourced from the release manifests that are published on a regular cadence by the .NET Releases team.
+For MVP, the data about installs will be sourced from the release manifests that are published on a regular cadence by the .NET Releases team.
 These manifests, and the release artifact data and signatures they contain, will enable the tool to confirm the provenance of any toolsets downloaded to the users' computer.
+
+Before stable release this source, structure, and signature validation needs of the manifest data will be made configurable and documented, so that users can point the tool at other sources of data if they wish.
 
 ### Update Management
 
@@ -168,7 +173,8 @@ This update capability should be able to be triggered manually or on an automati
 
 ### How will I get `dnup`?
 
-We intend to distribute `dnup` via a direct download initially.
+We intend to distribute `dnup` in slightly different ways based on the user's platform. The common case will be navigating to a website with a memorable name, like `get.dot.net` (which already exists but you get the idea). This site would do basic platform detection, and on Windows it would present a download for the matching arch-specific Windows executable, while on macOS and Linux it would present a small shell script that bootstraps the download and execution of the appropriate binary for that platform. The [Aspire](https://github.com/dotnet/aspire/tree/main/eng/scripts) product has a similar approach, though more detailed than we may need (at least for MSBuild).
+
 The dotnet download web site and the Learn documentation for getting started with .NET are the primary candidates.
 However, it is also common to distribute these kinds of bootstrappers via system package managers, so future efforts could include WinGet packages, Debian and Red Hat packages, a Homebrew cask, etc.
 The tool itself will be a Native AOT tool that is completely standalone, so acquisition should be relatively simple to set up.
@@ -209,13 +215,6 @@ _Where_ the SDK is resolved from is largely orthogonal to _how compatible_ that 
 - Auto-acquire .NET Runtimes for framework-dependent .NET Tools
 - Breaking out the .NET SDK into smaller components to enable pay-as-you-go behaviors
 - Easier installation and testing of nightly/beta/per-PR builds of the .NET toolchain
-
-### How would this tool interact with existing global installations?
-
-`dnup` will detect existing global installations but focus on managing user-local installs.
-Users with existing package manager installations will continue to use those tools.
-`dnup` will provide guidance when detecting unsupported installation types, and may offer to seed the user-local hive with the same versions so that there are no functionality gaps when starting with `dnup`.
-It _will not_ be able to manage global installations in the initial scope. This includes uninstallation of global installs, which will be left to the user to perform.
 
 ### When can I use this?
 
