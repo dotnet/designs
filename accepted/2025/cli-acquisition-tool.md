@@ -311,3 +311,7 @@ We should collect usage/feature-based telemetry for key scenarios. This collecti
 * installs of particular channels - what channels are users requesting?
 * rates of global.json usage - how many users are pinning/controlling versions, and what kinds of bounds are they expressing?
 * how many disparate installs are users managing? (meaning, how many different versions of the SDK are they managing, and how many different 'roots' are they managing them in - one user-local root, installs-per-repo, etc)
+
+#### CLI Update
+
+`dnup` needs to be able to update itself (or at least recognize when a new version is available and let the user know how to go get it).
