@@ -1,5 +1,40 @@
 # .NET SDK Acquisition and Management Tool
 
+- [Scenarios and User Experience](#scenarios-and-user-experience)
+  - [Brand-new learner](#brand-new-learner)
+  - [Acquisition inside VS Code](#acquisition-inside-vs-code)
+  - [Acquisition with an LLM](#acquisition-with-an-llm)
+  - [Onboarding to a repository using .NET](#onboarding-to-a-repository-using-net)
+  - [Updating all installed toolchains](#updating-all-installed-toolchains)
+- [Requirements](#requirements)
+  - [Goals](#goals)
+  - [Non-Goals](#non-goals)
+- [Stakeholders and Reviewers](#stakeholders-and-reviewers)
+- [Design](#design)
+  - [Bootstrapper CLI Design](#bootstrapper-cli-design)
+  - [Initial setup](#initial-setup)
+  - [Install locations](#install-locations)
+  - [Install provenance](#install-provenance)
+  - [Update Management](#update-management)
+  - [Self-updates](#self-updates)
+- [Q \& A](#q--a)
+  - [How will I get `dnup`?](#how-will-i-get-dnup)
+  - [How will this handle existing global installations?](#how-will-this-handle-existing-global-installations)
+  - [What about impact on services running under different accounts?](#what-about-impact-on-services-running-under-different-accounts)
+  - [How does this integrate safely with IDEs?](#how-does-this-integrate-safely-with-ides)
+  - [What future work does this enable?](#what-future-work-does-this-enable)
+  - [When can I use this?](#when-can-i-use-this)
+- [Milestones](#milestones)
+  - [MVP/First Preview](#mvpfirst-preview)
+    - [New user experience](#new-user-experience)
+    - [Out of date user experience](#out-of-date-user-experience)
+    - [Aspire](#aspire)
+    - [VS Project System](#vs-project-system)
+    - [Cross-cutting requirements](#cross-cutting-requirements)
+    - [Security](#security)
+    - [Usability](#usability)
+    - [Telemetry](#telemetry)
+
 **Owner** [Chet Husk](https://github.com/baronfel) | [Daniel Plaisted](https://github.com/dsplaisted)
 
 Users of the .NET SDK today face a wide array of choices when getting our tooling, with multiple distribution channels that release at different cadences.
@@ -221,3 +256,58 @@ _Where_ the SDK is resolved from is largely orthogonal to _how compatible_ that 
 The SDK team plans to release an initial version of `dnup` covering environment setup and basic install functionality as soon as possible. We then want to gather feedback from users and iterate on the feature set until the tool is a consistent, one-stop-shop for acquiring and managing .NET tooling of all kinds.
 
 The end goal is to stabilize the core workflows and experiences enough to justify the tool being as assumed part of the `dotnet` CLI's tooling capabilities - we want the SDK to be able to rely on `dnup` and use it to orchestrate more complex workspace-wide gestures like a toolset-level `dotnet restore` kind of operation that gets all of the SDKs and Runtimes needed for a workspace.
+
+## Milestones
+
+### MVP/First Preview
+
+#### New user experience
+
+* easily download dnup from simple to find/remember website url
+* run dnup
+* end up with system using the latest stable release of the .NET SDK/.NET Runtime
+* end up with that installation being user-local
+* end up with that installation being immediately executable by users - running `dotnet --version` should work as soon as `dnup` is done
+* that installation is tracked by dnup for future use
+
+#### Out of date user experience
+* once per `<PERIOD_OF_TIME>`, during _a standalone dotnet restore_, dnup can be run by the SDK to do an out-of-date check and report back to the user
+  * why standalone dotnet restore? because it's the closest analogue to 'npm install' that we have
+  * we don't want to impact 'the build'
+* dnup can also do a dedicated check
+* user is told that their toolchain has updates, run `dnup <command goes here>` to update
+* user runs that command, the default is to update all globally-installed SDKs/Runtimes that have updates
+
+These scenarios are _people_-focused. We have other users:
+
+#### Aspire
+Do much of the above, however the aspire CLI will use dnup (or library, etc) to do the install/update/check routines on an internally-local copy of the .NET SDK
+
+#### VS Project System
+Use dnup mostly for an update check at the moment. In the future, lean into support for dnup and surface IDE notifications and actions that end up driving dnup updates.
+
+#### Cross-cutting requirements
+
+#### Security
+Everything to do with checking updates/downloading packages/verifying downloaded things should be done securely, pointed at our manifests and signed artifacts by default. A user should be able to specify via CLI argument alternative manifest download locations, and likely as a result alternative certificates to use for verifying the manifest and artifact content.
+
+#### Usability
+For human users, the above interactions should be interactive where possible. Progress should be reported for long-running operations, required decisions should accept both direct CLI arguments as well as interactive prompts. The interface should strive to be terminal screen-reader friendly by using layout/semantic color in reasonable ways. (We have some design docs from `azd` here with guidelines).
+
+All VT-code/interactivity should be able to be disabled via CLI argument and/or environment variables like NO_COLOR, etc.
+
+All commands should support changing their output based on CLI arguments or implicitly-discoverable signals like environment variables. We should be able to have the same command support
+* vivid interactive UX
+* plaintext non-interactive UX
+* structured output (json, maybe tabular?)
+* an LLM-friendly format such as markdown
+and those formats should be directly specifiable _or_ inferred from environmental characteristics.
+
+#### Telemetry
+
+We should collect usage/feature-based telemetry for key scenarios. This collection should adhere to our existing telemetry guidelines, and be opt-out-able via a simple mechanism (env var). We should not collect PII or sensitive information - anything potentially sensitive should be hashed before being sent in alignment with our existing telemetry practices.
+
+* installs/inits of dnup
+* installs of particular channels - what channels are users requesting?
+* rates of global.json usage - how many users are pinning/controlling versions, and what kinds of bounds are they expressing?
+* how many disparate installs are users managing? (meaning, how many different versions of the SDK are they managing, and how many different 'roots' are they managing them in - one user-local root, installs-per-repo, etc)
