@@ -57,7 +57,15 @@ In the case of `Caller1`, the call to `M()` doesn't produce an error because it 
 
 Notably, unsafe did not change the requirement that the code in the block must be correct. It merely offset the responsibility from the language and the runtime to the user in verification.
 
-For more precise details on the error semantics of unsafe blocks and unsafe members, the rules will mirror the rules defined for "Requires" attributes defined in [Feature attribute semantics](https://github.com/dotnet/runtime/blob/main/docs/design/tools/illink/feature-attribute-semantics.md#requiresfeatureattribute). The only addition is the presence of the `unsafe` block, which effectively provides a local `Requires` context.
+### Details
+
+When the feature is enabled, the `unsafe` keyword will now only be allowed in the following places:
+
+  * As a modifier in a method or local function declaration
+  * As part of the "unsafe block" syntax
+  * As a modifier on property declarations
+
+As detailed below, pointer types themselves are no longer unsafe, only pointer dereferences. Therefore, `unsafe` is only necessary to annotate executable code.
 
 ## Implementation
 
@@ -70,7 +78,7 @@ public sealed class RequiresUnsafeAttribute : System.Attribute
 }
 ```
 
-### Globally-valid properties
+### Global invariants
 
 The overall goal is to ensure .NET code is "valid," in the sense that certain properties are always true. Generating a complete list of such properties is out of scope of this document. However, at least the following properties are required:
 
