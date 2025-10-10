@@ -110,7 +110,7 @@ These properties are guaranteed by "safe" code through a combination of compiler
 
 The new definition of `unsafe` is centered around memory safety, specifically ensuring access to valid memory and avoiding memory corruption. There are some properties that may be desirable but are not covered by memory safety. This includes:
 
-- Type safety, specifically type system violations that can occur due to data races. All data races that result in memory safety problems *are* covered, but, but not data races that would produce invalid data combinations. For example, consider the following struct:
+- Type safety, specifically type system violations that can occur due to data races. All data races that result in memory safety problems *are* covered, but not data races that would produce invalid data combinations. For example, consider the following struct:
 
 ```C#
 struct S
