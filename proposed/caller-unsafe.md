@@ -9,7 +9,14 @@ While existing `unsafe` is useful, it is limited by only applying to pointers an
 
 ## Goals
 
-The existing unsafe system does not clearly identify which methods need hand-verification to use safely, and it doesn't indicate which methods claim to provide that verification (and produce a safe API).
+The overall goal is to ensure .NET code is "valid" with respect to certain properties, namely:
+
+* Memory safety
+* No access to uninitialized memory
+
+The complete definition of these properties is in [Global invariants](#global-invariants).
+
+The existing unsafe system does not clearly identify which methods need hand-verification to ensure these properties are preserved, and it doesn't indicate which methods claim to provide that verification (and produce a safe API).
 
 We want to achieve all of the following goals:
 
@@ -80,10 +87,12 @@ public sealed class RequiresUnsafeAttribute : System.Attribute
 
 ### Global invariants
 
-The overall goal is to ensure .NET code is "valid," in the sense that certain properties are always true. Generating a complete list of such properties is out of scope of this document. However, at least the following properties are required:
+Two properties which should always hold in .NET programs are:
 
 * Memory safety
 * No access to uninitialized memory
+
+The "safe" subset of C# must guarantee these properties by construction. The unsafe subset cannot be guaranteed entirely by the system -- it needs external validation by the user or other tooling.
 
 In this document **memory safety** is strictly defined as: code never accesses memory that is not managed by the runtime. "Managed" here does not refer to solely to heap-allocated, garbage collected memory, but also includes stack-allocated variables that are considered allocated by the runtime, or memory that is acquired for legal use by the runtime through any other means.
 
@@ -97,6 +106,54 @@ These properties are guaranteed by "safe" code through a combination of compiler
 
 `unsafe` members are used to identify the places that cannot be automatically checked by the compiler and runtime for validity. Inside unsafe blocks, the programmer is responsible for ensuring that all requirements of the unsafe code are met, and that all code outside the block will have validity properly enforced by the system.
 
+### Non-goals
+
+The new definition of `unsafe` is centered around memory safety, specifically ensuring access to valid memory and avoiding memory corruption. There are some properties that may be desirable but are not covered by memory safety. This includes:
+
+- Type safety, specifically type system violations that can occur due to data races. All data races that result in memory safety problems *are* covered, but, but not data races that would produce invalid data combinations. For example, consider the following struct:
+
+```C#
+struct S
+{
+    public int X, Y;
+
+    public S(int x)
+    {
+        this.X = X;
+        this.Y = X * 2;
+    }
+}
+```
+
+According to the above definition, there are two valid constructors: the explicit constructor `S(int x)` and the default zero-constructor for structs. Therefore, we would always expect the equation `s.Y == s.X * 2` to hold. Because of data races, this is not true. When assigning fields of type `S` the subfields `X` and `Y` are not assigned atomically, so many alternate combinations could be witnessed between assignments.
+
+These data races are considered fundamental to the .NET type system. The safe subset of C# does not protect against them.
+
+- Resource lifetime. Some code patterns, like object pools, require manual lifetime management. When this management is done incorrectly bad behaviors can occur, including improper memory reuse. Notably, none of those behaviors include invalid memory access, although it can include symptoms that look like memory corruption. Because invalid memory access is not possible, this is considered safe.
+
+### Evolution
+
+This proposal details changes to the existing C# unsafe syntax to reconsider the meaning and provide new benefits. The question is whether we plan to change this in the future to incorporate a new meaning or more coverage and how users will need to respond to such potential changes.
+
+There are two types of changes we could make that would impact users:
+
+1. Language/semantic changes
+2. Adding annotations in libraries
+3. Unsafe in source generation
+
+Regarding language and semantic changes, [Non-goals](#non-goals) covers features which are considered safe and not covered by the proposal. These would be the likeliest area of semantic change as they are known problematic patterns. However, there are multiple reasons why these cases are explicitly out of scope.
+
+Preventing all possible data races in .NET would be a tremendous task and would be a hugely incompatible change. Any such change would be far beyond the currently proposed impact of unsafe and would be very unlikely to fit into any future evolutions either.
+
+For resource lifetime, it would also be a large change, but more practical. However, it would also be a new feature. Mere code annotation is not enough to ensure lifetime correctness -- a full lifetime tracking feature is necessary. Given that a new feature would be needed, we can use that feature to circumscribe the safe bounds.
+
+The conclusion is that altering the `unsafe` feature is not practical or desirable. Significant new features can be planned and implemented separately, with appropriate user opt-in points.
+
+The second type of changes would be adding annotations, meaning adding the `unsafe` keyword to core libraries. Unlike changing the meaning of `unsafe`, these changes would be narrowly scoped to the location of the additional annotation. Nonetheless, they would result in compiler errors or warnings, meaning they would be considered breaking changes. Making specific breaking changes of this kind is not unheard of in .NET, but must be carefully considered. All together, we expect a high density of these changes in the first release when the feature is first introduced, then an exponential decay of such changes afterwards, as most of needed annotations are flushed through the system. This process will be replicated slowly throughout the ecosystem as new libraries update and see new changes.
+
+The last notable area of impact is source generation. Most users will only see changes to `unsafe` when updating libraries that have new unsafe annotations. The major exception to that is source generation, where the changes to the semantics of method bodies will be visible directly. The other limitation of source generation is that, unlike library updates, the problem cannot be fixed by reverting a reference update.
+
+One concession we could make to source generation would be to allow more fine-grained enabling and disabling of the warning scope. This proposal does **not** recommend such configuration switches. The `unsafe` feature is specifically designed to catch dangerous situations and source generation does not eliminate that risk. Therefore our recommendation would be to **avoid enabling the feature** until all source generators are updated to produce compatible code.
 
 ### Examples and APIs
 
