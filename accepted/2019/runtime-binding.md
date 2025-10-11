@@ -8,6 +8,8 @@ This document proposes a model that works for both apps and managed COM componen
 
 Related content:
 
+* [Host tracing](https://github.com/dotnet/runtime/blob/main/docs/design/features/host-tracing.md)
+* [COREHOST_TRACE](https://learn.microsoft.com/dotnet/core/tools/dotnet-environment-variables#corehost_trace)
 * [Roll Forward On No Candidate Fx](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/roll-forward-on-no-candidate-fx.md) doc defines existing behavior. 
 * [Roll forward improvements for COM -- dotnet/core-setup #5062](https://github.com/dotnet/core-setup/issues/5062) specifies a proposal specific to COM.
 
