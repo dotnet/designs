@@ -1,54 +1,34 @@
 # .NET SDK Acquisition and Management Tool
 
 - [Scenarios and User Experience](#scenarios-and-user-experience)
-  - [Brand-new learner](#brand-new-learner)
-  - [Acquisition inside VS Code](#acquisition-inside-vs-code)
-  - [Acquisition with an LLM](#acquisition-with-an-llm)
-  - [Onboarding to a repository using .NET](#onboarding-to-a-repository-using-net)
-  - [Updating all installed toolchains](#updating-all-installed-toolchains)
 - [Requirements](#requirements)
-  - [Goals](#goals)
-  - [Non-Goals](#non-goals)
 - [Stakeholders and Reviewers](#stakeholders-and-reviewers)
 - [Design](#design)
-  - [Bootstrapper CLI Design](#bootstrapper-cli-design)
-  - [Initial setup](#initial-setup)
-  - [Install locations](#install-locations)
-  - [Install provenance](#install-provenance)
-  - [Update Management](#update-management)
-  - [Self-updates](#self-updates)
 - [Q \& A](#q--a)
-  - [How will I get `dnup`?](#how-will-i-get-dnup)
-  - [How will this handle existing global installations?](#how-will-this-handle-existing-global-installations)
-  - [What about impact on services running under different accounts?](#what-about-impact-on-services-running-under-different-accounts)
-  - [How does this integrate safely with IDEs?](#how-does-this-integrate-safely-with-ides)
-  - [What future work does this enable?](#what-future-work-does-this-enable)
-  - [When can I use this?](#when-can-i-use-this)
 - [Milestones](#milestones)
-  - [MVP/First Preview](#mvpfirst-preview)
-    - [New user experience](#new-user-experience)
-    - [Out of date user experience](#out-of-date-user-experience)
-    - [Aspire](#aspire)
-    - [VS Project System](#vs-project-system)
-    - [Cross-cutting requirements](#cross-cutting-requirements)
-    - [Security](#security)
-    - [Usability](#usability)
-    - [Telemetry](#telemetry)
+  - [MVP](#mvp)
+  - [Internal Preview](#internal-preview)
+  - [Public Preview](#public-preview)
+  - [GA](#ga)
+- [Other Concerns](#other-concerns)
+  - [Aspire](#aspire)
+  - [VS Project System](#vs-project-system)
+  - [Cross-cutting requirements](#cross-cutting-requirements)
 
 **Owner** [Chet Husk](https://github.com/baronfel) | [Daniel Plaisted](https://github.com/dsplaisted)
 
 Users of the .NET SDK today face a wide array of choices when getting our tooling, with multiple distribution channels that release at different cadences.
 While these options serve specific needs, several important user cohorts are not well served and have asked for a more unified approach to getting started with our tooling.
 
-
 This proposal introduces a standalone install and SDK management tool (tentatively named `dnup`) that provides a unified interface for acquiring and managing .NET tooling across all supported platforms, focusing on user-local installations that can be managed (largely) without elevation.
 
 This tool is especially critical for users that are
 
-* new users, especially those from the Node or Rust ecosystems
+* new users, especially those from the Node or Rust ecosystems where tools like `nvm` and `rustup` are common
 * Linux users who typically use packages from their distro, as not all distro maintainers support feature bands beyond 1xx (though this _may_ change with the advent of the VMR in .NET 10).
 * macOS users, who can access all feature bands but have no way of cleaning up old installations (ignoring the dotnet-core-uninstall tool)
 * users who manually perform _any_ SDK installations and therefore are responsible for clean up
+* Users that need to manage CI/CD environments consistently across multiple platforms
 
 ## Scenarios and User Experience
 
@@ -259,40 +239,89 @@ The end goal is to stabilize the core workflows and experiences enough to justif
 
 ## Milestones
 
-### MVP/First Preview
+This is a large effort, and there are different areas of the work that will progress at different speeds. In addition, for compliance reasons we need to ensure that the tool is secure and robust before we can recommend it for broad usage. As a result, we expect to have multiple milestones along the way. Each of these milestones will likely be usable by motivated users, be we will not recommend them for broad usage until we reach the Public Preview milestone.
 
-#### New user experience
+* **MVP**
+  * at this phase we will be able to do the core actions, like installing publicly-released SDKs
+* **Internal Preview**
+  * at this phase we'll be able to do more lifecycle management, onboarding, checking for updates
+  * we may be missing crypto validation or other security features that would prevent a general public preview
+  * this is the phase where we should receive core end user feedback and iterate on the main UX
+* **Public Preview**
+  * at this phase we'll have all of the security related requirements and will be ready for broad usage
+* **General Availability**
+  * fit-and-finish work, documentation, telemetry, etc will all be present before we reach this milestone
 
-* easily download dnup from simple to find/remember website url
-* run dnup
-* end up with system using the latest stable release of the .NET SDK/.NET Runtime
-* end up with that installation being user-local
-* end up with that installation being immediately executable by users - running `dotnet --version` should work as soon as `dnup` is done
-* that installation is tracked by dnup for future use
+More details on these proposed milestones will likely vary, but may look like:
 
-#### Out of date user experience
-* once per `<PERIOD_OF_TIME>`, during _a standalone dotnet restore_, dnup can be run by the SDK to do an out-of-date check and report back to the user
-  * why standalone dotnet restore? because it's the closest analogue to 'npm install' that we have
-  * we don't want to impact 'the build'
-* dnup can also do a dedicated check
-* user is told that their toolchain has updates, run `dnup <command goes here>` to update
-* user runs that command, the default is to update all globally-installed SDKs/Runtimes that have updates
+### MVP
 
-These scenarios are _people_-focused. We have other users:
+* can download a platform-specific `dnup` binary from a GitHub release or other central location
+* can use `dnup` to install a specific public version of the .NET SDK to a (configurable) user-local location
+* can immediately use that user-local install
 
-#### Aspire
-Do much of the above, however the aspire CLI will use dnup (or library, etc) to do the install/update/check routines on an internally-local copy of the .NET SDK
+### Internal Preview
 
-#### VS Project System
-Use dnup mostly for an update check at the moment. In the future, lean into support for dnup and surface IDE notifications and actions that end up driving dnup updates.
+* can also use `global.json` information to derive the version(s) of the SDK to install
+* can check for updates to installed SDKs
+* installs are tracked by `dnup` for future management scenarios
 
-#### Cross-cutting requirements
+### Public Preview
+
+* settle on the name for the tool
+* uninstall of installed SDK
+* signature validation of manifests and downloaded artifacts
+* interactive UX, prompting, progress
+
+### GA
+
+* self-update of the `dnup` binary is implement
+* telemetry is implemented and documented
+* public documentation is created
+* public download url/script/mechanism is up
+* manual update check command is implemented
+
+## Other Concerns
+
+These milestones are _people_-focused. We have other use cases:
+
+### Aspire
+
+The Aspire CLI wants to use `dnup` to manage its .NET toolchain,
+hiding the complexity of .NET from users who may not be familiar
+with it. However, they do not want to shell out to another process
+to do so. Aspire will vendor `dnup` as a library and call into it
+directly to perform the same operations that the CLI does. This
+means that we need to create the library interface for the core
+operations quickly and provide an implementation that they can
+consume.
+
+Aspire is ok with evolution of this interface over time,
+so we shouldn't be constrained by binary compat concerns until the
+GA milestone.
+
+### VS Project System
+Use dnup mostly for an update check at the moment. In the future, lean into the
+support for dnup more, using it to power in-editor notifications and actions
+that end up driving dnup-based update commands. The IDE and the CLI are
+managing the same logical set of installs at this point.
+
+### Cross-cutting requirements
 
 #### Security
-Everything to do with checking updates/downloading packages/verifying downloaded things should be done securely, pointed at our manifests and signed artifacts by default. A user should be able to specify via CLI argument alternative manifest download locations, and likely as a result alternative certificates to use for verifying the manifest and artifact content.
+Everything to do with checking updates/downloading packages/verifying
+downloaded things should be done securely, pointed at our manifests and signed
+artifacts by default. A user should be able to specify via CLI argument
+alternative manifest download locations, and likely as a result alternative
+certificates to use for verifying the manifest and artifact content.
 
 #### Usability
-For human users, the above interactions should be interactive where possible. Progress should be reported for long-running operations, required decisions should accept both direct CLI arguments as well as interactive prompts. The interface should strive to be terminal screen-reader friendly by using layout/semantic color in reasonable ways. (We have some design docs from `azd` here with guidelines).
+For human users, the above interactions should be interactive where possible.
+Progress should be reported for long-running operations, required decisions
+should accept both direct CLI arguments as well as interactive prompts. The
+interface should strive to be terminal screen-reader friendly by using layout/
+semantic color in reasonable ways. (We have some design docs from `azd` here
+with guidelines).
 
 All VT-code/interactivity should be able to be disabled via CLI argument and/or environment variables like NO_COLOR, etc.
 
