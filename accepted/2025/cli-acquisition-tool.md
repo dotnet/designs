@@ -264,7 +264,7 @@ More details on these proposed milestones will likely vary, but may look like:
 ### Internal Preview
 
 * can also use `global.json` information to derive the version(s) of the SDK to install
-* can check for updates to installed SDKs
+* can check for updates to installed SDKs via `dnup update --check` or similar
 * installs are tracked by `dnup` for future management scenarios
 
 ### Public Preview
@@ -280,7 +280,7 @@ More details on these proposed milestones will likely vary, but may look like:
 * telemetry is implemented and documented
 * public documentation is created
 * public download url/script/mechanism is up
-* the `dnup update` check command is implemented
+* the `dnup update` command is fully implemented
 
 ## Other Concerns
 
