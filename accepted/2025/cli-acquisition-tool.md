@@ -239,9 +239,9 @@ The end goal is to stabilize the core workflows and experiences enough to justif
 
 ## Milestones
 
-This is a large effort, and there are different areas of the work that will progress at different speeds. In addition, for compliance reasons we need to ensure that the tool is secure and robust before we can recommend it for broad usage. As a result, we expect to have multiple milestones along the way. Each of these milestones will likely be usable by motivated users, be we will not recommend them for broad usage until we reach the Public Preview milestone.
+This is a large effort, and there are different areas of the work that will progress at different speeds. In addition, for compliance reasons we need to ensure that the tool is secure and robust before we can recommend it for broad usage. As a result, we expect to have multiple milestones along the way. Each of these milestones will likely be usable by motivated users, but we will not recommend them for broad usage until we reach the Public Preview milestone.
 
-* **MVP**
+* **Proof of Concept**
   * at this phase we will be able to do the core actions, like installing publicly-released SDKs
 * **Internal Preview**
   * at this phase we'll be able to do more lifecycle management, onboarding, checking for updates
@@ -251,10 +251,11 @@ This is a large effort, and there are different areas of the work that will prog
   * at this phase we'll have all of the security related requirements and will be ready for broad usage
 * **General Availability**
   * fit-and-finish work, documentation, telemetry, etc will all be present before we reach this milestone
+  * blocking feedback from earlier previews will be addressed
 
 More details on these proposed milestones will likely vary, but may look like:
 
-### MVP
+### Proof of Concept
 
 * can download a platform-specific `dnup` binary from a GitHub release or other central location
 * can use `dnup` to install a specific public version of the .NET SDK to a (configurable) user-local location
@@ -279,7 +280,7 @@ More details on these proposed milestones will likely vary, but may look like:
 * telemetry is implemented and documented
 * public documentation is created
 * public download url/script/mechanism is up
-* manual update check command is implemented
+* the `dnup update` check command is implemented
 
 ## Other Concerns
 
@@ -294,7 +295,8 @@ to do so. Aspire will vendor `dnup` as a library and call into it
 directly to perform the same operations that the CLI does. This
 means that we need to create the library interface for the core
 operations quickly and provide an implementation that they can
-consume.
+consume. The library interface and implementation _must_ be
+AOT-compatible, just like `dnup` itself.
 
 Aspire is ok with evolution of this interface over time,
 so we shouldn't be constrained by binary compat concerns until the
@@ -311,9 +313,10 @@ managing the same logical set of installs at this point.
 #### Security
 Everything to do with checking updates/downloading packages/verifying
 downloaded things should be done securely, pointed at our manifests and signed
-artifacts by default. A user should be able to specify via CLI argument
-alternative manifest download locations, and likely as a result alternative
-certificates to use for verifying the manifest and artifact content.
+artifacts by default. A user should be able to specify alternative manifest download locations, and likely as a result alternative certificates to use for verifying the manifest and artifact content.
+These alternative configuration details should be settable by CLI arguments,
+environment variables, and (post-MVP) configuration files - ideally a unified
+dotnet toolchain configuration file.
 
 #### Usability
 For human users, the above interactions should be interactive where possible.
