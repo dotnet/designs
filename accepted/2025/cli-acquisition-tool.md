@@ -6,7 +6,7 @@
 - [Design](#design)
 - [Q \& A](#q--a)
 - [Milestones](#milestones)
-  - [MVP](#mvp)
+  - [Proof of Concept](#proof-of-concept)
   - [Internal Preview](#internal-preview)
   - [Public Preview](#public-preview)
   - [GA](#ga)
@@ -252,6 +252,7 @@ This is a large effort, and there are different areas of the work that will prog
 * **General Availability**
   * fit-and-finish work, documentation, telemetry, etc will all be present before we reach this milestone
   * blocking feedback from earlier previews will be addressed
+    * if feedback from public preview is overwhelmingly negative we may end up stopping the effort overall in favor of other approaches to solving the acquisition/management problems
 
 More details on these proposed milestones will likely vary, but may look like:
 
