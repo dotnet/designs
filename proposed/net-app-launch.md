@@ -17,7 +17,7 @@ There are two ways to run framework-dependent apps: through the "apphost" launch
 * Executables appear like standard native platform executables.
 * Executable names are preserved in the process names, meaning apps can be easily recognized based on their names.
 * Because the apphost is a native binary, native assets like manifests can be attached to them.
-* Apphost has available [low-level security mitigations](https://github.com/dotnet/designs/blob/main/accepted/2021/runtime-security-mitigations.md) applied by default that makes it more secure. Mitigations applied to `dotnet` are the lowest common denominator of all supported runtimes.
+* Apphost has available [low-level security mitigations](accepted/2021/runtime-security-mitigations.md) applied by default that makes it more secure. Mitigations applied to `dotnet` are the lowest common denominator of all supported runtimes.
 
 The apphost will generally use a global install of the .NET runtime, where install locations are defined by [install locations](accepted/2021/install-location-per-architecture.md).
 
