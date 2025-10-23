@@ -15,7 +15,7 @@ Framework-dependent apps do not contain a runtime themselves and instead need a 
 There are two ways to run framework-dependent apps: through the "apphost" launcher and via `dotnet app.dll`. Whenever possible, it's recommended to use the apphost. There are a number of advantages to using the apphost:
 
 * Executables appear like standard native platform executables.
-* Executable names are preserved in the command line, meaning apps can be easily recognized based on their names.
+* Executable names are preserved in the process names, meaning apps can be easily recognized based on their names.
 * Because the apphost is a native binary, native assets like manifests can be attached to them.
 * Apphost has available [low-level security mitigations](https://github.com/dotnet/designs/blob/main/accepted/2021/runtime-security-mitigations.md) applied by default that makes it more secure. Mitigations applied to `dotnet` are the lowest common denominator of all supported runtimes.
 
