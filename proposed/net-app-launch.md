@@ -1,7 +1,7 @@
 
 # Launching .NET Apps
 
-This document covers recommendations for launching .NET applications. There are two main form factors .NET app deployment:
+This document covers recommendations for launching .NET applications. There are two main form factors for .NET app deployment:
 
 * Self-contained
 * Framework-dependent
