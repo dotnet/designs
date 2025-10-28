@@ -1,19 +1,34 @@
 # .NET SDK Acquisition and Management Tool
 
+- [Scenarios and User Experience](#scenarios-and-user-experience)
+- [Requirements](#requirements)
+- [Stakeholders and Reviewers](#stakeholders-and-reviewers)
+- [Design](#design)
+- [Q \& A](#q--a)
+- [Milestones](#milestones)
+  - [Proof of Concept](#proof-of-concept)
+  - [Internal Preview](#internal-preview)
+  - [Public Preview](#public-preview)
+  - [GA](#ga)
+- [Other Concerns](#other-concerns)
+  - [Aspire](#aspire)
+  - [VS Project System](#vs-project-system)
+  - [Cross-cutting requirements](#cross-cutting-requirements)
+
 **Owner** [Chet Husk](https://github.com/baronfel) | [Daniel Plaisted](https://github.com/dsplaisted)
 
 Users of the .NET SDK today face a wide array of choices when getting our tooling, with multiple distribution channels that release at different cadences.
 While these options serve specific needs, several important user cohorts are not well served and have asked for a more unified approach to getting started with our tooling.
 
-
 This proposal introduces a standalone install and SDK management tool (tentatively named `dnup`) that provides a unified interface for acquiring and managing .NET tooling across all supported platforms, focusing on user-local installations that can be managed (largely) without elevation.
 
 This tool is especially critical for users that are
 
-* new users, especially those from the Node or Rust ecosystems
+* new users, especially those from the Node or Rust ecosystems where tools like `nvm` and `rustup` are common
 * Linux users who typically use packages from their distro, as not all distro maintainers support feature bands beyond 1xx (though this _may_ change with the advent of the VMR in .NET 10).
 * macOS users, who can access all feature bands but have no way of cleaning up old installations (ignoring the dotnet-core-uninstall tool)
 * users who manually perform _any_ SDK installations and therefore are responsible for clean up
+* Users that need to manage CI/CD environments consistently across multiple platforms
 
 ## Scenarios and User Experience
 
@@ -221,3 +236,115 @@ _Where_ the SDK is resolved from is largely orthogonal to _how compatible_ that 
 The SDK team plans to release an initial version of `dnup` covering environment setup and basic install functionality as soon as possible. We then want to gather feedback from users and iterate on the feature set until the tool is a consistent, one-stop-shop for acquiring and managing .NET tooling of all kinds.
 
 The end goal is to stabilize the core workflows and experiences enough to justify the tool being as assumed part of the `dotnet` CLI's tooling capabilities - we want the SDK to be able to rely on `dnup` and use it to orchestrate more complex workspace-wide gestures like a toolset-level `dotnet restore` kind of operation that gets all of the SDKs and Runtimes needed for a workspace.
+
+## Milestones
+
+This is a large effort, and there are different areas of the work that will progress at different speeds. In addition, for compliance reasons we need to ensure that the tool is secure and robust before we can recommend it for broad usage. As a result, we expect to have multiple milestones along the way. Each of these milestones will likely be usable by motivated users, but we will not recommend them for broad usage until we reach the Public Preview milestone.
+
+* **Proof of Concept**
+  * at this phase we will be able to do the core actions, like installing publicly-released SDKs
+* **Internal Preview**
+  * at this phase we'll be able to do more lifecycle management, onboarding, checking for updates
+  * we may be missing crypto validation or other security features that would prevent a general public preview
+  * this is the phase where we should receive core end user feedback and iterate on the main UX
+* **Public Preview**
+  * at this phase we'll have all of the security related requirements and will be ready for broad usage
+* **General Availability**
+  * fit-and-finish work, documentation, telemetry, etc will all be present before we reach this milestone
+  * blocking feedback from earlier previews will be addressed
+    * if feedback from public preview is overwhelmingly negative we may end up stopping the effort overall in favor of other approaches to solving the acquisition/management problems
+
+More details on these proposed milestones will likely vary, but may look like:
+
+### Proof of Concept
+
+* can download a platform-specific `dnup` binary from a GitHub release or other central location
+* can use `dnup` to install a specific public version of the .NET SDK to a (configurable) user-local location
+* can immediately use that user-local install
+
+### Internal Preview
+
+* can also use `global.json` information to derive the version(s) of the SDK to install
+* can check for updates to installed SDKs via `dnup update --check` or similar
+* installs are tracked by `dnup` for future management scenarios
+
+### Public Preview
+
+* settle on the name for the tool
+* uninstall of installed SDK
+* signature validation of manifests and downloaded artifacts
+* interactive UX, prompting, progress
+
+### GA
+
+* self-update of the `dnup` binary is implement
+* telemetry is implemented and documented
+* public documentation is created
+* public download url/script/mechanism is up
+* the `dnup update` command is fully implemented
+
+## Other Concerns
+
+These milestones are _people_-focused. We have other use cases:
+
+### Aspire
+
+The Aspire CLI wants to use `dnup` to manage its .NET toolchain,
+hiding the complexity of .NET from users who may not be familiar
+with it. However, they do not want to shell out to another process
+to do so. Aspire will vendor `dnup` as a library and call into it
+directly to perform the same operations that the CLI does. This
+means that we need to create the library interface for the core
+operations quickly and provide an implementation that they can
+consume. The library interface and implementation _must_ be
+AOT-compatible, just like `dnup` itself.
+
+Aspire is ok with evolution of this interface over time,
+so we shouldn't be constrained by binary compat concerns until the
+GA milestone.
+
+### VS Project System
+Use dnup mostly for an update check at the moment. In the future, lean into the
+support for dnup more, using it to power in-editor notifications and actions
+that end up driving dnup-based update commands. The IDE and the CLI are
+managing the same logical set of installs at this point.
+
+### Cross-cutting requirements
+
+#### Security
+Everything to do with checking updates/downloading packages/verifying
+downloaded things should be done securely, pointed at our manifests and signed
+artifacts by default. A user should be able to specify alternative manifest download locations, and likely as a result alternative certificates to use for verifying the manifest and artifact content.
+These alternative configuration details should be settable by CLI arguments,
+environment variables, and (post-MVP) configuration files - ideally a unified
+dotnet toolchain configuration file.
+
+#### Usability
+For human users, the above interactions should be interactive where possible.
+Progress should be reported for long-running operations, required decisions
+should accept both direct CLI arguments as well as interactive prompts. The
+interface should strive to be terminal screen-reader friendly by using layout/
+semantic color in reasonable ways. (We have some design docs from `azd` here
+with guidelines).
+
+All VT-code/interactivity should be able to be disabled via CLI argument and/or environment variables like NO_COLOR, etc.
+
+All commands should support changing their output based on CLI arguments or implicitly-discoverable signals like environment variables. We should be able to have the same command support
+* vivid interactive UX
+* plaintext non-interactive UX
+* structured output (json, maybe tabular?)
+* an LLM-friendly format such as markdown
+and those formats should be directly specifiable _or_ inferred from environmental characteristics.
+
+#### Telemetry
+
+We should collect usage/feature-based telemetry for key scenarios. This collection should adhere to our existing telemetry guidelines, and be opt-out-able via a simple mechanism (env var). We should not collect PII or sensitive information - anything potentially sensitive should be hashed before being sent in alignment with our existing telemetry practices.
+
+* installs/inits of dnup
+* installs of particular channels - what channels are users requesting?
+* rates of global.json usage - how many users are pinning/controlling versions, and what kinds of bounds are they expressing?
+* how many disparate installs are users managing? (meaning, how many different versions of the SDK are they managing, and how many different 'roots' are they managing them in - one user-local root, installs-per-repo, etc)
+
+#### CLI Update
+
+`dnup` needs to be able to update itself (or at least recognize when a new version is available and let the user know how to go get it).
