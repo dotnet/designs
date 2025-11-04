@@ -102,6 +102,7 @@ Use update-index to regenerate it:
 
 |Year|Title|Owners|
 |----|-----|------|
+|  | [.NET Runtime Profiling Roadmap](proposed/profiling.md) |  |
 |  | [Add ability to embed install location options in apphost](proposed/apphost-embed-install-location.md) |  |
 |  | [Annotating members as `unsafe`](proposed/caller-unsafe.md) |  |
 |  | [Rate limits](proposed/rate-limit.md) | [John Luo](https://github.com/juntaoluo), [Sourabh Shirhatti](https://github.com/shirhatti) |
