@@ -101,7 +101,7 @@ OpenTelemetry has been working on a [standardized a profiling file format](https
 
 ##### Support simple structured text as an output format
 
-Today our tools primarily deal with compressed binary formats for storing trace data which is efficient but not trivial to consume. We should support outputing textual forms of event data to the console, or converting our NetTrace format into text. This would make it far easier for humans to quickly view small amounts of data or transfer the data into other analysis tools.
+Today our tools primarily deal with compressed binary formats for storing trace data which is efficient but not trivial to consume. We should support outputing textual forms of event data to the console, or converting our NetTrace format into text. This would make it far easier for humans to quickly view small amounts of data or transfer the data into other analysis tools or LLMs.
 
 #### Better consumption by AI agents
 
@@ -110,6 +110,10 @@ As AI plays a larger role in the profiling space we want our tools to be control
 #### Better Linux native tooling integration
 
 For better integration with existing Linux tooling such as 'perf', we need ways to register .NET runtime events or EventSource events as available user_events. For some events this might be fully automatic and for others it might still require some additional step by the application developer or user collecting the trace. Investment here is TBD depending on user demand. For now this is more speculative than many of the other improvements on the roadmap but it might wind up being important.
+
+#### Support profiling on WASM
+
+As CoreCLR expands its reach into the WASM scenario we want EventPipe to support it as well. WASM has some unique limitations around single-threaded execution and external communication that will require more than just a straightforward port of the EventPipe code. We'd also like to support some form of hot-path analysis for PGO.
 
 #### Observability scenarios other than performance measurement
 
