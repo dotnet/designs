@@ -85,7 +85,7 @@ The important details in the above code are:
 2. The `ArrayWrapper<T>` type and `GetItem` are intended to be safe. The use of `Unsafe.As` is intended to be an interior implementation detail.
 3. The `GetItem` method relies on `_array` always having the runtime type of `T[]` for safety. The use of the `Array` type and `Unsafe.As` is a performance optimization to avoid generic specialization costs and conversion costs.
 
-Knowing the above, `_array` is a sensitive contract location -- modifying it to contain a value without type `T[]` produces undefined behavior. In this case, the use of `unsafe` on a field is appropriate. The effect would be to require an unsafe context for _modifying_ a field. `unsafe` on a field indicates that the field carries a contract, so only the modification of the field requires `unsafe`, since only modification of the contract requires verification.
+Knowing the above, `_array` is a sensitive contract location -- modifying it to contain a value without type `T[]` produces undefined behavior. In this case, the use of `unsafe` on a field is appropriate. The effect would be to require an unsafe context for accessing a field. `unsafe` on a field indicates that the field carries a contract, so any access to the field may require additional verification to prevent memory access violations.
 
 ### Details
 
