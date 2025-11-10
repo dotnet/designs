@@ -96,9 +96,7 @@ When the feature is enabled, the `unsafe` keyword will now only be allowed in th
   * As a modifier on property declarations
   * As a modifier on field declarations
 
-As detailed below, pointer types themselves are no longer unsafe, only pointer dereferences. Therefore, `unsafe` is only necessary to annotate executable code.
-
-Field declarations
+As detailed below, pointer types themselves are no longer unsafe, only pointer dereferences.
 
 ## Implementation
 
