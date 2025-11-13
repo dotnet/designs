@@ -64,6 +64,29 @@ In the case of `Caller1`, the call to `M()` doesn't produce an error because it 
 
 Notably, unsafe did not change the requirement that the code in the block must be correct. It merely offset the responsibility from the language and the runtime to the user in verification.
 
+`unsafe` will also be allowed on field declarations. This allows code to indicate that part of an unsafe contract is carried within a field. For example, the following simplified code appears in the dotnet/runtime core framework:
+
+```C#
+public class ArrayWrapper<T>
+{
+    private Array _array;
+
+    public T GetItem(int index)
+    {
+        var typedArray = Unsafe.As<T[]>(ref _array);
+        return typedArray[index];
+    }
+}
+```
+
+The important details in the above code are:
+
+1. `Unsafe.As` will be an unsafe function, and therefore require an unsafe context
+2. The `ArrayWrapper<T>` type and `GetItem` are intended to be safe. The use of `Unsafe.As` is intended to be an interior implementation detail.
+3. The `GetItem` method relies on `_array` always having the runtime type of `T[]` for safety. The use of the `Array` type and `Unsafe.As` is a performance optimization to avoid generic specialization costs and conversion costs.
+
+Knowing the above, `_array` is a sensitive contract location -- modifying it to contain a value without type `T[]` produces undefined behavior. In this case, the use of `unsafe` on a field is appropriate. The effect would be to require an unsafe context for accessing a field. `unsafe` on a field indicates that the field carries a contract, so any access to the field may require additional verification to prevent memory access violations.
+
 ### Details
 
 When the feature is enabled, the `unsafe` keyword will now only be allowed in the following places:
@@ -71,8 +94,9 @@ When the feature is enabled, the `unsafe` keyword will now only be allowed in th
   * As a modifier in a method or local function declaration
   * As part of the "unsafe block" syntax
   * As a modifier on property declarations
+  * As a modifier on field declarations
 
-As detailed below, pointer types themselves are no longer unsafe, only pointer dereferences. Therefore, `unsafe` is only necessary to annotate executable code.
+As detailed below, pointer types themselves are no longer unsafe, only pointer dereferences.
 
 ## Implementation
 
