@@ -87,7 +87,9 @@ Use update-index to regenerate it:
 | 2023 | [net8.0-browser TFM for applications running in the browser](accepted/2023/net8.0-browser-tfm.md) | [Javier Calvarro](https://github.com/javiercn) |
 | 2024 | [.NET Standard Targeting Recommendations](accepted/2024/net-standard-recommendation.md) | [Immo Landwerth](https://github.com/terrajobst), [Viktor Hofer](https://github.com/ViktorHofer) |
 | 2025 | [.NET SDK Acquisition and Management Tool](accepted/2025/cli-acquisition-tool.md) | [Chet Husk](https://github.com/baronfel), [Daniel Plaisted](https://github.com/dsplaisted) |
+| 2025 | [Annotating members as `unsafe`](accepted/2025/memory-safety/caller-unsafe.md) | [Andy Gocke](https://github.com/agocke) |
 | 2025 | [dotnet tool exec and dnx](accepted/2025/direct-tool-execution.md) | : [Marc Paine](https://github.com/marcpopMSFT) |
+| 2025 | [Memory Safety in .NET](accepted/2025/memory-safety/memory-safety.md) | [Richard Lander](https://github.com/richlander) |
 | 2025 | [Provide SDK hint paths in global.json](accepted/2025/local-sdk-global-json.md) | [Jared Parsons](https://github.com/jaredpar) |
 | 2025 | [RID-Specific .NET Tool Packages](accepted/2025/rid-specific-tool-packages.md) | [Daniel Plaisted](https://github.com/dsplaisted) |
 
@@ -103,7 +105,6 @@ Use update-index to regenerate it:
 |Year|Title|Owners|
 |----|-----|------|
 |  | [Add ability to embed install location options in apphost](proposed/apphost-embed-install-location.md) |  |
-|  | [Annotating members as `unsafe`](proposed/caller-unsafe.md) |  |
 |  | [Rate limits](proposed/rate-limit.md) | [John Luo](https://github.com/juntaoluo), [Sourabh Shirhatti](https://github.com/shirhatti) |
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |

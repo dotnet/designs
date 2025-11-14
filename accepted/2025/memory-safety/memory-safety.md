@@ -1,5 +1,7 @@
 # Memory Safety in .NET
 
+**Owner** [Richard Lander](https://github.com/richlander)
+
 > **Memory safety** is the state of being protected from various software bugs and security vulnerabilities when dealing with memory access, such as buffer overflows and dangling pointers. Source: [Wikipedia](https://en.wikipedia.org/wiki/Memory_safety)
 
 Security is our top priority. The .NET platform is a secure runtime environment, grounded in [memory and type safety](https://devblogs.microsoft.com/dotnet/why-dotnet/#safety), [defense-in-depth mitigations](https://github.com/dotnet/designs/blob/main/accepted/2021/runtime-security-mitigations.md), and other industry best practices. .NET enforces memory safety through automatic memory management, safety-aware code generation, and the separation of safe and [unsafe code](https://learn.microsoft.com/dotnet/csharp/language-reference/unsafe-code). We intend to improve safety by reducing the cases where unsafe code is required and providing developers with actionable feedback on the safety of their projects.
@@ -20,7 +22,7 @@ We expect that code safety requirements will become more strict over time and th
 Minimum requirements:
 
 - Document [Unsafe code best practices](https://learn.microsoft.com/dotnet/standard/unsafe-code/best-practices)
-- Introduce new [C# unsafe annotation and compiler feedback](https://github.com/dotnet/designs/blob/main/proposed/caller-unsafe.md).
+- Introduce new [C# unsafe annotation and compiler feedback](./caller-unsafe.md).
 - Annotate unsafe public APIs in dotnet/runtime libraries so that the compiler can provide feedback about their use.
 
 Opportunistically:
