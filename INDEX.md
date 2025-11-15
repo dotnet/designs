@@ -92,6 +92,7 @@ Use update-index to regenerate it:
 | 2025 | [Memory Safety in .NET](accepted/2025/memory-safety/memory-safety.md) | [Richard Lander](https://github.com/richlander) |
 | 2025 | [Provide SDK hint paths in global.json](accepted/2025/local-sdk-global-json.md) | [Jared Parsons](https://github.com/jaredpar) |
 | 2025 | [RID-Specific .NET Tool Packages](accepted/2025/rid-specific-tool-packages.md) | [Daniel Plaisted](https://github.com/dsplaisted) |
+| 2025 | [SDK Unsafe Adoption](accepted/2025/memory-safety/sdk-memory-safety-enforcement.md) | [Fred Silberberg](https://github.com/333fred), [Richard Lander](https://github.com/richlander) |
 
 ## Drafts
 
