@@ -10,7 +10,7 @@ Related documents:
 
 In .NET 11, we are adjusting the meaning of `unsafe` in C# and the .NET BCL to properly convey areas of memory unsafety, not just the presence of pointer
 types. These rules will need to be controllable by end users as they decide to enable them for their projects in .NET 11 and beyond, and we will want to be
-able to turn them on by default for new projects created with .NET 11. This document discusses that how the SDK controls that and tells the compiler what
+able to turn them on by default for new projects created with .NET 11. This document discusses how the SDK controls that and tells the compiler what
 set of rules to use.
 
 ## Memory Safety Rules Version
@@ -31,7 +31,7 @@ adoption until .NET 12 or 13.
 
 ### Open question: version number scheme
 
-Right now, there two different approaches being considered for the version number. These approaches are:
+Right now, there are two different approaches being considered for the version number. These approaches are:
 
 1. C# language version. This would follow the precedent set by `RefSafetyRulesAttribute`. Languages that want to interact with C#'s understanding of memory safety
    rules will need to know and understand what that version number means to C#.
