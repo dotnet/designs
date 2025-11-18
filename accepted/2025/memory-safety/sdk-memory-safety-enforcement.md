@@ -57,6 +57,6 @@ In order to drive adoption of the feature, we will take the following approach:
 
 ### File-based programs
 
-We enable the new rules by default for file-based programs. Users that wish to opt-out of the new rules can do so by adding `#:MemorySafetyRules 1` to their `.cs`
+We enable the new rules by default for file-based programs. Users that wish to opt-out of the new rules can do so by adding `#:property MemorySafetyRules=1` to their `.cs`
 files. File-based programs are inherently subject to their runtime environment (their TFM and defaults are dictated by their SDK), so we feel free to do enablements
 like this both now and in the future.
