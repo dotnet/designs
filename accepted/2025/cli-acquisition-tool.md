@@ -8,8 +8,8 @@
 - [Milestones](#milestones)
   - [Proof of Concept](#proof-of-concept)
   - [Internal Preview](#internal-preview)
-  - [Public Preview](#public-preview)
-  - [GA](#ga)
+  - [Experimental Public Preview](#experimental-public-preview)
+  - [Productization](#productization)
 - [Other Concerns](#other-concerns)
   - [Aspire](#aspire)
   - [VS Project System](#vs-project-system)
@@ -247,12 +247,24 @@ This is a large effort, and there are different areas of the work that will prog
   * at this phase we'll be able to do more lifecycle management, onboarding, checking for updates
   * we may be missing crypto validation or other security features that would prevent a general public preview
   * this is the phase where we should receive core end user feedback and iterate on the main UX
-* **Public Preview**
-  * at this phase we'll have all of the security related requirements and will be ready for broad usage
-* **General Availability**
-  * fit-and-finish work, documentation, telemetry, etc will all be present before we reach this milestone
+* **Experimental Public Preview**
+  * at this phase we'll have all of the security related requirements implemented and will be ready for broad usage of the tool
+  * we'll have usage telemetry to help us make go/no-go decisions, in addition to soliciting end user feedback via surveys and direct outreach
+  * branding and blogposts will make it clear that
+    * this is an _experiment_ intended to address reported user pain around SDK/Runtime management
+    * this works on all platforms, but there are caveats to seamless usage on environments that have global .NET installations, especially Windows with Visual Studio installed
+    * feedback from users will determine the next steps for the tool
+* **Productization**
+  * fit-and-finish work, documentation, etc will all be present before we reach this milestone
   * blocking feedback from earlier previews will be addressed
     * if feedback from public preview is overwhelmingly negative we may end up stopping the effort overall in favor of other approaches to solving the acquisition/management problems
+    * if feedback is positive about the functionality but negative about the separate tool, we may consider folding it into the dotnet CLI
+      * this would likely have other layering implications - how do you bootstrap an install of .NET, can admin installs of .NET also self-manage, etc
+    * if feedback is positive about the separate tool and the functionality we can move to productization and deeper integration into other tools/environments like:
+      * dotnet CLI
+      * VS/DevKit IDE experiences
+      * CI/CD runner setup actions
+  * If we go ahead, then the remaining SDL requirements that haven't already been implemented must be done by this stage
 
 More details on these proposed milestones will likely vary, but may look like:
 
@@ -268,17 +280,17 @@ More details on these proposed milestones will likely vary, but may look like:
 * can check for updates to installed SDKs via `dnup update --check` or similar
 * installs are tracked by `dnup` for future management scenarios
 
-### Public Preview
+### Experimental Public Preview
 
 * settle on the name for the tool
 * uninstall of installed SDK
 * signature validation of manifests and downloaded artifacts
 * interactive UX, prompting, progress
+* telemetry is implemented and documented
 
-### GA
+### PRoductization
 
 * self-update of the `dnup` binary is implement
-* telemetry is implemented and documented
 * public documentation is created
 * public download url/script/mechanism is up
 * the `dnup update` command is fully implemented
