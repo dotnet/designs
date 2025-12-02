@@ -288,7 +288,7 @@ More details on these proposed milestones will likely vary, but may look like:
 * interactive UX, prompting, progress
 * telemetry is implemented and documented
 
-### PRoductization
+### Productization
 
 * self-update of the `dnup` binary is implement
 * public documentation is created
