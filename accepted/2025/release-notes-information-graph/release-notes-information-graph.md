@@ -21,7 +21,7 @@ CIOs, CTOs, and others are accountable for maintaining efficient and secure cont
 
 LLMs are _much more_ fickle relative to purpose-built tools. They are more likely to give up if release notes are not to their liking, instead relying on comfortable web search with its equal share of benefits and challenges. Regular testing (by the spec writer) of release notes with these chat assistants has demonstrated that LLMs are typically only satiated by a "Goldilocks meal". Obscure formats, large documents, and complicated workflows are unlikely to work well. The task at hand is to adapt our release notes publishing so that it works equally well for LLMs and purpose-built tools, exposes more scenario-targeted information, and avoids reliability and performance challenges of our current solution.
 
-In the early revisions of this project, the design followed much the same playbook as past schemas, modeling parent/child relationships, linking to more detailed sources of information, and describing information domains in custom schemas. That then progressed into wanting to expose summaries of high-value information from leaf nodes into the trunk or as far as root nodes. This approach didn't work well since the design was lacking a broader information architecure. A colleague noted that the design was [HATEOS](https://en.wikipedia.org/wiki/HATEOAS)-esque but not using one of the standard formats. The benefits of using standard formats is that they are free to use, have gone through extensive design review, can be navigated with standard patterns and tools, and (most importantly) LLMs already understand their vocabulary and access patterns. A new format will be definition not have those characteristics.
+In the early revisions of this project, the design followed much the same playbook as past schemas, modeling parent/child relationships, linking to more detailed sources of information, and describing information domains in custom schemas. That then progressed into wanting to expose summaries of high-value information from leaf nodes into the trunk or as far as root nodes. This approach didn't work well since the design was lacking a broader information architecure. A colleague noted that the design was [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS)-esque but not using one of the standard formats. The benefits of using standard formats is that they are free to use, have gone through extensive design review, can be navigated with standard patterns and tools, and (most importantly) LLMs already understand their vocabulary and access patterns. A new format will be definition not have those characteristics.
 
 This proposal leans heavily on hypermedia, specifically [HAL+JSON](https://datatracker.ietf.org/doc/html/draft-kelly-json-hal). Hypermedia is very common, with [OpenAPI](https://www.openapis.org/what-is-openapi) and [JSON:API](https://jsonapi.org/) likely being the most common. LLMs are quite comfortable with these standards. The proposed use of HAL is a bit novel (not intended as a positive description). It is inspired by [llms.txt](https://llmstxt.org/) as an emerging standard and the idea that hypermedia is be the most natural next step to express complex diverse data and relationships. It's also expected (in fact, pre-ordained) that older standards will perform better than newer ones due to higher density (or presence at all) in the LLM training data.
 
@@ -690,6 +690,27 @@ This provides perfect clarity on why we cannot include the `latest_patch` proper
 Source: A Few Good Men (1992; 10s later)
 
 That would seems to close the book on convenience.
+
+## Attached data
+
+> These dimensional characteristics form the load-bearing structure of the graph to which everything else is attached.
+
+This leaves the question of which data we could attach.
+
+The following are all in scope to include:
+
+- Breaking changes (already included)
+- CVE disclosures (already included)
+- Servicing fixes and commits (beyond CVEs)
+- Known issues
+- Supported OSes
+- Linux package dependencies
+- Download links + hashes (partially included)
+
+Non goals:
+
+- Preview release details at the same fidelity as GA
+- Performance benchmark data
 
 ### Modeling as validation
 
