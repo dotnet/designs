@@ -1,6 +1,19 @@
 # Exposing Release Notes as an Information graph
 
-The .NET project has published release notes in JSON and markdown for many years. Our production of release notes has been based on the virtuous cloud-era idea that many deployment and compliance workflows require detailed and structured data to safely operate at scale. For the most part, a highly clustered set of consumers (like GitHub Actions and malware scanners) have adapted _their tools_ to _our formats_ to offer higher-level value to their users. That's all good. The LLM era is strikingly different where a much smaller set of information systems (LLM model companies) _consume and expose diverse data in standard ways_ according to _their (shifting) paradigms_ to a much larger set of users. The task at hand is to adapt release notes for LLM consumption while continuing to serve and improve workflows for cloud users.
+The .NET project has published release notes in JSON and markdown for many years. The investment in quality release notes has been based on the virtuous cloud-era idea that many deployment and compliance workflows require detailed and structured data to safely operate at scale. For the most part, a highly clustered set of consumers (like GitHub Actions and malware scanners) have adapted _their tools_ to _our formats_ to offer higher-level value to their users. That's all good. The LLM era is strikingly different where a much smaller set of information systems (LLM model companies) _consume and expose diverse data in standard ways_ according to _their (shifting) paradigms_ to a much larger set of users. The task at hand is to modernize release notes to make them more efficient to consume generally and to adapt them for LLM consumption.
+
+Overall goals for release notes consumption:
+
+- Deliver high-performance (low kb cost) and high consistency (TTL resilience).
+- Enable aestheticly pleasing queries that are terse, ergonomic, and effective, both for their own goals and as a proxy for LLM consumption.
+- Support queries with multiple key styles, temporal and version-based queries.
+- Expose runtime and SDK versions (as much as appropriate) at parity.
+- Expose queryable data beyond version numbers, such as CVE disclosures, breaking changes, and download links.
+- Use the same data to generate most release note files, like [releases.md](https://github.com/dotnet/core/blob/main/releases.md), and CVE announcements like [CVE-2025-55248](https://github.com/dotnet/announcements/issues/372), guaranteeing ensuring consistency from a single source of truth.
+- Encode release notes update frequency and mechanics into the nature of the graph.
+- Use this project as a real-world information graph pilot to inform other efforts that expose information to modern information consumers.
+
+## Scenario
 
 Release notes are mechanism, not scenario. It likely difficult for users to keep up with and act on the constant stream of .NET updates, typically one or two times a month. Users often have more than one .NET major version deployed, further complicating this puzzle. Many users rely on update orchestrators like APT, Yum, and Visual Studio, however, it is unlikely that such tools cover all the end-points that users care about in a uniform way. It is important that users can reliably make good, straightforward, and timely decisions about their entire infrastructure, orchestrated across a variety of deployment tools. This is a key scenario that release notes serve.
 
@@ -13,23 +26,21 @@ Obvious questions release notes should answer:
 - How long until a given major release is EOL or has been EOL?
 - What are known upgrade challenges?
 
-CIOs, CTOs, and others are accountable for maintaining efficient and secure continuity for a set of endpoints, including end-user desktops and cloud servers. They are unlikely to read markdown release notes or perform DIY `curl` + `jq` hacking with structured data. They will increasingly expect to be able to answer .NET-related compliance and deployment questions using chat assistants like Claude or Copilot. They may ask ChatGPT to compare treatment of an industry-wide CVE like [CVE-2023-44487](https://nvd.nist.gov/vuln/detail/cve-2023-44487) across multiple application stacks in their portfolio. This already works reasonably well, but fails when queries/prompts demand greater levels of detail with the expectation that they come from an authoritative source. It is very common to see assistants glean insight from a semi-arbitrary set of web pages with matching content.
+CIOs, CTOs, and others are accountable for maintaining efficient and secure continuity for a set of endpoints, including end-user desktops and cloud servers. They are unlikely to read long markdown release notes or perform DIY `curl` + `jq` hacking with structured data. They will increasingly expect to be able to get answers to arbitrarily detailed compliance and deployment questions using chat assistants like Copilot. They may ask Claude to compare treatment of an industry-wide CVE like [CVE-2023-44487](https://nvd.nist.gov/vuln/detail/cve-2023-44487) across multiple application stacks in their portfolio. This already works reasonably well, but fails when prompts demand greater levels of detail and with the expectation that the source data comes from authoritative sources. It is very common to see assistants glean insight from a semi-arbitrary set of web pages with matching content. This is particularly problematic for day-of prompts (same day as a security release).
 
-LLMs are _much more_ fickle relative to purpose-built tools. They are more likely to give up if release notes are not to their liking, instead relying on comfortable web search with its equal share of benefits and challenges. Regular testing (by the spec writer) of release notes with these chat assistants has demonstrated that LLMs are typically only satiated by a "Goldilocks meal". Obscure formats, large documents, and complicated workflows don't perform well (or outright fail).
+Some users have told us that they enable Slack notifications for [dotnet/announcements](https://github.com/dotnet/announcements/issues), which is an existing "release notes beacon". That's great and intended. What if we could take that to a new level, thinking of release notes as queryable data used by notification systems and LLMs? There is a lesson here. Users (virtuously) complain when we [forget to lock issues](https://github.com/dotnet/announcements/issues/107#issuecomment-482166428). They value high signal to noise. Fortunately, we no longer forget for announcements, but we have not achieved this same disciplined model with GitHub release notes commits (as will be covered later). That's a good goal to set for this project.
+
+LLMs are _much more_ fickle relative to purpose-built tools. They are more likely to give up if release notes are not to their liking, instead relying on comfortable web search with its equal share of benefits and challenges. Regular testing (by the spec writer) of release notes with chat assistants has demonstrated that LLMs are typically only satiated by a "Goldilocks meal". Obscure formats, large documents, and complicated workflows don't perform well (or outright fail). For example, LLMs choke on the 1MB [`releases.json`](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json) files we maintain.
+
+![.NET 6.0 releases.json file as tokens](./releases-json-tokens.png)
+
+This image shows that the worst case for the `releases.json` format is 600k tokens using the [OpenAI Tokenzier](https://platform.openai.com/tokenizer). It is an understatement to say that a file of that size doesn't work well with LLMs. Context: memory budgets tend to max out at 200k tokens. Large JSON files _can_ be made to work in carefully orchestrated flows, but do not enable general purpose LLM workflows.
+
+A major point is that workflows that are bad for LLMS are typically not _uniquely_ bad for LLMs but are challenging for other consumers. It is easy to guess that most readers of `releases-index.json` can be well-served by content significantly less than 1MB+ of JSON. This means that we need start from scratch with structured release notes.
 
 In the early revisions of this project, the design followed our existing playbook, modeling parent/child relationships, linking to more detailed sources of information, and describing information domains in custom schemas. That then progressed into wanting to expose summaries of high-value information from leaf nodes into the trunk or as far as root nodes. This approach didn't work well since the design was lacking a broader information architecure. A colleague noted that the design was [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS)-esque but not using one of the standard formats. The benefits of using standard formats is that they are free to use, have gone through extensive design review, can be navigated with standard patterns and tools, and (most importantly) LLMs already understand their vocabulary and access patterns. A new format will be definition not have those characteristics.
 
 This proposal leans heavily on hypermedia, specifically [HAL+JSON](https://datatracker.ietf.org/doc/html/draft-kelly-json-hal). Hypermedia is very common, with [OpenAPI](https://www.openapis.org/what-is-openapi) and [JSON:API](https://jsonapi.org/) likely being the most common. LLMs are quite comfortable with these standards. The proposed use of HAL is a bit novel (not intended as a positive description). It is inspired by [llms.txt](https://llmstxt.org/) as an emerging standard and the idea that hypermedia is be the most natural next step to express complex diverse data and relationships. It's also expected (in fact, pre-ordained) that older standards will perform better than newer ones due to higher density (or presence at all) in the LLM training data.
-
-Overall goals:
-
-- Ensure high-performance (low kb cost) and high reliability (TTL resilience).
-- Enable aestheticly pleasing queries that are terse, ergonomic, and effective, both for their own goals and as a proxy for LLM consumption.
-- Enable queries with multiple key styles, temporal and version-based queries.
-- Describe runtime and SDK versions (as much as appropriate) at parity.
-- Integrate high value data, such as CVE disclosures, breaking changes, and download links.
-- Enable generating most release note files, like [releases.md](https://github.com/dotnet/core/blob/main/releases.md), and CVE announcements like [CVE-2025-55248](https://github.com/dotnet/announcements/issues/372).
-- Use this project as a real-world pilot for exposing an information graph equally to LLMs, client libraries, and DIY `curl` + `jq` hacking.
 
 ## Hypermedia graph design
 
@@ -318,7 +329,7 @@ One layer lower, we have the major version idex. The followin example is the [ma
 {
   "$schema": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/schemas/dotnet-release-version-index.json",
   "kind": "major-version-index",
-  "title": ".NET 9.0 Patch Release Index",
+  "title": ".NET 9.0 Release Index",
   "description": ".NET 9.0 (latest: 9.0.11)",
   "latest": "9.0.11",
   "latest_security": "9.0.10",
@@ -363,6 +374,12 @@ One layer lower, we have the major version idex. The followin example is the [ma
       "path": "/index.json",
       "title": ".NET Release Index",
       "type": "application/hal\u002Bjson"
+    },
+    "compatibility-json": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/compatibility.json",
+      "path": "/9.0/compatibility.json",
+      "title": ".NET 9.0 Compatibility",
+      "type": "application/json"
     },
     "latest-release-json": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.11/release.json",
@@ -540,12 +557,6 @@ Back to `manifest.json`. It contains extra data that tools in particular might f
       "path": "/9.0/manifest.json",
       "title": ".NET 9.0 Manifest",
       "type": "application/hal\u002Bjson"
-    },
-    "compatibility-json": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/compatibility.json",
-      "path": "/9.0/compatibility.json",
-      "title": ".NET 9.0 Compatibility",
-      "type": "application/json"
     },
     "compatibility-rendered": {
       "href": "https://learn.microsoft.com/dotnet/core/compatibility/9.0",
@@ -1559,7 +1570,7 @@ curl -s "$ROOT" | jq -r '.["releases-index"][] | select(.["support-phase"] == "a
 **Analysis:**
 
 - **Completeness:** ✅ Equal—both return the same list of supported versions.
-- **Boolean vs enum:** The hal-index uses `supported: true`, a simple boolean. The releases-index uses `support-phase: "active"`, requiring knowledge of the enum vocabulary (active, maintenance, eol, preview, go-live).
+- **Boolean vs enum:** The hal-index uses `supported: true`, a simple boolean. The releases-index pnly exposes `support-phase: "active"` (with hal-index also has), requiring knowledge of the enum vocabulary (active, maintenance, eol, preview, go-live).
 - **Property naming:** The hal-index uses `select(.supported)` with dot notation. The releases-index requires `select(.["support-phase"] == "active")` with bracket notation and string comparison.
 - **Query complexity:** The hal-index query is 30% shorter and more intuitive for someone unfamiliar with the schema.
 
@@ -1687,5 +1698,35 @@ done | sort -u | sort -r
 
 **Winner:** hal-index (**27x smaller**)
 
+## Cache-Control TTL Recommendations
+
+Time to Live (TTL) values are calibrated for "safe but maximally aggressive" caching based on update frequency and consistency requirements.
+
+### TTL Summary
+
+| Resource | Example Path | Update Frequency | Recommended TTL | Cache-Control Header |
+|----------|--------------|------------------|-----------------|---------------------|
+| Root index | `/index.json` | ~1×/year | 7 days | `public, max-age=604800` |
+| Timeline root | `/timeline/index.json` | ~1×/year | 7 days | `public, max-age=604800` |
+| Year index | `/timeline/2025/index.json` | ~12×/year | 4 hours | `public, max-age=14400` |
+| Month index | `/timeline/2025/10/index.json` | Never (immutable) | 1 year | `public, max-age=31536000, immutable` |
+| Major version index | `/9.0/index.json` | ~12×/year | 4 hours | `public, max-age=14400` |
+| Patch version index | `/9.0/9.0.10/index.json` | Never (immutable) | 1 year | `public, max-age=31536000, immutable` |
+| SDK index | `/9.0/sdk/index.json` | ~12×/year | 4 hours | `public, max-age=14400` |
+| Exit nodes (CVE, markdown) | `/timeline/2025/10/cve.json` | Never (immutable) | 1 year | `public, max-age=31536000, immutable` |
+
+This doesn't take SDK-only releases or mistakes into account.
+
+## Rationale
+
+**Root and timeline root (7 days):** These change approximately once per year. A 7-day TTL provides strong caching while ensuring that when a new major version is added (even as a preview in February), propagation completes well before it matters. Worst case: a consumer sees stale data for a week after a yearly update.
+
+**Year and major version indexes (4 hours):** These update monthly, typically on Patch Tuesday. A 4-hour TTL balances freshness against CDN load. On release day, caches will converge within a business day. Between releases, these are effectively immutable and the 4-hour TTL is conservative.
+
+**Immutable resources (1 year + immutable directive):** Patch indexes, month indexes, and exit nodes are never modified after creation. The `immutable` directive tells browsers and CDNs to never revalidate—the URL is the version. One year is the practical maximum; longer provides no benefit.
+
+## LLM Consumption
+
+A major focus of 
 
 Spec for LLMs: <https://raw.githubusercontent.com/dotnet/core/release-index/llms.txt>
