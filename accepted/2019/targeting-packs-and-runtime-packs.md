@@ -1,6 +1,8 @@
-## Background
+# Targeting Packs and Runtime Packs
 
 **Owner** [Rich Lander](https://github.com/richlander) | [Nick Guerrera](https://github.com/nguerrera)
+
+## Background
 
 The objectives here are:
 

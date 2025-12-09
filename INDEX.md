@@ -31,7 +31,7 @@ Use update-index to regenerate it:
 | 2018 | [Standardized Environment Variables for CI Services](accepted/2018/build/standard-ci-env-variables.md) | [Tomáš Matoušek](https://github.com/tmat) |
 | 2018 | [Windows Compatibility Pack](accepted/2018/compat-pack/compat-pack.md) | [Immo Landwerth](https://github.com/terrajobst), [Wes Haggard](https://github.com/weshaggard) |
 | 2019 | [.NET GC Support for Container Limits](accepted/2019/support-for-memory-limits.md) | [Rich Lander](https://github.com/richlander) |
-| 2019 | [Background](accepted/2019/targeting-packs-and-runtime-packs.md) | [Rich Lander](https://github.com/richlander), [Nick Guerrera](https://github.com/nguerrera) |
+| 2019 | [Targeting Packs and Runtime Packs](accepted/2019/targeting-packs-and-runtime-packs.md) | [Rich Lander](https://github.com/richlander), [Nick Guerrera](https://github.com/nguerrera) |
 | 2019 | [Runtime Binding Behavior](accepted/2019/runtime-binding.md) | [Rich Lander](https://github.com/richlander) |
 | 2019 | [System.Index and System.Range](accepted/2019/system-range/system-range.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [.NET 5 Minimum OS Versioning](accepted/2020/minimum-os-version/minimum-os-version.md) | [Mikayla Hutchinson](https://github.com/mhutch) |
