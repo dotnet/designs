@@ -184,6 +184,36 @@ This command will check documented, signed release manifests for `dnup` and down
 Provenance and signature validation of the new binary will also happen to ensure the content is as expected.
 This update capability should be able to be triggered manually or on an automatic cadence (e.g. every execution, once a day, etc.)
 
+## Ecosystem Context
+
+### Key Observations from Other Ecosystems
+*	**npm, Rust, Python, Maven/Gradle:** Strong preference for per-user installs; admin installs are rare.
+*	**Go and Java:** Language runtimes often installed centrally, but developers increasingly use version managers or user-scoped installs to avoid admin rights.
+*	**PATH-based discovery** is universal across ecosystems.
+*	**Isolation mechanisms** (virtual environments, local installs) are highly valued for avoiding dependency conflicts.
+
+### Multi-Ecosystem Version Managers
+Developers increasingly use unified version managers that work across multiple language ecosystems:
+*	**asdf** - Older, established tool that manages versions for dozens of languages and tools (Node.js, Python, Ruby, Go, etc.)
+*	**mise-en-place (mise)** - Newer, faster alternative to asdf with broader tool support including Android/iOS tooling, CLI tools, and development utilities
+*	**Common patterns** - These tools provide consistent commands (`install`, `use`, `list`, etc.) and workspace-local version pinning across all supported ecosystems
+
+Developers reach for these tools to have **one unified experience** for managing all their various development dependencies rather than learning ecosystem-specific tools. This trend suggests strong demand for consistent tooling patterns across languages.
+
+### Customer preference
+*	Developers overwhelmingly prefer **non-admin installs** for flexibility and speed.
+*	Enterprises may still require **central installs**, so keep that as an option.
+*	PATH-based discovery is expected; avoid custom mechanisms.
+
+| Ecosystem | Default Install | Admin Required? |
+|-----------|----------------|-----------------|
+| npm | Per-user | No |
+| Rust | Per-user | No |
+| Python | Per-user / venv | No |
+| Go | Mixed | Sometimes |
+| Java | Mixed | Sometimes |
+| .NET (Proposed) | Per-user | No |
+
 ## Q & A
 
 ### How will I get `dnup`?
