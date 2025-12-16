@@ -52,13 +52,14 @@ In order to drive adoption of the feature, we will take the following approach:
 * In .NET 11, the feature will be off-by-default and in preview, and we will not be recommending broad adoption by arbitrary users until we have collected more
   usability feedback and dialed in the enforcement. Users will be able to opt-in to the feature preview by putting `<MemorySafetyRules>preview</MemorySafetyRules>`
   into their project files.
-* In the .NET 12 or 13 timeframe, once we have the ecosystem experience that we are fully confident in, we will turn the flag on-by-default for all projects that
-  target that TFM. Users that wish to opt-out of the new rules will need to explicitly put `<MemorySafetyRules>1</MemorySafetyRules>` into their project file.
+* In the .NET 12 or 13 timeframe, once we have the ecosystem experience that we are fully confident in, we will have an opt-in flag `<MemorySafetyRules>2</MemorySafetyRules>`. Users that take no action will see no changes.
 
 ### File-based programs
 
 For .NET 11, the new rules are not on by default. Users will be able to opt-in to the preview by adding `#:property MemorySafetyRules=preview` to their `.cs` files.
 
-In .NET 12, we enable the new rules by default for file-based programs. Users that wish to opt-out of the new rules can do so by adding `#:property MemorySafetyRules=1`
+In .NET 12, file-based programs will behave differently from projects. We enable the new rules by default for file-based programs. Users that wish to opt-out of the new rules can do so by adding `#:property MemorySafetyRules=1`
 to their `.cs` files. File-based programs are inherently subject to their runtime environment (their TFM and defaults are dictated by their SDK), so we feel free to do
 enablements like this both now and in the future.
+
+**Open question** [ ] Is it appropriate to have differing behavior for file-based apps?
