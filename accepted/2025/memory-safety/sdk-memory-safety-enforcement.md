@@ -52,14 +52,12 @@ In order to drive adoption of the feature, we will take the following approach:
 * In .NET 11, the feature will be off-by-default and in preview, and we will not be recommending broad adoption by arbitrary users until we have collected more
   usability feedback and dialed in the enforcement. Users will be able to opt-in to the feature preview by putting `<MemorySafetyRules>preview</MemorySafetyRules>`
   into their project files.
-* In the .NET 12 or 13 timeframe, once we have the ecosystem experience that we are fully confident in, we will have an opt-in flag `<MemorySafetyRules>2</MemorySafetyRules>`. Users that take no action will see no changes.
+* In the .NET 12 or 13 timeframe, once we have the ecosystem experience that we are fully confident in, we will make the feature available via `<MemorySafetyRules>2</MemorySafetyRules>`, first as an opt-in. Our aspiration is to enable the new memory safety rules by default with opt-out eventually. The approach will be informed by the ecosystem experience we gain with .NET 11.
 
 ### File-based programs
 
 For .NET 11, the new rules are not on by default. Users will be able to opt-in to the preview by adding `#:property MemorySafetyRules=preview` to their `.cs` files.
 
-In .NET 12, file-based programs will behave differently from projects. We enable the new rules by default for file-based programs. Users that wish to opt-out of the new rules can do so by adding `#:property MemorySafetyRules=1`
-to their `.cs` files. File-based programs are inherently subject to their runtime environment (their TFM and defaults are dictated by their SDK), so we feel free to do
-enablements like this both now and in the future.
+For .NET 12 and beyond, we are still evaluating the right approach for file-based programs. One possibility is to enable the new rules by default. Users would be able to opt-out by adding `#:property MemorySafetyRules=1` to their `.cs` files. File-based programs are inherently subject to their runtime environment. Their TFM and defaults are dictated by their SDK, which provides more flexibility for enablement decisions. However, we will learn significantly more between now and then. The final approach will be informed by the ecosystem experience we gain with .NET 11.
 
 **Open question** [ ] Is it appropriate to have differing behavior for file-based apps?
