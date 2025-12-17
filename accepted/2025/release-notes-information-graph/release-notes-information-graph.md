@@ -35,7 +35,7 @@ LLMs are a different kind of "user" than we've previously tried to enable. LLMs 
 
 This image shows that the worst case for the `releases.json` format is 600k tokens using the [OpenAI Tokenzier](https://platform.openai.com/tokenizer). It is an understatement to say that a file of that size doesn't work well with LLMs. Context: memory budgets tend to max out at 200k tokens. Large JSON files can be made to work in some scenarios, but not in the general case.
 
-A major point is that workflows that are bad for LLMS are typically not _uniquely_ bad for LLMs but are challenging for other consumers. It is easy to guess that most readers of `releases-index.json` would be better-served by content significantly less than 1MB+ of JSON. This means that we need start from scratch with structured release notes.
+A strong belief is that workflows that are bad for LLMS are typically not _uniquely_ bad for LLMs but are challenging for other consumers. It is easy to guess that most readers of `releases-index.json` would be better-served by referenced JSON significantly less than 1MB+. This means that we need start from scratch with structured release notes.
 
 In the early revisions of this project, the design followed our existing schema playbook, modeling parent/child relationships, linking to more detailed sources of information, and describing information domains in custom schemas. That then progressed into wanting to expose summaries of high-value information from leaf nodes into the trunk. This approach didn't work well since the design was lacking a broader information architecure. A colleague noted that the design was [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS)-esque but not using one of the standard formats. The benefits of using standard formats is that they are free to use, have gone through extensive design review, can be navigated with standard patterns and tools, and (most importantly) LLMs already understand their vocabulary and access patterns. A new format will by definition not have those characteristics.
 
@@ -219,9 +219,42 @@ We should add vNext releases at Preview 1 for the following reasons:
 
 The intent is that root `index.json` can be cached aggressively. Adding vNext to `index.json` with Preview 1 is perfectly aligned with that. Adding vNext at GA is not.
 
+## Graph wormholes
+
+There are many design paradigms and tradeoffs one can consider with a graph like this. A major design point is the skeletal roots and weighted bottom. That was already been covered. This approach forces significant fetches and inefficiency to get anywhere. To mitigate that, the graph includes a significant number of helpful workflow-specific wormhole links. As the name suggests, these links enable jumps from one part of the graph to another, aligned with expected queries. The wormholes are the most elaborate in the warm branches since they are regularly updated.
+
+The following are the primary wormhole links.
+
+Cold roots:
+
+- `latest` and `latest-lts` -- enables jumping to the matching major version index.
+- `latest-year` -- enables jumping to the latest year index.
+
+Warm branches:
+
+- `latest` and `latest-security` -- enables jumping to the matching patch version index.
+- `latest-month` and `latest-security-month` -- enables jumping to the latest matching month.
+- `release-month` -- enables jumping to the month index for a patch version.
+
+Immutable leaves:
+
+- `prev` and `prev-security` -- enables jumping to an earlier matching patch version or month index.
+
+The wormhole links are what make the graph a graph and not just two trees provided alternative views of the same data. They also enable efficient navigation.
+
+In some cases, it may be better to look at `timeline/2025/index.json` and consider all the security months. In other cases, it may be more efficient to jump to `latest-security-month` and then backwards in time via `prev-security`. Both are possible and legitimate. Note that `prev-security` jumps across year boundaries.
+
+There are lots of algoriths that [work best when counting backwards](https://www.benjoffe.com/fast-date-64).
+
+There is no `next` or `next-security`. `prev` and `prev-security` link immutable leaves. It is easy to create a linked-list based on past knowledge. It's not possible to provide `next` links an immutability constraint.
+
+There is no `latest-sts` link because it's not really useful. `latest` covers it.
+
+Testing has demonstrated that these wormhole links are one of the defining features of the graph.
+
 ## Version Index Modeling
 
-The resource modeling with the graph has to satisfy the rate of these turning gears. The key technique is noticing when a design choice forces a faster update schedule than desired or exposes currency that could be misused.
+The resource modeling witin the graph has to satisfy the intended "gear reduction" mentioned earlier. The key technique is noticing when a design choice forces a faster update schedule than desired or exposes currency that could be misused. This includes the wormhole links, just discussed.
 
 ### Releases index
 
@@ -257,9 +290,10 @@ Most nodes in the graph are named `index.json`. This is the root [index.json](ht
 Key points:
 
 - Schema reference is included
-- `kind`, `title`, and `description` describe the resource
+- All links are raw content (eventually will transition to `builds.dotnet.microsoft.com).
+- `kind` and `title` describe the resource
 - `latest` and `latest_lts` describe high-level resource metadata, often useful currency that helps contextualize the rest of the resource without the need to parse/split strings. For example, the `latest_lts` scalar describes the target of the `latest-lts` link relation.
-- `timeline-index` provides a "wormhole link" (more on that later) to another part of the graph
+- `timeline-index` provides a wormhole link to another part of the graph
 - Core schema syntax like `latest_lts` uses snake-case-lower for query ergonomics (using `jq` as the proxy for that), while relations like `latest-lts` use kebab-case-lower since they can be names or brands. This follows the approach used by [cve-schema](https://github.com/dotnet/designs/blob/main/accepted/2025/cve-schema/cve_schema.md#brand-names-vs-schema-fields-mixed-naming-strategy).
 
 The `_embedded` section has one child, `releases`:
@@ -289,11 +323,11 @@ The `_embedded` section has one child, `releases`:
       },
 ```
 
-This is where we see the design diverge significantly from `releases-index.json`. There are no patch versions, no statement about security releases. It's the most minimal data to determine the release type, i it is supported, and how to access the canonical resource that exposes richer information. This approach removes the need to update the root index monthly.
+This is where we see the design diverge significantly from `releases-index.json`. There are no patch versions, no statement about security releases. It's the most minimal data to determine the release type, if it is supported, and how to access the canonical resource that exposes richer information. This approach removes the need to update the root index monthly. It's fine for tools to regenerate this file monthly. `git` should not see any diffs.
 
 ### Major version index
 
-One layer lower, we have the major version idex. The followin example is the [major version index for .NET 9](https://github.com/dotnet/core/blob/release-index/release-notes/9.0/index.json).
+One layer lower, we have the major version idex. The following example is the [major version index for .NET 9](https://github.com/dotnet/core/blob/release-index/release-notes/9.0/index.json).
 
 ```json
 {
@@ -423,15 +457,17 @@ and years:
     ]
 ```
 
-The `patches` objects contain more detailed information which can drive deployment and compliance workflows. The first two link relations, `self` and `release-month` are HAL links while `cve-json` a plain JSON link. Most non-HAL links end in the format, like `json` or `markdown` or `markdown-rendered`. The links are raw text by default, with `-rendered` HTML content being useful for content targeted for human consumption, for example in generated release notes.
+The `patches` object contains detailed information that can drive deployment and compliance workflows. The first two link relations, `self` and `release-month` are HAL links while `cve-json` is a plain JSON link. Most non-HAL links end in the given format, like `json` or `markdown` or `markdown-rendered`. The links are raw text by default, with `-rendered` HTML content being useful for content targeted for human consumption, for example in generated release notes.
 
-As mentioned earlier, the design has a concept of "wormhole links". That's what we see with `release-month`. It provides direct access to a high-relevance (potentially graph-distant) resource that would otherwise require awkward indirections, multiple network hops, and wasted bytes/tokens to acquire. These wormhole links massively improve query ergonomics for sophisticated queries. There are multiple of these wormhole links, not just `release-month` that are sprinkled throughout the graph for this purpose. They also provide hints on how the graph is intended to be traversed.
+As mentioned earlier, the design has a concept of "wormhole links". That's what we see with `release-month`. It provides direct access to a high-relevance (potentially graph-distant) resource that would otherwise require awkward indirections, multiple network hops, and wasted bytes/tokens to acquire. These wormhole links massively improve query ergonomics for sophisticated queries.
 
 There is a link  `cve.json` file. Our [CVE schema](https://github.com/dotnet/designs/blob/main/accepted/2025/cve-schema/cve_schema.md) is a custom schema with no HAL vocabulary. It's an exit node of the graph. The point is that we're free to describe complex domains, like CVE disclosures, using a clean-slate design methodology. One can also see that some of the `cve.json` information has been projected into the graph, adding high-value shape over the skeleton.
 
 The `year` property is effectively a baked in pre-query that directs further exploration if the timeline is of interest for this major releases. The `cve_records` property lists all the CVEs for the month, another pre-query baked in.
 
-As stated, there is a lot more useful detailed currency on offer. However, there is a rule that currency needs to be guaranteed consistent. Let's consider if the rule is obeyed. The important characteristic is that listed versions and links _within_ the resource are consistent by virtue of being _captured_ in the same file. The critical trick is with the links. The link origin is a fast moving resource while link target resources are immutable. That combination works. It's easy to be consistent with something immutable. It will either exist or not. In contrast, there would be a problem if there was a link between two mutable resources that expose the same currency. This is the problem that `releases-index.json` has.
+As stated, there is a lot more useful detailed currency on offer. However, there is a rule that currency needs to be guaranteed consistent. Let's consider if the rule is obeyed. The important characteristic is that listed versions and links _within_ the resource are consistent by virtue of being _captured_ in the same file.
+
+The critical trick is with the links. In the case of the `release-month` link, the link origin is a fast moving resource (warm branch) while the link target is immutable. That combination works. It's easy to be consistent with something immutable. It will either exist or not. In contrast, there would be a problem if there was a link between two mutable resources that expose the same currency. This is the problem that `releases-index.json` has.
 
 Back to `manifest.json`. It contains extra data that tools in particular might find useful. The following example is the `manifest.json` file for .NET 9.
 
@@ -441,6 +477,7 @@ Back to `manifest.json`. It contains extra data that tools in particular might f
   "title": ".NET 9.0 Manifest",
   "version": "9.0",
   "label": ".NET 9.0",
+  "target_framework": "net9.0",
   "release_type": "sts",
   "support_phase": "active",
   "supported": true,
@@ -448,10 +485,12 @@ Back to `manifest.json`. It contains extra data that tools in particular might f
   "eol_date": "2026-11-10T00:00:00+00:00",
   "_links": {
     "self": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/manifest.json",
-      "path": "/9.0/manifest.json",
-      "title": ".NET 9.0 Manifest",
-      "type": "application/hal\u002Bjson"
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/manifest.json"
+    },
+    "compatibility": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/compatibility.json",
+      "title": "Compatibility",
+      "type": "application/json"
     },
     "compatibility-rendered": {
       "href": "https://learn.microsoft.com/dotnet/core/compatibility/9.0",
@@ -465,7 +504,6 @@ Back to `manifest.json`. It contains extra data that tools in particular might f
     },
     "os-packages-json": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/os-packages.json",
-      "path": "/9.0/os-packages.json",
       "title": "OS Packages",
       "type": "application/json"
     },
@@ -474,51 +512,41 @@ Back to `manifest.json`. It contains extra data that tools in particular might f
       "title": "Announcing .NET 9",
       "type": "text/html"
     },
-    "releases-json": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/releases.json",
-      "path": "/9.0/releases.json",
-      "title": "Complete (large file) release information for all patch releases",
-      "type": "application/json"
-    },
     "supported-os-json": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/supported-os.json",
-      "path": "/9.0/supported-os.json",
       "title": "Supported OSes",
       "type": "application/json"
     },
     "supported-os-markdown": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/supported-os.md",
-      "path": "/9.0/supported-os.md",
       "title": "Supported OSes",
       "type": "application/markdown"
     },
     "supported-os-markdown-rendered": {
       "href": "https://github.com/dotnet/core/blob/main/release-notes/9.0/supported-os.md",
-      "path": "/9.0/supported-os.md",
       "title": "Supported OSes (Rendered)",
-      "type": "application/markdown"
+      "type": "text/html"
+    },
+    "target-frameworks": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/target-frameworks.json",
+      "title": "Target Frameworks",
+      "type": "application/json"
     },
     "usage-markdown-rendered": {
       "href": "https://github.com/dotnet/core/blob/main/release-notes/9.0/README.md",
-      "path": "/9.0/README.md",
       "title": "Release Notes (Rendered)",
-      "type": "application/markdown"
+      "type": "text/html"
     },
     "whats-new-rendered": {
       "href": "https://learn.microsoft.com/dotnet/core/whats-new/dotnet-9/overview",
       "title": "What\u0027s new in .NET 9",
       "type": "text/html"
     }
-  },
-  "_metadata": {
-    "schema_version": "1.0",
-    "generated_on": "2025-12-05T23:00:01.7004871+00:00",
-    "generated_by": "VersionIndex"
   }
 }
 ```
 
-The relations are in alphabetical order, after `self`.
+This is a dictionary of links with some useful metadata. The relations are in alphabetical order, after `self`.
 
 Some of the information in this file is sourced from a human-curated `_manifest.json`. This file is used by the graph generation tools, not the graph itself. It provides a path to seeding the graph with data not available elsewhere.
 
@@ -530,8 +558,9 @@ Some of the information in this file is sourced from a human-curated `_manifest.
   "title": ".NET 9.0 Manifest",
   "version": "9.0",
   "label": ".NET 9.0",
+  "target_framework": "net9.0",
   "release_type": "sts",
-  "support_phase": "active",
+  "phase": "active",
   "ga_date": "2024-11-12T00:00:00Z",
   "eol_date": "2026-11-10T00:00:00Z",
   "_links": {
@@ -557,10 +586,9 @@ Some of the information in this file is sourced from a human-curated `_manifest.
     }
   }
 }
-
 ```
 
-This links are free form and can be anything. They follow the same scheme as the links used elsewhere in the graph.
+These links are free form and can be anything. They follow the same scheme as the links used elsewhere in the graph.
 
 ### Patch Version Index
 
@@ -568,10 +596,9 @@ The following example is a patch version index, for [9.0.10](https://github.com/
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/schemas/dotnet-patch-detail-index.json",
+  "$schema": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/schemas/v1/dotnet-patch-detail-index.json",
   "kind": "patch-version-index",
   "title": ".NET 9.0.10 Patch Index",
-  "description": "Patch information for .NET 9.0.10",
   "version": "9.0.10",
   "date": "2025-10-14T00:00:00\u002B00:00",
   "support_phase": "active",
@@ -582,87 +609,67 @@ The following example is a patch version index, for [9.0.10](https://github.com/
     "CVE-2025-55248",
     "CVE-2025-55315"
   ],
-  "sdk_patches": [
+  "sdk_version": "9.0.306",
+  "sdk_feature_bands": [
     "9.0.306",
     "9.0.111"
   ],
   "_links": {
     "self": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.10/index.json",
-      "path": "/9.0/9.0.10/index.json",
-      "title": "9.0.10 Patch Index",
-      "type": "application/hal\u002Bjson"
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.10/index.json"
     },
     "prev": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.9/index.json",
-      "path": "/9.0/9.0.9/index.json",
-      "title": "9.0.9 Patch Index",
-      "type": "application/hal\u002Bjson"
+      "title": "Patch index"
+    },
+    "prev-security": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.6/index.json",
+      "title": "Latest security patch"
     },
     "latest-sdk": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/sdk/index.json",
-      "path": "/9.0/sdk/index.json",
-      "title": ".NET SDK 9.0 Release Information",
-      "type": "application/hal\u002Bjson"
+      "title": "SDK index"
     },
     "release-major": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/index.json",
-      "path": "/9.0/index.json",
-      "title": ".NET 9.0 Patch Release Index",
-      "type": "application/hal\u002Bjson"
+      "title": "Major version index"
     },
     "release-month": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json",
-      "path": "/timeline/2025/10/index.json",
-      "title": "Release timeline index for 2025-10",
-      "type": "application/hal\u002Bjson"
-    },
-    "release-year": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/index.json",
-      "path": "/timeline/2025/index.json",
-      "title": "Release timeline index for 2025",
-      "type": "application/hal\u002Bjson"
+      "title": "Release month index"
     },
     "releases-index": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/index.json",
-      "path": "/index.json",
-      "title": ".NET Release Index",
-      "type": "application/hal\u002Bjson"
+      "title": "Release index"
     },
     "cve-json": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/cve.json",
-      "path": "/timeline/2025/10/cve.json",
-      "title": "CVE Information",
+      "title": "CVE records (JSON)",
       "type": "application/json"
     },
     "cve-markdown": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/cve.md",
-      "path": "/timeline/2025/10/cve.md",
-      "title": "CVE Information",
+      "title": "CVE records (JSON)",
       "type": "application/markdown"
     },
     "cve-markdown-rendered": {
       "href": "https://github.com/dotnet/core/blob/main/release-notes/timeline/2025/10/cve.md",
-      "path": "/timeline/2025/10/cve.md",
-      "title": "CVE Information (Rendered)",
+      "title": "CVE records (JSON) (Rendered)",
       "type": "application/markdown"
     },
     "release-json": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.10/release.json",
-      "path": "/9.0/9.0.10/release.json",
       "title": "9.0.10 Release Information",
       "type": "application/json"
     },
     "release-notes-markdown": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.10/9.0.10.md",
-      "path": "/9.0/9.0.10/9.0.10.md",
-      "title": "9.0.10 Release Notes",
+      "title": "Release Notes",
       "type": "application/markdown"
     },
     "release-notes-markdown-rendered": {
       "href": "https://github.com/dotnet/core/blob/main/release-notes/9.0/9.0.10/9.0.10.md",
-      "path": "/9.0/9.0.10/9.0.10.md",
-      "title": "9.0.10 Release Notes (Rendered)",
+      "title": "Release Notes (Rendered)",
       "type": "application/markdown"
     }
   },
@@ -670,7 +677,7 @@ The following example is a patch version index, for [9.0.10](https://github.com/
 
 This content looks much the same as we saw earlier, except that much of the content we saw in the patch object is now exposed at index root. That's not coincidental, but a key aspect of the model.
 
-The `prev` link relation provides another wormhole, this time to a less distant target. A `next` relation isn't provided because it would break the immutability goal. In addition, the combination of a `latest*` property and `prev` links satisfies many scenarios. There are lots of algoriths that [work best when counting backwards](https://www.benjoffe.com/fast-date-64).
+The `prev` link relation provides another wormhole, this time to a less distant target. A `next` relation isn't provided because it would break the immutability goal. In addition, the combination of a `latest*` property and `prev` links satisfies many scenarios.
 
 The `latest-sdk` target provides access to `aka.ms` evergreen SDK links and other SDK-related information. The `release-month` and `cve-json` links are still there, but a bit further down the dictionary definition as to what's copied above.
 
