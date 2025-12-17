@@ -1,16 +1,15 @@
 # Exposing Release Notes as an Information graph
 
-The .NET project has published release notes in JSON and markdown for many years. The investment in quality release notes has been based on the virtuous cloud-era idea that many deployment and compliance workflows require detailed and structured data to safely operate at scale. For the most part, a highly clustered set of consumers (like GitHub Actions and malware scanners) have adapted _their tools_ to _our formats_ to offer higher-level value to their users. That's all good. The LLM era is strikingly different where a much smaller set of information systems (LLM model companies) _consume and expose diverse data in standard ways_ according to _their (shifting) paradigms_ to a much larger set of users. The task at hand is to modernize release notes to make them more efficient to consume generally and to adapt them for LLM consumption.
+The .NET project has published release notes in JSON and markdown for many years. The investment in quality release notes has been based on the virtuous cloud-era idea that many deployment and compliance workflows require detailed and structured data to safely operate at scale. For the most part, a highly clustered set of consumers (like GitHub Actions and vulnerability scanners) have adapted _their tools_ to _our formats_ to offer higher-level value to their users. That's all good. The LLM era is strikingly different where a much smaller set of information systems (LLM model companies) _consume and expose diverse data in standard ways_ according to _their (shifting) paradigms_ to a much larger set of users. The task at hand is to modernize release notes to make them more efficient to consume generally and to adapt them for LLM consumption.
 
 Overall goals for release notes consumption:
 
-- Deliver high-performance (low kb cost) and high consistency (TTL resilience).
-- Enable aestheticly pleasing queries that are terse, ergonomic, and effective, both for their own goals and as a proxy for LLM consumption.
-- Support queries with multiple key styles, temporal and version-based queries.
-- Expose runtime and SDK versions (as much as appropriate) at parity.
+- Graph schema encodes graph update frequency
+- Satisfy reasonable expectations of performance (no 1MB JSON files), reliability, and consistency
+- Enable aestheticly-pleasing queries that are terse, ergonomic, and effective, both for their own goals and as a proxy for LLM consumption.
+- Support queries with multiple key styles, temporal and version-based (runtime and SDK versions) queries.
 - Expose queryable data beyond version numbers, such as CVE disclosures, breaking changes, and download links.
-- Use the same data to generate most release note files, like [releases.md](https://github.com/dotnet/core/blob/main/releases.md), and CVE announcements like [CVE-2025-55248](https://github.com/dotnet/announcements/issues/372), guaranteeing ensuring consistency from a single source of truth.
-- Encode release notes update frequency and mechanics into the nature of the graph.
+- Use the same data to generate most release note markdown files, like [releases.md](https://github.com/dotnet/core/blob/main/releases.md), and CVE announcements like [CVE-2025-55248](https://github.com/dotnet/announcements/issues/372), guaranteeing ensuring consistency from a single source of truth.
 - Use this project as a real-world information graph pilot to inform other efforts that expose information to modern information consumers.
 
 ## Scenario
@@ -28,23 +27,23 @@ Obvious questions release notes should answer:
 
 CIOs, CTOs, and others are accountable for maintaining efficient and secure continuity for a set of endpoints, including end-user desktops and cloud servers. They are unlikely to read long markdown release notes or perform DIY `curl` + `jq` hacking with structured data. They will increasingly expect to be able to get answers to arbitrarily detailed compliance and deployment questions using chat assistants like Copilot. They may ask Claude to compare treatment of an industry-wide CVE like [CVE-2023-44487](https://nvd.nist.gov/vuln/detail/cve-2023-44487) across multiple application stacks in their portfolio. This already works reasonably well, but fails when prompts demand greater levels of detail and with the expectation that the source data comes from authoritative sources. It is very common to see assistants glean insight from a semi-arbitrary set of web pages with matching content. This is particularly problematic for day-of prompts (same day as a security release).
 
-Some users have told us that they enable Slack notifications for [dotnet/announcements](https://github.com/dotnet/announcements/issues), which is an existing "release notes beacon". That's great and intended. What if we could take that to a new level, thinking of release notes as queryable data used by notification systems and LLMs? There is a lesson here. Users (virtuously) complain when we [forget to lock issues](https://github.com/dotnet/announcements/issues/107#issuecomment-482166428). They value high signal to noise. Fortunately, we no longer forget for announcements, but we have not achieved this same disciplined model with GitHub release notes commits (as will be covered later). That's a good goal to set for this project.
+Some users have told us that they enable Slack notifications for [dotnet/announcements](https://github.com/dotnet/announcements/issues), which is an existing "release notes beacon". That's great and intended. What if we could take that to a new level, thinking of release notes as queryable data used by notification systems and LLMs? There is a lesson here. Users (virtuously) complain when we [forget to lock issues](https://github.com/dotnet/announcements/issues/107#issuecomment-482166428). They value high signal to noise. Fortunately, we no longer forget for announcements, but we have not achieved this same disciplined model with GitHub release notes commits (as will be covered later). It should just just as safe and reliable to use release notes updates as a beacon as dotnet/announcements.
 
-LLMs are _much more_ fickle relative to purpose-built tools. They are more likely to give up if release notes are not to their liking, instead relying on comfortable web search with its equal share of benefits and challenges. Regular testing (by the spec writer) of release notes with chat assistants has demonstrated that LLMs are typically only satiated by a "Goldilocks meal". Obscure formats, large documents, and complicated workflows don't perform well (or outright fail). For example, LLMs choke on the 1MB [`releases.json`](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json) files we maintain.
+LLMs are a different kind of "user" than we've previously tried to enable. LLMs are _much more_ fickle relative to purpose-built tools. They are more likely to give up if release notes are not to their liking, instead relying on model knowledge or comfortable web search with its equal share of benefits and challenges. Regular testing (by the spec writer) of release notes with chat assistants has demonstrated that LLMs are typically only satiated by a "Goldilocks meal". Obscure formats, large documents, and complicated workflows don't perform well (or outright fail). LLMs will happily jump to `releases-index.json` and choke on the 1MB+ [`releases.json`](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json) files we maintain if prompts are unable to keep their attention.
 
 ![.NET 6.0 releases.json file as tokens](./releases-json-tokens.png)
 
-This image shows that the worst case for the `releases.json` format is 600k tokens using the [OpenAI Tokenzier](https://platform.openai.com/tokenizer). It is an understatement to say that a file of that size doesn't work well with LLMs. Context: memory budgets tend to max out at 200k tokens. Large JSON files _can_ be made to work in carefully orchestrated flows, but do not enable general purpose LLM workflows.
+This image shows that the worst case for the `releases.json` format is 600k tokens using the [OpenAI Tokenzier](https://platform.openai.com/tokenizer). It is an understatement to say that a file of that size doesn't work well with LLMs. Context: memory budgets tend to max out at 200k tokens. Large JSON files can be made to work in some scenarios, but not in the general case.
 
-A major point is that workflows that are bad for LLMS are typically not _uniquely_ bad for LLMs but are challenging for other consumers. It is easy to guess that most readers of `releases-index.json` can be well-served by content significantly less than 1MB+ of JSON. This means that we need start from scratch with structured release notes.
+A major point is that workflows that are bad for LLMS are typically not _uniquely_ bad for LLMs but are challenging for other consumers. It is easy to guess that most readers of `releases-index.json` would be better-served by content significantly less than 1MB+ of JSON. This means that we need start from scratch with structured release notes.
 
-In the early revisions of this project, the design followed our existing playbook, modeling parent/child relationships, linking to more detailed sources of information, and describing information domains in custom schemas. That then progressed into wanting to expose summaries of high-value information from leaf nodes into the trunk or as far as root nodes. This approach didn't work well since the design was lacking a broader information architecure. A colleague noted that the design was [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS)-esque but not using one of the standard formats. The benefits of using standard formats is that they are free to use, have gone through extensive design review, can be navigated with standard patterns and tools, and (most importantly) LLMs already understand their vocabulary and access patterns. A new format will be definition not have those characteristics.
+In the early revisions of this project, the design followed our existing schema playbook, modeling parent/child relationships, linking to more detailed sources of information, and describing information domains in custom schemas. That then progressed into wanting to expose summaries of high-value information from leaf nodes into the trunk. This approach didn't work well since the design was lacking a broader information architecure. A colleague noted that the design was [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS)-esque but not using one of the standard formats. The benefits of using standard formats is that they are free to use, have gone through extensive design review, can be navigated with standard patterns and tools, and (most importantly) LLMs already understand their vocabulary and access patterns. A new format will by definition not have those characteristics.
 
-This proposal leans heavily on hypermedia, specifically [HAL+JSON](https://datatracker.ietf.org/doc/html/draft-kelly-json-hal). Hypermedia is very common, with [OpenAPI](https://www.openapis.org/what-is-openapi) and [JSON:API](https://jsonapi.org/) likely being the most common. LLMs are quite comfortable with these standards. The proposed use of HAL is a bit novel (not intended as a positive description). It is inspired by [llms.txt](https://llmstxt.org/) as an emerging standard and the idea that hypermedia is be the most natural next step to express complex diverse data and relationships. It's also expected (in fact, pre-ordained) that older standards will perform better than newer ones due to higher density (or presence at all) in the LLM training data.
+This proposal leans heavily on hypermedia, specifically [HAL+JSON](https://datatracker.ietf.org/doc/html/draft-kelly-json-hal). Hypermedia is very common, with [OpenAPI](https://www.openapis.org/what-is-openapi) and [JSON:API](https://jsonapi.org/) likely being the most common. LLMs are quite comfortable with these standards. The proposed use of HAL is a bit novel (not intended as a positive descriptor). It is inspired by [llms.txt](https://llmstxt.org/) as an emerging standard and the idea that hypermedia is the most natural next step to express complex diverse data and relationships. It's also expected (in fact, pre-ordained) that older standards will perform better than newer ones due to higher density (or presence at all) in the LLM training data.
 
 ## Hypermedia graph design
 
-This project has adopted the idea that a wide and deep information graph can expose significant information within the graph that satisfies user queries without loading other files. The graph doesn't need to be skeletal. It can have some shape on it. In fact our existing graph with [`release-index.json`](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json) already does this but without the benefit of a standard format or architectural principles.
+This project has adopted the idea that a wide and deep information graph can expose significant information within the graph that satisfies user queries without loading other files. The graph doesn't need to be skeletal. It can have some shape on it. In fact our existing graph with [`release-index.json`](https://github.com/dotnet/core/blob/main/release-notes/releases-index.json) already does this, but without the benefit of a standard format or architectural principles.
 
 The design intent is that a graph should be skeletal at its roots for performance and to avoid punishing queries that do not benefit from the curated shape. The deeper the node is in the graph, the more shape (or weight) it should take on since the data curation is much more likely to hit the mark.
 
@@ -79,7 +78,7 @@ Here is a simple example from the HAL spec:
 }
 ```
 
-The `_links` property is a dictionary of link objects with specific named relations. Most link dictionaries start with the standard `self` relation. The `self` relation describes the canonical URL of the given resource. The `warehouse` and `invoice` relations are examples of domain-specific relations. Together, they establish a navigation protocol for this resource domain. One can also imagine `next`, `previous`, `buy-again` as relations for e-commerce. Domain-specific HAL readers will understand these relations and know how or when to act on them.
+The `_links` property is a dictionary of link objects with specific named relations. Most link dictionaries start with the standard `self` relation. The `self` relation describes the canonical URL of the given resource. The `warehouse` and `invoice` relations are examples of domain-specific relations. Together, they establish a navigation protocol for this resource domain. One can also imagine `next`, `previous`, `buy-again`, or `i-am-feeling-lucky` as relations for e-commerce. Domain-specific HAL readers will understand these relations and know how or when to act on them.
 
 The `currency`, `status`, and `total` properties provide additional domain-specific resource metadata. The package should arrive at your door soon!
 
@@ -120,7 +119,7 @@ The following example is similar, with the addition of the `_embedded` property.
 
 The `_embedded` property contains order resources. This is the resource payload. Each of those order items have `self` and other related link relations referencing other resources. As stated earlier, the `self` relation references the canonical copy of the resource. Embedded resources may be a full or partial copy of the resource. Again, domain-specific reader will understand this schema and know how to process it.
 
-This design aspect is the true strength of HAL. It's the mechanism that enables the overall approach of a skeletal root with weighted bottom nodes. It's also what enables these two seemingly anemic properties to provide so much modeling value.
+This design aspect is the true strength of HAL, of projecting partial views of resources to their reference. It's the mechanism that enables the overall approach of a skeletal root with weighted bottom nodes. It's also what enables these two seemingly anemic properties to provide so much modeling value.
 
 The `currentlyProcessing` and `shippedToday` properties provide additional information about ongoing operations.
 
@@ -169,7 +168,7 @@ The graph has one rule:
 
 > Every resource in the graph needs to be guaranteed consistent with every other part of the graph.
 
-The unstated problem is CDN caching. Assume that the entire graph is consistent when uploaded to an origin server. A CDN server is guaranteed by construction to serve both old and new copies of the graph leading to potential inconsistencies. The graph construction needs to be resilient to that.
+The unstated problem is CDN caching. Assume that the entire graph is consistent when uploaded to an origin server. A CDN server is guaranteed by construction to serve both old and new copies of the graph -- for existing files that have been updated -- leading to potential inconsistencies. The graph construction needs to be resilient to that.
 
 Related examples:
 
@@ -192,9 +191,9 @@ The point about the root index isn't a "solution" but an implication of the firs
 
 There are videos on YouTube with these [crazy gear reductions](https://www.youtube.com/watch?v=QwXK4e4uqXY). You can watch them for a long time! Keen observers will realize our graph will be nothing like that. Well, kindof. One can model years and months and major and patch versions as spinning gears with a differing number of teeth and revolution times. It just won't look the same as those lego videos.
 
-A celestial orbit analogy would have worked just as well.
+A stellar orbit analogy would have worked just as well.
 
-Release notes graph indexes update (gear reduce) like the following:
+Release notes graph indexes are updatd (gear reduce) like the following:
 
 - Timeline index (list of years): one update per year
 - Year index (list of months): one update per month
@@ -208,9 +207,17 @@ The same progression for versions:
 
 It's the middle section changing constantly, but the roots and the leaves are either immutable or close enough to it.
 
-Note: Some annoying details, like SDK-only releaes, have been ignored. The intent is to reason about rough order of magnitude and the fundamental pressure being applied to each layer.
+Note: Some annoying details, like SDK-only releases, have been ignored. The intent is to reason about rough order of magnitude and the fundamental pressure being applied to each layer.
 
-A key question about this scheme is when we add new releases. The most obvious answer to add new releaes 
+A key question about this scheme is when we add new releases. The most obvious answer to add new releases at Preview 1. The other end of the spectrum would be at GA. From a mission-critical standpoint, GA sounds better. Add it when it is needed and can be acted on for mission critical use. Unintuitively, this approach is likely a priority inversion.
+
+We should add vNext releases at Preview 1 for the following reasons:
+
+- vNext is available (in preview form), we so we should advertise it.
+- Special once-in-a-release tasks are more likely to fail when done on GA day.
+- Adding vNext early enables consumers to cache aggressively.
+
+The intent is that root `index.json` can be cached aggressively. Adding vNext to `index.json` with Preview 1 is perfectly aligned with that. Adding vNext at GA is not.
 
 ## Version Index Modeling
 
@@ -222,57 +229,28 @@ Most nodes in the graph are named `index.json`. This is the root [index.json](ht
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/schemas/dotnet-release-version-index.json",
+  "$schema": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/schemas/v1/dotnet-release-version-index.json",
   "kind": "releases-index",
   "title": ".NET Release Index",
-  "description": ".NET Release Index (latest: 10.0)",
   "latest": "10.0",
   "latest_lts": "10.0",
   "_links": {
     "self": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/index.json",
-      "path": "/index.json",
-      "title": ".NET Release Index",
-      "type": "application/hal\u002Bjson"
+      "title": ".NET Release Index"
     },
     "latest": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/index.json",
-      "path": "/10.0/index.json",
-      "title": "Latest .NET release (.NET 10.0)",
-      "type": "application/hal\u002Bjson"
+      "title": "Major version index"
     },
     "latest-lts": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/index.json",
-      "path": "/10.0/index.json",
-      "title": "Latest LTS release (.NET 10.0)",
-      "type": "application/hal\u002Bjson"
-    },
-    "latest-sdk": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/sdk/index.json",
-      "path": "/10.0/sdk/index.json",
-      "title": "Latest .NET SDK (10.0)",
-      "type": "application/hal\u002Bjson"
+      "title": "Latest LTS"
     },
     "timeline-index": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/index.json",
-      "path": "/timeline/index.json",
-      "title": ".NET Release Timeline Index",
-      "type": "application/hal\u002Bjson"
+      "title": ".NET Release Timeline Index"
     },
-    "llms-txt": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms/README.md",
-      "path": "/llms/README.md",
-      "title": "LLM Quick Reference",
-      "type": "application/markdown"
-    }
-  },
-  "glossary": {
-    "lts": "Long-Term Support \u2013 3-year support window",
-    "sts": "Standard-Term Support \u2013 18-month support window",
-    "latest-release": "Highest stable (GA) major version; excludes preview and RC releases",
-    "latest": "Alias for latest-release",
-    "latest-lts": "Highest stable LTS major version currently in support",
-    "latest-sdk": "SDK index for the latest stable major version"
   },
 ```
 
@@ -282,9 +260,7 @@ Key points:
 - `kind`, `title`, and `description` describe the resource
 - `latest` and `latest_lts` describe high-level resource metadata, often useful currency that helps contextualize the rest of the resource without the need to parse/split strings. For example, the `latest_lts` scalar describes the target of the `latest-lts` link relation.
 - `timeline-index` provides a "wormhole link" (more on that later) to another part of the graph
-- `llms-txt` provides instructive content for an LLM.
 - Core schema syntax like `latest_lts` uses snake-case-lower for query ergonomics (using `jq` as the proxy for that), while relations like `latest-lts` use kebab-case-lower since they can be names or brands. This follows the approach used by [cve-schema](https://github.com/dotnet/designs/blob/main/accepted/2025/cve-schema/cve_schema.md#brand-names-vs-schema-fields-mixed-naming-strategy).
-- `glossary` provides consumer with display or knowledge strings, depending on the need.
 
 The `_embedded` section has one child, `releases`:
 
@@ -295,12 +271,9 @@ The `_embedded` section has one child, `releases`:
         "version": "10.0",
         "release_type": "lts",
         "supported": true,
-        "eol_date": "2028-11-14T00:00:00\u002B00:00",
         "_links": {
           "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/index.json",
-            "title": ".NET 10.0",
-            "type": "application/hal\u002Bjson"
+            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/index.json"
           }
         }
       },
@@ -308,18 +281,15 @@ The `_embedded` section has one child, `releases`:
         "version": "9.0",
         "release_type": "sts",
         "supported": true,
-        "eol_date": "2026-11-10T00:00:00\u002B00:00",
         "_links": {
           "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/9.0/index.json",
-            "title": ".NET 9.0",
-            "type": "application/hal\u002Bjson"
+            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/index.json"
           }
         }
       },
 ```
 
-This is where we see the design diverge significantly from `releases-index.json`. There are no patch versions, no statement about security releases. It's the most minimal data to determine the release type, if/when it is supported until, and how to access the canonical resource that exposes richer information. This approach removes the need to update the root index monthly.
+This is where we see the design diverge significantly from `releases-index.json`. There are no patch versions, no statement about security releases. It's the most minimal data to determine the release type, i it is supported, and how to access the canonical resource that exposes richer information. This approach removes the need to update the root index monthly.
 
 ### Major version index
 
@@ -327,10 +297,10 @@ One layer lower, we have the major version idex. The followin example is the [ma
 
 ```json
 {
-  "$schema": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/schemas/dotnet-release-version-index.json",
+  "$schema": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/schemas/v1/dotnet-release-version-index.json",
   "kind": "major-version-index",
   "title": ".NET 9.0 Release Index",
-  "description": ".NET 9.0 (latest: 9.0.11)",
+  "target_framework": "net9.0",
   "latest": "9.0.11",
   "latest_security": "9.0.10",
   "release_type": "sts",
@@ -340,69 +310,32 @@ One layer lower, we have the major version idex. The followin example is the [ma
   "eol_date": "2026-11-10T00:00:00\u002B00:00",
   "_links": {
     "self": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/index.json",
-      "path": "/9.0/index.json",
-      "title": ".NET 9.0",
-      "type": "application/hal\u002Bjson"
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/index.json"
+    },
+    "downloads": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/downloads/index.json",
+      "title": ".NET 9.0 Downloads"
     },
     "latest": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.11/index.json",
-      "path": "/9.0/9.0.11/index.json",
-      "title": "Latest patch release (9.0.11)",
-      "type": "application/hal\u002Bjson"
+      "title": "Latest patch"
     },
     "latest-sdk": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/sdk/index.json",
-      "path": "/9.0/sdk/index.json",
-      "title": ".NET SDK 9.0 Release Information",
-      "type": "application/hal\u002Bjson"
+      "title": ".NET SDK 9.0 Release Information"
     },
     "latest-security": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.10/index.json",
-      "path": "/9.0/9.0.10/index.json",
-      "title": "Latest security patch (9.0.10)",
-      "type": "application/hal\u002Bjson"
+      "title": "Latest security patch"
     },
     "release-manifest": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/manifest.json",
-      "path": "/9.0/manifest.json",
-      "title": "Release manifest",
-      "type": "application/hal\u002Bjson"
+      "title": "Release manifest"
     },
     "releases-index": {
       "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/index.json",
-      "path": "/index.json",
-      "title": ".NET Release Index",
-      "type": "application/hal\u002Bjson"
-    },
-    "compatibility-json": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/compatibility.json",
-      "path": "/9.0/compatibility.json",
-      "title": ".NET 9.0 Compatibility",
-      "type": "application/json"
-    },
-    "latest-release-json": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.11/release.json",
-      "path": "/9.0/9.0.11/release.json",
-      "title": "Latest release information (9.0.11)",
-      "type": "application/json"
+      "title": "Release index"
     }
-  },
-  "glossary": {
-    "lts": "Long-Term Support \u2013 3-year support window",
-    "sts": "Standard-Term Support \u2013 18-month support window",
-    "preview": "Pre-release phase for testing and feedback; not supported",
-    "go-live": "Production-supported release candidate before GA",
-    "active": "Full support with functional and security improvements",
-    "maintenance": "Final 6 months of support; security fixes only",
-    "eol": "End of Life \u2013 No longer supported",
-    "feature-band": "Quarterly SDK minor version releases (e.g., 8.0.1xx, 8.0.2xx)",
-    "patch": "Cumulative monthly update released on Patch Tuesday",
-    "latest-release": "Highest stable (GA) major version; excludes preview and RC releases",
-    "latest": "Alias for latest-release",
-    "latest-lts": "Highest stable LTS major version currently in support",
-    "latest-sdk": "SDK index for the latest stable major version",
-    "latest-security": "Most recent patch release containing security fixes"
   },
 ```
 
@@ -410,40 +343,34 @@ This index includes much more useful and detailed information, both metadata/cur
 
 Much of the form is similar to the root index. Instead of `latest_lts`, there is `latest_security`. A new addition is `release-manifest`. That relation stores important but lower value content about a given major release. That will be covered shortly.
 
-The `_embeeded` section has three children: `releases`, `years`, and `cve_records`.
+The `_embeeded` section has two children: `releases` and `years`.
 
 ```json
   "_embedded": {
-    "releases": [
+    "patches": [
       {
         "version": "9.0.11",
-        "date": "2025-11-11T00:00:00\u002B00:00",
+        "release": "9.0",
+        "date": "2025-11-19T00:00:00\u002B00:00",
         "year": "2025",
         "month": "11",
         "security": false,
         "cve_count": 0,
         "support_phase": "active",
-        "sdk_patches": [
-          "9.0.307",
-          "9.0.112"
-        ],
+        "sdk_version": "9.0.308",
         "_links": {
           "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.11/index.json",
-            "path": "/9.0/9.0.11/index.json",
-            "title": "9.0.11 Patch Index",
-            "type": "application/hal\u002Bjson"
+            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.11/index.json"
           },
           "release-month": {
             "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/11/index.json",
-            "path": "/timeline/2025/11/index.json",
-            "title": "Release timeline index for 2025-11",
-            "type": "application/hal\u002Bjson"
+            "title": "Release month index"
           }
         }
       },
       {
         "version": "9.0.10",
+        "release": "9.0",
         "date": "2025-10-14T00:00:00\u002B00:00",
         "year": "2025",
         "month": "10",
@@ -455,34 +382,25 @@ The `_embeeded` section has three children: `releases`, `years`, and `cve_record
           "CVE-2025-55315"
         ],
         "support_phase": "active",
-        "sdk_patches": [
-          "9.0.306",
-          "9.0.111"
-        ],
+        "sdk_version": "9.0.306",
         "_links": {
           "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.10/index.json",
-            "path": "/9.0/9.0.10/index.json",
-            "title": "9.0.10 Patch Index",
-            "type": "application/hal\u002Bjson"
+            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.10/index.json"
           },
           "release-month": {
             "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json",
-            "path": "/timeline/2025/10/index.json",
-            "title": "Release timeline index for 2025-10",
-            "type": "application/hal\u002Bjson"
+            "title": "Release month index"
           },
           "cve-json": {
             "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/cve.json",
-            "path": "/timeline/2025/10/cve.json",
-            "title": "CVE Information",
+            "title": "CVE records (JSON)",
             "type": "application/json"
           }
         }
-      },      
+      }, 
 ```
 
-and the other children:
+and years:
 
 ```json
     "years": [
@@ -490,10 +408,7 @@ and the other children:
         "year": "2025",
         "_links": {
           "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/index.json",
-            "path": "/timeline/2025/index.json",
-            "title": ".NET Release Timeline 2025 (chronological)",
-            "type": "application/hal\u002Bjson"
+            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/index.json"
           }
         }
       },
@@ -501,34 +416,14 @@ and the other children:
         "year": "2024",
         "_links": {
           "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2024/index.json",
-            "path": "/timeline/2024/index.json",
-            "title": ".NET Release Timeline 2024 (chronological)",
-            "type": "application/hal\u002Bjson"
+            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2024/index.json"
           }
         }
       }
-    ],
-    "cve_records": [
-      "CVE-2024-43483",
-      "CVE-2024-43498",
-      "CVE-2024-43499",
-      "CVE-2025-21171",
-      "CVE-2025-21172",
-      "CVE-2025-21173",
-      "CVE-2025-21176",
-      "CVE-2025-24070",
-      "CVE-2025-26646",
-      "CVE-2025-26682",
-      "CVE-2025-30399",
-      "CVE-2025-55247",
-      "CVE-2025-55248",
-      "CVE-2025-55315"
     ]
-  },
 ```
 
-This patch-version objects contains even more detailed information that can drive deployment and compliance workflows. The first two link relations are HAL links. The last is a plain JSON link. Most non-HAL links end in the format, like `json` or `markdown` or `markdown-rendered`. The links are raw text by default, with `-rendered` HTML content being useful for content targeted for human consumption, for example in generated release notes.
+The `patches` objects contain more detailed information which can drive deployment and compliance workflows. The first two link relations, `self` and `release-month` are HAL links while `cve-json` a plain JSON link. Most non-HAL links end in the format, like `json` or `markdown` or `markdown-rendered`. The links are raw text by default, with `-rendered` HTML content being useful for content targeted for human consumption, for example in generated release notes.
 
 As mentioned earlier, the design has a concept of "wormhole links". That's what we see with `release-month`. It provides direct access to a high-relevance (potentially graph-distant) resource that would otherwise require awkward indirections, multiple network hops, and wasted bytes/tokens to acquire. These wormhole links massively improve query ergonomics for sophisticated queries. There are multiple of these wormhole links, not just `release-month` that are sprinkled throughout the graph for this purpose. They also provide hints on how the graph is intended to be traversed.
 
