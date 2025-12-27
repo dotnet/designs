@@ -1,11 +1,13 @@
 # Exposing Release Notes as an Information graph
 
-The .NET project has published [release notes in JSON and markdown](https://github.com/dotnet/core/tree/main/release-notes) for many years. The investment in quality release notes has been based on the virtuous cloud-era idea that many deployment and compliance workflows require detailed structured data to safely operate at scale. For the most part, a highly clustered set of consumers (like GitHub Actions and vulnerability scanners) have adapted _their tools_ to _our formats_ to offer higher-level value to their users. That's all good. The LLM era is strikingly different where a much smaller set of information systems (LLM model companies) _consume and expose diverse data in standard ways_ according to _their (shifting) paradigms_ to a much larger set of users. The task at hand is to modernize release notes to make them more efficient to consume generally and to adapt them for LLM consumption.
+Wormholes for navigation, spear fishing for direct data access.
+
+The .NET project has published [release notes in JSON and markdown](https://github.com/dotnet/core/tree/main/release-notes) for many years. The investment in quality release notes has been based on the virtuous cloud-era idea that many deployment and compliance workflows require detailed structured data to safely operate at scale. For the most part, a highly clustered set of consumers (like GitHub Actions and vulnerability scanners) have adapted _their tools_ to _our formats_ to offer higher-level value to their users. The LLM era is strikingly different where an even more narrow set of information systems (LLM model companies) _consume and expose diverse data in standard ways_ according to _their (shifting) paradigms_ to a much larger set of users. The task at hand is to modernize release notes to make them more efficient to consume generally and to adapt them for LLM consumption.
 
 Overall goals for release notes consumption:
 
-- Graph schema encodes graph update frequency
-- Satisfy reasonable expectations of performance (no 1MB JSON files), reliability, and consistency
+- Alignment between graph schema and intended graph update frequency.
+- Satisfy expectations of performance (no 1MB JSON files), reliability, and consistency.
 - Enable aestheticly-pleasing queries that are terse, ergonomic, and effective, both for their own goals and as a proxy for LLM consumption.
 - Support queries with multiple key styles, temporal and version-based (runtime and SDK versions) queries.
 - Expose queryable data beyond version numbers, such as CVE disclosures, breaking changes, and download links.
@@ -188,7 +190,7 @@ The following table summarizes the overall shape of the graph, starting at `dotn
 | `timeline/{year}/{month}/index.json` | Month index | 9.7 KB | 0 | Never (immutable after creation) |
 | `{version}/index.json` | Major version index | 20 KB | 12x/year | New patch release |
 | `{version}/{patch}/index.json` | Patch version index | 7.7 KB | 0 | Never (immutable after creation) |
-| `llms.json` | AI-optimized index | 4.7 KB | 12x/year | New patch release, support status changes |
+| `llms.json` | AI-optimized index | 5 KB | 12x/year | New patch release, support status changes |
 
 **Summary:** Cold roots, warm branches, immutable leaves.
 
@@ -224,6 +226,23 @@ The last 12 months of commit data (Nov 2024-Nov 2025) demonstrates a higher than
 **Summary:** Hot everything.
 
 Conservatively, the existing commit counts are not good. The `releases-index.json` file is a mission-critical live-site resource. 29 updates is > 2x/month!
+
+## Attached data
+
+> These dimensional characteristics form the load-bearing structure of the graph to which everything else is attached.
+
+This leaves the question of which data we could attach.
+
+The following are all in scope to include:
+
+- Breaking changes (included)
+- What's new links (included)
+- CVE disclosures (included)
+- Supported OSes (included)
+- Linux package dependencies (included)
+- Download links + hashes (included)
+- Servicing fixes and commits (beyond CVEs)
+- Known issues
 
 ### Graph consistency
 
@@ -311,7 +330,7 @@ Notes:
 
 The wormhole links are what make the graph a graph and not just two related trees providing alternative views of the same data. They also enable efficient navigation.
 
-For some scenarios, it can be efficient to jump to `latest-security-month` and then backwards in time via `prev-security`. `prev` and `prev-security` jump across year boundaries, reducing the logic required to use the scheme.
+For some scenarios, it can be efficient to jump to `latest-security-month` and then backwards in time via `prev-security`. `prev` and `prev-security` jump across year boundaries, reducing the logic required to use the scheme. There are other algoriths that [work best when counting backwards](https://www.benjoffe.com/fast-date-64).
 
 There is no `next` or `next-security`. `prev` and `prev-security` link immutable leaves, establishing a linked-list based on past knowledge. It's not possible to provide `next` links given the immutability constraint.
 
@@ -502,6 +521,30 @@ The `_embedded` property (solely) includes `releases`.
 ```
 
 The `patches` object contains detailed information that can drive basic deployment and compliance workflows. The first two link relations, `self` and `release-month` are HAL links while `cve-json` is a plain JSON link. Non-HAL links end in the given format, like `json` or `markdown` or `markdown-rendered`. The links are raw text by default, with `-rendered` HTML content being useful for content targeted for human consumption, for example as links in generated release notes.
+
+MAJOR NOTE: Preview releases are removed (no longer included when the file is generated) to reduce size. These files are intended for missions critical scenarios. After GA, only supported releases are of interest to well over 99% of users. RC releases are included because they are supported. This means on GA day a bunch of previews will dissapear, but the last two RCs releases will remain. That's likely OK.
+
+This behavior is made more clear with a `jq` query for patch versions.
+
+```json
+$ jq ._embedded.patches[].version release-notes/9.0/index.json
+"9.0.11"
+"9.0.10"
+"9.0.9"
+"9.0.8"
+"9.0.7"
+"9.0.6"
+"9.0.5"
+"9.0.4"
+"9.0.3"
+"9.0.2"
+"9.0.1"
+"9.0.0"
+"9.0.0-rc.2"
+"9.0.0-rc.1"
+```
+
+Note: Preview releases are not included for 8.0 and earlier releases because we didn't yet have the practice of creating preview directories to place an `index.json` file. This isn't much of a concern since non-GA releases are not really important for historical releases.
 
 The `release-month` relation is another wormhole link. It provides direct access to a high-relevance and  graph-distant resource that would otherwise require awkward indirections, multiple network hops, and wasted bytes/tokens to acquire. These wormhole links massively improve query ergonomics for sophisticated queries.
 
@@ -1297,7 +1340,7 @@ Source: <https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/
 
 ## LLM Enablement
 
-The majority of the design to this point has been focused on providing a better more modern approach for tools driving typical cloud native workflows. That leave the question of how this design is intended to work for LLMs. That's actually a [whole other spec](./release-notes-graph-llms.md). However, it makes sense to look at how the design diverged for LLMs.
+The majority of the design to this point has been focused on providing a better more modern approach for tools driving typical cloud native workflows. That leave the question of how this design is intended to work for LLMs. That's actually a [whole other spec](./release-notes-graph-llms.md). However, it makes sense to look at how the design for LLMs both diverges and remains consistent.
 
 Source: <https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json>
 
@@ -1309,7 +1352,6 @@ Source: <https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/
   "required_pre_read": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/skills/dotnet-releases/SKILL.md",
   "latest": "10.0",
   "latest_lts": "10.0",
-  "latest_year": "2025",
   "supported_releases": [
     "10.0",
     "9.0",
@@ -1346,16 +1388,16 @@ Source: <https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/
   },
 ```
 
-For far, this looks very largely similar to root index.json.
+For far, this looks largely similar to root `index.json`.
 
 There are two differences:
 
 - `supported_releases` -- Describes the set of releases supported at any point
 - `latest-security-month` -- Wormhole link to the latest security month
 
-This link relation clearly violates the "cold root" goals of index.json. Indeed, it does. This file isn't intended to support the n-9s of a cloud. It's intended to make LLMs efficient. Based on extensive testing, LLMs love these wormhole links. They actually halluciante less when given a quick and obvious path towards the goal.
+This link relation appears on first glance to violate the "cold root" goals of index.json. Indeed, it does. This file isn't intended to support the n-9s demanded by cloud scenarios. It's intended to make LLMs efficient. Based on extensive testing, LLMs love these wormhole links. They actually halluciante less when given a quick and obvious path towards a goal.
 
-The `ai_note` and `required_pre_read` are LLM-specific properties that are covered in the other spec. A major realization is that there is always going to be a "better mousetrap" w/rt steering LLMs. The design of `llms.json` _will change_. It needs to be at arm's length from `index.json`, a file intended for mission critical workloads. `llms.json` is effectively an abstraction layer for LLMs, taking advantage of, but not integrated into the cloud workflows.
+The `ai_note` and `required_pre_read` are LLM-specific properties that are covered in the other spec. These properties are a best guess take at steering LLMs, at the time of writing. A major realization is that there is always going to be a "better mousetrap" w/rt context engineering. The design of `llms.json` _will change_. It needs to be at arm's length from `index.json` and to avoid the burden of responsibility for mission critical workloads. `llms.json` is effectively an abstraction layer for LLMs, taking advantage of, but not integrated into the cloud workflows.
 
 The `_embedded` property (solely) contains: `latest_patches`.
 
@@ -1366,15 +1408,12 @@ The `_embedded` property (solely) contains: `latest_patches`.
         "version": "10.0.1",
         "release": "10.0",
         "release_type": "lts",
-        "date": "2025-12-09T00:00:00+00:00",
-        "year": "2025",
-        "month": "12",
         "security": false,
-        "cve_count": 0,
         "support_phase": "active",
         "supported": true,
-        "eol_date": "2028-11-14",
         "sdk_version": "10.0.101",
+        "latest_security": "10.0.0-rc.2",
+        "latest_security_date": "2025-10-14",
         "_links": {
           "self": {
             "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/10.0.1/index.json"
@@ -1385,6 +1424,9 @@ The `_embedded` property (solely) contains: `latest_patches`.
           "release-major": {
             "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/index.json"
           },
+          "latest-sdk": {
+            "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/sdk/index.json"
+          },
           "manifest": {
             "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/manifest.json"
           }
@@ -1392,25 +1434,343 @@ The `_embedded` property (solely) contains: `latest_patches`.
       },
 ```
 
-These design choices equally violate the "cold roots" design. Once its been broken once, you might as well break it thoroughly. This file also a bit more budget to play with since it only ever has to accomodate (in general) three patch releases, not the growing set of major versions in root index.json. This opens up more richness in the link relations. The four listed are the highest priority and enable the majority of scenarios. This is also where we see `manifest` providing more value, making it possible to skip a jump through `release-major` to get to breaking change, what's new, and other similar information.
+These design choices equally violate the "cold roots" design. Once its been broken once, you might as well break it thoroughly to take full advantage. This file also a bit more budget to play with since it only ever has to accomodate (in general) three patch releases, not the growing set of major versions in root index.json. This opens up space for more richness in the link relations. The four listed are the highest priority and enable the majority of scenarios. This is also where we see `manifest` providing more value, making it possible to skip a jump through `release-major` to get to breaking change, what's new, and other similar information.
 
-## Attached data
+There is a little more going on than a first look might reveal. In particular, this design _does_ violate the "cold roots" design, but it _largely_ keeps true to the critical consistency rule.
 
-> These dimensional characteristics form the load-bearing structure of the graph to which everything else is attached.
+Here's the major distinction, looking at the three root schemas:
 
-This leaves the question of which data we could attach.
+```bash
+$ jq ._embedded.releases[0] index.json
+{
+  "version": "10.0",
+  "release_type": "lts",
+  "supported": true,
+  "_links": {
+    "self": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/index.json"
+    }
+  }
+}
+$ jq '.["releases-index"][0]' releases-index.json
+{
+  "channel-version": "10.0",
+  "latest-release": "10.0.1",
+  "latest-release-date": "2025-12-09",
+  "security": false,
+  "latest-runtime": "10.0.1",
+  "latest-sdk": "10.0.101",
+  "product": ".NET",
+  "support-phase": "active",
+  "eol-date": "2028-11-14",
+  "release-type": "lts",
+  "releases.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/releases.json",
+  "supported-os.json": "https://builds.dotnet.microsoft.com/dotnet/release-metadata/10.0/supported-os.json"
+}
+$ jq ._embedded.latest_patches[0] llms.json
+{
+  "version": "10.0.1",
+  "release": "10.0",
+  "release_type": "lts",
+  "security": false,
+  "support_phase": "active",
+  "supported": true,
+  "sdk_version": "10.0.101",
+  "latest_security": "10.0.0-rc.2",
+  "latest_security_date": "2025-10-14",
+  "_links": {
+    "self": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/10.0.1/index.json"
+    },
+    "latest-security": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/preview/rc2/index.json"
+    },
+    "release-major": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/index.json"
+    },
+    "latest-sdk": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/sdk/index.json"
+    },
+    "manifest": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/10.0/manifest.json"
+    }
+  }
+}
+```
 
-The following are all in scope to include (or already incldued):
+These files don't expose the same type of data as their primary payload. `index.json` deals exclusively in terms of major releases. `releases-index.json` is the same but spinkles in patch metdata. That's what gets it into trouble. On first glance, `llms.json` seems to do the same thing, but doesn't. It deals in _patches_. On one hand, it offers patch versions and on the other hand, it offers up patch links, with (most importantly) `self`, and `latest-security`. That's consistent. This is the same "fast moving" -> "immutable" type of structure where a consistent set of links and data are captured in a single file, discussed earlier.
 
-- Breaking changes
-- What's new links
-- CVE disclosures
-- Servicing fixes and commits (beyond CVEs)
-- Known issues
-- Supported OSes
-- Linux package dependencies
-- Download links + hashes
+Close readers will notice that `release-major` is the antogonist in this narrative, the fly in the ointment. This is true. It's our [Faustian bargain](https://en.wikipedia.org/wiki/Deal_with_the_Devil).
+
+This tradeoff was considered acceptable for three reasons:
+
+- It's extremely useful to have this link relation to efficiently enable important scenarios.
+- The canonical link -- `self` -- follows all the rules. This is the primary distinction with `releases-index.json`.
+- The other relations, which we've brought in with the higher budget, enable skipping over `releases-major` and its potential related consistency problems in many scenarios.
+
+Another key aspect of this design is that it is fully bounded. It's basically a denormalized viewport on index.json. Over time, `index.json` will grow and `llms.json` will slide its window (hence it being a viewport).
+
+This viewport idea could also be useful for the cloud scenario, as a means of making `index.json` smaller. This idea was considered, but it cannot be done compatibily. Imagine `index-supported.json`, effectively a `.supported` quert over `index.json`. The problem with that is that one day a version is there another day it is not. The only rational approach is for the tools to drop (for example) .NET 8 and .NET 9 on their EOL day (same day). That's the day that they will get their last patch. It is guaranteed that this approach will break and annoy people. That's precisely the plan for `llms.json` and also why it's called that and not `index2.json`. Perhaps `yolo.json` would be better name.
+
+There is a real risk that people will take a dependency on `llms.json` for mission critical scenarios because it has adopted an attractive design point. It's great that you like the design! We will rely on documentation to tell people what the support policy (none) and compatibility bar (none) are. In the ancient days of the 1990s, there was a lot of talk about [fuzzy logic](https://en.wikipedia.org/wiki/Fuzzy_logic). `llms.json` is intended for consumers that can apply fuzzy logic in the presence of change.
+
+This is a sample of the support statement we'll share for `llms.json`:
+
+> The `llms.json` file is intended as an LLM-specific entrypoint into the release notes information graph. All other users are intended to use `index.json`. `index.json` has been designed to satisfy mission-critical workloads and uses a streamlined schema that is unlikely to ever change. `llms.json` is likely to be changed over time to accomodate the changing nature of LLMs and our understanding of how to best target their capabilities. There may or may not be before-the-fact notifications when `llms.json` is changed.
 
 ## Validation
 
+This approach can be seen the opposite-end-of-the-spectrum solution compared to past practice. Such a radical design departure begs for some sort of evidence.
 
+The [Release Graph Metrics](./metrics/README.md) suite includes several diverse queries over `index.json`, `llms.json`, and `releases-index.json`. The analysis considers correct results, query complexity, aesthetics, and data cost. The results speak for themselves.
+
+The point-of-view of this spec is that this validation process proves the efficacy of the approach.
+
+### Schema discovery
+
+Before discussing the queries themselves, an interesting aspect of using an existing hypermedia scheme is schema discovery. You can quite reasonably walk up the hypermedia API and start asking it questions.
+
+The following pattern enables asking which link relations are available for a given HAL resource.
+
+```bash
+ROOT="https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/index.json"
+
+curl -s "$ROOT" | jq -r '._links | keys[]'
+# latest
+# latest-lts
+# self
+# timeline-index
+```
+
+The `_embedded` object can similarly be inspected.
+
+```bash
+ROOT="https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/index.json"
+
+# What's embedded in the root index?
+curl -s "$ROOT" | jq -r '._embedded | keys[]'
+# releases
+```
+
+Other similar questions be asked by inspected by intereraction with `_links` and `_embedded`. Additional patterns are discussed in [Index Discovery](./metrics/index-discovery.md).
+
+### Metrics
+
+Several queries were developed to evalulate the effectiveness of the graph. The same queries were used for LLM eval testing. A couple of those tests are shared here to provide a quick understanding of graph performance. They represent a range of queries, capturing much of the spectrum of capability and complexity. In many cases, the existing `releases-index.json` format is incapable of providing the information required by a query.
+
+#### Supported .NET Versions
+
+**Query:** "Which .NET versions are currently supported?"
+
+| Schema | Files Required | Total Transfer |
+|--------|----------------|----------------|
+| llms-index | `llms.json` | **5 KB** |
+| hal-index | `index.json` | **5 KB** |
+| releases-index | `releases-index.json` | **6 KB** |
+
+**llms-index:** The `supported_releases` property provides a direct array—no filtering required:
+
+```bash
+LLMS="https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/llms.json"
+
+curl -s "$LLMS" | jq -r '.supported_releases[]'
+# 10.0
+# 9.0
+# 8.0
+```
+
+**hal-index:**
+
+```bash
+ROOT="https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/index.json"
+
+curl -s "$ROOT" | jq -r '._embedded.releases[] | select(.supported) | .version'
+# 10.0
+# 9.0
+# 8.0
+```
+
+**releases-index:**
+
+```bash
+ROOT="https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json"
+
+curl -s "$ROOT" | jq -r '.["releases-index"][] | select(.["support-phase"] == "active") | .["channel-version"]'
+# 10.0
+# 9.0
+# 8.0
+```
+
+**Winner:** llms-index
+
+- Direct array access, no filtering required
+- Equivalent size to hal-index (5 KB)
+- 17% smaller than releases-index
+
+**Analysis:**
+
+- **Completeness:** ✅ Equal—all three return the same list of supported versions.
+- **Zero-fetch for LLMs:** The llms-index `supported_releases` array can be answered directly from embedded data without any jq filtering—ideal for AI assistants that have already fetched llms.json as their entry point.
+- **Query complexity:** llms-index requires no `select()` filter; hal-index uses boolean filter; releases-index requires enum comparison with bracket notation.
+
+---
+
+#### .NET 6 EOL Details
+
+**Query:** "When did .NET 6 go EOL, when was the last .NET 6 security patch and what CVEs did it fix?"
+
+| Schema | Files Required | Total Transfer |
+|--------|----------------|----------------|
+| llms-index | `llms.json` → `index.json` → `6.0/index.json` → `6.0/6.0.35/index.json` | **45 KB** |
+| hal-index | `index.json` → `6.0/index.json` → `6.0/6.0.35/index.json` | **40 KB** |
+| releases-index | `releases-index.json` → `6.0/releases.json` | **1,612 KB** |
+
+**llms-index:** EOL versions are not in `latest_patches[]`, so navigation through the release index is required:
+
+```bash
+LLMS="https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/llms.json"
+
+# Step 1: Get releases-index link (6.0 not in latest_patches since it's EOL)
+ROOT=$(curl -s "$LLMS" | jq -r '._links["releases-index"].href')
+
+# Step 2: Get 6.0 version href
+VERSION_HREF=$(curl -s "$ROOT" | jq -r '._embedded.releases[] | select(.version == "6.0") | ._links.self.href')
+
+# Step 3: Get EOL date and latest-security link
+VERSION_DATA=$(curl -s "$VERSION_HREF")
+echo "$VERSION_DATA" | jq -r '"EOL: \(.eol_date | split("T")[0])"'
+# EOL: 2024-11-12
+
+# Step 4: Get last security patch details
+SECURITY_HREF=$(echo "$VERSION_DATA" | jq -r '._links["latest-security"].href')
+curl -s "$SECURITY_HREF" | jq -r '"Last security: \(.version) (\(.date | split("T")[0])) | CVEs: \(.cve_records | join(", "))"'
+# Last security: 6.0.35 (2024-10-08) | CVEs: CVE-2024-43483, CVE-2024-43484, CVE-2024-43485
+```
+
+**hal-index:**
+
+```bash
+ROOT="https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/index.json"
+
+# Step 1: Get 6.0 version href
+VERSION_HREF=$(curl -s "$ROOT" | jq -r '._embedded.releases[] | select(.version == "6.0") | ._links.self.href')
+
+# Step 2: Get EOL date and latest-security link
+VERSION_DATA=$(curl -s "$VERSION_HREF")
+echo "$VERSION_DATA" | jq -r '"EOL: \(.eol_date | split("T")[0])"'
+# EOL: 2024-11-12
+
+# Step 3: Get last security patch details
+SECURITY_HREF=$(echo "$VERSION_DATA" | jq -r '._links["latest-security"].href')
+curl -s "$SECURITY_HREF" | jq -r '"Last security: \(.version) (\(.date | split("T")[0])) | CVEs: \(.cve_records | join(", "))"'
+# Last security: 6.0.35 (2024-10-08) | CVEs: CVE-2024-43483, CVE-2024-43484, CVE-2024-43485
+```
+
+**releases-index:**
+
+```bash
+ROOT="https://builds.dotnet.microsoft.com/dotnet/release-metadata/releases-index.json"
+
+# Step 1: Get EOL date from root (available inline)
+curl -s "$ROOT" | jq -r '.["releases-index"][] | select(.["channel-version"] == "6.0") | "EOL: \(.["eol-date"])"'
+# EOL: 2024-11-12
+
+# Step 2: Get 6.0 releases.json URL and find last security patch
+RELEASES_URL=$(curl -s "$ROOT" | jq -r '.["releases-index"][] | select(.["channel-version"] == "6.0") | .["releases.json"]')
+curl -s "$RELEASES_URL" | jq -r '
+  [.releases[] | select(.security == true)][0] |
+  "Last security: \(.["release-version"]) (\(.["release-date"])) | CVEs: \([.["cve-list"][]?["cve-id"]] | join(", "))"'
+# Last security: 6.0.35 (2024-10-08) | CVEs: CVE-2024-43483, CVE-2024-43484, CVE-2024-43485
+```
+
+**Winner:** hal-index (**40x smaller** than releases-index)
+
+- llms-index requires extra hop through `releases-index` link since EOL versions aren't embedded
+- hal-index starts directly at the release index
+- releases-index EOL date is in root, but CVE query requires 1.6 MB file
+
+**Analysis:**
+
+- **Completeness:** ✅ Equal—all three return the same EOL date, patch version, and CVE IDs.
+- **EOL version handling:** The llms-index optimizes for supported versions (`latest_patches[]`), requiring navigation for EOL queries. This is a reasonable tradeoff since EOL queries are less frequent.
+- **CVE details:** To get CVE severity/titles (not just IDs), hal-index and llms-index can navigate to `timeline/2024/10/cve.json`; releases-index cannot provide this data.
+
+---
+
+#### Package CVE Check
+
+**Query:** "Here's my project file with package references. Have any of my packages had CVEs in the last 6 months?"
+
+```xml
+<PackageReference Include="Microsoft.Build" Version="17.10.10" />
+<PackageReference Include="Microsoft.Build.Tasks.Core" Version="17.8.10" />
+```
+
+| Schema | Files Required | Total Transfer |
+|--------|----------------|----------------|
+| llms-index | `llms.json` → 6 month cve.json files (via `prev-security`) | **~60 KB** |
+| hal-index | `timeline/index.json` → `timeline/2025/index.json` → 6 month cve.json files | **~65 KB** |
+| releases-index | N/A | N/A |
+
+**llms-index:** Walk security timeline and check packages in cve.json with version comparison:
+
+```bash
+LLMS="https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/llms.json"
+
+# Package references from project file (name and version)
+declare -A PKGS
+PKGS["Microsoft.Build"]="17.10.10"
+PKGS["Microsoft.Build.Tasks.Core"]="17.8.10"
+
+# Start from the latest security month
+MONTH_HREF=$(curl -s "$LLMS" | jq -r '._links["latest-security-month"].href')
+
+# Walk back 6 security months
+for i in {1..6}; do
+  DATA=$(curl -s "$MONTH_HREF")
+  YEAR=$(echo "$DATA" | jq -r '.year')
+  MONTH=$(echo "$DATA" | jq -r '.month')
+  CVE_HREF=$(echo "$DATA" | jq -r '._links["cve-json"].href // empty')
+  
+  if [ -n "$CVE_HREF" ]; then
+    CVE_DATA=$(curl -s "$CVE_HREF")
+    
+    for pkg in "${!PKGS[@]}"; do
+      ver="${PKGS[$pkg]}"
+      # Check vulnerability and get commit diff URLs
+      echo "$CVE_DATA" | jq -r --arg pkg "$pkg" --arg ver "$ver" --arg ym "$YEAR-$MONTH" '
+        .commits as $all_commits |
+        .packages[]? | select(.name == $pkg) |
+        if ($ver >= .min_vulnerable and $ver <= .max_vulnerable) then
+          "\($ym) | \($pkg)@\($ver) | \(.cve_id) | vulnerable: \(.min_vulnerable)-\(.max_vulnerable) | fixed: \(.fixed)",
+          (.commits[]? | "  diff: " + ($all_commits[.].url // "unknown"))
+        else
+          empty
+        end
+      '
+    done
+  fi
+  
+  MONTH_HREF=$(echo "$DATA" | jq -r '._links["prev-security"].href // empty')
+  [ -z "$MONTH_HREF" ] && break
+done
+# 2025-10 | Microsoft.Build@17.10.10 | CVE-2025-55247 | vulnerable: 17.10.0-17.10.29 | fixed: 17.10.46
+#   diff: https://github.com/dotnet/msbuild/commit/aa888d3214e5adb503c48c3bad2bfc6c5aff638a.diff
+# 2025-10 | Microsoft.Build.Tasks.Core@17.8.10 | CVE-2025-55247 | vulnerable: 17.8.0-17.8.29 | fixed: 17.8.43
+#   diff: https://github.com/dotnet/msbuild/commit/f0cbb13971c30ad15a3f252a8d0171898a01ec11.diff
+```
+
+**Winner:** llms-index
+
+- Direct `latest-security-month` link as starting point
+- Package-level CVE data with commit diff URLs
+- Enables code review of security fixes without relying on nuget.org
+
+**Analysis:**
+
+- **Completeness:** ⚠️ releases-index does not provide package-level CVE data.
+- **Version matching:** String comparison works for semver when patch versions have consistent digit counts.
+- **Commit diffs:** The `.commits` lookup provides direct links to fix diffs on GitHub.
+- **Timeline navigation:** Uses `prev-security` links to efficiently walk security history.
+
+---
