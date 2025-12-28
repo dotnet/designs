@@ -6,7 +6,7 @@
 
 In trail races, there are frequent ribbons hanging from trees and painted arrows on the ground to ensure the correct path taken. It is often the case that there are races of multiple distances being run on an overlapping course. At key intersections, there are signs that say "5 KM -> left" and "10 KM -> continue straight". The ribbons and the painted arrows are the kind of map that a document schema provides, ensuring correct coloring within the lines. The signposting where the courses diverge is the extra descriptive insight that enables graph traversal. The signposting is a key-value function. You match a key you know with a value you don't. This signposting gets us closer to understanding and being able to explore the territory.
 
-This approach is in sharp contrast to the typical HTML graph implementation: `For a deeper discussion on this topic, <a href="another-document.html">click here</a>.`. A semantic graph might expose a named link relation like `"gardening-deep-dive": "https://../diving-deeper-on-gardening.md"` or expose more descriptive complexity by separating link kind, the "deep-dive", from target kind, "gardening", more cleanly splitting the adjective and noun. The better the implementation, the less inference, flow analysis, or attention is required to derive the intended meaning.
+This approach is in sharp contrast to the typical HTML graph implementation: `For a deeper discussion on this topic, <a href="another-document.html">click here</a>.`. A semantic graph might expose a named link relation like `{ "link-relation": "gardening-deep-dive", "href": "..." }` or expose more descriptive complexity by separating `"link-relation": "deep-dive"` from `"target-kind": "gardening"`, to cleanly split the link-adjective and its target-noun. The better the implementation, the less inference, flow analysis, or attention is required to derive the intended meaning.
 
 Databases went through a "no-sql" transition. That wasn't a rejection of structure, but a realization that the source of structure is the documents. Semantic graphs extend this idea with "no-schema" consumption. Rather than requiring upfront schema knowledge, a fully realized semantic space—in both content and link relations—allows readers to discover structure through descriptive labels and traversal. A sort of "world schema" emerges from navigation.
 
@@ -16,13 +16,13 @@ The concept of a pre-baked static hypermedia graph has been applied to the .NET 
 
 Graph-resident guidance consists of skills and workflows. HATEOAS tells us that "customer" can be a relation of a sales order. Why not make "graph-instructions" a relation of a graph? Skills and workflows are first-class relations in the graph, enabling graph designers to express navigation intent. Skills follow the Anthropic skill format, while workflows are HAL documents that describe queries over graph link relations. This enables the graph designer to provide the reader with the "ten-km-route" workflow if that's a match for the intended outcome.
 
-The .NET release notes information graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation. It augments HAL with a homegrown HAL-native workflow convention that looks just as native as `_links` or `_embedded`. LLMs grasp the intent, in part because HAL predates LLMs by over a decade. This approach enables low-cost LLM enablement for scenarios where hosting a persistent "AI server" would be prohibitive.
+The .NET release notes information graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation. It augments HAL with a homegrown HAL-native workflow convention that looks just as native as `_links` or `_embedded`. LLMs grasp the intent, in part because HAL predates LLMs by over a decade. This approach enables low-cost LLM enablement for scenarios where hosting a persistent "AI server" would be prohibitive. And, of course, this approach has utility beyond release notes.
 
 ## Graph entrypoint tension
 
-The release notes information graph is based on the restrictive idea that the entrypoint of the graph should be skeletal and rarely changing. That's workable for LLMs but far from ideal. The restrictive idea of the core graph is that it should support n-9s levels of reliability and be subject to rigorous engineering practices (git workflows, peer review, merge gates). However, we're in the early days of AI and subject to waves of externally-driven change that requires significant rework to maintain high quality LLM enablement. These requirements are in firm opposition, needing a winner to pull ahead, a painful compromise, or some form of tie-break.
+The release notes information graph is based on the restrictive idea that the entrypoint of the graph should be skeletal and rarely changing. That's workable for LLMs but far from ideal. The restrictive idea of the core graph is that it should support n-9s levels of reliability and be subject to rigorous engineering practices (git workflows, peer review, merge gates). However, we're in the early days of AI and subject to repeated waves of externally-driven change that requires significant re-evaluation and re-work to maintain high quality LLM enablement. These requirements are in firm opposition, needing a winner to pull ahead, a painful compromise, or some form of tie-break.
 
-Instead, we can view the core graph as a well-defined data-layer that honors the reliability requirements, while exposing a separate application-layer entrypoint for LLMs that can evolve over time without a heavy compatibility burden.
+Compromises are no fun! Let's take the tie-break. We can instead view the core graph as a well-defined data-layer that honors the reliability requirements, while exposing a separate application-layer entrypoint for LLMs that can evolve over time without the heavy compatibility burden.
 
 We can compare the two entrypoints.
 
@@ -98,6 +98,8 @@ This approach enables both principles from earlier:
 - "match a key you know with a value you don't": the reader discovers the right pathway through semantic labels
 
 ## LLM entry point
+
+
 
 Two strong design principles emerged from intuition and then observed behavior from eval:
 
