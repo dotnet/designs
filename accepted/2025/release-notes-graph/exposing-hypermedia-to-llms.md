@@ -18,15 +18,15 @@ Graph-resident guidance consists of skills and workflows. HATEOAS tells us that 
 
 The .NET release notes information graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation. It augments HAL with a homegrown HAL-native workflow convention that looks just as native as `_links` or `_embedded`. LLMs grasp the intent, in part because HAL predates LLMs by over a decade. This approach enables low-cost LLM enablement for scenarios where hosting a persistent "AI server" would be prohibitive.
 
-## LLM Graph Entrypoint
+## Graph entrypoint tension
 
-The release notes information graph is based on the restrictive idea that the entrypoint of the graph should be skeletal and rarely changing. That's workable for LLMs but far from ideal. The restrictive idea of the core graph is that it should support n-9s levels of reliability and be subject to rigorous engineering constraints. However, we're in the early days of AI with regular change that could require signficant rework of LLM enablement. These needs are in firm opposition, needing some form of tie-break.
+The release notes information graph is based on the restrictive idea that the entrypoint of the graph should be skeletal and rarely changing. That's workable for LLMs but far from ideal. The restrictive idea of the core graph is that it should support n-9s levels of reliability and be subject to rigorous engineering practices (git workflows, peer review, merge gates). However, we're in the early days of AI and subject to waves of externally-driven change that requires significant rework to maintain high quality LLM enablement. These requirements are in firm opposition, needing a winner to pull ahead, a painful compromise, or some form of tie-break.
 
-Instead, we can view the core graph as a well-defined data-layer and expose a separate application-layer entrypoint for LLMs that doesn't guaruntee the same compatibility promise and can evolve over time without that burden.
+Instead, we can view the core graph as a well-defined data-layer that honors the reliability requirements, while exposing a separate application-layer entrypoint for LLMs that can evolve over time without a heavy compatibility burden.
 
 We can compare the two entrypoints.
 
-Core graph entrypoint:
+[Core graph entrypoint](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/index.json):
 
 ```json
   "_embedded": {
@@ -43,9 +43,9 @@ Core graph entrypoint:
       },
 ```
 
-That's how the core graph exposes a major version. As suggested, its skeletal.
+That's how the core graph exposes a major version. As suggested, it's skeletal. The graph entrypoint only needs to be updates once or twice a year. Even if the file is regenerated daily, git won't notice any changes.
 
-LLM entrypoint:
+[LLM entrypoint](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json):
 
 ```json
   "_embedded": {
@@ -88,4 +88,20 @@ LLM entrypoint:
       },
 ```
 
-The LLM graph exposes a lot more useful information
+The LLM graph exposes a lot more useful information. The semantic data and link relations are on clear display.
+
+The strongest indicator of semantic design is that there are multiple relations for the same underlying resource. Both `latest-security-disclosures` and `latest-security-month` point to the same month index, but they offer different semantic pathways for discovering it. An LLM asking "what are the latest CVEs?" navigates one way; an LLM asking "what happened in October?" navigates another. Same destination, different semantic intent.
+
+This approach enables both principles from earlier:
+
+- "match for the intended outcome": the designer provides multiple semantic pathways for different query types
+- "match a key you know with a value you don't": the reader discovers the right pathway through semantic labels
+
+## LLM entry point
+
+Two strong design principles emerged from intuition and then observed behavior from eval:
+
+- Consistently apply a semantic model throughout the graph. It's a comfort to find a concept where it is expected.
+- Expose resources in terms of structual kind, like `major` aand `-month`, and desired output, like `-security-disclosures`.
+
+This dual approach to semantic naming sometimes results in this double-mapping. Emperical observation suggests that LLMs prefer the outcome-based naming, while the more schema-correct and initial naming is the structual framing.
