@@ -1,6 +1,6 @@
 # Exposing Hypermedia Information Graphs to LLMs
 
-[Hypermedia](https://en.wikipedia.org/wiki/Hypermedia) and [hypertext](https://en.wikipedia.org/wiki/Hypertext) are decades-old ideas and formats that are perfectly-suited for LLM consumption by virtue of self-describing structure and relationships between resources. The premise is that there is enough meta-information in a hypermedia document that a semantic consumer can successfully traverse an information graph to find the information demanded by a user prompt. The prevailing narrative over the last few decades has been that _structured data_ > _unstructured documents_, in terms of the ability to derive meaningful insight with tools beyond basic text search. JSON and XML came out of that heritage, with structured query enabled by [JSONPath](https://en.wikipedia.org/wiki/JSONPath) and [XPath](https://en.wikipedia.org/wiki/XPath), both assuming a priori schema knowledge. [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS) contributes the idea that data labeling can be extended to relations across documents. [Hypertext Application Language](https://en.wikipedia.org/wiki/Hypertext_Application_Language) is a standard implementation of this concept, enabling applications to expose a semantic space to a broad range of consumers, enabling navigation patterns beyond what a schema could reasonably describe.
+[Hypermedia](https://en.wikipedia.org/wiki/Hypermedia) and [hypertext](https://en.wikipedia.org/wiki/Hypertext) are decades-old ideas and formats that are perfectly-suited for LLM consumption by virtue of self-describing structure and relationships between resources. The premise is that there is sufficient meta-information in a hypermedia document graph for a semantic consumer to successfully traverse it to find the information demanded by a user prompt. The prevailing narrative over the last few decades has been that _structured data_ > _unstructured documents_, in terms of inherent capacity to derive meaningful insight. JSON and XML came out of that heritage, with [JSONPath](https://en.wikipedia.org/wiki/JSONPath) and [XPath](https://en.wikipedia.org/wiki/XPath) providing structured query supported by a priori schema knowledge. [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS) contributes the idea that data labeling can be extended to relations across resources. These approaches are integrated in this system to enable an LLM to search for and discover desired information across labeled nodes and edges within a graph. In a more traditional system, a schema is the pre-requisite to traversal, whereas in a semantic system, it is traversal that reveals the schema.
 
 > A (nearly) century-old principle, articulated by [Korzybski](https://en.wikipedia.org/wiki/Alfred_Korzybski): [the map is not the territory](https://en.wikipedia.org/wiki/Map%E2%80%93territory_relation).
 
@@ -8,23 +8,23 @@ In trail races, there are frequent ribbons hanging from trees and painted arrows
 
 This approach is in sharp contrast to the typical HTML graph implementation: `For a deeper discussion on this topic, <a href="another-document.html">click here</a>.`. A semantic graph might expose a named link relation like `{ "link-relation": "gardening-deep-dive", "href": "..." }` or expose more descriptive complexity by separating `"link-relation": "deep-dive"` from `"target-kind": "gardening"`, to cleanly split the link-adjective and its target-noun. The better the implementation, the less inference, flow analysis, or attention is required to derive the intended meaning.
 
-Databases went through a "no-sql" transition. That wasn't a rejection of structure, but a realization that the source of structure is the documents. Semantic graphs extend this idea with "no-schema" consumption. Rather than requiring upfront schema knowledge, a fully realized semantic space—in both content and link relations—allows readers to discover structure through descriptive labels and traversal. A sort of "world schema" emerges from navigation.
+Databases went through a "no-sql" transition. That wasn't a rejection of structure, but a realization that the source of structure is the documents. Hypermedia graphs extend this idea with "no-schema" consumption. Rather than requiring upfront schema knowledge, a fully realized semantic space -- both content and link relations -- allows readers to discover structure through descriptive labels and traversal. A sort of "world schema" emerges from navigation.
 
 Hypermedia information document graphs can be published pre-baked, making them suitable for direct consumption without being pre-loaded and exposed by a vector database. The semantic relationships and other meta-information are used as the basis of typical LLM mechanics like vector similarity, making hypermedia a kind of RAG scheme and suitable for static-webhost deployment.
 
 The concept of a pre-baked static hypermedia graph has been applied to the .NET release notes. That project was initially approached as a modern revamp of a set of JSON files that are used to inform and direct cloud-infra deployment and compliance workflows at scale. Over time, it became obvious that LLMs could read the same content directly and self-reason about its content and navigation patterns. Early experimentation proved that out. The primary techniques used to improve applicability for LLMs are semantic naming and graph-resident guidance. These techniques can be quite subtle, where a small shift in semantic bias can result in a large shift in LLM performance.
 
-Graph-resident guidance consists of skills and workflows. HATEOAS tells us that "customer" can be a relation of a sales order. Why not make "graph-instructions" a relation of a graph? Skills and workflows are first-class relations in the graph, enabling graph designers to express navigation intent. Skills follow the Anthropic skill format, while workflows are HAL documents that describe queries over graph link relations. This enables the graph designer to provide the reader with the "ten-km-route" workflow if that's a match for the intended outcome.
+Graph-resident guidance consists of skills and workflows. HATEOAS tells us that "customer" can be a relation of a sales order. Why not make "graph-instructions" a relation of a graph? Skills and workflows are first-class relations in the graph, enabling graph designers to express navigation intent. Skills follow the Anthropic skill format, while workflows are HAL documents that describe queries over graph link relations. This enables the graph designer to provide readers with "ten-km-route" style workflows if that's a match for the intended outcome.
 
-The .NET release notes information graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation. It augments HAL with a homegrown HAL-native workflow convention that looks just as native as `_links` or `_embedded`. LLMs grasp the intent, in part because HAL predates LLMs by over a decade. This approach enables low-cost LLM enablement for scenarios where hosting a persistent "AI server" would be prohibitive. And, of course, this approach has utility beyond release notes.
+The .NET release notes information graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation. It augments HAL with a homegrown HAL workflow convention that looks just as native as `_links` or `_embedded`. LLMs grasp the intent, in part because HAL predates LLMs by over a decade. This approach enables low-cost LLM enablement for scenarios where hosting a persistent "AI server" would be prohibitive. And, of course, this approach has utility beyond release notes.
 
 ## Graph entrypoint tension
 
-The release notes information graph is based on the restrictive idea that the entrypoint of the graph should be skeletal and rarely changing. That's workable for LLMs but far from ideal. The restrictive idea of the core graph is that it should support n-9s levels of reliability and be subject to rigorous engineering practices (git workflows, peer review, merge gates). However, we're in the early days of AI and subject to repeated waves of externally-driven change that requires significant re-evaluation and re-work to maintain high quality LLM enablement. These requirements are in firm opposition, needing a winner to pull ahead, a painful compromise, or some form of tie-break.
+The release notes information graph is based on the restrictive idea that the entrypoint of the graph should be skeletal and rarely changing. That's workable for LLMs but far from ideal. The restrictive idea of the core graph is that it should support an n-9s level of reliability and be subject to rigorous engineering practices (git workflows, peer review, merge gates). However, we're in the early days of AI and subject to repeated waves of externally-driven change that requires significant and quick re-evaluation and re-work to maintain high quality LLM enablement. These requirements are in firm opposition, needing a winner to pull ahead, a painful compromise, or some form of tie-break.
 
-Compromises are no fun! Let's take the tie-break. We can instead view the core graph as a well-defined data-layer that honors the reliability requirements, while exposing a separate application-layer entrypoint for LLMs that can evolve over time without the heavy compatibility burden.
+Let's take the tie-break. We can instead view the core graph as a well-defined data-layer that honors the reliability requirements, while exposing a separate application-layer entrypoint for LLMs that can evolve over time without the heavy compatibility burden.
 
-We can compare the two entrypoints.
+We can compare the embedded resource section of the two entrypoints.
 
 [Core graph entrypoint](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/index.json):
 
@@ -43,7 +43,7 @@ We can compare the two entrypoints.
       },
 ```
 
-That's how the core graph exposes a major version. As suggested, it's skeletal. The graph entrypoint only needs to be updates once or twice a year. Even if the file is regenerated daily, git won't notice any changes.
+That's how the core graph exposes a major version. As suggested, it's skeletal. The graph entrypoint only needs to be updated once or twice a year. Even if the file is regenerated daily, git won't notice any changes.
 
 [LLM entrypoint](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json):
 
@@ -92,18 +92,24 @@ The LLM graph exposes a lot more useful information. The semantic data and link 
 
 The strongest indicator of semantic design is that there are multiple relations for the same underlying resource. Both `latest-security-disclosures` and `latest-security-month` point to the same month index, but they offer different semantic pathways for discovering it. An LLM asking "what are the latest CVEs?" navigates one way; an LLM asking "what happened in October?" navigates another. Same destination, different semantic intent.
 
-This approach enables both principles from earlier:
+This approach is an implementation of principles described earlier:
 
 - "match for the intended outcome": the designer provides multiple semantic pathways for different query types
 - "match a key you know with a value you don't": the reader discovers the right pathway through semantic labels
 
-## LLM entry point
+The indexes also differ in terms of the nature of the information they contain. The core index is a zoomed out view of .NET versions released over (at the time of writing) a ten year period. They form the basic elements of any query. This is an objectively correct normalized entry point view of the graph. In contrast, the LLM index is the result of a query, revealing rich information about the most recent patches for supported major versions. It enables constructing the same queries as the core graph, but also includes enough data to serve as the results of queries, relating to the zoomed-in current moment.
+
+The graph applies multiple focal lengths and pivots throughout to provide information that is useful and has good ergonomics for varying classes of queries and their consumers. This differentation is a core property of the graph, in part to serve the needs of expected consumers, but also to separate chains of graph nodes that should be skeletal vs those that should be weighted.
+
+## Graph design
 
 
 
-Two strong design principles emerged from intuition and then observed behavior from eval:
+Two strong design principles emerged from observed LLM behavior from eval:
 
 - Consistently apply a semantic model throughout the graph. It's a comfort to find a concept where it is expected.
 - Expose resources in terms of structual kind, like `major` aand `-month`, and desired output, like `-security-disclosures`.
 
 This dual approach to semantic naming sometimes results in this double-mapping. Emperical observation suggests that LLMs prefer the outcome-based naming, while the more schema-correct and initial naming is the structual framing.
+
+Wormholes vs spear-fishing.
