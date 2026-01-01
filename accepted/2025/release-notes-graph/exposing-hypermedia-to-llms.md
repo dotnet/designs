@@ -46,51 +46,147 @@ There are entypoints provided for LLMs:
 
 A major advantage of `llms.txt` is that it is markdown, which offers a natural way to expose resource links, guidance, and foreign content (code fences). It is possible to include all the same information in JSON, however, it is awkward and (critically) unconventional. It takes a lot more design effort to get an LLM to notice and apply guidance from within a data-oriented JSON document than markdown, which has a much stronger association with guidance and multi-modality information.
 
-Our use of `llms.txt` includes an entrypoint link to `llms.json`, a table of skills content, and basic initial guidance. LLMs will often fetch the data URL and one or more skills files in a single turn. Fetching multiple documents in a single turn is a useful tactic for token optimization.
+Our use of `llms.txt` includes an entrypoint link to the data entrypoint (`llms.json`), a table of skills content, and basic initial guidance. LLMs will often fetch the data URL and one or more skills files in a single turn. Fetching multiple documents in a single turn is a useful tactic for token optimization.
 
-## Performance implications
+### Performance implications
 
-Some questions can be answered from the LLM entrypoint, however, many require navigating to documents within the core graph. It is not feasible or desirable to include all information in a single document. As a result, a turn-by-turn approach is required. At each turns, there is new content, new insight, and then selection of critical information that directs the next fetch(es) or is the desired answer. The range of required turns varies greatly, a join of information design over data and comprehension of the overall information framework by the LLM.
+Some questions can be answered from the LLM entrypoint, however, many require navigating to documents within the core graph. It is not feasible or desirable to include all information in a single document. As a result, a turn-by-turn approach is required. At each turn, there is new content, new insight, and then selection of critical information that directs the next fetch(es) or is the desired answer. The range of required turns varies greatly, a join of information design over data and comprehension of the overall information framework by the LLM.
 
-There is a cost function for LLMs based of the mechanics of the [transformer architecture](https://en.wikipedia.org/wiki/Transformer_(deep_learning)). The cost of multiple turns can be prohibitive, resulting in conversation failures/termination, poor performance, or high cost. The graph design has a direct impact on LLM performance and cost.
+There is a cost function for LLMs based on the mechanics of the [transformer architecture](https://en.wikipedia.org/wiki/Transformer_(deep_learning)). The cost of multiple turns can be prohibitive, resulting in conversation failures/termination, poor performance, or high cost. The graph design has a direct impact on LLM performance and cost.
 
-Let's develop an intuitive for cost. There are three major cost functions at play:
+#### Cost model
 
-- Token cost, which is additive across turns, and summed across turns
-- Context, which is the accumulated token cost of the final turn
-- Attention computation, which is the square of the tokens in any one turn and the sum of those squares across turns
+There are three major cost functions at play:
 
-Let's simplify, assuming that tokens (`n`) are uniform per turn (`m`).
+- **Token cost:** The tokens processed at each turn, summed across turns. Each turn reprocesses all prior context plus new content.
+- **Context:** The accumulated tokens at the final turn. This is bounded by the model's context window.
+- **Attention:** Each token attends to every other token within a turn (quadratic), and this cost is incurred at every turn as context grows.
 
-Context (accumulated tokens): `mn`
+Let's build intuition with uniform token counts: `n` tokens added per turn across `m` turns. New tokens being uniform is a simplification.
 
-Total token cost (summed tokens / turn): ?
+| Turn | New tokens | Tokens | Context size | Attention cost | Accumulated token cost | Accumulated attention cost |
+|------|------------|--------|--------------|----------------|------------------------|---------------------------|
+| 1 | n | n | n | n² | n | n² |
+| 2 | n | 2n | 2n | 4n² | 3n | 5n² |
+| 3 | n | 3n | 3n | 9n² | 6n | 14n² |
+| 4 | n | 4n | 4n | 16n² | 10n | 30n² |
+| 5 | n | 5n | 5n | 25n² | 15n | 55n² |
+| m | n | mn | mn | m²n² | nm(m+1)/2 | n²m(m+1)(2m+1)/6 |
 
-Attention (number of interactions required): `n² * m³ / 3`
+The formulas simplify for large m:
 
-I need the m turns table here.
+| Measure | Formula | Growth class |
+|---------|---------|--------------|
+| Final context | mn | Linear in turns |
+| Total token cost | nm²/2 | Quadratic in turns |
+| Total attention | n²m³/3 | Cubic in turns |
 
-Total: `n²(1 + 4 + 9 + ... + m²)` = `n² × m³/3`
+The cubic growth in attention is the dominant cost. It emerges from summing quadratic costs across turns—each turn pays attention on everything accumulated so far.
 
-What's actually happening:
+### Batched vs sequential
 
-`n²` is the quadratic attention factor (tokens attending to tokens)
-`m³` emerges from summing squares across turns
+Consider an alternative: what if all content could be fetched in a single turn?
 
-Intuitive model:
+| Approach | Total attention cost | Relative cost |
+|----------|---------------------|---------------|
+| Batched (1 turn) | (nm)² = n²m² | 1× |
+| Sequential (m turns) | n²m³/3 | m/3 × |
 
-Batched: (total tokens)² = (nm)² = n²m² — pure quadratic
-Sequential: sum of growing quadratics = n²m³/3 — cubic in turns
+The sequential penalty is approximately **m/3** compared to batched. Ten turns costs roughly 3× what a single batched turn would; thirty turns costs roughly 10×. This ratio scales linearly with turn count.
 
-Batched is the cheapest form. It's the mode where all fetches can be collapsed into a single term. We escape the successive cost of attention. Sequential is the more realistic but costly model, where each fetch happens in sequence. The cost difference is very large.
+Many problems genuinely require multiple turns—the LLM must reason about intermediate results before knowing what to fetch next. The goal is not to eliminate turns but to minimize them and optimize their structure.
 
-One can draw the conclusion that any system that requires the turn-by-turn approach is bad because it forces the sequential approach. That's not really a correct framing. Many problems require multiple turns. For example, many ChatGPT conversations go on for quite some time. A more useful framing is determining if there is a way to reduce turns or apply some other optimization.
+### Optimization: lean early, heavy late
 
-> The release notes information graph is based on the restrictive idea that the entrypoint of the graph should be skeletal and rarely changing.
+The uniform model above assumes equal token counts per turn. In practice, token distribution across turns is a design choice with significant cost implications.
 
-This design approach was selected in service of n-9s reliability and performance. It takes on a new light when viewed through various LLM cost functions. The formulas above assume that token count is uniform. If it isn't, then you'd want lean token counts up front to guide planning and navigation and then more weighty token counts at the end (at the hopefully final turn) used to derive an answer. The ability to fetch multiple documents in a single turn further optimizes the cost function. It helps us split the difference between the batched and seqential cost models.
+Consider two orderings for the same total content—6 small documents (100 tokens each) and 3 large documents (500 tokens each):
 
-The rest of the design should be viewed in terms of these cost functions. It is to a large degree the whole game at play.
+**Large documents first:**
+
+| Turn | New tokens | Context | Attention | Accumulated attention |
+|------|------------|---------|-----------|-----------------------|
+| 1 | 500 | 500 | 250K | 250K |
+| 2 | 500 | 1000 | 1,000K | 1,250K |
+| 3 | 500 | 1500 | 2,250K | 3,500K |
+| 4 | 100 | 1600 | 2,560K | 6,060K |
+| ... | ... | ... | ... | ... |
+| 9 | 100 | 2100 | 4,410K | **18,970K** |
+
+**Small documents first:**
+
+| Turn | New tokens | Context | Attention | Accumulated attention |
+|------|------------|---------|-----------|----------------------|
+| 1 | 100 | 100 | 10K | 10K |
+| 2 | 100 | 200 | 40K | 50K |
+| ... | ... | ... | ... | ... |
+| 6 | 100 | 600 | 360K | 910K |
+| 7 | 500 | 1100 | 1,210K | 2,120K |
+| 8 | 500 | 1600 | 2,560K | 4,680K |
+| 9 | 500 | 2100 | 4,410K | **9,090K** |
+
+Same content, same turn count, but ordering alone yields a **2× cost difference**. The principle: defer large token loads to later turns where possible.
+
+### Optimization: multiple fetches per turn
+
+The sequential model assumes one fetch per turn. LLMs can fetch multiple documents in a single turn when given clear guidance about what to retrieve.
+
+This is where graph design directly impacts cost and a graph designer can coerse a sequential paradigm to approach batched cost.
+
+The goal (or opportunity) is to get an LLM to:
+
+1. Navigate lean index documents in early turns to identify targets
+2. Fetch multiple (weighty) target documents in the last turn minus one
+3. Synthesize the answer in the final turn
+
+**Observed pattern from eval:** Given well-structured graph navigation hints, LLMs reliably discover a set of candidate documents in one turn, then fetch all of them together in the next turn. This collapses what might be many sequential fetches into a small number of turns, dramatically reducing the attention cost.
+
+The following eval trace demonstrates the pattern. The prompt asked the LLM to analyze CVE fix patterns across .NET releases:
+
+| Turn | Documents fetched | Purpose |
+|------|-------------------|---------|
+| 1 | `llms.txt` | Entrypoint discovery |
+| 2 | `llms.json`, `cve-queries/SKILL.md` | Graph orientation + skill acquisition |
+| 3 | `workflows.json` | Navigation strategy |
+| 4 | `2024/index.json`, `2025/index.json` | Timeline discovery (2 fetches) |
+| 5 | `2024/11/cve.json`, `2025/01/cve.json`, `2025/03/cve.json`, `2025/04/cve.json`, `2025/05/cve.json`, `2025/06/cve.json` | CVE data collection (6 fetches) |
+| 6 | 6 GitHub `.diff` files | Commit analysis (6 fetches) |
+
+The raw fetch list:
+
+```
+1. llms.txt (turn 1)
+2. llms.json (turn 2)
+3. cve-queries/SKILL.md (turn 2)
+4. workflows.json (turn 3)
+5. 2024/index.json (turn 4)
+6. 2025/index.json (turn 4)
+7. 2024/11/cve.json (turn 5)
+8. 2025/01/cve.json (turn 5)
+9. 2025/03/cve.json (turn 5)
+10. 2025/04/cve.json (turn 5)
+11. 2025/05/cve.json (turn 5)
+12. 2025/06/cve.json (turn 5)
+13-18. Six GitHub .diff files (turn 6)
+```
+
+18 documents retrieved across 6 turns. A naive sequential approach would require 18 turns. The multi-fetch pattern reduced turn count by 3×, which translates to roughly **6× reduction in attention cost** (since the sequential penalty scales as m/3).
+
+Note the progression: documents get progressively larger through the trace. The `llms.txt` entrypoint is tiny. The index files are small. The CVE JSON files are medium. The `.diff` files at the end are the largest. This is the "lean early, heavy late" principle in action as a design intention.
+
+The entrypoint design—skeletal and rarely changing—takes on new significance in this light. A lean entrypoint enables rapid initial orientation with minimal attention cost. Subsequent navigation through lightweight index nodes preserves token budget for the final multi-fetch turn where the more information and answer dense content is gathered.
+
+#### Design implications
+
+The cost model suggests several design principles:
+
+- **Minimize turn count**: through clear navigation affordances. Each eliminated turn saves quadratically growing attention cost.
+- **Front-load lightweight content**: Index documents, link relations, and navigation hints should be small. Substantive content belongs at the leaves.
+- **Enable multi-fetch patterns**: Expose document collections as lists of links rather than embedded content, allowing LLMs to batch their retrieval.
+- **Provide explicit workflows**: Graph-resident guidance can direct LLMs to optimal traversal patterns, encoding the designer's knowledge of efficient paths.
+- **Ensure sufficient guidance to avoid hallucinations**: The effectiveness of the approach decays quickly if an LLM loses confidence in the hints or is unsure how to proceed along the path.
+
+The rest of the design should be viewed through this cost lens. It is to a large degree the whole game at play.
 
 ## llms.txt
 
