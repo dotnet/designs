@@ -18,74 +18,79 @@ Graph-resident guidance consists of skills and workflows. HATEOAS tells us that 
 
 The .NET release notes information graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation. It augments HAL with a homegrown HAL workflow convention that looks just as native as `_links` or `_embedded`. LLMs grasp the intent, in part because HAL predates LLMs by over a decade. This approach enables low-cost LLM enablement for scenarios where hosting a persistent "AI server" would be prohibitive. And, of course, this approach has utility beyond release notes.
 
-## Graph design
+## Graph design point
 
-The release notes information graph is based on the restrictive idea that the entrypoint of the graph should be skeletal and rarely changing. That's workable for LLMs but far from ideal. The restrictive idea of the core graph is that it should support an n-9s level of reliability and be subject to rigorous engineering practices (git workflows, peer review, merge gates). However, we're in the early days of AI and subject to repeated waves of externally-driven change that may require significant and quick re-evaluation and re-work to maintain high-quality LLM enablement. These modalities are in firm opposition.
+The release notes information graph is based on the restrictive idea that the entrypoint of the graph should be skeletal and rarely changing. That's workable for LLMs but not ideal. The motivation for the restrictive approach is that it should support an n-9s level of reliability and be subject to rigorous engineering practices (git workflows, peer review, merge gates). However, we're in the early days of AI and subject to repeated waves of externally-driven change that may require significant and quick re-evaluation and re-work of the entrypoint to maintain high-quality LLM enablement. These modalities are in firm opposition.
 
 We can instead view the core graph as a well-defined data-layer that honors the desired reliability requirements, while exposing a separate application-layer entrypoint for LLMs that can evolve over time without the heavy compatibility burden.
 
-The graph as a whole is based on a largely traditional schema design, utilizing both normalized and denormalized approaches in (hopefully informed) service of consumers. After the graph was realized, it became possible to test it with `jq` as a sort of passive and syntactic consumer and with LLMs as a much more active and semantic consumer. The graph was successively (and hopefully successfully) adapted to improve performance for both consumption styles. Performance is primarily measured in terms of terseness of query and quickness (fetches and data cost) of response. Much of the feedback was fundamental in nature. The overall character of the graph remains a pure information-oriented data design, but with a minor tilt towards semantic consumers.
+The graph as a whole is based on a somewhat traditional schema design, utilizing both normalized and denormalized approaches in (hopefully) informed service of consumers. After the graph was realized, it became possible to test it with `jq` as a sort of passive and syntactic consumer and with LLMs as a much more active and semantic consumer. The graph was successively and successfully adapted to improve performance for both consumption styles. Performance is primarily measured in terms of terseness of query and quickness (fetches and data cost) of response. Much of the feedback could be considered fundamental in nature. The overall character of the graph remains a pure information-oriented data design, but with a significant tilt towards semantic consumers.
 
-The choice of hypermedia as the grounding format is a case-in-point of the overall approach. Hypermedia long pre-dates LLMs, however, it has always held semantic consumers (humans) as a key design cohort. Hypermedia formats provide a conceptual framework that is easy to flavor towards semantic consumption. This flexibility proved useful as the design was adapted with LLM feedback. It should also be noted that LLM feedback is by far the cheapest and most accessible form of feedback. LLMs are happy to provide usage feedback throughout the night while other semantic consumers are sleeping.
+The choice of hypermedia as the grounding format is a case-in-point of the overall approach. Hypermedia long pre-dates LLMs, however, it has always held semantic consumers (humans) as a key design cohort. Hypermedia formats provide a conceptual framework that is easy to flavor towards semantic consumption. This flexibility proved useful as the design was adapted with LLM feedback. It should also be noted that LLM feedback is by far the cheapest and most accessible form of feedback. LLMs are happy to provide usage feedback in response to iterative adaptation and at any time of day or night.
 
 A few strong design principles emerged from observed LLM behavior from eval:
 
 - Consistent application of a conceptual model creates familiarity for semantic consumers. It is a comfort to find a concept exposed where it is expected.
-- Resources can be dual-mapped in terms of structual kind, like `major` aand `-month`, and desired output, like `-security-disclosures`. Prompts can bias towards different concerns. Differentiated mappings are more to present a similar match to semantic consumers.
-- LLMs operate on a model of scarcity, with tokens at a premium. Smaller graph nodes encourage greater graph navigation. Comprehension can be made to outperform consumption cost.
+- It is possible to expose links that jump from one part of the graph to another, like a wormhole. LLMs seem to need to develop _comprehension_ and _trust_ as a pre-requisite for relying on them. The more attractive the wormhole link, the more the LLM may be skeptical. This was observed most with the `latest-security-disclosures` relation since it provides high value and because the it has an inherent half-life.
+- Resources can be dual-mapped in terms of structural kind, like `latest-security-month`, and desired output, like `latest-security-disclosures`. A given prompt may bias towards different concerns. Differentiated mappings are more likely to present a similar match to semantic consumers.
 - LLMs will acquire multiple resources in a single turn if a good strategy for doing so is evident.
+- LLMs operate on a model of scarcity, with tokens at a premium. Smaller graph nodes encourage greater graph navigation by creating a sense that growing comprehension is outstripping consumption cost.
+- Differentiating token cost by category of nodes makes it cheaper for LLMs to navigate a large graph. The `month` node with the graph is weightier than all other nodes making it easier to develop an exploration plan among other nodes before making a final decision on which month(s) to read or to skip months altogether and to prefer to exit the graph (with a graph exit link), for example, to read our monthly `cve.json` files.
 
 ### LLM entrypoints
 
-There are entypoints provided for LLMs:
+There are two entrypoints provided for LLMs:
 
 - [llms.txt](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/llms.txt) -- Prose explanation of how to use the graph, including a link to llms.json.
 - [llms.json](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json) -- The LLM index (AKA "application-layer entrypoint for LLMs"). It also includes guidance inline.
 
-[llms.txt](https://llmstxt.org/) is an emerging standard, with awareness in the most recently trained models. It can be used for meta-information (as is the case in this system) or to expose an index of all information available (as is the case with [Stripe docs](https://docs.stripe.com/llms.txt)). It's hard to imagine that the Stripe approach is optimal. It uses 18.5k tokens (10% of a typical token budget) while our use of `llms.txt` clocks in at a meager 626 tokens.
+[llms.txt](https://llmstxt.org/) is an emerging standard, with awareness in the most recently trained LLMs. It can be used for meta-information (as is the case in this system) or to expose an index of all information available (as is the case with [Stripe docs](https://docs.stripe.com/llms.txt)). It's hard to imagine that the Stripe approach is optimal. It uses 18.5k tokens (10% of a typical token budget) while our use of `llms.txt` clocks in at a meager 609 tokens.
 
 A major advantage of `llms.txt` is that it is markdown, which offers a natural way to expose resource links, guidance, and foreign content (code fences). It is possible to include all the same information in JSON, however, it is awkward and (critically) unconventional. It takes a lot more design effort to get an LLM to notice and apply guidance from within a data-oriented JSON document than markdown, which has a much stronger association with guidance and multi-modality information.
 
 Our use of `llms.txt` includes an entrypoint link to the data entrypoint (`llms.json`), a table of skills content, and basic initial guidance. LLMs will often fetch the data URL and one or more skills files in a single turn. Fetching multiple documents in a single turn is a useful tactic for token optimization.
 
-### Performance implications
+## Performance considerations
 
-Some questions can be answered from the LLM entrypoint, however, many require navigating to documents within the core graph. It is not feasible or desirable to include all information in a single document. As a result, a turn-by-turn approach is required. At each turn, there is new content, new insight, and then selection of critical information that directs the next fetch(es) or is the desired answer. The range of required turns varies greatly, a join of information design over data and comprehension of the overall information framework by the LLM.
+Some questions can be answered from the LLM entrypoint, however, many require navigating to documents within the core graph. It is not feasible or desirable to include all information in a single document. As a result, a turn-by-turn approach is required. At each turn, there is new content, new insight, and then selection of critical information that directs the next fetch(es) or is the desired final answer. The range of required turns varies greatly, a join of information design over the body of data and comprehension of the overall information framework by the LLM.
 
-There is a cost function for LLMs based on the mechanics of the [transformer architecture](https://en.wikipedia.org/wiki/Transformer_(deep_learning)). The cost of multiple turns can be prohibitive, resulting in conversation failures/termination, poor performance, or high cost. The graph design has a direct impact on LLM performance and cost.
+There is a cost function for LLMs based on the mechanics of the [transformer architecture](https://en.wikipedia.org/wiki/Transformer_(deep_learning)). The graph design has a direct impact on LLM performance and cost. Multiple turns accelerate costs extremely quickly, much faster than intuition would suggest.
 
-#### Cost model
+### Cost model
 
 There are three major cost functions at play:
 
 - **Token cost:** The tokens processed at each turn, summed across turns. Each turn reprocesses all prior context plus new content.
-- **Context:** The accumulated tokens at the final turn. This is bounded by the model's context window.
+- **Context:** The accumulated tokens at the final turn (could equally be called "terminal turn" if there is a "context overflow"). This is bounded by the model's context window.
 - **Attention:** Each token attends to every other token within a turn (quadratic), and this cost is incurred at every turn as context grows.
 
-Let's build intuition with uniform token counts: `n` tokens added per turn across `m` turns. New tokens being uniform is a simplification.
+Let's build intuition using uniform token counts: `n` tokens added per turn across `m` turns.
 
-| Turn | New tokens | Tokens | Context size | Attention cost | Accumulated token cost | Accumulated attention cost |
-|------|------------|--------|--------------|----------------|------------------------|---------------------------|
-| 1 | n | n | n | n² | n | n² |
-| 2 | n | 2n | 2n | 4n² | 3n | 5n² |
-| 3 | n | 3n | 3n | 9n² | 6n | 14n² |
-| 4 | n | 4n | 4n | 16n² | 10n | 30n² |
-| 5 | n | 5n | 5n | 25n² | 15n | 55n² |
-| m | n | mn | mn | m²n² | nm(m+1)/2 | n²m(m+1)(2m+1)/6 |
+| Turn | New tokens | Conversation tokens | Context size | Accumulated token cost | Attention cost | Accumulated attention cost |
+|------|------------|---------------------|--------------|------------------------|----------------|---------------------------|
+| 1 | n | n | n | n | n² | n² |
+| 2 | n | 2n | 2n | 3n | 4n² | 5n² |
+| 3 | n | 3n | 3n | 6n | 9n² | 14n² |
+| 4 | n | 4n | 4n | 10n | 16n² | 30n² |
+| 5 | n | 5n | 5n | 15n | 25n² | 55n² |
+| m | n | mn | mn | nm(m+1)/2 | m²n² | n²m(m+1)(2m+1)/6 |
 
 The formulas simplify for large m:
 
 | Measure | Formula | Growth class |
 |---------|---------|--------------|
 | Final context | mn | Linear in turns |
-| Total token cost | nm²/2 | Quadratic in turns |
-| Total attention | n²m³/3 | Cubic in turns |
+| Accumulated token cost | nm²/2 | Quadratic in turns |
+| Accumulated attention | n²m³/3 | Cubic in turns |
 
-The cubic growth in attention is the dominant cost. It emerges from summing quadratic costs across turns—each turn pays attention on everything accumulated so far.
+More context on cost:
+
+- API pricing is in term if tokens. For a multi-turn conversation, the cost is the accumulated token cost not the final context.
+- The cubic growth in attention is the dominant computational cost. It emerges from summing quadratic costs across turns—each turn pays attention on everything accumulated so far.
 
 ### Batched vs sequential
 
-Consider an alternative: what if all content could be fetched in a single turn?
+Consider an alternative for the attention cost: what if all content could be fetched in a single turn?
 
 | Approach | Total attention cost | Relative cost |
 |----------|---------------------|---------------|
@@ -98,95 +103,88 @@ Many problems genuinely require multiple turns—the LLM must reason about inter
 
 ### Optimization: lean early, heavy late
 
-The uniform model above assumes equal token counts per turn. In practice, token distribution across turns is a design choice with significant cost implications.
-
-Consider two orderings for the same total content—6 small documents (100 tokens each) and 3 large documents (500 tokens each):
-
-**Large documents first:**
-
-| Turn | New tokens | Context | Attention | Accumulated attention |
-|------|------------|---------|-----------|-----------------------|
-| 1 | 500 | 500 | 250K | 250K |
-| 2 | 500 | 1000 | 1,000K | 1,250K |
-| 3 | 500 | 1500 | 2,250K | 3,500K |
-| 4 | 100 | 1600 | 2,560K | 6,060K |
-| ... | ... | ... | ... | ... |
-| 9 | 100 | 2100 | 4,410K | **18,970K** |
-
-**Small documents first:**
-
-| Turn | New tokens | Context | Attention | Accumulated attention |
-|------|------------|---------|-----------|----------------------|
-| 1 | 100 | 100 | 10K | 10K |
-| 2 | 100 | 200 | 40K | 50K |
-| ... | ... | ... | ... | ... |
-| 6 | 100 | 600 | 360K | 910K |
-| 7 | 500 | 1100 | 1,210K | 2,120K |
-| 8 | 500 | 1600 | 2,560K | 4,680K |
-| 9 | 500 | 2100 | 4,410K | **9,090K** |
-
-Same content, same turn count, but ordering alone yields a **2× cost difference**. The principle: defer large token loads to later turns where possible.
+The uniform model above assumes equal token counts per turn. In practice, token distribution across turns is a design choice with significant cost implications. The principle: defer large token loads to later turns where possible to reduce the number of turns that must pay the cost of large token loads.
 
 ### Optimization: multiple fetches per turn
 
-The sequential model assumes one fetch per turn. LLMs can fetch multiple documents in a single turn when given clear guidance about what to retrieve.
+The sequential model assumes one fetch per turn. LLMs can fetch multiple documents in a single turn when given clear guidance about what to retrieve. This approach tames the rate at which the attention cost accumulates, enabling a cost profiles that approaches batches while maintaining a sequence. The principle: prefer larger token loads per turn to reduce the number of turns overall.
 
-This is where graph design directly impacts cost and a graph designer can coerse a sequential paradigm to approach batched cost.
+### Concrete application
 
-The goal (or opportunity) is to get an LLM to:
+LLM eval of the graph demonstrates that effective design can result in optimal behavior.
 
-1. Navigate lean index documents in early turns to identify targets
-2. Fetch multiple (weighty) target documents in the last turn minus one
-3. Synthesize the answer in the final turn
+Observed pattern:
 
-**Observed pattern from eval:** Given well-structured graph navigation hints, LLMs reliably discover a set of candidate documents in one turn, then fetch all of them together in the next turn. This collapses what might be many sequential fetches into a small number of turns, dramatically reducing the attention cost.
+1. Navigate lean index documents in early turns to identify graph paths
+1. Fetch multiple graph documents in middle turns to parallelize multiple navigation paths
+1. Fetch multiple information-dense documents in later/last turns to inform final answer
+1. Synthesize the answer in the final turn
 
-The following eval trace demonstrates the pattern. The prompt asked the LLM to analyze CVE fix patterns across .NET releases:
+The following eval trace demonstrates this behavior. The prompt asked the LLM to analyze CVE fix patterns across .NET releases:
 
-| Turn | Documents fetched | Purpose |
-|------|-------------------|---------|
-| 1 | `llms.txt` | Entrypoint discovery |
-| 2 | `llms.json`, `cve-queries/SKILL.md` | Graph orientation + skill acquisition |
-| 3 | `workflows.json` | Navigation strategy |
-| 4 | `2024/index.json`, `2025/index.json` | Timeline discovery (2 fetches) |
-| 5 | `2024/11/cve.json`, `2025/01/cve.json`, `2025/03/cve.json`, `2025/04/cve.json`, `2025/05/cve.json`, `2025/06/cve.json` | CVE data collection (6 fetches) |
-| 6 | 6 GitHub `.diff` files | Commit analysis (6 fetches) |
+> Prompt: Please look at .NET Runtime and ASP.NET Core CVEs from November 2024 until April 2025 (6 months). I am concerned at the rate of these CVEs. Look at code diffs for the CVEs. Are the fixes sufficiently protecting my mission critical apps and could the .NET team have avoided these vulnerabilities with a stronger security process? Fetch code diffs to inform your analysis. Ensure they are from dotnet/runtime or dotnet/aspnetcore. Include the repo and commit link in your analysis of specific CVEs in your report.
 
-The raw fetch list:
+| Turn | Documents | Tokens | Cumulative | Purpose |
+|------|-----------|--------|------------|---------|
+| 1 | 1 | 609 | 609 | Entrypoint discovery |
+| 2 | 2 | 2,323 | 2,932 | Graph orientation + skill acquisition |
+| 3 | 1 | 1,146 | 4,078 | Navigation strategy |
+| 4 | 2 | 3,374 | 7,452 | Timeline discovery |
+| 5 | 6 | 12,131 | 19,583 | CVE data collection |
+| 6 | 6 | 59,832 | 79,415 | Commit analysis |
+
+The token distribution is striking: **75% of all tokens arrive in the final turn**. This is the "lean early, heavy late" principle in action—not by accident, but by design.
+
+The raw fetch list with token counts:
 
 ```
-1. llms.txt (turn 1)
-2. llms.json (turn 2)
-3. cve-queries/SKILL.md (turn 2)
-4. workflows.json (turn 3)
-5. 2024/index.json (turn 4)
-6. 2025/index.json (turn 4)
-7. 2024/11/cve.json (turn 5)
-8. 2025/01/cve.json (turn 5)
-9. 2025/03/cve.json (turn 5)
-10. 2025/04/cve.json (turn 5)
-11. 2025/05/cve.json (turn 5)
-12. 2025/06/cve.json (turn 5)
-13-18. Six GitHub .diff files (turn 6)
+Turn 1 (609 tokens):
+  llms.txt                                    609 tokens
+
+Turn 2 (2,323 tokens):
+  llms.json                                 2,126 tokens
+  cve-queries/SKILL.md                        197 tokens
+
+Turn 3 (1,146 tokens):
+  workflows.json                            1,146 tokens
+
+Turn 4 (3,374 tokens):
+  2024/index.json                           1,765 tokens
+  2025/index.json                           1,609 tokens
+
+Turn 5 (12,131 tokens):
+  2024/11/cve.json                          1,656 tokens
+  2025/01/cve.json                          4,020 tokens
+  2025/03/cve.json                          1,155 tokens
+  2025/04/cve.json                          1,034 tokens
+  2025/05/cve.json                          3,081 tokens
+  2025/06/cve.json                          1,185 tokens
+
+Turn 6 (59,832 tokens):
+  dotnet/runtime d16f41a.diff              37,425 tokens
+  dotnet/runtime 9da8c6a.diff               1,781 tokens
+  dotnet/runtime 89ef51c.diff                 260 tokens
+  dotnet/aspnetcore 67f3b04.diff            1,669 tokens
+  dotnet/aspnetcore d6605eb.diff           15,388 tokens
+  dotnet/runtime b33d4e3.diff               3,309 tokens
 ```
+
+> Note: The eval harness truncated `.diff` files to 50 lines to ensure test completion across all configurations. The token counts above reflect actual document sizes—what a reader would encounter following the [published guidance](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/llms.txt).
 
 18 documents retrieved across 6 turns. A naive sequential approach would require 18 turns. The multi-fetch pattern reduced turn count by 3×, which translates to roughly **6× reduction in attention cost** (since the sequential penalty scales as m/3).
 
-Note the progression: documents get progressively larger through the trace. The `llms.txt` entrypoint is tiny. The index files are small. The CVE JSON files are medium. The `.diff` files at the end are the largest. This is the "lean early, heavy late" principle in action as a design intention.
+The entrypoint design—skeletal and rarely changing—takes on new significance in this light. A lean entrypoint enables rapid initial orientation with  minimal attention cost. Subsequent navigation through lightweight index nodes preserves token budget for the final multi-fetch turn where substantive content is gathered.
 
-The entrypoint design—skeletal and rarely changing—takes on new significance in this light. A lean entrypoint enables rapid initial orientation with minimal attention cost. Subsequent navigation through lightweight index nodes preserves token budget for the final multi-fetch turn where the more information and answer dense content is gathered.
-
-#### Design implications
+### Design implications
 
 The cost model suggests several design principles:
 
-- **Minimize turn count**: through clear navigation affordances. Each eliminated turn saves quadratically growing attention cost.
-- **Front-load lightweight content**: Index documents, link relations, and navigation hints should be small. Substantive content belongs at the leaves.
-- **Enable multi-fetch patterns**: Expose document collections as lists of links rather than embedded content, allowing LLMs to batch their retrieval.
-- **Provide explicit workflows**: Graph-resident guidance can direct LLMs to optimal traversal patterns, encoding the designer's knowledge of efficient paths.
-- **Ensure sufficient guidance to avoid hallucinations**: The effectiveness of the approach decays quickly if an LLM loses confidence in the hints or is unsure how to proceed along the path.
+- **Minimize turn count** through clear navigation affordance. Each eliminated turn saves quadratically growing attention cost.
+- **Front-load lightweight content.** Index documents, link relations, and navigation hints should be small. Substantive content belongs at the leaves.
+- **Enable multi-fetch patterns.** Expose document collections as lists of links rather than embedded content, encouraging LLMs to batch their retrieval.
+- **Provide explicit workflows.** Graph-resident guidance can direct LLMs to optimal traversal patterns, encoding the designer's knowledge of efficient paths.
 
-The rest of the design should be viewed through this cost lens. It is to a large degree the whole game at play.
+The rest of the design should be viewed through this cost lens. As an application designer, there are only so many degrees of freedom. We cannot change LLM fundamentals but need to work within their constraints. To a large degree, optimizations like reducing turns are similar to loop variable hoisting. While LLMs are new and different, old school performance strategies remain effective.
 
 ## llms.txt
 
