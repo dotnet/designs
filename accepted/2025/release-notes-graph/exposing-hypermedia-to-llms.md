@@ -1,53 +1,58 @@
 # Exposing Hypermedia Information Graphs to LLMs
 
-[Hypermedia](https://en.wikipedia.org/wiki/Hypermedia) and [hypertext](https://en.wikipedia.org/wiki/Hypertext) are decades-old ideas and formats that are perfectly-suited for LLM consumption by virtue of self-describing structure and relationships between resources. The premise is that there is sufficient meta-information in a hypermedia document graph for a semantic consumer to successfully traverse it to find the information demanded by a  prompt. The prevailing narrative over the last few decades has been that _structured data_ > _unstructured documents_, in terms of inherent capacity to derive meaningful insight. JSON and XML came out of that heritage, with [JSONPath](https://en.wikipedia.org/wiki/JSONPath) and [XPath](https://en.wikipedia.org/wiki/XPath) providing structured query that relies on a priori schema knowledge. [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS) contributes the idea that data labeling can be extended to relations across resources. This system integrates these approaches to enable an LLM to search for and discover desired information across labeled graph edges. In a more traditional system, a schema is the pre-requisite to traversal, whereas in a semantic system, it is traversal that reveals the schema.
+[Hypermedia](https://en.wikipedia.org/wiki/Hypermedia) and [hypertext](https://en.wikipedia.org/wiki/Hypertext) are self-describing formats well-suited for LLM consumption. A hypermedia document graph contains sufficient meta-information for a semantic consumer to traverse it and find information demanded by a prompt—without requiring a pre-loaded vector database or a priori schema knowledge.
 
-> A (nearly) century-old principle, articulated by [Korzybski](https://en.wikipedia.org/wiki/Alfred_Korzybski): [the map is not the territory](https://en.wikipedia.org/wiki/Map%E2%80%93territory_relation).
+In a traditional system, a schema is the pre-requisite to traversal; in a hypermedia system, traversal reveals the schema. In a vector system, every query matches against the full corpus; in a hypermedia system, each node reveals the candidates.
 
-[Hypertext Markup Language (HTML)](https://en.wikipedia.org/wiki/HTML) is perhaps the least sophisticated hypertext implementation in common use. A typical implementation: `For a deeper discussion on gardening, <a href="gardening-deep-dive.html">click here</a>.`. "click here" [doesn't provide much of a map](https://developers.google.com/search/docs/crawling-indexing/links-crawlable#anchor-text-placement) for a semantic consumer.
+## Background
 
-In trail races, there are frequent ribbons hanging from trees and painted arrows on the ground to ensure the correct path taken. It is often the case that there are races of multiple distances being run on an overlapping course. At key intersections, there are signs that say "5 km -> left" and "10 km -> continue straight". The ribbons and the painted arrows are the kind of map that a document schema provides, ensuring correct coloring within the lines. The signposting where two courses meet or diverge is  HATEOAS-like insight that enables graph traversal. The trail markers form a useful map that enables narrowly-prescribed navigation across the terrain. The signposting is a key-value function. You match a key you recognize with a value you need to stay on course.
+The prevailing narrative has been that _structured data_ > _unstructured documents_ for deriving insight. JSON and XML came out of that heritage, with [JSONPath](https://en.wikipedia.org/wiki/JSONPath) and [XPath](https://en.wikipedia.org/wiki/XPath) providing structured query that relies on a priori schema knowledge. [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS) extended this by labeling relations across resources, not just data within them.
 
-Databases went through a "no-sql" transition. That wasn't a rejection of structure, but a realization that the source of structure is the documents. Hypermedia graphs extend this idea enabling "no-schema" consumption. Rather than requiring upfront schema knowledge, a fully realized semantic space enables readers to discover structure through descriptive labels and traversal. A sort of "world schema" emerges from navigation.
+Databases went through a "no-SQL" transition—not a rejection of structure, but a recognition that structure lives in the documents themselves. Hypermedia graphs extend this to "no-schema" consumption: readers discover structure through descriptive labels and traversal rather than requiring it upfront.
 
-A semantic graph might expose a named link relation like `{ "link-relation": "gardening-deep-dive", "href": "..." }`. Greater sophistication can be achieved by describing the kind of target, like `"link-relation": "gardening-deep-dive"` and `"target-kind": "reference-doc"`. The better the semantic implementation, the less inference, flow analysis, or attention is required to derive the intended meaning.
+## Why hypermedia over vector search?
 
-Hypermedia information document graphs can be published pre-baked, making them suitable for direct consumption without being pre-loaded and exposed by a vector database. Vector databases establish relationships via similarity, via embedding and refined via techniques like [Metadata Extraction Usage Pattern](https://developers.llamaindex.ai/python/framework/module_guides/loading/documents_and_nodes/usage_metadata_extractor/) and [Maximum Marginal Relevance Retrieval](https://developers.llamaindex.ai/python/examples/vector_stores/simpleindexdemommr/). Hypermedia relations are both semantic and structural, making them equal parts [Retrieval-Augmented Generation (RAG)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) and [PageRank](https://en.wikipedia.org/wiki/PageRank), which skips much of the need for the two mentioned RAG techniques.
+Vector databases establish relationships via embedding similarity, refined through techniques like [Metadata Extraction Usage Pattern](https://developers.llamaindex.ai/python/framework/module_guides/loading/documents_and_nodes/usage_metadata_extractor/) and [Maximum Marginal Relevance Retrieval](https://developers.llamaindex.ai/python/examples/vector_stores/simpleindexdemommr/). Hypermedia relations are both semantic and structural—equal parts [Retrieval-Augmented Generation (RAG)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) and [PageRank](https://en.wikipedia.org/wiki/PageRank)—which reduces the need for those techniques.
 
-These concepts and techniques have been applied to the .NET release notes. That project was initially approached as a modern revamp of a set of JSON files that are used to inform and direct cloud-infra deployment and compliance workflows at scale. Over time, it became obvious that LLMs could read the same content directly and self-reason about content and navigation patterns. Early experimentation proved that out. The primary techniques used to improve applicability for LLMs are semantic naming and graph-resident guidance. The application of these techniques can be quite subtle, where a small shift in semantic bias can result in a large shift in LLM performance.
+Hypermedia graphs can be published pre-baked and consumed directly. This enables low-cost LLM enablement for scenarios where hosting a persistent AI server would be prohibitive. An AI server must also manage time-to-live semantics for volatile data—complexity hypermedia graphs avoid.
 
-Graph-resident guidance consists of skills and workflows. HATEOAS tells us that `customer` can be a relation of a sales order. Why not make `graph-instructions` a relation of a graph? Skills and workflows are first-class relations in the graph, enabling its designer to express navigation intent. Skills follow the [Anthropic skills format](https://github.com/anthropics/skills), while workflows are HAL documents that describe queries over graph link relations. This enables the graph designer to provide readers with "ten-km-route-follow-path" style workflows if that's a match for the intended outcome.
+## Approach
 
-The .NET release notes information graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation. It augments HAL with a homegrown HAL workflow convention that is just as native as `_links` or `_embedded`. LLMs grasp intent, in part because HAL predates LLMs by over a decade. This approach enables low-cost LLM enablement for scenarios where hosting a persistent "AI server" would be prohibitive. This approach should scale just as well to a broad set of document types, not just release notes.
+The primary techniques for LLM applicability are:
+
+- Semantic naming: Link relations like "latest-security-disclosure" reduce the inference required to derive meaning.
+- Graph-resident guidance: Skills and workflows as first-class relations in the graph. Skills follow the Anthropic skills format; workflows are HAL documents describing queries over link relations.
+
+This approach has been applied to the .NET release notes. The project began as a modernization of JSON files used for cloud-infra deployment and compliance workflows. It became clear that LLMs could read the same content directly and self-reason about navigation. The graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation, augmented HAL-native with a workflow convention.
 
 ## Graph design point
 
-The release notes information graph is based on the restrictive idea that the entrypoint of the graph should be skeletal and rarely changing. That's workable for LLMs but not ideal. The motivation for the restrictive approach is that it should support an n-9s level of reliability and be subject to rigorous engineering practices (git workflows, peer review, merge gates). However, we're in the early days of AI and subject to repeated waves of externally-driven change that may require quick re-evaluation and re-work (potentially breaking changes) of the entrypoint to maintain high-quality LLM enablement. These modalities are in firm opposition.
+The release notes graph is built on a restrictive premise: the entrypoint should be skeletal and rarely changing, supporting n-9s reliability with rigorous engineering practices (git workflows, peer review, merge gates). But we're in the early days of AI—externally-driven change may require rapid iteration on the entrypoint to maintain LLM enablement quality. These goals are in tension.
 
-Instead, we can instead view the core graph as a **well-defined data-layer** that honors the desired reliability requirements, while exposing a separate **adaptable application-layer** entrypoint for LLMs that can evolve over time without the heavy compatibility burden.
+The resolution: treat the core graph as a **well-defined data layer** honoring reliability requirements, while exposing a separate **adaptable application layer** entrypoint for LLMs that can evolve without the compatibility burden.
 
-The graph as a whole is based on a somewhat traditional schema design, utilizing both normalized and denormalized approaches in service of consumers. After the graph was realized, it became possible to test it with `jq` as a sort of passive and syntactic consumer and with LLMs as a much more active and semantic consumer. The graph was successively adapted to improve performance for both consumption styles. Performance is primarily measured in terms of terseness of query and quickness (fetches and data cost) of response. Much of the feedback could be considered fundamental in nature. The overall character of the graph remains a pure information-oriented data design, but with a significant tilt towards semantic consumers.
+### Design and evaluation
 
-The choice of hypermedia as the grounding format is a case-in-point of the overall approach. Hypermedia long pre-dates LLMs, however, it has always held semantic consumers (humans) as a key design cohort. Hypermedia formats provide a conceptual framework that is easy to flavor towards semantic consumption. This flexibility proved useful as the design was adapted with LLM feedback. It should also be noted that LLM feedback is by far the cheapest and most accessible form of feedback.
+The graph as a whole is based on a somewhat traditional schema design, utilizing both normalized and denormalized approaches in service of consumer queries. After the graph was realized, it was tested with `jq` as a passive and syntactic consumer and with LLMs as an active and semantic consumer. The graph was successively adapted to improve performance for both consumption styles. Performance is primarily measured in terms of terseness of query and quickness (fetches and data cost) of response. Much of the feedback could be considered fundamental in nature. The overall character of the graph remains a pure information-oriented data design, but with a significant tilt towards semantic consumers.
 
-A few behavioral patterns emerged from LLM eval:
+Hypermedia long predates LLMs, but it has always treated semantic consumers (humans) as a key design cohort. This made it easy to adapt the graph based on LLM feedback.
 
-- Consistent application of a conceptual model creates familiarity for semantic consumers. It is a comfort to find a concept exposed where it is expected.
-- It is possible to expose links that jump from one part of the graph to another, like a wormhole. LLMs seem to need to develop **comprehension** _and_ **trust** as a pre-requisite for relying on them. The more attractive the wormhole link, the more the LLM may be skeptical. This was observed most with the `latest-security-disclosures` relation since it provides high value and because it has an inherent half-life. The meaning of the relation was _so well understood_ that LLMs repeatedly felt the need to double check the correctness of the link value.
-- Resources can be dual-mapped in terms of structural kind, like `latest-security-month`, and desired output, like `latest-security-disclosures`. A given prompt may bias towards different concerns. Differentiated mappings are more likely to present a similar match to semantic consumers. One expects that this can be overdone. This technique was applied with a light touch in the graph.
-- LLMs will acquire multiple resources in a single turn if a good strategy for doing so is evident.
-- LLMs operate on a model of scarcity, with tokens at a premium. Smaller graph nodes encourage greater graph navigation by creating a sense that growing comprehension is outstripping consumption cost.
-- Differentiating token cost by category of nodes makes it cheaper for LLMs to navigate a large graph. The `month` node within the graph is weightier than all other nodes making it easier to develop an exploration plan among other nodes before making a final decision on which month(s) to visit, if any.
+### Patterns from LLM eval
+
+- **Consistency breeds comfort.** It is rewarding and calming to find a concept exposed where it is expected.
+- **Trust must be earned for shortcuts.** Links that jump across the graph (wormholes) require LLMs to develop both comprehension and trust. The more valuable the shortcut, the more skeptical the LLM. We observed this with `latest-security-disclosures`—LLMs understood the relation perfectly but repeatedly double-checked its correctness.
+- **Dual-map by structure and intent.** A resource can be exposed as `latest-security-month` (structural) and `latest-security-disclosures` (intent). Different prompts bias toward different framings.
+- **LLMs batch when strategy is evident.** They will acquire multiple resources in a single turn if the path is clear.
+- **LLMs operate on scarcity.** Smaller nodes encourage exploration by signaling that comprehension is outpacing token cost.
+- **Differentiate node weight.** The `month` node is heavier than others, making it cheaper to explore the graph before committing to fetch one.
 
 ## Performance considerations
 
-Some questions can be answered from the LLM entrypoint, however, many require navigating to documents within the core graph. It is not feasible or desirable to include all information in a single document. As a result, a turn-by-turn approach is required. At each turn, there is new content, new insight, and then selection of critical information that directs the next fetch(es) or is the desired final answer. The range of required turns varies greatly, depending on the prompt and how the schema design happens to apply structure to the relevant information domain.
+Navigating a hypermedia graph requires multiple turns. At each turn, new content is fetched, reasoned about, and used to direct the next fetch or select an answer. The [transformer architecture](https://en.wikipedia.org/wiki/Transformer_(deep_learning)) imposes costs that make multi-turn navigation expensive—much faster than intuition suggests.
 
-The [transformer architecture](https://en.wikipedia.org/wiki/Transformer_(deep_learning)) imposes a set of costs on any LLM use. The graph design has a direct impact on LLM performance and cost. Multiple turns accelerate costs quickly, much faster than intuition would suggest.
+[API pricing](https://openai.com/api/pricing/) is listed in terms of 1M tokens. One million tokens may sound like a lot, but doesn't require the complete works of Shakespeare. Straightforward formulas can predict how quickly token counts grow and what that will cost dollar-wise. They demonstrate how little it takes to hit the million token milestone.
 
-[API pricing](https://openai.com/api/pricing/) is listed in terms of 1M tokens. One million tokens may sound like a lot. Processing 1M tokens doesn't require the complete works of Shakespeare. Straightforward formulas can predict how quickly token counts grow and what that will cost dollar-wise. They demonstrate how little it takes to hit the million token milestone.
-
-It was the quick pace of "dollar balance decay" in an API account that led to wanting to understand the underlying mechanics. This knowledge enabled designing the graph to produce both right answers and cheap answers. They are very much not the same thing.
+It was watching our API balance decay that led us to understand these mechanics—and to design for both right answers and cheap answers. They are not the same thing.
 
 ### Cost model
 
@@ -84,9 +89,7 @@ The formulas simplify for large m:
 | Accumulated tokens | nm²/2 | Quadratic in turns |
 | Accumulated attention | n²m³/3 | Cubic in turns |
 
-More context on cost:
-
-- API pricing is in term of tokens. For multi-turn conversations, the cost is the accumulated token cost not the final context size.
+- API pricing is in terms of tokens. For multi-turn conversations, the cost is the accumulated token cost not the final context size.
 - The cubic growth in attention is the dominant computational cost, the primary contributor to latency and throughput. It emerges from summing quadratic costs across turns. Each turn pays attention on everything accumulated so far. This cost is likely the gating function on context size and expected to be persistent even if GPU memory doubles.
 - These costs provide clues on why conversation compacting exists and why there is scrutiny on token economics.
 
@@ -99,7 +102,7 @@ What if all content could be fetched in a single turn?
 | Batched (1 turn) | (nm)² = n²m² | 1 |
 | Sequential (m turns) | n²m³/3 | m/3 |
 
-The sequential penalty is approximately **m/3** compared to batched. Ten turns costs roughly 3× what a single batched turn would; thirty turns costs roughly 10×. This ratio scales linearly with turn count, the `m` term.
+Ten turns ≈ 3× batched cost. Thirty turns ≈ 10×. This ratio scales linearly with turn count, the `m` term.
 
 Many problems inherently require multiple turns. The LLM must reason about intermediate results before knowing what to fetch next. The goal is not to eliminate turns but to minimize them and optimize their structure.
 
@@ -107,7 +110,9 @@ Many problems inherently require multiple turns. The LLM must reason about inter
 
 > Defer large token loads to later turns to reduce the number of turns that must pay the cost of large token loads.
 
-The uniform model above assumes equal token counts per turn. In practice, token distribution across turns is a design choice with significant cost implications. The tokens in the first turns are by far the most costly. This is roughly similar to credit card debt, where charges from the first month can penalize purchasing power with crushing compound interest. If the initial purchase was large, you may be in trouble.
+The uniform model above assumes equal token counts per turn. In practice, token distribution across turns is a design choice with significant cost implications. The tokens in the first turns are by far the most costly.
+
+This is roughly similar to credit card debt: early charges compound. If the initial purchase was large, you're in trouble.
 
 ### Optimization: multiple fetches per turn
 
@@ -118,6 +123,10 @@ The sequential model assumes one fetch per turn. LLMs can fetch multiple documen
 This approach can (to a degree) amortize network costs across multiple async requests.
 
 This optimization may seem in conflict with the earlier optimization, but it isn't. The earlier optimization is about the order of fetches across turns, whereas this optimization is about collapsing turns. They are complementary ideas with no tension.
+
+### Applicability to release notes graph
+
+The strict n-9s reliability design model is perfectly aligned with the LLM cost model. Skeletal roots with heavy leaves and differentiated weight per node enable an LLM to navigate most of the graph at low cost. This mirrors how LLMs naturally separate planning from execution—cheaper exploration, then targeted retrieval.
 
 ## LLM entrypoints
 
@@ -132,7 +141,7 @@ There are two entrypoints provided for LLMs:
 
 These formats are the result of many iterations and experiments. Early revisions of `llms.txt` attempted to explain everything in great detail, nearing 500 lines. The current lean approach was arrived at via iterative LLM feedback and observation.
 
-Sidebar: A key design principle emerged from this process: _curiosity-driven evaluation_ > _intuition reliance_. Once you have a good test harness and methodology, it's quite liberating to not trust your intuition but to test any ideas that occur as interesting. Any bias or distinction between "intuitive and informed direction" and "bat-crazy idea" drops away. Test both. All of this stuff is half-magic, half-fever-dream. Why should I expect my intuition on how LLMs behave to be all that authoritative anyway?
+Sidebar: A key design principle emerged from this process: _curiosity-driven evaluation_ > _intuition reliance_. Once you have a good test harness and methodology, it's quite liberating to not trust your intuition but to test all the ideas that occur as interesting. Any bias or distinction between "intuitive and informed direction" and "bat-crazy" drops away. Test both.
 
 LLM performance was observed to increase as content size drops and becomes more focused on addressing specific critical (has to be right) and/or problematic (typically wrong) navigation patterns. The intuitive nature of the graph is a kind of floor raiser that removed the need for expansive guidance. The cross-over point where intuition begins to underperform could only be arrived at via testing.
 
