@@ -1,24 +1,24 @@
 # Exposing Hypermedia Information Graphs to LLMs
 
-[Hypermedia](https://en.wikipedia.org/wiki/Hypermedia) and [hypertext](https://en.wikipedia.org/wiki/Hypertext) are decades-old ideas and formats that are perfectly-suited for LLM consumption by virtue of self-describing structure and relationships between resources. The premise is that there is sufficient meta-information in a hypermedia document graph for a semantic consumer to successfully traverse it to find the information demanded by a  prompt. The prevailing narrative over the last few decades has been that _structured data_ > _unstructured documents_, in terms of inherent capacity to derive meaningful insight. JSON and XML came out of that heritage, with [JSONPath](https://en.wikipedia.org/wiki/JSONPath) and [XPath](https://en.wikipedia.org/wiki/XPath) providing structured query supported by a priori schema knowledge. [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS) contributes the idea that data labeling can be extended to relations across resources. These approaches are integrated in this system to enable an LLM to search for and discover desired information across labeled nodes and edges within a graph. In a more traditional system, a schema is the pre-requisite to traversal, whereas in a semantic system, it is traversal that reveals the schema.
+[Hypermedia](https://en.wikipedia.org/wiki/Hypermedia) and [hypertext](https://en.wikipedia.org/wiki/Hypertext) are decades-old ideas and formats that are perfectly-suited for LLM consumption by virtue of self-describing structure and relationships between resources. The premise is that there is sufficient meta-information in a hypermedia document graph for a semantic consumer to successfully traverse it to find the information demanded by a  prompt. The prevailing narrative over the last few decades has been that _structured data_ > _unstructured documents_, in terms of inherent capacity to derive meaningful insight. JSON and XML came out of that heritage, with [JSONPath](https://en.wikipedia.org/wiki/JSONPath) and [XPath](https://en.wikipedia.org/wiki/XPath) providing structured query that relies on a priori schema knowledge. [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS) contributes the idea that data labeling can be extended to relations across resources. This system integrates these approaches to enable an LLM to search for and discover desired information across labeled graph edges. In a more traditional system, a schema is the pre-requisite to traversal, whereas in a semantic system, it is traversal that reveals the schema.
 
 > A (nearly) century-old principle, articulated by [Korzybski](https://en.wikipedia.org/wiki/Alfred_Korzybski): [the map is not the territory](https://en.wikipedia.org/wiki/Map%E2%80%93territory_relation).
 
-In trail races, there are frequent ribbons hanging from trees and painted arrows on the ground to ensure the correct path taken. It is often the case that there are races of multiple distances being run on an overlapping course. At key intersections, there are signs that say "5 km -> left" and "10 km -> continue straight". The ribbons and the painted arrows are the kind of map that a document schema provides, ensuring correct coloring within the lines. The signposting where two courses diverge is the HATEOAS-like descriptive insight that enables graph traversal. The signposting is a key-value function. You match a key you recognize with a value you need to know. Signposting enables directed navigation of the territory.
+[Hypertext Markup Language (HTML)](https://en.wikipedia.org/wiki/HTML) is perhaps the least sophisticated hypertext implementation in common use. A typical implementation: `For a deeper discussion on gardening, <a href="gardening-deep-dive.html">click here</a>.`. "click here" [doesn't provide much of a map](https://developers.google.com/search/docs/crawling-indexing/links-crawlable#anchor-text-placement) for a semantic consumer.
 
-This approach is in sharp contrast to the typical HTML graph implementation: `For a deeper discussion on this topic, <a href="another-document.html">click here</a>.`. A semantic graph might expose a named link relation like `{ "link-relation": "gardening-deep-dive", "href": "..." }`. It might offer more descriptive complexity by separating the link parts, like `"link-relation": "deep-dive"` and `"target-kind": "gardening"`, cleanly splitting the link-adjective and its target-noun. The better the semantic implementation, the less inference, flow analysis, or attention is required to derive the intended meaning.
+In trail races, there are frequent ribbons hanging from trees and painted arrows on the ground to ensure the correct path taken. It is often the case that there are races of multiple distances being run on an overlapping course. At key intersections, there are signs that say "5 km -> left" and "10 km -> continue straight". The ribbons and the painted arrows are the kind of map that a document schema provides, ensuring correct coloring within the lines. The signposting where two courses meet or diverge is  HATEOAS-like insight that enables graph traversal. The trail markers form a useful map that enables narrowly-prescribed navigation across the terrain. The signposting is a key-value function. You match a key you recognize with a value you need to stay on course.
 
-Databases went through a "no-sql" transition. That wasn't a rejection of structure, but a realization that the source of structure is the documents. Hypermedia graphs extend this idea enabling "no-schema" consumption. Rather than requiring upfront schema knowledge, a fully realized semantic space including both content and link relations enables readers to discover structure through descriptive labels and traversal. A sort of "world schema" emerges from navigation.
+Databases went through a "no-sql" transition. That wasn't a rejection of structure, but a realization that the source of structure is the documents. Hypermedia graphs extend this idea enabling "no-schema" consumption. Rather than requiring upfront schema knowledge, a fully realized semantic space enables readers to discover structure through descriptive labels and traversal. A sort of "world schema" emerges from navigation.
 
-Hypermedia information document graphs can be published pre-baked, making them suitable for direct consumption without being pre-loaded and exposed by a vector database. The semantic relationships and other meta-information are used as the basis of typical LLM mechanics like vector similarity, making hypermedia a kind of [Retrieval-Augmented Generation (RAG)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) scheme and suitable for static-webhost deployment.
+A semantic graph might expose a named link relation like `{ "link-relation": "gardening-deep-dive", "href": "..." }`. Greater sophistication can be achieved by describing the kind of target, like `"link-relation": "gardening-deep-dive"` and `"target-kind": "reference-doc"`. The better the semantic implementation, the less inference, flow analysis, or attention is required to derive the intended meaning.
 
-The concept of a pre-baked static hypermedia graph has been applied to the .NET release notes. That project was initially approached as a modern revamp of a set of JSON files that are used to inform and direct cloud-infra deployment and compliance workflows at scale. Over time, it became obvious that LLMs could read the same content directly and self-reason about its content and navigation patterns. Early experimentation proved that out. The primary techniques used to improve applicability for LLMs are semantic naming and graph-resident guidance. These techniques can be quite subtle, where a small shift in semantic bias can result in a large shift in LLM performance.
+Hypermedia information document graphs can be published pre-baked, making them suitable for direct consumption without being pre-loaded and exposed by a vector database. Vector databases establish relationships via similarity, via embedding and refined via techniques like [Metadata Extraction Usage Pattern](https://developers.llamaindex.ai/python/framework/module_guides/loading/documents_and_nodes/usage_metadata_extractor/) and [Maximum Marginal Relevance Retrieval](https://developers.llamaindex.ai/python/examples/vector_stores/simpleindexdemommr/). Hypermedia relations are both semantic and structural, making them equal parts [Retrieval-Augmented Generation (RAG)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) and [PageRank](https://en.wikipedia.org/wiki/PageRank), which skips much of the need for the two mentioned RAG techniques.
+
+These concepts and techniques have been applied to the .NET release notes. That project was initially approached as a modern revamp of a set of JSON files that are used to inform and direct cloud-infra deployment and compliance workflows at scale. Over time, it became obvious that LLMs could read the same content directly and self-reason about content and navigation patterns. Early experimentation proved that out. The primary techniques used to improve applicability for LLMs are semantic naming and graph-resident guidance. The application of these techniques can be quite subtle, where a small shift in semantic bias can result in a large shift in LLM performance.
 
 Graph-resident guidance consists of skills and workflows. HATEOAS tells us that `customer` can be a relation of a sales order. Why not make `graph-instructions` a relation of a graph? Skills and workflows are first-class relations in the graph, enabling its designer to express navigation intent. Skills follow the [Anthropic skills format](https://github.com/anthropics/skills), while workflows are HAL documents that describe queries over graph link relations. This enables the graph designer to provide readers with "ten-km-route-follow-path" style workflows if that's a match for the intended outcome.
 
-The .NET release notes information graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation. It augments HAL with a homegrown HAL workflow convention that looks just as native as `_links` or `_embedded`. LLMs grasp the intent, in part because HAL predates LLMs by over a decade. This approach enables low-cost LLM enablement for scenarios where hosting a persistent "AI server" would be prohibitive. This approach should scale just as well to a broad set of document types, not just release notes.
-
-This document is structured theory-first. The theory describes and demonstrates the basis for the design. The practice follows, intended as a faithful application of the theory.
+The .NET release notes information graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation. It augments HAL with a homegrown HAL workflow convention that is just as native as `_links` or `_embedded`. LLMs grasp intent, in part because HAL predates LLMs by over a decade. This approach enables low-cost LLM enablement for scenarios where hosting a persistent "AI server" would be prohibitive. This approach should scale just as well to a broad set of document types, not just release notes.
 
 ## Graph design point
 
@@ -485,7 +485,9 @@ jumping in -- it's worth it!
 
 ### Skills router
 
-As stated earlier, `llms.txt` was initially a large document covering multiple skills. That turned out to be ineffective and very difficult to maintain. Skills files provided a solution. Each skill is a domain of specific information. The problem then was how to advertise the skills.
+As stated earlier, `llms.txt` was initially a large document covering multiple skills. That turned out to be very difficult to maintain and adapt. It also forced a minimum token burden on every reader. Skills files provided a solution. Each skill describes a domain, including contextual descriptions, guidance, rules, and workflows. The problem then was how to advertise the skills.
+
+As demonstrated above, about half of `llms.txt` is dedicated to skills routing. It's just a markdown table that provides a key/value structure for skills.
 
 `llms.txt` is primarily a skills router:
 
@@ -500,9 +502,317 @@ As stated earlier, `llms.txt` was initially a large document covering multiple s
 
 `llms.json` doesn't link to `llms.txt` but to the [`dotnet-releases/SKILL.md`](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/dotnet-releases/SKILL.md). It is almost identical to `llms.txt`.
 
+This approach was chosen for two reasons:
 
+- Fully Orient guidance on skills and to encourage skill use.
+- Enable specializing guidance for the `llms.json` path as compared to starting from `llms.txt`.
+- Enable syndicating just the `release-notes` directory to a CDN and not `llms.txt`.
 
 The `SKILL.md` files optionally reference a homegrown `workflows.json` file. These could equally have been exposed from `llms.txt` to enable collapsing a turn. There is a tradeoff between the complexity of the general `llms.txt` and each of the domain-specific skills. Every reader consumes `llms.txt`, while some don't fetch any skills at all, some fetch multiple, and only a subset fetch workflows. It is possible the current design is optimal. This design point hasn't been sufficiently explored to draw a strong conclusion.
+
+### Skills
+
+The skills follow a [skills template](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/template/SKILL.md) to ensure uniformity and are intended to be as simple as possible to achieve the desired performance as measured by the tests.
+
+The following markdown document is the complete `cve-queries` skill.
+
+```markdown
+---
+name: cve-queries
+description: CVE queries needing severity, CVSS, affected versions, or security history
+workflows: https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/cve-queries/workflows.json
+---
+
+# CVE Queries
+
+All CVE queries use timeline. Fetch workflows.json for navigation paths with `next_workflow` transitions.
+
+## Stop Criteria
+
+| Need | Stop At | Has |
+|------|---------|-----|
+| Severity, CVSS, affected versions | month index | `_embedded.disclosures[]` |
+| Code diffs, CWE, version ranges | cve.json | different schema—see `next_workflow` |
+
+## Rules
+
+1. Follow `_links` only. Never construct URLs.
+2. Year indexes must be fetched sequentially via `prev-year`.
+3. Code diffs: `$.commits[key].url` already ends in `.diff` — use as-is. Never fetch commit HTML pages.
+```
+
+The other skills are similar.
+
+The `next_workflow` transition leads us to `workflows.json`.
+
+### Workflows
+
+Workflows are a homegrown HAL-inspired and -compatible format. The graph -- as has been sufficiently clarified to this point -- uses HAL as its hypermedia format. HAL is focused on describing resources and relations between them. What if HAL also included a query system? What would it look like? That's what workflows attempt to answer.
+
+The premise behind them is:
+
+- Query as document data
+- HAL relations (and other document data) as query targets
+
+The initial design started as `_workflows` within `llms.json`. Similar to using `llms.txt` as the sole source of guidance, this approach got bulky fast. It was then realized that the skill registry/router idea could equally be applied to workflows.
+
+The current design offers workflows as auxiliary skill content. The primary router is the skill router. The skills then offer a workflow, both in terms of listing them and referring to them as part of the skill.
+
+Workflows hang most of their query expressivity on the `follow_path` property. This can be seen in the `cve-latest` workflow in [`cve-queries/workflows.json`](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/cve-queries/workflows.json).
+
+```json
+      "cve-latest": {
+        "description": "CVEs from the most recent security release",
+        "follow_path": ["kind:llms", "latest-security-disclosures"],
+        "destination_kind": "month",
+        "yields": {
+          "data": "_embedded.disclosures[]",
+          "fields": ["id", "title", "cvss_severity", "cvss_score", "affected_releases"]
+        },
+        "next_workflow": {
+          "condition": "code diffs, CWE, or package versions needed",
+          "workflow": "cve-extraction",
+          "via": "follow _links.cve-json from current month index"
+        }
+      },
+```
+
+As stated, the initial design included workflows inline in core HAL docs. In that case, it's not much of a leap to connect that `latest-security-disclosures` is a reference to the link relation of the same name. It's a much bigger leap when the workflow is in a separate file in a separate location and indirected via the skills registry. This connection is re-gained by making the node kind as the first part of the `follow_path` array.
+
+The intent of the initial compound term -- `kind:llms` -- is to indicate that it is special and of a different kind than the link relations. That seems to work.
+
+The `next_workflow` property enables chaining workflows to develop a sense of [equivalence classes](https://en.wikipedia.org/wiki/Equivalence_class) and to conform with [DRY principle](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
+
+Here's an excerpt from the [feedback turn of one of the tests](https://github.com/richlander/release-graph-eval-results/blob/main/anthropic_claude-haiku-4.5/B/T6.md).
+
+> ## 4. Workflow Verification
+>
+>**Workflow used:** `cve-history` (for 6-month range)
+>
+>**Specified `follow_path`:**
+>```json
+>"4+_months_or_cross_year": {
+>  "follow_path": ["kind:llms", "latest-year"],
+>  "then": "follow _links.prev-year from each year index",
+>  "select": "_embedded.months[?security].cve-json links"
+>}
+>```
+>
+>**What I actually did:**
+>1. ✅ Fetched `llms.json` (kind:llms)
+>2. ✅ Fetched `timeline/2025/index.json` (latest-year)
+>3. ✅ Fetched `timeline/2024/index.json` (via prev-year link)
+>4. ✅ Selected only `_embedded.months[?security=true].cve-json` links
+>5. ✅ Fetched 6 cve.json files directly (skipped month indexes)
+>
+>**Did I deviate?** No, I followed the path exactly. The workflow was precise enough that I didn't need to guess.
+
+The interesting aspect is that the feedback is basically an unpacking of the workflow query. It demonstrates a high level of comprehension of the query and of the overall scheme.
+
+The workflow syntax itself is a bit loose. The core idea is HAL-native query over link relations. Much of the syntax is using "programmy structure" to describe logical operations. It may be useful to standardize them into an actual vocabulary at some point. Given the constantly changing LLM landscape, it likely makes the most sense to validate the strength of the syntax across a year of usage and LLM changes before feeling sufficiently confident about the model.
+
+### Applying workflows for generically
+
+Workflows were developed for LLMs. However, it seems like they are sufficiently descriptive that they could be used by non-semantic consumers. The question was whether a C# program could be written to generate bash scripts from the workflows.
+
+```bash
+$ dotnet run -- list ~/git/core/release-notes/skills/cve-queries/workflows.json
+  cve-by-version  CVEs affecting a specific .NET version
+  cve-details     Go directly to cve.json for full details
+  cve-extraction  Extract data from cve.json (different schema than month index)
+  cve-history     CVEs over a time range
+  cve-latest      CVEs from the most recent security release
+
+Total: 5 workflows
+$ dotnet run -- show ~/git/core/release-notes/skills/cve-queries/workflows.json cve-latest
+Workflow: cve-latest
+Description: CVEs from the most recent security release
+Follow path: kind:llms -> latest-security-disclosures
+Destination: month
+Yields: WorkflowYields { Data = _embedded.disclosures[], Fields = System.Collections.Generic.List`1[System.String], Filter =  }
+$ dotnet run -- script ~/git/core/release-notes/ills/cve-queries/workflows.json cve-latest > get-latest-cves.sh
+$ chmod +x get-latest-cves.sh
+$ ./get-latest-cves.sh
+Fetching: https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/llms.json
+Fetching: https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json
+{
+  "$schema": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/schemas/v1/dotnet-release-timeline-index.json",
+  "kind": "month",
+  "title": ".NET Month Timeline Index - October 2025",
+  "year": "2025",
+  "month": "10",
+  "date": "2025-10-14T00:00:00+00:00",
+  "security": true,
+  "prev_month_date": "2025-09-09T00:00:00+00:00",
+  "prev_security_month_date": "2025-06-10T00:00:00+00:00",
+  "cve_records": [
+    "CVE-2025-55248",
+    "CVE-2025-55315",
+    "CVE-2025-55247"
+  ],
+  "_links": {
+    "self": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json"
+    },
+    "prev-month": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/09/index.json",
+      "title": "Previous month - September 2025"
+    },
+    "prev-security-month": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/06/index.json",
+      "title": "Previous security month - June 2025"
+    },
+    "manifest": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/manifest.json",
+      "title": "Manifest - October 2025"
+    },
+    "timeline": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/index.json",
+      "title": ".NET Release Timeline Index"
+    },
+    "year": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/index.json",
+      "title": ".NET Year Timeline Index - 2025"
+    },
+    "cve-json": {
+      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/cve.json",
+      "title": "CVE records - October 2025",
+      "type": "application/json"
+    }
+  },
+  "_embedded": {
+    "patches": {
+      "10.0": {
+        "version": "10.0.0-rc.2.25502.107",
+        "date": "2025-10-14T00:00:00+00:00",
+        "year": "2025",
+        "month": "10",
+        "security": true,
+        "support_phase": "go-live",
+        "_links": {
+          "self": {
+            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/10.0.0-rc.2.25502.107/index.json"
+          }
+        },
+        "sdk_version": "10.0.100-rc.2.25502.107"
+      },
+      "9.0": {
+        "version": "9.0.10",
+        "date": "2025-10-14T00:00:00+00:00",
+        "year": "2025",
+        "month": "10",
+        "security": true,
+        "support_phase": "active",
+        "_links": {
+          "self": {
+            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.10/index.json"
+          }
+        },
+        "sdk_version": "9.0.306"
+      },
+      "8.0": {
+        "version": "8.0.21",
+        "date": "2025-10-14T00:00:00+00:00",
+        "year": "2025",
+        "month": "10",
+        "security": true,
+        "support_phase": "active",
+        "_links": {
+          "self": {
+            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/8.0/8.0.21/index.json"
+          }
+        },
+        "sdk_version": "8.0.415"
+      }
+    },
+    "disclosures": [
+      {
+        "id": "CVE-2025-55248",
+        "title": ".NET Information Disclosure Vulnerability",
+        "_links": {
+          "self": {
+            "href": "https://github.com/dotnet/announcements/issues/372"
+          }
+        },
+        "cvss_score": 4.8,
+        "cvss_severity": "MEDIUM",
+        "disclosure_date": "2025-10-14",
+        "affected_releases": [
+          "8.0",
+          "9.0"
+        ],
+        "affected_products": [
+          "dotnet-runtime"
+        ],
+        "platforms": [
+          "all"
+        ]
+      },
+      {
+        "id": "CVE-2025-55315",
+        "title": ".NET Security Feature Bypass Vulnerability",
+        "_links": {
+          "self": {
+            "href": "https://github.com/dotnet/announcements/issues/371"
+          }
+        },
+        "cvss_score": 9.9,
+        "cvss_severity": "CRITICAL",
+        "disclosure_date": "2025-10-14",
+        "affected_releases": [
+          "8.0",
+          "9.0",
+          "10.0"
+        ],
+        "affected_products": [
+          "dotnet-aspnetcore"
+        ],
+        "platforms": [
+          "all"
+        ]
+      },
+      {
+        "id": "CVE-2025-55247",
+        "title": ".NET Denial of Service Vulnerability",
+        "_links": {
+          "self": {
+            "href": "https://github.com/dotnet/announcements/issues/370"
+          }
+        },
+        "cvss_score": 7.3,
+        "cvss_severity": "HIGH",
+        "disclosure_date": "2025-10-14",
+        "affected_releases": [
+          "8.0",
+          "9.0",
+          "10.0"
+        ],
+        "affected_products": [
+          "dotnet-sdk"
+        ],
+        "affected_packages": [
+          "Microsoft.Build",
+          "Microsoft.Build.Tasks.Core",
+          "Microsoft.Build.Utilities.Core"
+        ],
+        "platforms": [
+          "linux"
+        ]
+      }
+    ]
+  }
+}
+$ ./get-latest-cves.sh | jq ._embedded.disclosures.[].id
+Fetching: https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/llms.json
+Fetching: https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json
+"CVE-2025-55248"
+"CVE-2025-55315"
+"CVE-2025-55247"
+```
+
+This is replaying the same approach as an LLM. Workflows lower the cost of navigating the graph for any semantic consumer. The prototype tool fills in the boiler-plate and could equally be applied to PowerShell or C# output.
+
+There is also replaying the overall approach of proving out formats with semantic and non-semantic consumers. This document led with the idea of proving out the efficacy of the graph with `jq` and LLMs. In this case, `jq` has been replaced with a C# app, but it's the same basic approach. The irony is that `jq` managed to sneak into this use case as well. The tool can be blamed for its remarkable utility.
 
 ## Concrete test
 
@@ -659,3 +969,5 @@ Wormholes vs spear-fishing.
 note: time is a challenge
 
 There is no suggestion that the current design is optimal. There is likely an 80/20 rule here. The current design is likely 80% optimal, but the remaining 20% would be very expensive to achieve and might require tradeoffs. A major focus of the testing was to ensure that the core graph was delivering sufficient performance since it will be difficult to change it given its compatibility promise.
+
+Vector databases take this a step further by making it easier for semantic consumers to find the content they want, for example with [Metadata Extraction Usage Pattern](https://developers.llamaindex.ai/python/framework/module_guides/loading/documents_and_nodes/usage_metadata_extractor/) and [Maximum Marginal Relevance Retrieval](https://developers.llamaindex.ai/python/examples/vector_stores/simpleindexdemommr/).
