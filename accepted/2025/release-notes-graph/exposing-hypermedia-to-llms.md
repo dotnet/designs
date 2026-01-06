@@ -1,8 +1,16 @@
 # Exposing Hypermedia Information Graphs to LLMs
 
-[Hypermedia](https://en.wikipedia.org/wiki/Hypermedia) and [hypertext](https://en.wikipedia.org/wiki/Hypertext) are self-describing formats well-suited for LLM consumption. A hypermedia document graph contains sufficient meta-information for a semantic consumer to traverse it and find information demanded by a prompt—without requiring a pre-loaded vector database or a priori schema knowledge.
+[Hypermedia](https://en.wikipedia.org/wiki/Hypermedia) and [hypertext](https://en.wikipedia.org/wiki/Hypertext) are decades-old formats perfectly suited for LLM consumption by virtue of self-describing structure and labeled relationships between resources. A hypermedia document graph contains sufficient meta-information for a semantic consumer to traverse it and find information demanded by a prompt—without requiring a pre-loaded vector database or a priori schema knowledge. This makes hypermedia a lightweight alternative to vector databases: pre-baked static publishing with no specialized infrastructure, using semantic naming, graph-resident guidance, and cost-aware node weighting to achieve comparable LLM enablement. These techniques generalize to any domain where document relationships are meaningful and navigable.
 
-In a traditional system, a schema is the pre-requisite to traversal; in a hypermedia system, traversal reveals the schema. In a vector system, every query matches against the full corpus; in a hypermedia system, each node reveals the candidates.
+In a traditional system, a schema is the pre-requisite to traversal; in a hypermedia system, traversal reveals the schema.
+
+> A (nearly) century-old principle, articulated by [Korzybski](https://en.wikipedia.org/wiki/Alfred_Korzybski): [the map is not the territory](https://en.wikipedia.org/wiki/Map%E2%80%93territory_relation).
+
+[HTML](https://en.wikipedia.org/wiki/HTML) is perhaps the least sophisticated hypertext implementation in common use. A typical example: `For more on this vulnerability, <a href="cve-2025-1234.html">click here</a>`. "click here" [doesn't provide much of a map](https://developers.google.com/search/docs/crawling-indexing/links-crawlable#anchor-text-placement) for a semantic consumer.
+
+In trail races, ribbons hang from trees and arrows mark the ground to keep runners on course. Where routes diverge, signs read "5 km → left" and "10 km → straight". The ribbons are the map—schema-driven correctness. The signposts are HATEOAS-like descriptive navigation. Signposting is a key-value function: you match a key you recognize with a value you need to stay on course.
+
+A semantic graph exposes named relations like `{ "link-relation": "security-disclosure", "href": "..." }`. Greater sophistication can be achieved by describing the target kind: `"link-relation": "disclosure"` and `"target-kind": "cve-record"`. A strong semantic implementation shines a light on the path to follow and what it will reveal.
 
 ## Background
 
@@ -10,11 +18,9 @@ The prevailing narrative has been that _structured data_ > _unstructured documen
 
 Databases went through a "no-SQL" transition—not a rejection of structure, but a recognition that structure lives in the documents themselves. Hypermedia graphs extend this to "no-schema" consumption: readers discover structure through descriptive labels and traversal rather than requiring it upfront.
 
-## Why hypermedia over vector search?
+Vector databases establish relationships via embedding similarity, refined through techniques like [Metadata Extraction Usage Pattern](https://developers.llamaindex.ai/python/framework/module_guides/loading/documents_and_nodes/usage_metadata_extractor/) and [Maximum Marginal Relevance Retrieval](https://developers.llamaindex.ai/python/examples/vector_stores/simpleindexdemommr/).
 
-Vector databases establish relationships via embedding similarity, refined through techniques like [Metadata Extraction Usage Pattern](https://developers.llamaindex.ai/python/framework/module_guides/loading/documents_and_nodes/usage_metadata_extractor/) and [Maximum Marginal Relevance Retrieval](https://developers.llamaindex.ai/python/examples/vector_stores/simpleindexdemommr/). Hypermedia relations are both semantic and structural—equal parts [Retrieval-Augmented Generation (RAG)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) and [PageRank](https://en.wikipedia.org/wiki/PageRank)—which reduces the need for those techniques.
-
-Hypermedia graphs can be published pre-baked and consumed directly. This enables low-cost LLM enablement for scenarios where hosting a persistent AI server would be prohibitive. An AI server must also manage time-to-live semantics for volatile data—complexity hypermedia graphs avoid.
+Hypermedia relations are both semantic and structural—equal parts [Retrieval-Augmented Generation (RAG)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) and [PageRank](https://en.wikipedia.org/wiki/PageRank). This mixture reduces the need for vector techniques. Hypermedia graphs can be published pre-baked and consumed directly, enabling low-cost LLM enablement for scenarios where hosting a persistent AI server would be prohibitive.
 
 ## Approach
 
@@ -141,9 +147,11 @@ Both enable parallel fetches on the first turn—data plus a relevant skill—ap
 
 ### Why both?
 
-[`llms.txt](<https://llmstxt.org/>) was the goto solution offered by industry. `llms.json` emerged from experimentation: could JSON achieve the same LLM enablement without a markdown on-ramp?
+[`llms.txt`](https://llmstxt.org/) is an emerging standard with awareness in recently trained LLMs. It can serve as meta-information (as here) or as a comprehensive index (as with [Stripe docs](https://docs.stripe.com/llms.txt) at 18.5k tokens or [Claude Code docs](https://code.claude.com/docs/llms.txt) at ~2.5k tokens). Our `llms.txt` clocks in at 609 tokens—a router, not an index.
 
-The answer: mostly yes, with effort. JSON lacks markdown's instructional connotations, so guidance must be more explicitly signaled:
+Markdown offers natural syntax for links, guidance, and code fences. JSON can carry the same information but lacks markdown's instructional connotations. `llms.json` emerged from experimentation: could JSON achieve the same LLM enablement without a markdown on-ramp?
+
+The answer: mostly yes, with effort. Guidance must be more explicitly signaled:
 
 {
   "ai_note": "ALWAYS read required_pre_read first...",
@@ -179,6 +187,8 @@ Same destination, different semantic intent. This implements the principle: matc
 **Focal lengths**: The core index (`index.json`) is zoomed-out and normalized—all .NET versions over ten years. The LLM index (`llms.json`) is zoomed-in and denormalized—current state with enough data to answer queries directly. The graph applies multiple focal lengths throughout, separating skeletal navigation nodes from weighted content nodes.
 
 ### Guidance architecture
+
+Guidance was the hardest part of the graph to develop. It was relatively easy to generate a graph intuitive for LLMs to navigate without guidance. The remaining problem: augmenting that intuition to aid long-tail navigation that tended to underperform. The process of developing this guidance was deeply unintuitive for the graph designer. There are aspects of LLM behavior that do not match human expectation—this needs to be understood.
 
 #### Preamble prompt
 
@@ -263,6 +273,8 @@ The `kind:llms` prefix anchors the path to a node type, reconnecting the workflo
 
 ### Evaluation
 
+A key principle emerged: _curiosity-driven evaluation_ beats intuition reliance. Once you have a good test harness, it's liberating to not trust your intuition but to test any idea that seems interesting. The distinction between "informed direction" and "bat-crazy idea" drops away. Test both. This stuff is half-magic, half-fever-dream—why should intuition be authoritative?
+
 #### Test modes
 
 | Mode | Entrypoint | Guidance | Purpose |
@@ -291,13 +303,25 @@ Testing used Claude Haiku 3.5 as the primary target, spot-checked against Sonnet
 
 #### Evidence: JSON-resident guidance
 
-Claude's thinking log when given `llms.json`:
+[Claude.ai's thinking log](https://claude.ai/share/96775d4b-76a9-4ba2-b5f3-dd3badb20cdb) when given `llms.json`:
 
-> "The file mentions there's a SKILL.md file that I should read first per the AI note. Let me fetch that..."
+> The file I fetched shows the current state of supported .NET releases. Looking at the data, I can see that .NET 6.0 is not in the list of supported_major_releases (which shows only 10.0, 9.0, and 8.0). This means .NET 6 is EOL.
+>
+> The file mentions there's a SKILL.md file that I should read first per the AI note. Let me fetch that to get more complete information...
 
-When asked why:
+When asked what motivated it to notice and follow these AI hints:
 
-> "Fields like `ai_note` and `required_pre_read` signal that someone engineered this system specifically for AI consumption. That makes me trust the guidance... The motivation wasn't 'AI hints are always right'—it was pragmatic: follow structured guidance when it's clearly intentional."
+> **1. System Prompt Priming.** My instructions emphasize using skills before solving tasks. So when I saw the JSON had a `required_pre_read` field, it activated that pattern recognition—_this is a skill pointer, pay attention._
+>
+> **2. Signal of Intentional Design.** Fields like `ai_note`, `required_pre_read`, and `follow_path` aren't random. They signal that someone engineered this system _specifically for AI consumption_. That makes me trust the guidance. The note didn't just suggest following links—it said "Trust _embedded data—it's authoritative and current," which is basically the architect saying "I've done the hard work, use my structure."
+>
+> **3. The "ALWAYS" Flag.** The `ai_note` wasn't subtle: "ALWAYS read required_pre_read first." All caps. That's a red flag (or rather, a red instruction) that elevated it above background text.
+>
+> **4. It Actually Worked.** Following the hints gave me a clean, logical path. The skill routing sent me to the right specialist knowledge. The stop criteria told me when to stop fetching.
+>
+> **But here's the honest part:** Without those hints embedded in the data, I might have flailed around. I might have assumed .NET 6.0 was in the supported list since the index showed it. I could have tried to construct URLs. The hints prevented those mistakes.
+>
+> So the motivation wasn't "AI hints are always right"—it was more pragmatic: **follow structured guidance when it's clearly intentional and makes logical sense.**
 
 #### Evidence: Workflow comprehension
 
