@@ -1302,11 +1302,41 @@ The following data is attached within the graph and therefore queryable.
 - Breaking changes
 - What's new links
 - CVE disclosures
-- Servicing fixes and commits (beyond CVEs)
-- Known issues
 - Supported OSes
 - Linux package dependencies
 - Download links + hashes
 
-We can query this data to test out the efficacy for the design.
+We can query this data to test out the efficacy for the design inspired.
 
+Three schema approaches are compared across 15 real-world query scenarios, measuring file transfer in bytes.
+
+| Test | Query | `llms.json` | `index.json` | `releases-index.json` |
+|------|-------|----------:|-----------:|--------------------:|
+| T1 | Supported .NET versions | **5 KB** | **5 KB** | 6 KB |
+| T2 | Latest patch details | **5 KB** | 14 KB | 6 KB |
+| T3 | Security patches since date | **14 KB** | 34 KB | 1,269 KB |
+| T4 | EOL version CVE details | 45 KB | **40 KB** | 1,612 KB |
+| T5 | CVE timeline with code fixes | **25 KB** | 30 KB | ✗ |
+| T6 | Security process analysis | **450 KB** | 455 KB | ✗ |
+| T7 | High-impact breaking changes | **117 KB** | 126 KB | ✗ |
+| T8 | Code migration guidance | **122 KB** | 131 KB | ✗ |
+| T9 | What's new in runtime | **24 KB** | 33 KB | ✗ |
+| T10 | Security audit (version check) | **14 KB** | 34 KB | 1,269 KB |
+| T11 | Minimum libc version | **17 KB** | 26 KB | ✗ |
+| T12 | Docker setup with SDK | **36 KB** | 45 KB | 25 KB |
+| T13 | TFM support check | 45 KB | 50 KB | **6 KB** |
+| T14 | Package CVE check | **60 KB** | 65 KB | ✗ |
+| T15 | Target platform versions | **11 KB** | 20 KB | ✗ |
+| | **Winner** | **13** | **2** | **1** |
+
+**Legend:** Smaller is better. **Bold** = winner. **P** = partial answer. **✗** = cannot answer.
+
+Raw results are recorded at [metrics/README.md](./metrics/README.md). The results prove out the premise that the new graph can efficiently answer a lot of domain questions and that `llms.json` has a small advantage over `index.json` when testing with `jq`.
+
+## Conclusion
+
+The intent of this project is to publish structured release notes using a more efficient schema architecture, both to reduce update cadence and to enable smaller fetch costs. The belief was that an existing standard would push our schema efforts towards a strong design paradigm that ultimately enabled us to achieve our goals faster and better. The results seem to prove this out. The chosen solution is an opposite-end-of-the-spectrum approach. It generates a huge number of files compared to the existing approach, many of which will never be updated and rarely visited once the associated major version is out of support. The existing `releases.json` files are already much like that, just monolithic (and therein lies the challenge).
+
+A case in point is the addition of breaking changes. Someone suggested that breaking changes should be added to the graph. It took < 60 mins to do that. The HAL design paradigm and the aligned philosophy of cold roots and weighted immutable leaves naturally alloted specific space for breaking changes to be attached on the load-bearing structure. There's no need to consult a design committee since (as a virtue) there isn't much design freedom once the overall approach is established. It's likely that we'll find a need to attach more information to the graph. We can just repeat the process.
+
+The restrictive nature of this design ends up being well aligned with the performance and cost consideration of LLMs. That's a bit of foreshadowing of the other spec. It boils down being very intentional about the design being breadth- or depth-first. This design is bread-first oriented, which enables learning about a layer at a time. The reason that `llms.json` is able to pull ahead of the purist `index.json` breadth-first implementation is that it offers a more depth-first approach for specific queries. It's one of those "I know what I'm doing; trust me" situations. At the application layer, it's OK to break some rules. And that in a nutshell describes the design.
