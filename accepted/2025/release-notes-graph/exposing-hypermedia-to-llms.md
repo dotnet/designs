@@ -341,17 +341,50 @@ From a feedback turn on the `cve-history` workflow:
 
 ### Cross-consumer applicability
 
-Workflows were designed for LLMs, but they're descriptive enough for non-semantic consumers. A C# tool can parse workflows and generate bash scripts:
+Workflows were designed for LLMs, but they're formal enough for mechanical translation. A C# tool parses workflows and generates bash scripts:
 
 ```bash
-$ dotnet run -- script .../workflows.json cve-latest > get-latest-cves.sh
-$ ./get-latest-cves.sh | jq ._embedded.disclosures.[].id
-"CVE-2025-55248"
-"CVE-2025-55315"
-"CVE-2025-55247"
+$ dotnet run -- list .../workflows.json
+  cve-by-version  CVEs affecting a specific .NET version
+  cve-details     Go directly to cve.json for full details
+  cve-extraction  Extract data from cve.json (different schema than month index)
+  cve-history     CVEs over a time range
+  cve-latest      CVEs from the most recent security release
+
+Total: 5 workflows
 ```
 
-This replays the theme from earlier: proving formats work for both semantic and syntactic consumers. The graph was validated with `jq` and LLMs; workflows are validated with C# and LLMs.
+```bash
+$ dotnet run -- script .../workflows.json cve-latest
+```
+
+The generated script:
+
+```bash
+#!/bin/bash
+# Workflow: cve-latest
+# Description: CVEs from the most recent security release
+
+set -euo pipefail
+
+# Step 1: Start at llms.json
+URL="https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/llms.json"
+echo "Fetching: $URL" >&2
+DOC=$(curl -sf "$URL")
+
+# Step 2: Follow link "latest-security-disclosures"
+URL=$(echo "$DOC" | jq -r '._links["latest-security-disclosures"].href // empty')
+if [ -z "$URL" ]; then
+  echo "Error: Link 'latest-security-disclosures' not found" >&2
+  exit 1
+fi
+echo "Fetching: $URL" >&2
+DOC=$(curl -sf "$URL")
+
+echo "$DOC" | jq '.'
+```
+
+This replays the theme from earlier: formats that work for both semantic and syntactic consumers. The graph was validated with `jq` and LLMs; workflows are validated with C# and LLMs.
 
 ## Cost model validation
 
