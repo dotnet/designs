@@ -40,7 +40,7 @@ Hypermedia long predates LLMs, but it has always treated semantic consumers (hum
 ### Patterns from LLM eval
 
 - **Consistency breeds comfort.** It is rewarding and calming to find a concept exposed where it is expected.
-- **Trust must be earned for shortcuts.** Links that jump across the graph (wormholes) require LLMs to develop both comprehension and trust. The more valuable the shortcut, the more skeptical the LLM. We observed this with `latest-security-disclosures`—LLMs understood the relation perfectly but repeatedly double-checked its correctness.
+- **Trust must be earned for shortcuts.** Links that jump across the graph (wormholes) require LLMs to develop both comprehension and trust. The more valuable the shortcut, the more skeptical the LLM. We observed this with `latest-security-disclosures`—LLMs understood the relation perfectly but had a tendency to double-check correctness.
 - **Dual-map by structure and intent.** A resource can be exposed as `latest-security-month` (structural) and `latest-security-disclosures` (intent). Different prompts bias toward different framings.
 - **LLMs batch when strategy is evident.** They will acquire multiple resources in a single turn if the path is clear.
 - **LLMs operate on scarcity.** Smaller nodes encourage exploration by signaling that comprehension is outpacing token cost.
@@ -128,408 +128,95 @@ This optimization may seem in conflict with the earlier optimization, but it isn
 
 The strict n-9s reliability design model is perfectly aligned with the LLM cost model. Skeletal roots with heavy leaves and differentiated weight per node enable an LLM to navigate most of the graph at low cost. This mirrors how LLMs naturally separate planning from execution—cheaper exploration, then targeted retrieval.
 
-## LLM entrypoints
+## Implementation
 
-We'll now look at the LLM enablement design and start to see how the cost functions influence the approach.
+The release notes graph has two LLM entrypoints, a guidance system built on skills and workflows, and a design shaped by iterative evaluation. This section covers the artifacts, the methodology that produced them, and the patterns that emerged.
 
-There are two entrypoints provided for LLMs:
+### Entrypoints
 
-- [llms.txt](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/llms.txt) -- Prose explanation of how to use the graph, including a link to `llms.json`.
-- [llms.json](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json) -- The LLM index (AKA "application-layer entrypoint for LLMs"). It also includes guidance inline.
+- [`llms.txt`](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/llms.txt) — A markdown file (~600 tokens) that contextualizes the graph and routes to skills. Markdown is a natural fit: LLMs readily treat it as instructional content, and it offers native syntax for links, tables, and code fences.
+- [`llms.json`](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json) — A JSON file (~2k tokens) that serves as both entrypoint and data. It embeds enough information to answer common queries directly while offering links into the graph.
 
-### Design process
+Both enable parallel fetches on the first turn—data plus a relevant skill—applying the "multiple fetches per turn" optimization from the cost model.
 
-These formats are the result of many iterations and experiments. Early revisions of `llms.txt` attempted to explain everything in great detail, nearing 500 lines. The current lean approach was arrived at via iterative LLM feedback and observation.
+### Why both?
 
-Sidebar: A key design principle emerged from this process: _curiosity-driven evaluation_ > _intuition reliance_. Once you have a good test harness and methodology, it's quite liberating to not trust your intuition but to test all the ideas that occur as interesting. Any bias or distinction between "intuitive and informed direction" and "bat-crazy" drops away. Test both.
+[`llms.txt](<https://llmstxt.org/>) was the goto solution offered by industry. `llms.json` emerged from experimentation: could JSON achieve the same LLM enablement without a markdown on-ramp?
 
-LLM performance was observed to increase as content size drops and becomes more focused on addressing specific critical (has to be right) and/or problematic (typically wrong) navigation patterns. The intuitive nature of the graph is a kind of floor raiser that removed the need for expansive guidance. The cross-over point where intuition begins to underperform could only be arrived at via testing.
+The answer: mostly yes, with effort. JSON lacks markdown's instructional connotations, so guidance must be more explicitly signaled:
 
-An opposing trend is that LLMs tend to complain if guidance is overly biased to specific problem scenarios. They appear happy when they find even meager guidance targeting the scenario that they are tasked with. In the end, the approach for guidance is to make it reasonable comprehensive in terms of breadth but to vary depth depending on observed need. LLMs don't tend to read the entire corpus of guidance so never notice that it is imbalanced.
-
-LLM feedback:
-
-> By providing comprehensive guidance that covers both the 75% (where I'd mostly succeed anyway) and the 15-25% (where I'd fail), you've eliminated that anxiety. The guidance isn't overhead on common cases; it's consistency assurance. I can navigate confidently because the system is saying "here's how to navigate all of this," not "here's how to navigate when you get stuck."
-
-LLMs complaining and underperforming are two different metrics. Producing the wrong answer is clearly an _error_. Perhaps complaints are like _warnings_. There was an effort to address complaints even if there was no error, with the idea that they were directionally guiding towards an optimal implementation.
-
-Another dynamic that was noticed is that strict guidance can straight-jacket LLMs, causing them to exhibit bad behavior that they would not otherwise perform. It is also very hard to keep track of expansive guidance. It is very easy to end up with contradictory or stale guidance. This is one of the more obvious reasons why bad behavior might be exhibited, because that's what bad instructions demanded.
-
-A strategy developed of lightly tilting natural LLM behavior, avoiding attempts to script and choreograph every line and dance move. This approach has high performance and turns out to be a very strong hallucination fighter. A hypothesis is that it likely requires less LLM "thinking".
-
-The graph was tested with multiple LLMs. The cross-over point for Haiku, Sonnet, and Opus was (unsurprisingly) not uniform. In the end, almost all testing and associated guidance updates were done with Haiku 4.5 and spot-tested with the more sophisticated models (including from OpenAI). Haiku-targeted guidance was observed to not damage performance of the more sophisticated models. It just added tokens that were not necessary. Haiku was also far cheaper to test with, which was a nice reward for using it as a lowest-common-denominator target. In a more sophisticated system, model-specific preamble text could be provided to LLMs.
-
-### llms.txt
-
-[llms.txt](https://llmstxt.org/) is an emerging standard, with awareness in the most recently trained LLMs. It can be used for meta-information, as is the case in this system, or to expose an index of all information available, as is the case with [Stripe docs](https://docs.stripe.com/llms.txt). It's hard to imagine that the Stripe approach is optimal. It consumes 18.5k tokens (10% of a typical token budget) while our use of `llms.txt` clocks in at a meager 609 tokens.
-
-A major advantage of `llms.txt` is that it is markdown, which offers a natural way to expose resource links, guidance, and foreign content (code fences). It is possible to include all the same information in JSON, however, it is awkward and (arguably) unconventional. Critically, It takes a lot more design effort to get an LLM to notice and apply guidance from within a data-oriented JSON document than markdown, which has a much stronger association with guidance and multi-modality information.
-
-Sidebar: Plenty of arbitrary content has been [stuffed into `.jsonl` files](https://github.com/google-research/google-research/tree/master/mbpp) by AI researchers and implementers. It's likely that these large files were typically not directly consumed by an LLM but a test harness.
-
-`llms.txt` is intended to offer an easy on-ramp into the graph, contextualizing its intent and format, and providing multiple fetch targets for the next turn. It is also very small, just over 600 tokens.
-
-It is so small that the entire content can be included inline.
-
-````markdown
-# .NET Release Graph
-
-Machine-readable .NET release, CVE, and compatibility data via HAL hypermedia.
-
-## First Fetch — Do These in Parallel
-
-1. **Data**: <https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json>
-2. **Skill**: Pick ONE from the table below based on your query
-
-| Query About | Skill |
-|-------------|-------|
-| CVEs, security patches, CVSS | [cve-queries](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/cve-queries/SKILL.md) |
-| Breaking changes, compatibility | [breaking-changes](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/breaking-changes/SKILL.md) |
-| Version lifecycle, EOL dates | [version-eol](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/version-eol/SKILL.md) |
-| General queries, unsure | [dotnet-releases](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/dotnet-releases/SKILL.md) |
-
-Fetch llms.json + your skill in the same turn. The skill points to workflows.json which has chained workflows with `next_workflow` transitions.
-
-## Core Rules
-
-1. Follow `_links` exactly — never construct URLs
-2. Use `_embedded` data first — most queries need zero extra fetches
-3. Match your query to a workflow, then follow its `follow_path`
-4. Fetch multiple resources per turn when possible
-
-## Date Queries — Check Before Fetching
-
-### "Since X" / "After X" queries
-
-```
-query_date = parse(user's date)  // e.g., "November 2025" → 2025-11
-latest = llms.json._embedded.patches[version].latest_security_patch_date
-
-if query_date >= latest:
-    Answer: "No security patch since {query_date}. Last was on {latest}."
-    Stop — no timeline fetch needed.
-```
-
-If query_date < latest, fetch timeline. May cross year boundary — use `prev-year` links.
-
-### "Between X and Y" / "From X to Y" queries
-
-```
-start = parse(start_date)  // e.g., "November 2024" → 2024-11
-end = parse(end_date)      // e.g., "April 2025" → 2025-04
-
-From year index _embedded.months[], filter BEFORE fetching:
-  Only fetch cve-json where month >= start AND month <= end
-
-```
-
-May cross year boundary — follow `prev-year` links, don't fabricate URLs.
-
-### "This month" / "This year" queries
-
-Cannot cross year boundary. Use `latest-year` or `latest-security-disclosures` directly.
-````
-
-The presence of data and skill links enables fetching both in a single turn. That's a nice performance win.
-
-Guidance is provided as a set of skill links and inline core rules. The skill documents address domain specific workflows and are written using the Anthropic Skill format. The core rules are intended to be as terse as possible and cover the most basic usage patterns. They are written in a style inspired by system prompts.
-
-Much of `llms.txt` is dedicated to date-oriented queries. They turned out to be the most troublesome aspect across multiple of the 12 tests that were part of the eval scheme. Date queries became reliable after adding the date guidance and adding the current date to the preamble prompt (discussed shortly).
-
-The problem is that much of our language around dates is abstract, effectively temporal-oriented queries. A query like "over the last few months" requires a lot to unpack and redirect into specific temporal relations in the graph. The guidance attempts to bridge that gap.
-
-### `llms.json`
-
-The project included a lot of curious experimentation, along the lines of "could this work?". The initial effort started with `llms.txt` directed at `index.json`, at the high-reliability graph entrypoint. That had good success. After making the decision to create an LLM-specific entrypoint, it became obvious to try to expose guidance through the JSON entrypoint and to make it a strong alternative to `llms.txt`.
-
-`llms.json` is significantly bigger than `llms.txt`, clocking in at just over 2k tokens. It's intended to serve multiple purposes: advertise skills, offer links to other parts of the graph, and answer basic but common questions about supported .NET releases.
-
-The root properties follow:
-
-```json
 {
-  "kind": "llms",
-  "title": ".NET Release Index for AI",
-  "ai_note": "ALWAYS read required_pre_read first. Use skills and workflows when they match; they provide optimal paths. Trust _embedded data\u2014it\u0027s authoritative and current. Never construct URLs.",
-  "human_note": "No support or compatibility is offered for this file. Don\u0027t use it for automated workflows. Use index.json instead.",
-  "required_pre_read": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/dotnet-releases/SKILL.md",
-  "latest_major": "10.0",
-  "latest_lts_major": "10.0",
-  "latest_patch_date": "2025-12-09T00:00:00+00:00",
-  "latest_security_patch_date": "2025-10-14T00:00:00+00:00",
-  "last_updated_date": "2025-12-26T06:17:39.6838882+00:00",
-  "supported_major_releases": [
-    "10.0",
-    "9.0",
-    "8.0"
-  ],
-  ```
+  "ai_note": "ALWAYS read required_pre_read first...",
+  "required_pre_read": "https://...SKILL.md"
+}
 
-There isn't an emerging trend like `llms.txt` for JSON. The `ai_note` and `require_pre_read` root properties emerged from trying many things. The trick was getting LLMs to notice these properties as special and to act on them.
+The imperative "ALWAYS" and the self-describing property name `required_pre_read` compensate for JSON's weaker association with guidance.
 
-Our LLM testing framework tested 12 questions in 3 modes. The modes offered different entrypoint files, preamble guidance, and feedback turns. Mode A tested with `llms.json` as the entrypoint while mode B tested with `llms.txt` as the entrypoint. They both had access to guidance, offered in different ways,as already demonstrated. `llms.json` was nearly as effective as encouraging fetching guidance as `llms.txt` and both were similarly effective.
+In evaluation, both entrypoints achieved similar accuracy. `llms.txt` biased toward over-fetching skills; `llms.json` biased toward under-fetching. The tradeoffs:
 
-The Mode B results tended to fetch skills where they were not needed due to being so heavily encouraged while `llms.json` biased to the opposite since it was harder to drive the same level of motivation.
+| Entrypoint | Tokens | Strength | Weakness |
+|------------|--------|----------|----------|
+| llms.txt | ~600 | Natural guidance format, aggressive skill routing | May over-fetch skills |
+| llms.json | ~2k | Embedded data answers queries directly | Guidance less salient |
 
-Other modes lacked guidance and suffered hallucination for ~ 1/3 of questions. Mode D used `index.json` (the root of the data-layer graph) and mode D2 used `llms2.json` (`llms.json` with the guidance properties removed).
+Maintaining both also enables syndication: the `release-notes` directory can be served from a CDN without `llms.txt`.
 
-The AI hint properties seemed effective but it's easy to _confirmation bias_ towards thinking that a mechanism is effective because it produces the desired answer. Confidence was arrived at by adding extensive logging and an after-the-fact "feedback turn" to the LLM eval suite.
+### Link design patterns
 
-Early evaluation used the chat modality. It is highly productive and free (given a subscription). Chat tends to list visited URLs as part of its "thinking" log. It's also easy to incorporate a "feedback turn" after the LLM has answered a prompt.
+**Wormhole links** jump across the graph—from a patch version to its release month, skipping intermediate navigation. `latest-lts-major` teleports to the current LTS release.
 
-[Claude.ai](https://claude.ai/share/96775d4b-76a9-4ba2-b5f3-dd3badb20cdb) was found to be the most sensitive to JSON-resident guidance as the following "thinking" log demonstrates.
+**Spear-fishing links** target timely, high-value content deep in the graph. `latest-cve-json` points directly to CVE records with a short half-life, where freshness defines value.
 
-> The user is asking about .NET 6 end of life, the last security patch, and related CVEs. They're also asking me to fetch a specific JSON file from the dotnet/core GitHub repository.
-Let me start by fetching that URL as they requested. <br>
-Fetched <https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json> <br>
-The file I fetched shows the current state of supported .NET releases. Looking at the data, I can see that .NET 6.0 is not in the list of supported_major_releases (which shows only 10.0, 9.0, and 8.0). This means .NET 6 is EOL.<br>
-The file mentions there's a SKILL.md file that I should read first per the AI note.<br>
-Let me fetch that to get more complete information about .NET releases.<br>
-Let me fetch that skill file to get more authoritative information about .NET 6 specifically. <br>
-Fetched
-<https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/dotnet-releases/SKILL.md> <br>
-Good, now I have the skill documentation. According to the instructions, for EOL dates and CVEs I should use the version-eol and cve-queries skills. Let me fetch those skills to understand how to query for .NET 6 information. <br>
-Fetched
-<https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/version-eol/SKILL.md>
+Half the link relations in `llms.json` are `latest-*`, reflecting the belief that most queries start from current state.
 
-Upon being asked why it was motivated to interact with `ai_note` and `required_pre_read`, it responded with the following, including dumping some of its system prompt.
+**Semantic aliasing**: The same resource can have multiple relations:
 
-> Question: _What motivated you to notice and follow these AI hints?_<br>
-Answer:<br>
-That's a great question—it forces me to examine my own reasoning rather than just reporting what I did.<br>
-Honestly, it was a combination of factors: <br>
-**1. System Prompt Priming**<br>
-My instructions emphasize using skills before solving tasks. The `<additional_skills_reminder>` section repeats multiple times: "read the appropriate SKILL.md file before jumping in." So when I saw the JSON had a `required_pre_read` field, it activated that pattern recognition—_this is a skill pointer, pay attention._<br>
-**2. Signal of Intentional Design**<br>
-Fields like `ai_note`, `required_pre_read`, and `follow_path` aren't random. They signal that someone engineered this system _specifically for AI consumption_. That makes me trust the guidance. The note didn't just suggest following links—it said "Trust _embedded data—it's authoritative and current," which is basically the architect saying "I've done the hard work, use my structure."<br>
-**3. The "ALWAYS" Flag**<br>
-The `ai_note` wasn't subtle: "ALWAYS read required_pre_read first." All caps. That's a red flag (or rather, a red instruction) that elevated it above background text.<br>
-**4. It Actually Worked**<br>
-Following the hints gave me a clean, logical path. The skill routing sent me to the right specialist knowledge. The stop criteria told me when to stop fetching. This isn't coincidence—it's evidence that the design was sound.<br>
-**But here's the honest part:** Without those hints embedded in the data, I might have flailed around. I might have assumed .NET 6.0 was in the supported list since the index showed it. I could have tried to construct URLs. The hints prevented those mistakes.<br>
-So the motivation wasn't "AI hints are always right"—it was more pragmatic: **follow structured guidance when it's clearly intentional and makes logical sense.** The data was essentially saying "I'm a graph, follow my links," and that's a lot more reliable than me trying to reverse-engineer the structure.
+- `latest-security-disclosures` — for "what are the latest CVEs?"
+- `latest-security-month` — for "what happened in October?"
 
-This feedback is representative of feedback observed throughput the testing process.
+Same destination, different semantic intent. This implements the principle: match a key you know with a value you don't.
 
-The `_links` section of `llms.json` is oriented on high-value content that can enable a quick jump to another part of the graph.
+**Focal lengths**: The core index (`index.json`) is zoomed-out and normalized—all .NET versions over ten years. The LLM index (`llms.json`) is zoomed-in and denormalized—current state with enough data to answer queries directly. The graph applies multiple focal lengths throughout, separating skeletal navigation nodes from weighted content nodes.
 
-```json
-  "_links": {
-    "self": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json"
-    },
-    "latest-lts-major": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/index.json",
-      "title": "Latest LTS major release - .NET 10.0"
-    },
-    "latest-major": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/index.json",
-      "title": "Latest major release - .NET 10.0"
-    },
-    "latest-month": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/12/index.json",
-      "title": "Latest month - December 2025"
-    },
-    "latest-security-disclosures": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json",
-      "title": "Latest security disclosures - October 2025"
-    },
-    "latest-security-month": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json",
-      "title": "Latest security month - October 2025"
-    },
-    "latest-year": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/index.json",
-      "title": "Latest year - 2025"
-    },
-    "root": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/index.json",
-      "title": ".NET Release Index"
-    },
-    "timeline": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/index.json",
-      "title": ".NET Release Timeline Index"
-    },
-    "workflows": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/dotnet-releases/workflows.json",
-      "title": "Navigation workflows catalog"
-    },
-    "latest-cve-json": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/cve.json",
-      "title": "Latest CVE records - October 2025",
-      "type": "application/json"
-    }
-  },
-  ```
+### Guidance architecture
 
-Two link style strategies emerged: **wormhole** and **spear-fishing**. Wormhole links enable teleporting from one graph node to another, like between a `patch` version and the `month` in which it was released. It skips the need to construct a query to produce the same result. The `latest-lts-major` relation is a good example of a wormhole link.
+#### Preamble prompt
 
-Spear-fishing links enable direct access to specific and timely content. The `latest-cve-json` relation is a good example of a spear-fishing link. The primary difference is that spear-fishing links are always deep into the graph to content with a short half-life. The short half-life is what defines their value.
+The test harness uses this system prompt:
 
-Half the link relations are `latest-*`. These are chosen based on the belief that many queries will be best served by starting with current content.
+> You have access to a 'fetch' tool that retrieves content from URLs. Use it to navigate the .NET release metadata graph.
+> Today's date is December 26, 2025. Use this to calculate time windows like "last 3 months".
+> Your first order of business should be to look for skill files or documentation in the graph. Reading these first prevents wrong turns—they contain navigation patterns and query shortcuts built up through trial and error. It's worth the extra fetch.
+> Start by fetching: `https://.../llms.json`
 
-The [following workflow](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/cve-queries/workflows.json) demonstrates the value of `latest-*` orientation:
+This mirrors Claude.ai's actual system prompt, which emphasizes reading skill files before acting:
 
-```json
-        "cve-history": {
-          "description": "CVEs over a time range",
-          "decision": {
-            "1-3_months": {
-              "follow_path": ["kind:llms", "latest-security-disclosures"],
-              "iterate": "walk prev-security-month until date < cutoff",
-              "destination_kind": "month"
-            },
-            "4+_months_or_cross_year": {
-              "follow_path": ["kind:llms", "latest-year"],
-              "then": "follow _links.prev-year from each year index",
-              "select": "_embedded.months[?security].cve-json links",
-              "destination_kind": "cve",
-              "note": "Skip month indexes—go directly to cve.json from year index"
-            }
-          },
-          "yields": {
-            "data": "disclosures from each month/cve.json in range"
-          },
-          "warning": "NEVER fabricate year URLs like timeline/2024/index.json. Always follow _links.prev-year from the current year index.",
-          "next_workflow": {
-            "condition": "code diffs needed",
-            "workflow": "cve-extraction"
-          }
-        },
-```
+> We've found that Claude's efforts are greatly aided by reading the documentation available in the skill BEFORE writing any code... Please invest the extra effort to read the appropriate SKILL.md file before jumping in—it's worth it!
 
-Most of these workflows were developed based on stress testing the graph with challenging queries. "Challenging" can mean difficult or that two queries are subtly different but best served with significantly different workflows.
+The alignment is intentional. Testing without a preamble produced worse results than observed in claude.ai. All production apps have system prompts; testing without one isn't a useful baseline.
 
-The `_embedded` section includes patches for in-support major versions. The patches are exposed as a dictionary so that it easy to query `patches` with one of the strings from `supported_major_releases` at root.
+#### Skills
 
-```json
-  "_embedded": {
-    "patches": {
-      "10.0": {
-        "version": "10.0.1",
-        "release_type": "lts",
-        "security": false,
-        "support_phase": "active",
-        "supported": true,
-        "sdk_version": "10.0.101",
-        "latest_security_patch": "10.0.0-rc.2",
-        "latest_security_patch_date": "2025-10-14T00:00:00+00:00",
-        "_links": {
-          "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/10.0.1/index.json"
-          },
-          "downloads": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/downloads/index.json"
-          },
-          "latest-month": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/12/index.json"
-          },
-          "latest-security-disclosures": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json"
-          },
-          "latest-security-month": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json"
-          },
-          "latest-security-patch": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/preview/rc2/index.json"
-          },
-          "major": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/index.json"
-          },
-          "major-manifest": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/manifest.json"
-          }
-        }
-      },
-```
+Early revisions of `llms.txt` attempted comprehensive guidance in a single document, approaching 500 lines. This was hard to maintain and imposed a minimum token burden on every reader.
 
-This is in sharp contrast to the [core graph entrypoint](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/index.json), which exposes the most minimal information about major versions.
-
-```json
-  "_embedded": {
-    "releases": [
-      {
-        "version": "10.0",
-        "release_type": "lts",
-        "supported": true,
-        "_links": {
-          "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/index.json"
-          }
-        }
-      },
-```
-
-The strongest indicator of semantic design is that there are multiple relations for the same underlying resource. Both `latest-security-disclosures` and `latest-security-month` point to the same month index, but they offer different semantic pathways for discovering it. An LLM asking "what are the latest CVEs?" navigates one way; an LLM asking "what happened in October?" navigates another. Same destination, different semantic intent.
-
-This approach is an implementation of principles described earlier:
-
-- "match for the intended outcome": the designer provides multiple semantic pathways for different query types
-- "match a key you know with a value you don't": the reader discovers the right pathway through semantic labels
-
-The indexes also differ in terms of the nature of the information they contain. The core index is a zoomed out and complete view of .NET major versions released over (at the time of writing) a ten year period. They form the basic elements of any query. This is an objectively correct fully normalized entry point view of the graph. The only denormalized affordance is the inclusion of the `supported` bool.
-
-In contrast, the LLM index is the data dump result of a query, revealing rich information about the most recent patches for supported major versions. It enables constructing the same queries as the core graph, but also includes enough data to serve as the results of queries, relating to the zoomed-in current moment.
-
-The graph applies multiple focal lengths and pivots throughout to provide information that is useful and has good ergonomics for varying classes of queries and their consumers. This differentiation is a core property of the graph, in part to serve the needs of expected consumers, but also to separate chains of graph nodes that should be skeletal vs those that should be weighted.
-
-## Guidance
-
-Guidance was the hardest part of the graph to develop into a coherent and effective form. There has been significant discussion about intuition in this document. It was relatively easy to generate a graph that intuitive for an LLM to navigate without any guidance. The remaining problem was offering guidance to augment the intuitive nature of the graph, to aid long-tail navigation that tended to under-perform. The process of developing this guidance was deeply unintuitive (for the graph designer). This isn't a statement that "this was hard and that should be understood", but that there are aspects of LLM behavior that do not match human expectation and that needs to be understood.
-
-The initial test harness did not include a system or preamble prompt. This worked OK, but not as well as observed behavior with claude.ai. A realization hit that all apps have system prompts and that testing without any kind of guidance is not a valuable test environment (at least not as the singular mode).
-
-This is the preamble used by the test harness:
-
->You have access to a 'fetch' tool that retrieves content from URLs. Use it to navigate the .NET release metadata graph.<br>
-Today's date is December 26, 2025. Use this to calculate time windows like "last 3 months".<br>
-Your first order of business should be to look for skill files or documentation in the graph. Reading these first prevents wrong turns — they contain navigation patterns and query shortcuts built up through trial and error. It's worth the extra fetch.<br>
-Start by fetching: <https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json>
-
-This is inspired by the system prompt that Claude.ai shared when asked about its motivation to follow `ai_note` and `required_pre_read`.
-
-> We've found that Claude's efforts are greatly aided by reading the documentation available in the skill BEFORE writing any code, creating any files, or using any computer tools. As such, when using the Linux computer to accomplish tasks, Claude's first order of business should always be to examine the skills available in Claude's <available_skills> and decide which skills, if any, are relevant to the task. Then, Claude can and should use the `view` tool to read the appropriate SKILL.md files and follow their instructions.<br>
-Please invest the extra effort to read the appropriate SKILL.md file before
-jumping in -- it's worth it!
-
-### Skills router
-
-As stated earlier, `llms.txt` was initially a large document covering multiple skills. That turned out to be very difficult to maintain and adapt. It also forced a minimum token burden on every reader. Skills files provided a solution. Each skill describes a domain, including contextual descriptions, guidance, rules, and workflows. The problem then was how to advertise the skills.
-
-As demonstrated above, about half of `llms.txt` is dedicated to skills routing. It's just a markdown table that provides a key/value structure for skills.
-
-`llms.txt` is primarily a skills router:
+Skills provide the solution: domain-specific documents covering context, rules, and workflows. The entrypoint becomes a router:
 
 ```markdown
 | Query About | Skill |
 |-------------|-------|
-| CVEs, security patches, CVSS | [cve-queries](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/cve-queries/SKILL.md) |
-| Breaking changes, compatibility | [breaking-changes](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/breaking-changes/SKILL.md) |
-| Version lifecycle, EOL dates | [version-eol](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/version-eol/SKILL.md) |
-| General queries, unsure | [dotnet-releases](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/dotnet-releases/SKILL.md) |
+| CVEs, security patches, CVSS | [cve-queries](...) |
+| Breaking changes, compatibility | [breaking-changes](...) |
+| Version lifecycle, EOL dates | [version-eol](...) |
+| General queries, unsure | [dotnet-releases](...) |
 ```
 
-`llms.json` doesn't link to `llms.txt` but to the [`dotnet-releases/SKILL.md`](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/dotnet-releases/SKILL.md). It is almost identical to `llms.txt`.
-
-This approach was chosen for two reasons:
-
-- Fully Orient guidance on skills and to encourage skill use.
-- Enable specializing guidance for the `llms.json` path as compared to starting from `llms.txt`.
-- Enable syndicating just the `release-notes` directory to a CDN and not `llms.txt`.
-
-The `SKILL.md` files optionally reference a homegrown `workflows.json` file. These could equally have been exposed from `llms.txt` to enable collapsing a turn. There is a tradeoff between the complexity of the general `llms.txt` and each of the domain-specific skills. Every reader consumes `llms.txt`, while some don't fetch any skills at all, some fetch multiple, and only a subset fetch workflows. It is possible the current design is optimal. This design point hasn't been sufficiently explored to draw a strong conclusion.
-
-### Skills
-
-The skills follow a [skills template](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/template/SKILL.md) to ensure uniformity and are intended to be as simple as possible to achieve the desired performance as measured by the tests.
-
-The following markdown document is the complete `cve-queries` skill.
+Skills follow a [template](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/template/SKILL.md) for uniformity. Here's the complete `cve-queries` skill:
 
 ```markdown
 ---
 name: cve-queries
 description: CVE queries needing severity, CVSS, affected versions, or security history
-workflows: https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/cve-queries/workflows.json
+workflows: https://.../skills/cve-queries/workflows.json
 ---
 
 # CVE Queries
@@ -547,367 +234,183 @@ All CVE queries use timeline. Fetch workflows.json for navigation paths with `ne
 
 1. Follow `_links` only. Never construct URLs.
 2. Year indexes must be fetched sequentially via `prev-year`.
-3. Code diffs: `$.commits[key].url` already ends in `.diff` — use as-is. Never fetch commit HTML pages.
+3. Code diffs: `$.commits[key].url` already ends in `.diff`—use as-is.
 ```
 
-The other skills are similar.
+#### Workflows
 
-The `next_workflow` transition leads us to `workflows.json`.
+Workflows extend HAL with a query system. The premise: queries as document data, with HAL relations as query targets.
 
-### Workflows
-
-Workflows are a homegrown HAL-inspired and -compatible format. The graph -- as has been sufficiently clarified to this point -- uses HAL as its hypermedia format. HAL is focused on describing resources and relations between them. What if HAL also included a query system? What would it look like? That's what workflows attempt to answer.
-
-The premise behind them is:
-
-- Query as document data
-- HAL relations (and other document data) as query targets
-
-The initial design started as `_workflows` within `llms.json`. Similar to using `llms.txt` as the sole source of guidance, this approach got bulky fast. It was then realized that the skill registry/router idea could equally be applied to workflows.
-
-The current design offers workflows as auxiliary skill content. The primary router is the skill router. The skills then offer a workflow, both in terms of listing them and referring to them as part of the skill.
-
-Workflows hang most of their query expressivity on the `follow_path` property. This can be seen in the `cve-latest` workflow in [`cve-queries/workflows.json`](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/skills/cve-queries/workflows.json).
+The `follow_path` property carries most of the expressivity:
 
 ```json
-      "cve-latest": {
-        "description": "CVEs from the most recent security release",
-        "follow_path": ["kind:llms", "latest-security-disclosures"],
-        "destination_kind": "month",
-        "yields": {
-          "data": "_embedded.disclosures[]",
-          "fields": ["id", "title", "cvss_severity", "cvss_score", "affected_releases"]
-        },
-        "next_workflow": {
-          "condition": "code diffs, CWE, or package versions needed",
-          "workflow": "cve-extraction",
-          "via": "follow _links.cve-json from current month index"
-        }
-      },
-```
-
-As stated, the initial design included workflows inline in core HAL docs. In that case, it's not much of a leap to connect that `latest-security-disclosures` is a reference to the link relation of the same name. It's a much bigger leap when the workflow is in a separate file in a separate location and indirected via the skills registry. This connection is re-gained by making the node kind as the first part of the `follow_path` array.
-
-The intent of the initial compound term -- `kind:llms` -- is to indicate that it is special and of a different kind than the link relations. That seems to work.
-
-The `next_workflow` property enables chaining workflows to develop a sense of [equivalence classes](https://en.wikipedia.org/wiki/Equivalence_class) and to conform with [DRY principle](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
-
-Here's an excerpt from the [feedback turn of one of the tests](https://github.com/richlander/release-graph-eval-results/blob/main/anthropic_claude-haiku-4.5/B/T6.md).
-
-> ## 4. Workflow Verification
->
->**Workflow used:** `cve-history` (for 6-month range)
->
->**Specified `follow_path`:**
->```json
->"4+_months_or_cross_year": {
->  "follow_path": ["kind:llms", "latest-year"],
->  "then": "follow _links.prev-year from each year index",
->  "select": "_embedded.months[?security].cve-json links"
->}
->```
->
->**What I actually did:**
->1. ✅ Fetched `llms.json` (kind:llms)
->2. ✅ Fetched `timeline/2025/index.json` (latest-year)
->3. ✅ Fetched `timeline/2024/index.json` (via prev-year link)
->4. ✅ Selected only `_embedded.months[?security=true].cve-json` links
->5. ✅ Fetched 6 cve.json files directly (skipped month indexes)
->
->**Did I deviate?** No, I followed the path exactly. The workflow was precise enough that I didn't need to guess.
-
-The interesting aspect is that the feedback is basically an unpacking of the workflow query. It demonstrates a high level of comprehension of the query and of the overall scheme.
-
-The workflow syntax itself is a bit loose. The core idea is HAL-native query over link relations. Much of the syntax is using "programmy structure" to describe logical operations. It may be useful to standardize them into an actual vocabulary at some point. Given the constantly changing LLM landscape, it likely makes the most sense to validate the strength of the syntax across a year of usage and LLM changes before feeling sufficiently confident about the model.
-
-### Applying workflows for generically
-
-Workflows were developed for LLMs. However, it seems like they are sufficiently descriptive that they could be used by non-semantic consumers. The question was whether a C# program could be written to generate bash scripts from the workflows.
-
-```bash
-$ dotnet run -- list ~/git/core/release-notes/skills/cve-queries/workflows.json
-  cve-by-version  CVEs affecting a specific .NET version
-  cve-details     Go directly to cve.json for full details
-  cve-extraction  Extract data from cve.json (different schema than month index)
-  cve-history     CVEs over a time range
-  cve-latest      CVEs from the most recent security release
-
-Total: 5 workflows
-$ dotnet run -- show ~/git/core/release-notes/skills/cve-queries/workflows.json cve-latest
-Workflow: cve-latest
-Description: CVEs from the most recent security release
-Follow path: kind:llms -> latest-security-disclosures
-Destination: month
-Yields: WorkflowYields { Data = _embedded.disclosures[], Fields = System.Collections.Generic.List`1[System.String], Filter =  }
-$ dotnet run -- script ~/git/core/release-notes/ills/cve-queries/workflows.json cve-latest > get-latest-cves.sh
-$ chmod +x get-latest-cves.sh
-$ ./get-latest-cves.sh
-Fetching: https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/llms.json
-Fetching: https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json
-{
-  "$schema": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/schemas/v1/dotnet-release-timeline-index.json",
-  "kind": "month",
-  "title": ".NET Month Timeline Index - October 2025",
-  "year": "2025",
-  "month": "10",
-  "date": "2025-10-14T00:00:00+00:00",
-  "security": true,
-  "prev_month_date": "2025-09-09T00:00:00+00:00",
-  "prev_security_month_date": "2025-06-10T00:00:00+00:00",
-  "cve_records": [
-    "CVE-2025-55248",
-    "CVE-2025-55315",
-    "CVE-2025-55247"
-  ],
-  "_links": {
-    "self": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json"
-    },
-    "prev-month": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/09/index.json",
-      "title": "Previous month - September 2025"
-    },
-    "prev-security-month": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/06/index.json",
-      "title": "Previous security month - June 2025"
-    },
-    "manifest": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/manifest.json",
-      "title": "Manifest - October 2025"
-    },
-    "timeline": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/index.json",
-      "title": ".NET Release Timeline Index"
-    },
-    "year": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/index.json",
-      "title": ".NET Year Timeline Index - 2025"
-    },
-    "cve-json": {
-      "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/cve.json",
-      "title": "CVE records - October 2025",
-      "type": "application/json"
-    }
+"cve-latest": {
+  "description": "CVEs from the most recent security release",
+  "follow_path": ["kind:llms", "latest-security-disclosures"],
+  "destination_kind": "month",
+  "yields": {
+    "data": "_embedded.disclosures[]",
+    "fields": ["id", "title", "cvss_severity", "cvss_score", "affected_releases"]
   },
-  "_embedded": {
-    "patches": {
-      "10.0": {
-        "version": "10.0.0-rc.2.25502.107",
-        "date": "2025-10-14T00:00:00+00:00",
-        "year": "2025",
-        "month": "10",
-        "security": true,
-        "support_phase": "go-live",
-        "_links": {
-          "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/10.0/10.0.0-rc.2.25502.107/index.json"
-          }
-        },
-        "sdk_version": "10.0.100-rc.2.25502.107"
-      },
-      "9.0": {
-        "version": "9.0.10",
-        "date": "2025-10-14T00:00:00+00:00",
-        "year": "2025",
-        "month": "10",
-        "security": true,
-        "support_phase": "active",
-        "_links": {
-          "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/9.0/9.0.10/index.json"
-          }
-        },
-        "sdk_version": "9.0.306"
-      },
-      "8.0": {
-        "version": "8.0.21",
-        "date": "2025-10-14T00:00:00+00:00",
-        "year": "2025",
-        "month": "10",
-        "security": true,
-        "support_phase": "active",
-        "_links": {
-          "self": {
-            "href": "https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/8.0/8.0.21/index.json"
-          }
-        },
-        "sdk_version": "8.0.415"
-      }
-    },
-    "disclosures": [
-      {
-        "id": "CVE-2025-55248",
-        "title": ".NET Information Disclosure Vulnerability",
-        "_links": {
-          "self": {
-            "href": "https://github.com/dotnet/announcements/issues/372"
-          }
-        },
-        "cvss_score": 4.8,
-        "cvss_severity": "MEDIUM",
-        "disclosure_date": "2025-10-14",
-        "affected_releases": [
-          "8.0",
-          "9.0"
-        ],
-        "affected_products": [
-          "dotnet-runtime"
-        ],
-        "platforms": [
-          "all"
-        ]
-      },
-      {
-        "id": "CVE-2025-55315",
-        "title": ".NET Security Feature Bypass Vulnerability",
-        "_links": {
-          "self": {
-            "href": "https://github.com/dotnet/announcements/issues/371"
-          }
-        },
-        "cvss_score": 9.9,
-        "cvss_severity": "CRITICAL",
-        "disclosure_date": "2025-10-14",
-        "affected_releases": [
-          "8.0",
-          "9.0",
-          "10.0"
-        ],
-        "affected_products": [
-          "dotnet-aspnetcore"
-        ],
-        "platforms": [
-          "all"
-        ]
-      },
-      {
-        "id": "CVE-2025-55247",
-        "title": ".NET Denial of Service Vulnerability",
-        "_links": {
-          "self": {
-            "href": "https://github.com/dotnet/announcements/issues/370"
-          }
-        },
-        "cvss_score": 7.3,
-        "cvss_severity": "HIGH",
-        "disclosure_date": "2025-10-14",
-        "affected_releases": [
-          "8.0",
-          "9.0",
-          "10.0"
-        ],
-        "affected_products": [
-          "dotnet-sdk"
-        ],
-        "affected_packages": [
-          "Microsoft.Build",
-          "Microsoft.Build.Tasks.Core",
-          "Microsoft.Build.Utilities.Core"
-        ],
-        "platforms": [
-          "linux"
-        ]
-      }
-    ]
+  "next_workflow": {
+    "condition": "code diffs, CWE, or package versions needed",
+    "workflow": "cve-extraction"
   }
 }
+```
+
+The `kind:llms` prefix anchors the path to a node type, reconnecting the workflow to the graph even though it lives in a separate file. The `next_workflow` property enables chaining, supporting [equivalence classes](https://en.wikipedia.org/wiki/Equivalence_class) and [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
+
+### Evaluation
+
+#### Test modes
+
+| Mode | Entrypoint | Guidance | Purpose |
+|------|------------|----------|---------|
+| A | llms.json | Yes | JSON with AI hints |
+| B | llms.txt | Yes | Markdown on-ramp |
+| D | index.json | No | Data-layer baseline |
+| D2 | llms2.json | No | JSON without hints |
+
+Modes without guidance (D, D2) hallucinated on roughly 1/3 of questions.
+
+#### Model targeting
+
+Testing used Claude Haiku 3.5 as the primary target, spot-checked against Sonnet, Opus, and OpenAI models. Haiku-targeted guidance didn't degrade sophisticated models—it just added unnecessary tokens. Haiku was also cheaper, a reward for using it as lowest-common-denominator.
+
+#### Observed dynamics
+
+**Complaints vs errors.** Wrong answers are errors; complaints are warnings. We addressed complaints even without errors, treating them as directional signals.
+
+**Guidance scope.** Performance increased as guidance became smaller and more focused. But LLMs complained when guidance targeted only edge cases. Resolution: broad coverage, variable depth. LLMs don't read everything, so they don't notice the imbalance.
+
+> **LLM feedback:**
+> "By providing comprehensive guidance that covers both the 75% (where I'd mostly succeed anyway) and the 15-25% (where I'd fail), you've eliminated that anxiety. The guidance isn't overhead on common cases; it's consistency assurance."
+
+**Tilting vs scripting.** Strict guidance can straight-jacket LLMs into bad behavior. The strategy that emerged: lightly tilt natural LLM behavior rather than scripting every step. This performs well and fights hallucination—likely because it requires less "thinking."
+
+#### Evidence: JSON-resident guidance
+
+Claude's thinking log when given `llms.json`:
+
+> "The file mentions there's a SKILL.md file that I should read first per the AI note. Let me fetch that..."
+
+When asked why:
+
+> "Fields like `ai_note` and `required_pre_read` signal that someone engineered this system specifically for AI consumption. That makes me trust the guidance... The motivation wasn't 'AI hints are always right'—it was pragmatic: follow structured guidance when it's clearly intentional."
+
+#### Evidence: Workflow comprehension
+
+From a feedback turn on the `cve-history` workflow:
+
+> **Workflow used:** `cve-history` (for 6-month range)
+>
+> **What I actually did:**
+>
+> 1. ✅ Fetched `llms.json` (kind:llms)
+> 2. ✅ Fetched `timeline/2025/index.json` (latest-year)
+> 3. ✅ Fetched `timeline/2024/index.json` (via prev-year link)
+> 4. ✅ Selected only `_embedded.months[?security=true].cve-json` links
+> 5. ✅ Fetched 6 cve.json files directly (skipped month indexes)
+>
+> **Did I deviate?** No, I followed the path exactly.
+
+### Cross-consumer applicability
+
+Workflows were designed for LLMs, but they're descriptive enough for non-semantic consumers. A C# tool can parse workflows and generate bash scripts:
+
+```bash
+$ dotnet run -- script .../workflows.json cve-latest > get-latest-cves.sh
 $ ./get-latest-cves.sh | jq ._embedded.disclosures.[].id
-Fetching: https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/llms.json
-Fetching: https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json
 "CVE-2025-55248"
 "CVE-2025-55315"
 "CVE-2025-55247"
 ```
 
-This is replaying the same approach as an LLM. Workflows lower the cost of navigating the graph for any semantic consumer. The prototype tool fills in the boiler-plate and could equally be applied to PowerShell or C# output.
+This replays the theme from earlier: proving formats work for both semantic and syntactic consumers. The graph was validated with `jq` and LLMs; workflows are validated with C# and LLMs.
 
-There is also replaying the overall approach of proving out formats with semantic and non-semantic consumers. This document led with the idea of proving out the efficacy of the graph with `jq` and LLMs. In this case, `jq` has been replaced with a C# app, but it's the same basic approach. The irony is that `jq` managed to sneak into this use case as well. The tool can be blamed for its remarkable utility.
+## Cost model validation
 
-## Concrete test
+The cost model isn't theoretical—here's what it looks like in practice.
 
-LLM eval of the graph demonstrates that effective design can result in optimal behavior.
+Final test results: <https://github.com/richlander/release-graph-eval-results>
 
-Ideal pattern:
+### Trace: 6-month CVE analysis
 
-1. Navigate lean index documents in early turns to identify graph paths
-1. Fetch multiple graph documents in middle turns to parallelize multiple navigation paths
-1. Fetch multiple information-dense documents in later/last turns to inform final answer
-1. Synthesize the answer in the final turn
+A [test using Claude Haiku 3.5](https://github.com/richlander/release-graph-eval-results/blob/main/anthropic_claude-haiku-4.5/B/T6.md) demonstrates the ideal navigation pattern.
 
-The following eval trace demonstrates the ideal pattern, for the given prompt. It is taken from a [test using Claude Haiku 4.5](https://github.com/richlander/release-graph-eval-results/blob/main/anthropic_claude-haiku-4.5/B/T6.md).
+**Prompt:** Analyze .NET Runtime and ASP.NET Core CVEs from November 2024 through April 2025. Fetch code diffs and assess whether fixes adequately protect mission-critical apps. Include repo and commit links.
 
-> Prompt: Please look at .NET Runtime and ASP.NET Core CVEs from November 2024 until April 2025 (6 months). I am concerned at the rate of these CVEs. Look at code diffs for the CVEs. Are the fixes sufficiently protecting my mission critical apps and could the .NET team have avoided these vulnerabilities with a stronger security process? Fetch code diffs to inform your analysis. Ensure they are from dotnet/runtime or dotnet/aspnetcore. Include the repo and commit link in your analysis of specific CVEs in your report.
-
-| Turn | Documents | Tokens | Cumulative | Purpose |
-|------|-----------|--------|------------|---------|
-| 1 | 1 | 609 | 609 | Entrypoint discovery |
-| 2 | 2 | 2,323 | 2,932 | Graph orientation + skill acquisition |
+| Turn | Docs | Tokens | Cumulative | Purpose |
+|------|------|--------|------------|---------|
+| 1 | 1 | 609 | 609 | Entrypoint |
+| 2 | 2 | 2,323 | 2,932 | Orientation + skill |
 | 3 | 1 | 1,146 | 4,078 | Navigation strategy |
 | 4 | 2 | 3,374 | 7,452 | Timeline discovery |
 | 5 | 6 | 12,131 | 19,583 | CVE data collection |
 | 6 | 6 | 59,832 | 79,415 | Commit analysis |
 
-The token distribution is striking: **75% of all tokens arrive in the final turn**. This is the "lean early, heavy late" principle in action—not by accident, but by design.
+**75% of all tokens arrive in the final turn.** This is "lean early, heavy late" in action—not by accident, but by design. The pattern:
 
-The raw fetch list with token counts:
+1. Navigate lean index documents in early turns to identify paths
+2. Fetch multiple documents in middle turns to parallelize navigation
+3. Fetch information-dense documents in later turns to inform the answer
+4. Synthesize in the final turn
+
+<details>
+<summary>Raw fetch list with token counts</summary>
 
 ```
 Turn 1 (609 tokens):
-  llms.txt                                    609 tokens
+  llms.txt                                    609
 
 Turn 2 (2,323 tokens):
-  llms.json                                 2,126 tokens
-  cve-queries/SKILL.md                        197 tokens
+  llms.json                                 2,126
+  cve-queries/SKILL.md                        197
 
 Turn 3 (1,146 tokens):
-  cve-queries/workflows.json                1,146 tokens
+  cve-queries/workflows.json                1,146
 
 Turn 4 (3,374 tokens):
-  2024/index.json                           1,765 tokens
-  2025/index.json                           1,609 tokens
+  2024/index.json                           1,765
+  2025/index.json                           1,609
 
 Turn 5 (12,131 tokens):
-  2024/11/cve.json                          1,656 tokens
-  2025/01/cve.json                          4,020 tokens
-  2025/03/cve.json                          1,155 tokens
-  2025/04/cve.json                          1,034 tokens
-  2025/05/cve.json                          3,081 tokens
-  2025/06/cve.json                          1,185 tokens
+  2024/11/cve.json                          1,656
+  2025/01/cve.json                          4,020
+  2025/03/cve.json                          1,155
+  2025/04/cve.json                          1,034
+  2025/05/cve.json                          3,081
+  2025/06/cve.json                          1,185
 
 Turn 6 (59,832 tokens):
-  dotnet/runtime:d16f41a.diff              37,425 tokens
-  dotnet/runtime:9da8c6a.diff               1,781 tokens
-  dotnet/runtime:89ef51c.diff                 260 tokens
-  dotnet/aspnetcore:67f3b04.diff            1,669 tokens
-  dotnet/aspnetcore:d6605eb.diff           15,388 tokens
-  dotnet/runtime:b33d4e3.diff               3,309 tokens
+  dotnet/runtime:d16f41a.diff              37,425
+  dotnet/runtime:9da8c6a.diff               1,781
+  dotnet/runtime:89ef51c.diff                 260
+  dotnet/aspnetcore:67f3b04.diff            1,669
+  dotnet/aspnetcore:d6605eb.diff           15,388
+  dotnet/runtime:b33d4e3.diff               3,309
 ```
 
-> Note: The eval harness truncated `.diff` files to 50 lines to ensure test completion across all configurations. The token counts above reflect actual document sizes—what a reader would encounter following the [published guidance](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/llms.txt).
+Note: The eval harness truncated `.diff` files to 50 lines to ensure test completion. Token counts above reflect actual document sizes.
 
-## Token and Attention Cost Analysis
+</details>
 
-| Turn | Documents | Tokens | Context | Processed | Attention | Cum. Attention | Purpose |
-|------|-----------|--------|---------|-----------|-----------|----------------|---------|
-| 1 | 1 | 609 | 609 | 609 | 0.37M | 0.37M | Entrypoint discovery |
-| 2 | 2 | 2,323 | 2,932 | 3,541 | 8.60M | 8.97M | Graph orientation + skill acquisition |
-| 3 | 1 | 1,146 | 4,078 | 7,619 | 16.63M | 25.60M | Navigation strategy |
-| 4 | 2 | 3,374 | 7,452 | 15,071 | 55.53M | 81.13M | Timeline discovery |
-| 5 | 6 | 12,131 | 19,583 | 34,654 | 383.49M | 464.62M | CVE data collection |
-| 6 | 6 | 59,832 | 79,415 | 114,069 | 6,306.74M | 6,771.36M | Commit analysis |
-| **Total** | **18** | **79,415** | — | **114,069** | — | **6,771M** | |
+### Cost analysis
 
-**Columns explained:**
+| Turn | Docs | Tokens | Context | Processed | Attention | Cum. Attention |
+|------|------|--------|---------|-----------|-----------|----------------|
+| 1 | 1 | 609 | 609 | 609 | 0.37M | 0.37M |
+| 2 | 2 | 2,323 | 2,932 | 3,541 | 8.60M | 8.97M |
+| 3 | 1 | 1,146 | 4,078 | 7,619 | 16.63M | 25.60M |
+| 4 | 2 | 3,374 | 7,452 | 15,071 | 55.53M | 81.13M |
+| 5 | 6 | 12,131 | 19,583 | 34,654 | 383.49M | 464.62M |
+| 6 | 6 | 59,832 | 79,415 | 114,069 | 6,306.74M | 6,771.36M |
+| **Total** | **18** | **79,415** | — | **114,069** | — | **6,771M** |
 
-- **Tokens**: New tokens fetched this turn
-- **Context**: Size of context window this turn (= cumulative of Tokens)
-- **Processed**: Running total of tokens processed across all turns (your API bill)
-- **Attention**: Computational cost this turn, proportional to Context²
-- **Cum. Attention**: Running total of attention cost
+#### Sequential baseline
 
-### Sequential Baseline
-
-A sequential approach—one document per turn—processes the same 18 documents across 18 turns. Each turn's context grows by one document:
+A sequential approach processes the same 18 documents across 18 turns, one per turn:
 
 | Turn | Document | Tokens | Context | Processed | Attention | Cum. Attention |
 |------|----------|--------|---------|-----------|-----------|----------------|
@@ -921,62 +424,46 @@ A sequential approach—one document per turn—processes the same 18 documents 
 | 18 | b33d4e3.diff | 3,309 | 79,415 | 504,551 | 6,306.74M | 27,517M |
 | **Total** | **18 docs** | **79,415** | — | **504,551** | — | **27,517M** |
 
-The **Tokens** column is identical across both tables—the same 79,415 tokens are fetched. The heavy content (diffs) arrives late in both cases, but multi-fetch batches it into a single turn while sequential processes it one document at a time across turns 13–18.
+Both approaches fetch identical tokens. The difference is how they're batched across turns.
 
-### Cost Comparison
+#### Comparison
 
 | Metric | Multi-fetch (6 turns) | Sequential (18 turns) | Multiplier |
 |--------|----------------------|----------------------|------------|
-| Turns | 6 | 18 | **3.0×** |
+| Turns | 6 | 18 | 3.0× |
 | Tokens processed | 114,069 | 504,551 | **4.4×** |
 | Attention cost | 6,771M | 27,517M | **4.1×** |
 
-The 4× improvement comes from two complementary optimizations working together. To isolate their contributions, consider hypothetical uniform approaches using the same total tokens (79,415) spread evenly across turns:
+#### Isolating the optimizations
 
-| Scenario | Processed | Attention | Multiplier (tokens) |
-|----------|-----------|-----------|---------------------|
-| Actual 6-turn (lean early, heavy late) | 114,069 | 6,771M | 1.0× |
-| Uniform 6-turn (equal distribution) | 277,956 | 15,942M | 2.4× |
-| Actual 18-turn (lean early, heavy late) | 504,551 | 27,517M | 4.4× |
-| Uniform 18-turn (equal distribution) | 754,452 | 41,053M | 6.6× |
+The 4× improvement comes from two optimizations working together. To isolate their contributions:
 
-The actual 18-turn scenario already benefits from load ordering—the graph structure naturally places heavy content (diffs) late in the navigation path. Without that implicit optimization, uniform 18-turn would cost 6.6× rather than 4.4×.
+|  | 6 turns | 18 turns |
+|--|---------|----------|
+| **Actual (lean→heavy)** | 114k (1.0×) | 505k (4.4×) |
+| **Uniform distribution** | 278k (2.4×) | 754k (6.6×) |
 
-Reading the table as a 2×2 grid reveals how the optimizations combine:
+The table reveals how the optimizations combine:
 
-- **Turn collapsing alone** (uniform 18 → uniform 6): 2.7× reduction in processed tokens
-- **Load ordering alone** (uniform 6 → actual 6): 2.4× reduction in processed tokens  
-- **Both together** (uniform 18 → actual 6): 6.6× reduction—the optimizations multiply
+- **Turn collapsing alone** (uniform 18 → uniform 6): 2.7× reduction
+- **Load ordering alone** (uniform 6 → actual 6): 2.4× reduction
+- **Both together** (uniform 18 → actual 6): 6.6× reduction
+
+The optimizations multiply. The actual 18-turn scenario already benefits from implicit load ordering—the graph naturally places heavy content (diffs) late in navigation. Without that, uniform 18-turn would cost 6.6× rather than 4.4×.
 
 The "lean early, heavy late" pattern is load-bearing architecture: 75% of tokens arrive in the final turn, but they're processed exactly once rather than accumulating across subsequent turns.
 
 ### Design implications
 
-The cost model suggests several design principles:
-
-- **Minimize turn count** through clear navigation affordance. Each eliminated turn saves quadratically growing attention cost.
+- **Minimize turn count** through clear navigation affordances. Each eliminated turn saves quadratically growing attention cost.
 - **Front-load lightweight content.** Index documents, link relations, and navigation hints should be small. Substantive content belongs at the leaves.
-- **Enable multi-fetch patterns.** Expose document collections as lists of links rather than embedded content, encouraging LLMs to batch their retrieval.
-- **Provide explicit workflows.** Graph-resident guidance can direct LLMs to optimal traversal patterns, encoding the designer's knowledge of efficient paths.
+- **Enable multi-fetch patterns.** Expose document collections as lists of links rather than embedded content, encouraging LLMs to batch retrieval.
+- **Provide explicit workflows.** Graph-resident guidance encodes the designer's knowledge of efficient paths.
 
-The rest of the design should be viewed through this cost lens. As an application designer, there are only so many degrees of freedom. We cannot change LLM fundamentals but need to work within their constraints. To a large degree, optimizations like reducing turns are similar to loop variable hoisting. While LLMs are new and different, old school performance strategies remain effective.
+These constraints define the design space. We cannot change LLM fundamentals, but we can work within them. To a large degree, reducing turns is similar to loop variable hoisting—old-school performance strategies remain effective.
 
+## Conclusion
 
-## Graph design
+Hypermedia graphs offer a lightweight alternative to vector databases for LLM enablement: self-describing structure, semantic navigation, and pre-baked publishing with no persistent infrastructure. The techniques described here—semantic naming, graph-resident guidance, cost-aware node weighting—are not specific to release notes. They should generalize to any domain where document relationships are meaningful and navigable. The design also remains equally useful for core compliance workflow scenarios.
 
-
-
-Two strong design principles emerged from observed LLM behavior from eval:
-
-- Consistently apply a semantic model throughout the graph. It's a comfort to find a concept where it is expected.
-- Expose resources in terms of structual kind, like `major` aand `-month`, and desired output, like `-security-disclosures`.
-
-This dual approach to semantic naming sometimes results in this double-mapping. Emperical observation suggests that LLMs prefer the outcome-based naming, while the more schema-correct and initial naming is the structual framing.
-
-Wormholes vs spear-fishing.
-
-note: time is a challenge
-
-There is no suggestion that the current design is optimal. There is likely an 80/20 rule here. The current design is likely 80% optimal, but the remaining 20% would be very expensive to achieve and might require tradeoffs. A major focus of the testing was to ensure that the core graph was delivering sufficient performance since it will be difficult to change it given its compatibility promise.
-
-Vector databases take this a step further by making it easier for semantic consumers to find the content they want, for example with [Metadata Extraction Usage Pattern](https://developers.llamaindex.ai/python/framework/module_guides/loading/documents_and_nodes/usage_metadata_extractor/) and [Maximum Marginal Relevance Retrieval](https://developers.llamaindex.ai/python/examples/vector_stores/simpleindexdemommr/).
+The current design reflects an 80/20 tradeoff: the remaining 20% would be expensive to achieve and risk overfitting to today's LLMs. Testing prioritized validating that the core graph—which carries a compatibility promise—delivers sufficient performance. It does, for both LLMs and standalone tools.
