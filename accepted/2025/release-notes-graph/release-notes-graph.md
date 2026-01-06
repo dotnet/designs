@@ -194,7 +194,7 @@ The following table summarizes the overall shape of the graph, starting at `dotn
 
 Notes:
 
-- 2025 was used for `{year}`, 10 for `{month`}, 8.0 for `{version}`, and 8.0.21 for `{patch}`
+- 2025 was used for `{year}`, 10 for `{month}`, 8.0 for `{version}`, and 8.0.21 for `{patch}`
 - The bottom of the graph has the largest variance over time. `8.0.21/index.json` is `5.3` KB while `8.0.22/index.json` is `4.8` KB, a little smaller because it was a non-security release. Similarly, `2025/10/index.json` is `5.0` KB while `2025/11/index.json` is `3.0` KB, significantly smaller because there was no security release that month. `2025/12/index.json` was even smaller because there was only a .NET 10 patch, also non-security. Security releases were chosen to demonstrate more realistic sizes.
 - `llms.json` will be covered more later.
 
@@ -1021,7 +1021,7 @@ Very similar approach as other indices.
 
 Here, we see just `prev-year` to enable queries that chain across years. `latest-security-month` enables a jump to the latest month that included security fixes. From there, it's possible to enable queries that chain across `prev-security` months.
 
-The `_emdedded` section contains: `months`.
+The `_embedded` section contains: `months`.
 
 ```json
   "_embedded": {
@@ -1337,6 +1337,8 @@ Raw results are recorded at [metrics/README.md](./metrics/README.md). The result
 
 The intent of this project is to publish structured release notes using a more efficient schema architecture, both to reduce update cadence and to enable smaller fetch costs. The belief was that an existing standard would push our schema efforts towards a strong design paradigm that ultimately enabled us to achieve our goals faster and better. The results seem to prove this out. The chosen solution is an opposite-end-of-the-spectrum approach. It generates a huge number of files compared to the existing approach, many of which will never be updated and rarely visited once the associated major version is out of support. The existing `releases.json` files are already much like that, just monolithic (and therein lies the challenge).
 
-A case in point is the addition of breaking changes. Someone suggested that breaking changes should be added to the graph. It took < 60 mins to do that. The HAL design paradigm and the aligned philosophy of cold roots and weighted immutable leaves naturally alloted specific space for breaking changes to be attached on the load-bearing structure. There's no need to consult a design committee since (as a virtue) there isn't much design freedom once the overall approach is established. It's likely that we'll find a need to attach more information to the graph. We can just repeat the process.
+Note: Prototype graph generation tools were written to generate all the JSON files. They are not part of the spec.
+
+A case in point is the addition of breaking changes. Someone suggested that breaking changes should be added to the graph. It took < 60 mins to do that. The HAL design paradigm and the aligned philosophy of cold roots and weighted immutable leaves naturally allotted specific space for breaking changes to be attached on the load-bearing structure. There's no need to consult a design committee since (as a virtue) there isn't much design freedom once the overall approach is established. It's likely that we'll find a need to attach more information to the graph. We can just repeat the process.
 
 The restrictive nature of this design ends up being well aligned with the performance and cost consideration of LLMs. That's a bit of foreshadowing of the other spec. It boils down to being very intentional about the design being [breadth-](https://en.wikipedia.org/wiki/Breadth-first_search) or [depth-first](https://en.wikipedia.org/wiki/Depth-first_search). The core design is strongly breadth-first oriented, which enables learning about a layer at a time. The reason that `llms.json` is able to pull ahead of the purist `index.json` breadth-first implementation is that it offers a depth-first approach for specific queries. The wormholes and more so the spear-fishing are essentially saying "I already know the graph structure; let me skip to the leaf I need" which is the essence of depth-first targeting. And that in a nutshell describes the design and why it is effective.
