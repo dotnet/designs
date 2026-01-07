@@ -2,25 +2,25 @@
 
 [Hypermedia](https://en.wikipedia.org/wiki/Hypermedia) and [hypertext](https://en.wikipedia.org/wiki/Hypertext) are decades-old formats perfectly suited for LLM consumption by virtue of self-describing structure and labeled relationships between resources. A hypermedia document graph contains sufficient meta-information for a semantic consumer to traverse it and find information demanded by a prompt—without requiring a pre-loaded vector database or a priori schema knowledge. This makes hypermedia a lightweight alternative to vector databases: pre-baked static publishing with no specialized infrastructure, using semantic naming, graph-resident guidance, and cost-aware node weighting to achieve comparable LLM enablement. These techniques generalize to any domain where document relationships are meaningful and navigable.
 
-In a traditional system, a schema is the pre-requisite to traversal; in a hypermedia system, traversal reveals the schema.
-
 > A (nearly) century-old principle, articulated by [Korzybski](https://en.wikipedia.org/wiki/Alfred_Korzybski): [the map is not the territory](https://en.wikipedia.org/wiki/Map%E2%80%93territory_relation).
 
 [HTML](https://en.wikipedia.org/wiki/HTML) is perhaps the least sophisticated hypertext implementation in common use. A typical example: `For more on this vulnerability, <a href="cve-2025-1234.html">click here</a>`. "click here" [doesn't provide much of a map](https://developers.google.com/search/docs/crawling-indexing/links-crawlable#anchor-text-placement) for a semantic consumer.
 
-In trail races, ribbons hang from trees and arrows mark the ground to keep runners on course. Where routes diverge, signs read "5 km → left" and "10 km → straight". The ribbons are the map—schema-driven correctness. The signposts are HATEOAS-like descriptive navigation. Signposting is a key-value function: you match a key you recognize with a value you need to stay on course.
+In trail races, ribbons hang from trees and arrows mark the ground to keep runners on course. Where routes diverge, signs read "5 km → left" and "10 km → straight". The ribbons are the map—schema-driven correctness. The signposts are [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS)-like descriptive navigation. Signposting is a key-value function: you match a key you recognize with a value you need to stay on course.
 
-A semantic graph exposes named relations like `{ "link-relation": "security-disclosure", "href": "..." }`. Greater sophistication can be achieved by describing the target kind: `"link-relation": "disclosure"` and `"target-kind": "cve-record"`. A strong semantic implementation shines a light on the path to follow and what it will reveal.
+A semantic graph exposes named relations like `{ "link-relation": "security-disclosure", "href": "..." }`. Greater sophistication can be achieved by describing the target kind: `"link-relation": "disclosure"` and `"target-kind": "cve-record"`. A strong semantic implementation shines a light on the path to follow and describes what it will reveal.
+
+In a traditional system, a schema is the pre-requisite to traversal; in a hypermedia system, traversal reveals the schema. The map and the territory can be thought to coincide.
 
 ## Background
 
-The prevailing narrative has been that _structured data_ > _unstructured documents_ for deriving insight. JSON and XML came out of that heritage, with [JSONPath](https://en.wikipedia.org/wiki/JSONPath) and [XPath](https://en.wikipedia.org/wiki/XPath) providing structured query that relies on a priori schema knowledge. [Hypermedia as the engine of application state (HATEOAS)](https://en.wikipedia.org/wiki/HATEOAS) extended this by labeling relations across resources, not just data within them.
+The prevailing narrative has been that _structured data_ > _unstructured documents_ for deriving insight. JSON and XML came out of that heritage, with [JSONPath](https://en.wikipedia.org/wiki/JSONPath) and [XPath](https://en.wikipedia.org/wiki/XPath) providing structured query that relies on a priori schema knowledge. This paradigm relates to data within documents.
 
-Databases went through a "no-SQL" transition—not a rejection of structure, but a recognition that structure lives in the documents themselves. Hypermedia graphs extend this to "no-schema" consumption: readers discover structure through descriptive labels and traversal rather than requiring it upfront.
+Databases went through a "no-SQL" transition—not a rejection of structure, but a recognition that structure lives in the documents themselves. The same structured document query layers on top. This paradigm relates to grouping documents with extra metadata, like sales orders from a customer in Seattle or Toronto.
 
-Vector databases establish relationships via embedding similarity, refined through techniques like [Metadata Extraction Usage Pattern](https://developers.llamaindex.ai/python/framework/module_guides/loading/documents_and_nodes/usage_metadata_extractor/) and [Maximum Marginal Relevance Retrieval](https://developers.llamaindex.ai/python/examples/vector_stores/simpleindexdemommr/).
+Vector databases establish relationships via embedding similarity, refined through techniques like [Metadata Extraction Usage Pattern](https://developers.llamaindex.ai/python/framework/module_guides/loading/documents_and_nodes/usage_metadata_extractor/) and [Maximum Marginal Relevance Retrieval](https://developers.llamaindex.ai/python/examples/vector_stores/simpleindexdemommr/). This paradigm changes the narrative to _meaning_ > _semi-arbitrary text strings_.
 
-Hypermedia relations are both semantic and structural—equal parts [Retrieval-Augmented Generation (RAG)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) and [PageRank](https://en.wikipedia.org/wiki/PageRank). This mixture reduces the need for vector techniques. Hypermedia graphs can be published pre-baked and consumed directly, enabling low-cost LLM enablement for scenarios where hosting a persistent AI server would be prohibitive.
+Hypermedia advocates for self-describing document structures. HATEOAS contributes the idea that labeled relations across resources enable semantic navigation. This idea can be stretched to being thought of as "no-schema" consumption: readers discover structure through descriptive labels and follow matching paths without requiring domain knowledge upfront. This paradigm is both semantic and structural, equal parts [Retrieval-Augmented Generation (RAG)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) and [PageRank](https://en.wikipedia.org/wiki/PageRank). It's this mixture that enables direct consumption without the need for vector techniques, enabling low-cost LLM enablement for scenarios where hosting a persistent AI server would be prohibitive.
 
 ## Approach
 
@@ -29,17 +29,17 @@ The primary techniques for LLM applicability are:
 - Semantic naming: Link relations like "latest-security-disclosure" reduce the inference required to derive meaning.
 - Graph-resident guidance: Skills and workflows as first-class relations in the graph. Skills follow the Anthropic skills format; workflows are HAL documents describing queries over link relations.
 
-This approach has been applied to the .NET release notes. The project began as a modernization of JSON files used for cloud-infra deployment and compliance workflows. It became clear that LLMs could read the same content directly and self-reason about navigation. The graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation, augmented HAL-native with a workflow convention.
+This approach has been applied to the .NET release notes. The project began as a modernization of JSON files used for cloud-infra deployment and compliance workflows. It became clear that LLMs could read the same content directly and self-reason about navigation. The graph uses [Hypertext Application Language (HAL)](https://en.wikipedia.org/wiki/Hypertext_Application_Language) as its hypermedia foundation, augmented with a workflow convention.
 
 ## Graph design point
 
-The release notes graph is built on a restrictive premise: the entrypoint should be skeletal and rarely changing, supporting n-9s reliability with rigorous engineering practices (git workflows, peer review, merge gates). But we're in the early days of AI—externally-driven change may require rapid iteration on the entrypoint to maintain LLM enablement quality. These goals are in tension.
+The release notes graph is built on a restrictive premise: the entrypoint should be skeletal and rarely changing, supporting n-9s reliability with rigorous engineering practices (git workflows, peer review, merge gates). But we're in the early days of AI; externally-driven change may require rapid iteration on the entrypoint to maintain LLM enablement quality. These goals are in tension.
 
-The resolution: treat the core graph as a **well-defined data layer** honoring reliability requirements, while exposing a separate **adaptable application layer** entrypoint for LLMs that can evolve without the compatibility burden.
+The resolution: treat the core graph as a **well-defined data layer** honoring reliability requirements, while exposing a separate **adaptable application layer** entrypoint for LLMs that can evolve without the compatibility burden. We will rely on documentation and file naming to articulate this difference with an explicitly communicated contract (or lack thereof).
 
 ### Design and evaluation
 
-The graph as a whole is based on a somewhat traditional schema design, utilizing both normalized and denormalized approaches in service of consumer queries. After the graph was realized, it was tested with `jq` as a passive and syntactic consumer and with LLMs as an active and semantic consumer. The graph was successively adapted to improve performance for both consumption styles. Performance is primarily measured in terms of terseness of query and quickness (fetches and data cost) of response. Much of the feedback could be considered fundamental in nature. The overall character of the graph remains a pure information-oriented data design, but with a significant tilt towards semantic consumers.
+The graph as a whole is based on a somewhat traditional schema design, utilizing both normalized and denormalized approaches in service of ergonomic consumer queries. After the graph was realized, it was tested with `jq` as a passive and syntactic consumer and with LLMs as an active and semantic consumer. The graph was successively adapted to improve performance for both consumption styles. Performance is primarily measured in terms of terseness of query and quickness (fetches and data cost) of response. Much of the feedback could be considered fundamental in nature. The overall character of the graph remains a pure information-oriented data design, but with a significant tilt towards semantic consumers.
 
 Hypermedia long predates LLMs, but it has always treated semantic consumers (humans) as a key design cohort. This made it easy to adapt the graph based on LLM feedback.
 
@@ -82,10 +82,10 @@ Let's build intuition using uniform token counts: `n` tokens are added per turn 
 **Columns explained:**
 
 - **Tokens**: New tokens fetched this turn
-- **Context**: Size of context window this turn (= cumulative of Tokens)
-- **Cumulative Tokens**: Running total of tokens processed across all turns (your API bill)
+- **Context**: Sum of tokens fetched so far (window size this turn)
+- **Cumulative Tokens**: Accumulation of context per turn (your API bill—each turn charges for full context)
 - **Attention**: Computational cost this turn, proportional to Context²
-- **Cumulative Attention**: Running total of attention cost
+- **Cumulative Attention**: Accumulation of attention cost per turn (your computational cost / latency)
 
 The formulas simplify for large m:
 
@@ -96,7 +96,7 @@ The formulas simplify for large m:
 | Accumulated attention | n²m³/3 | Cubic in turns |
 
 - API pricing is in terms of tokens. For multi-turn conversations, the cost is the accumulated token cost not the final context size.
-- The cubic growth in attention is the dominant computational cost, the primary contributor to latency and throughput. It emerges from summing quadratic costs across turns. Each turn pays attention on everything accumulated so far. This cost is likely the gating function on context size and expected to be persistent even if GPU memory doubles.
+- The cubic growth in attention is the dominant computational cost, the primary contributor to latency. It emerges from summing quadratic costs across turns. Each turn pays attention on everything accumulated so far. This cost is likely the gating function on context size and expected to be persistent even if GPU memory doubles.
 - These costs provide clues on why conversation compacting exists and why there is scrutiny on token economics.
 
 ### Batched vs sequential
@@ -108,7 +108,8 @@ What if all content could be fetched in a single turn?
 | Batched (1 turn) | (nm)² = n²m² | 1 |
 | Sequential (m turns) | n²m³/3 | m/3 |
 
-Ten turns ≈ 3× batched cost. Thirty turns ≈ 10×. This ratio scales linearly with turn count, the `m` term.
+- Ten turns ≈ 3× batched cost. Thirty turns ≈ 10×.
+- This ratio scales linearly with turn count, the `m` term.
 
 Many problems inherently require multiple turns. The LLM must reason about intermediate results before knowing what to fetch next. The goal is not to eliminate turns but to minimize them and optimize their structure.
 
@@ -118,7 +119,7 @@ Many problems inherently require multiple turns. The LLM must reason about inter
 
 The uniform model above assumes equal token counts per turn. In practice, token distribution across turns is a design choice with significant cost implications. The tokens in the first turns are by far the most costly.
 
-This is roughly similar to credit card debt: early charges compound. If the initial purchase was large, you're in trouble.
+This is roughly similar to credit card debt: early charges compound. If the initial purchase was large and months ago, you're in trouble.
 
 ### Optimization: multiple fetches per turn
 
@@ -136,14 +137,12 @@ The strict n-9s reliability design model is perfectly aligned with the LLM cost 
 
 ## Implementation
 
-The release notes graph has two LLM entrypoints, a guidance system built on skills and workflows, and a design shaped by iterative evaluation. This section covers the artifacts, the methodology that produced them, and the patterns that emerged.
+The release notes graph has two LLM entrypoints, a guidance system built on skills and workflows, and an overall graph design shaped by iterative evaluation. This section covers the artifacts, the methodology that produced them, and the patterns that emerged.
 
 ### Entrypoints
 
-- [`llms.txt`](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/llms.txt) — A markdown file (~600 tokens) that contextualizes the graph and routes to skills. Markdown is a natural fit: LLMs readily treat it as instructional content, and it offers native syntax for links, tables, and code fences.
-- [`llms.json`](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json) — A JSON file (~2k tokens) that serves as both entrypoint and data. It embeds enough information to answer common queries directly while offering links into the graph.
-
-Both enable parallel fetches on the first turn—data plus a relevant skill—applying the "multiple fetches per turn" optimization from the cost model.
+- [`llms.txt`](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/llms.txt) — A markdown file (~600 tokens) that contextualizes the graph and routes to the graph and skills. Markdown is a natural fit: LLMs readily treat it as instructional content, and it offers native syntax for links, tables, and code fences.
+- [`llms.json`](https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/llms.json) — A JSON file (~2k tokens) that serves both as instructional entrypoint and data. It embeds enough information to answer common queries directly while offering links into the graph.
 
 ### Why both?
 
@@ -151,12 +150,14 @@ Both enable parallel fetches on the first turn—data plus a relevant skill—ap
 
 Markdown offers natural syntax for links, guidance, and code fences. JSON can carry the same information but lacks markdown's instructional connotations. `llms.json` emerged from experimentation: could JSON achieve the same LLM enablement without a markdown on-ramp?
 
-The answer: mostly yes, with effort. Guidance must be more explicitly signaled:
+The answer: yes. Guidance must be more explicitly signaled:
 
+```json
 {
   "ai_note": "ALWAYS read required_pre_read first...",
   "required_pre_read": "https://...SKILL.md"
 }
+```
 
 The imperative "ALWAYS" and the self-describing property name `required_pre_read` compensate for JSON's weaker association with guidance.
 
@@ -184,11 +185,11 @@ Half the link relations in `llms.json` are `latest-*`, reflecting the belief tha
 
 Same destination, different semantic intent. This implements the principle: match a key you know with a value you don't.
 
-**Focal lengths**: The core index (`index.json`) is zoomed-out and normalized—all .NET versions over ten years. The LLM index (`llms.json`) is zoomed-in and denormalized—current state with enough data to answer queries directly. The graph applies multiple focal lengths throughout, separating skeletal navigation nodes from weighted content nodes.
+**Focal lengths**: The core index (`index.json`) is zoomed-out and normalized—all .NET versions over ten years. The LLM index (`llms.json`) is zoomed-in and denormalized—current supported state with enough data to answer queries directly. The graph applies multiple focal lengths throughout, separating skeletal navigation nodes from weighted content nodes.
 
 ### Guidance architecture
 
-Guidance was the hardest part of the graph to develop. It was relatively easy to generate a graph intuitive for LLMs to navigate without guidance. The remaining problem: augmenting that intuition to aid long-tail navigation that tended to underperform. The process of developing this guidance was deeply unintuitive for the graph designer. There are aspects of LLM behavior that do not match human expectation—this needs to be understood.
+Guidance was the hardest part of the graph to develop. It was relatively easy to generate a graph intuitive for LLMs to navigate without guidance. The remaining problem: augmenting that intuition to aid long-tail navigation that tended to underperform including hallucination. The process of developing this guidance was unintuitive for the graph designer. There are aspects of LLM behavior that do not match human expectation—this needs to be understood.
 
 #### Preamble prompt
 
@@ -247,6 +248,8 @@ All CVE queries use timeline. Fetch workflows.json for navigation paths with `ne
 3. Code diffs: `$.commits[key].url` already ends in `.diff`—use as-is.
 ```
 
+The skills bias to terse, with observed performance in testing earning expansion.
+
 #### Workflows
 
 Workflows extend HAL with a query system. The premise: queries as document data, with HAL relations as query targets.
@@ -269,11 +272,11 @@ The `follow_path` property carries most of the expressivity:
 }
 ```
 
-The `kind:llms` prefix anchors the path to a node type, reconnecting the workflow to the graph even though it lives in a separate file. The `next_workflow` property enables chaining, supporting [equivalence classes](https://en.wikipedia.org/wiki/Equivalence_class) and [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
+The `kind:llms` prefix anchors the path to a node type, reconnecting the workflow to the graph even though it lives in a separate file. The `next_workflow` property enables chaining, supporting [equivalence class](https://en.wikipedia.org/wiki/Equivalence_class) identification and [Don't Repeat Yourself (DRY)](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself) benefits.
 
 ### Evaluation
 
-A key principle emerged: _curiosity-driven evaluation_ beats intuition reliance. Once you have a good test harness, it's liberating to not trust your intuition but to test any idea that seems interesting. The distinction between "informed direction" and "bat-crazy idea" drops away. Test both. This stuff is half-magic, half-fever-dream—why should intuition be authoritative?
+A key principle emerged: _curiosity-driven evaluation_ > _intuition reliance_. Once you have a good test harness, it's liberating to not trust your intuition but to test any idea that seems interesting. The distinction between "informed direction" and "crazy idea" drops away. Test both.
 
 #### Test modes
 
@@ -384,7 +387,18 @@ DOC=$(curl -sf "$URL")
 echo "$DOC" | jq '.'
 ```
 
-This replays the theme from earlier: formats that work for both semantic and syntactic consumers. The graph was validated with `jq` and LLMs; workflows are validated with C# and LLMs.
+Running the script:
+
+```bash
+$ ./get-latest-cves.sh | jq ._embedded.disclosures.[].id
+Fetching: https://raw.githubusercontent.com/dotnet/core/release-index/release-notes/llms.json
+Fetching: https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/release-notes/timeline/2025/10/index.json
+"CVE-2025-55248"
+"CVE-2025-55315"
+"CVE-2025-55247"
+```
+
+This replays the theme from earlier: formats that work for both semantic and syntactic consumers. The graph was validated with `jq` and LLMs; workflows are validated with C# and LLMs (with `jq` offering a supporting role).
 
 ## Cost model validation
 
@@ -394,7 +408,7 @@ Final test results: <https://github.com/richlander/release-graph-eval-results>
 
 ### Trace: 6-month CVE analysis
 
-A [test using Claude Haiku 3.5](https://github.com/richlander/release-graph-eval-results/blob/main/anthropic_claude-haiku-4.5/B/T6.md) demonstrates the ideal navigation pattern.
+A [test using Claude Haiku 3.5](https://github.com/richlander/release-graph-eval-results/blob/main/2025-12-27/anthropic_claude-haiku-4.5/B/T6.md) demonstrates the ideal navigation pattern.
 
 **Prompt:** Analyze .NET Runtime and ASP.NET Core CVEs from November 2024 through April 2025. Fetch code diffs and assess whether fixes adequately protect mission-critical apps. Include repo and commit links.
 
@@ -467,7 +481,7 @@ Note: The eval harness truncated `.diff` files to 50 lines to ensure test comple
 
 #### Sequential baseline
 
-A sequential approach processes the same 18 documents across 18 turns, one per turn:
+A sequential approach would process the same 18 documents across 18 turns, one per turn:
 
 | Turn | Document | Tokens | Context | Processed | Attention | Cum. Attention |
 |------|----------|--------|---------|-----------|-----------|----------------|
@@ -517,7 +531,7 @@ The "lean early, heavy late" pattern is load-bearing architecture: 75% of tokens
 - **Enable multi-fetch patterns.** Expose document collections as lists of links rather than embedded content, encouraging LLMs to batch retrieval.
 - **Provide explicit workflows.** Graph-resident guidance encodes the designer's knowledge of efficient paths.
 
-These constraints define the design space. We cannot change LLM fundamentals, but we can work within them. To a large degree, reducing turns is similar to loop variable hoisting—old-school performance strategies remain effective.
+The cost model constrains the design space. These principles work within it—we cannot change LLM fundamentals, but we can optimize around them. To a large degree, reducing turns is similar to loop variable hoisting—old-school performance strategies remain effective.
 
 ## Conclusion
 
