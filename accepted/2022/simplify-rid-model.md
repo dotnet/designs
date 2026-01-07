@@ -6,9 +6,9 @@ Date: April 2022
 
 ## Context
 
-RIDs are (for the most part) modelled as a graph of [target triplet](https://wiki.osdev.org/Target_Triplet) symbols that describe legal combinations of operating system, chip architecture, and C-runtime, including an extensive fallback scheme. This graph is codified in [`runtime.json`](https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.NETCore.Platforms/src/runtime.json), which is describes the RID catalog. It is a massive (database in a) file. That's a lot of data to reason about, hard to edit correctly, and a bear to maintain.
+RIDs are (for the most part) modelled as a graph of [target triplet](https://wiki.osdev.org/Target_Triplet) symbols that describe legal combinations of operating system, chip architecture, and C-runtime, including an extensive fallback scheme. This graph is codified in [`runtime.json`](https://github.com/dotnet/runtime/blob/313982dff3457c8291e8b88cd99785f6920319f0/src/libraries/Microsoft.NETCore.Platforms/src/runtime.json), which we refer to as the RID catalog. It is a massive (database in a) file. That's a lot of data to reason about, hard to edit correctly, and a bear to maintain.
 
-Note: `runtimes.json` is  a generated file, from [runtimeGroups.props](https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.NETCore.Platforms/src/runtimeGroups.props).
+Note: `runtimes.json` is  a generated file, from [runtimeGroups.props](https://github.com/dotnet/runtime/blob/2042eb2a56112539bf9e0b9538972fdd84e381a0/src/libraries/Microsoft.NETCore.Platforms/src/runtimeGroups.props).
 
 Examples of triplets today are:
 
@@ -30,9 +30,9 @@ RIDs can be thought of as making statements about native code, specifically:
 - I offer code of this RID.
 - I request code of this RID.
 
-Often times, the RIDs being offered and asked for do not match (in terms of the actual string) but are compatible. The role of `runtimes.json` is determining whether two RIDs are compatible (and best-match). That's done via a graph walk of the nodes in that file.
+Often times, the RIDs being offered and asked for do not match (in terms of the actual string) but are compatible. The `runtimes.json` file describes compatibility relationships between RIDs, making it possible to mechanically make best-match decisions. That's done via a graph walk of the nodes in that file.
 
-The current system is unnecessarily complex, expensive to maintain, makes it difficult to manage community needs, and costly/fragile at runtime. More simply, it is useful, but significantly overshoots our needs.
+The current system is unnecessarily complex, expensive to maintain, makes it difficult to manage community needs, and costly/fragile at runtime. It is useful, but significantly overshoots our needs.
 
 Note: RIDs are almost entirely oriented around calling native code. However, the domain is broader, more generally oriented on native interop and calling [Foreign Function Interfaces (FFI)](https://en.wikipedia.org/wiki/Foreign_function_interface), including matching the environment. For example, we'd still likely need to use RIDs for interacting with another managed platform like Java, possibly with the use of native code or not.
 
@@ -56,22 +56,28 @@ The following are the biggest problems we see:
 
 ## General approach
 
+Plan:
+
 - Ensure `runtimes.json` is correct.
 - Freeze `runtimes.json`.
-- New RIDs will only be added for [interchange between different distributions of .NET](https://github.com/dotnet/designs/pull/260#discussion_r843009872), which isn't expected.
-- Continue to use `runtimes.json` for all NuGet scenarios.
 - Disable using `runtimes.json` for all host scenarios, by default (starting with a TBD .NET version).
-- Enable a host compatibility mode that uses `runtimes.json` via MSBuild property (which writes to), `runtimeconfig.json`, and a host CLI argument.
 - Implement a new algorithmic host scheme for RID selection, enabled by default.
-
-The new scheme will be based on the following:
-
 - Each host is built with a hard-coded set of RIDs that it probes for, both triplets and singles.
-- Each host is already built for a specific RID triple, so this change is an evolutionary change.
-- There are processor-agnostic managed-code scenarios where a RID single is relevant, like Windows-only code (for example, accessing the registry) that works the same x64, Arm64 and x86. The same is true for macOS and Linux.
 - The RID that `dotnet --info` returns will always match the first in this hard-coded set of RIDs.
 
-Let's assume that an app is running on Alpine 3.16, the host will probe for the following RIDs:
+Notes:
+
+- Each host is already built for a specific RID triple, so this change is an evolutionary change.
+- There are processor-agnostic managed-code scenarios where a RID single is relevant, like Windows-only code (for example, accessing the registry) that works the same for x64, Arm64 and x86. The same is true for macOS and Linux.
+
+Phasing-out measures:
+
+- Enable a host compatibility mode that uses `runtimes.json` via MSBuild property (which writes to), `runtimeconfig.json`, and a host CLI argument.
+- Continue to use `runtimes.json` for NuGet scenarios.
+
+Let's test this new approach, in terms of hosting RID probing.
+
+An app is running on Alpine 3.16:
 
 - `linux-musl-x64`
 - `unix`
@@ -88,34 +94,32 @@ macOS would be similar:
 
 Note: The abstract `unix` RID is used for macOS and Linux, instead of a concrete RID for those OSes.
 
-Note: We may want to add `osx` to describe macOS-specific processor-agnostic managed code. If we find some scenarios that need it, we should add it. 
-
-Windows would similar:
+Windows would be similar:
 
 - `win-x86`
 - `win`
-
-Note: `win7` and `win10` also exist (as processor-specific and -agnostic). Ideally, we don't have to support those in the host-specific scheme, but we need to do some research on that.
 
 Note: A mix of processor-specific RIDs are used above, purely to demonstrate the range of processor-types supported. Each operating system supports a variety of processor-types, and this is codified in their associated RIDs.
 
 More generally, the host will probe for:
 
-- This environment, RID triplet (OS-CRuntime-arch)
-- This environment, RID single (OS-only).
+- RID triplet (OS-CRuntime-arch)
+- RID single (OS-only).
 
-The host will implement "first one wins" probing logic for selecting a RID-specific asset.
+The host will implement "first one wins" probing logic for selecting a RID-specific asset in apps with `runtimes` directories (portable apps).
 
-This behavior only applies for portable apps. RID-specific apps will not probe for RID-specific assets.
+There are other RIDs in `runtimes.json` today, like `debian.11.x64`. This new scheme will not support those. The `runtimes.json` host compat feature will need to be used to support those, which is likely very uncommon. Even if they are quasi-common, we will likely still make this change and require some combination of the ecosystem to adapt and app developers to opt-in to the `runtimes.json` compat mode.
 
-There are other RIDs in `runtimes.json` today. This new scheme will not support those. The `runtimes.json` host compat feature will need to be used to support those, which is likely very uncommon. Even if they are quasi-common, we will likely still make this change and require some combination of the ecosystem to adapt and app developers to opt-in to the `runtimes.json` compat mode.
-
-The host and `runtimes.json` must remain compatible. The RIDs known by the host must be a subset of `runtimes.json` RIDs. We may need to update `runtimes.json` to ensure that the RIDs known by the host are present in that file.
-
+The host and `runtimes.json` must remain compatible. The RIDs known by the host must be a subset of `runtimes.json` RIDs.
 
 ## Minimum CRT/libc version
 
-This scheme doesn't explicitly define a CRT/libc version. Instead, we will define a minimum CRT/libc version, per major .NET version. That minimum CRT/libc version will form a contract and should be documented, per .NET version. Practically, it defines the oldest OS version that you can run an app on, for a given .NET version.
+This scheme doesn't explicitly define a CRT/libc version. On macOS and Windows, that's an implementation detail of the OS versions we support. On Linux, we will define a minimum CRT/libc version, per major .NET version.
+
+See:
+
+- https://github.com/dotnet/core/blob/main/release-notes/8.0/supported-os.md#linux-compatibility
+- https://github.com/dotnet/runtime/blob/main/docs/project/linux-build-methodology.md
 
 For .NET 7 (for all supported architectures):
 
@@ -123,17 +127,13 @@ For .NET 7 (for all supported architectures):
 - For Linux with glibc, .NET will target CentOS 7 (with glibc version `2.17`).
 - For Linux with musl, .NET will target the oldest supported Alpine version.
 
-Note: Source-build project will likely make different choices. For example, the IBM s390x project supports RHEL 8, not CentOS 7. glibc compatibility relationships are discussed later.
-
-For .NET 8, we'll continue with the model. However, we will no longer be able to use [CentOS 7 (due to EOL)](https://wiki.centos.org/About/Product), but will need to adopt another distro that provides us with an old enough glibc version such that we can offer broad compatibility.
-
-For .NET 9, we'll likely drop support for Windows 10 and instead target the Windows 11 CRT.
+Note: The source-build project will likely make different choices. For example, the IBM s390x project supports RHEL 8, not CentOS 7. glibc compatibility relationships are discussed later.
 
 As part of investigating this topic, we noticed the [libc compatibility model that TensorFlow uses](https://github.com/tensorflow/tensorflow/blob/f3963e82f21c9d094503568699877655f9dac508/tensorflow/tools/ci_build/devtoolset/build_devtoolset.sh#L48-L57). That model enables the use of a modern OS with an artificially old libc. We also saw that Python folks are doing something similar with their [`manylinux` approach but with docker](https://github.com/pypa/manylinux).
 
-This in turn made us realize that our [`build-tools-prereqs` Docker images](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/main/src/centos/7/Dockerfile) are very similar to the Python approach. We don't need a new contract like `manylinux2014` since we can rely on the contract changing with each major .NET version. We need augment our build-tools-prereq scheme to also include an old glibc version, once CentOS 7 is EOL.
+This in turn made us realize that our [`build-tools-prereqs` CentOS 7 Docker images](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/0ca583b11fc3fc618335bf9394d79daba6884739/src/centos/7/amd64/Dockerfile) are very similar to the Python approach. We don't need a new contract like `manylinux2014` since we can rely on the contract changing with each major .NET version. We need to augment our [dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker) scheme to also include an old glibc version, once CentOS 7 is EOL.
 
-The biggest difference with our `build-tools-prereqs` images is that they are not intended for others to use, while the `manylinux` images are intended as a general community artifact. There are two primary cases where extending the use of the `build-tools-prereqs` images would be useful: enabling others to produce a .NET build with the same compatibility reach, and enabling NuGet authors to build native dependencies with matching compatibility as the underlying runtime. Addressing that topic is outside the scope of this document. This context is included to help frame how the TensorFlow, Python, and .NET solutions compare, and to inspire future conversation. 
+The biggest difference with our `build-tools-prereqs` images is that they are not intended for others to use, while the `manylinux` images are intended as a general community artifact. There are two primary cases where extending the use of the `build-tools-prereqs` images would be useful: enabling others to produce a .NET build with the same compatibility reach, and enabling NuGet authors to build native dependencies with matching compatibility as the underlying runtime. Addressing that topic is outside the scope of this document. This context is included to help frame how the TensorFlow, Python, and .NET solutions compare, and to inspire future conversation.
 
 Note: It appears that some other folks have been [reacting to CentOS 7 not being a viable compilation target](https://gist.github.com/wagenet/35adca1a032cec2999d47b6c40aa45b1) for much longer.
 
@@ -153,25 +153,23 @@ The following table describes RIDs supported by the .NET host. It is exhaustive,
 | unix       | All Unix-based OSes (macOS and Linux), versions, and architecture builds. |
 | win        | All Windows versions and architecture builds. |
 | linux-arm  | All Linux glibc-based distros, for Arm32. |
-| linux-armv6| All Linux glibc-based distros, for Armv6. |
 | linux-arm64| All Linux glibc-based distros, for Arm64. |
 | linux-x64  | All Linux glibc-based distros, for x64. |
 | linux-x86  | All Linux glibc-based distros, x86. |
 | linux-musl-arm64| All Linux musl-based distros, for Arm64. |
 | linux-musl-x64  | All Linux musl-based distros, for x64. |
-| osx-arm64  | All macOS versions, for Arm64.
-| osx-x64    | All macOS versions, for x64.
+| osx-arm64  | All macOS versions, for Arm64. |
+| osx-x64    | All macOS versions, for x64. |
 | win-arm64  | All Windows versions, for Arm64. |
 | win-x64    | All Windows versions, for x64. |
 | win-x86    | All Windows versions, for x86. |
 
-Note: `linux-armv6` may or may not be supported. It is added for completeness.
+Notes:
 
-Note: Singles are for processor-agnostic managed code.
-
-Note: All RIDs are subject to .NET support policy. For example, .NET 7 doesn't support Ubuntu 16.04. The `linux-x64` RID doesn't include that specificity.
-
-Note: `osx` is used instead of `macOS` within the RID scheme. This design change may be a good opportunity to introduce `macOS`. It probably makes sense only to do that for Arm64.
+- Singles are for processor-agnostic managed code.
+- All RIDs in the context of a .NET version are subject to .NET support policy. For example, .NET 7 doesn't support Ubuntu 16.04. The `linux-x64` RID doesn't include that specificity.
+- `osx` is used instead of `macOS` within the RID scheme for historical reasons.
+- Other distributors of .NET may extend this table, for example, to include another OS family like `freebsd` or to include a Linux distro like `ubuntu`.
 
 The following table describes RIDs supported only by `runtimes.json`. It is not exhaustive.
 
@@ -194,7 +192,7 @@ Note: `runtimes.json` will be frozen, which means that RID schemes only supporte
 
 ## Source-build
 
-A major design tenet of the RID system is maximizing portability of code. This is particularly true for Linux. That makes sense from the perspective of Microsoft wanting to make one build of .NET available across many Linux distros, separately for both glibc and musl. It makes less sense for distros themselves building .NET from source and publishing binaries to a distro package feed.
+A major design tenet of the RID system is maximizing portability of code. This is particularly true for Linux. That makes sense from the perspective of Microsoft wanting to make one build of .NET available across many Linux distros, separately for both glibc and musl. It makes less sense for distros building .NET from source and publishing binaries to a distro package feed.
 
 We sometimes refer to `linux-x64` (and equally to `linux-arm64` and `linux-x86`) as the "portable Linux RID". As mentioned in the libc section, this RID establishes a wide glibc compatibility range. In addition, the RID also establishes broad compatibility across distros (and their associated versions) for .NET dependencies, like OpenSSL and ICU. The way this particular form of compatibility shows up is observable but is nuanced (and isn't explained here).
 
@@ -202,7 +200,7 @@ We'll use Red Hat as an example of an organization that builds .NET from source,
 
 For Red Hat, it makes sense to accept and support `linux-x64` NuGet assets, but not to produce or offer them. Instead, Red Hat would want to produce `rhel-x64` runtime pack assets. It's easiest to describe this design-point in terms of concrete scenarios.
 
-**NuGet packages** -- NuGet authors will typically value breadth and efficiency. For example, a package like `SkiaSharp` might target `linux-x64`, but not `rhel-x64`. There is no technical reason for that package to include distro-specific assets. Also, if the author produced a `rhel-x64` asset, they would need to consider producing an `ubuntu-x64` and other similar assets for other distros, and that's not scalable. The expectation is that the `rhel-x64` .NET supports `linux-x64` NuGet assets, enabling NuGet authors to target a minimal set of RIDs.
+**NuGet packages** -- NuGet authors will typically value breadth and efficiency. For example, a package like `SkiaSharp` might target `linux-x64`, [but not `rhel-x64`. There is no technical reason for that package to include distro-specific assets. Also, if the author produced a `rhel-x64` asset, they would need to consider producing an `ubuntu-x64` and other similar assets for other distros, and that's not scalable. The expectation is that the `rhel-x64` .NET supports `linux-x64` NuGet assets, enabling NuGet authors to target a minimal set of RIDs.
 
 **Runtime and host packs** -- The .NET SDK doesn't include all assets that are required for all scenarios, but instead relies on many assets being available on a NuGet feed (nuget.org or otherwise). That's a good design point for a variety of reasons. Runtime packs are a concrete scenario, which are used for building self-contained apps. Red Hat should be able to (A) build RHEL-specific runtime packages, (B) publish them to a feed of their choice, and (C) enable their users to download them by specifying a RHEL-specific RID as part of a typical .NET CLI workflow. RHEL-specific runtime packs would only be compatible with Red Hat Enterprise Linux family OSes. For example, the RHEL-specific runtime for RHEL 8 would only support the default OpenSSL version that is provided in the RHEL 8 package feed.
 
@@ -212,7 +210,7 @@ For Red Hat, it makes sense to accept and support `linux-x64` NuGet assets, but 
 - `linux-x64`
 - `unix`
 
-A source-built RID (here `rhel.8-x64`) will typically be distro-specific and versioned. Red Hat would naturally want to build .NET specifically and separately for RHEL versions, like RHEL7 and RHEL 8, since the packages available in each of their versioned Red Hat package feeds will be different. There might be other differences to account for as well. An unversioned RID (like `rhel-x64`) would not enable that.
+A source-built RID (here `rhel.8-x64`) will typically be distro-specific and versioned. Red Hat would naturally want to build .NET specifically and separately for RHEL versions](https://github.com/dotnet/designs/pull/260#discussion_r843009872), like RHEL7 and RHEL 8, since the packages available in each of their versioned Red Hat package feeds will be different. There might be other differences to account for as well. An unversioned RID (like `rhel-x64`) would not enable that.
 
 This means that we'll have two forms of RIDs:
 
