@@ -149,7 +149,7 @@ internal static class Program
             {
                 var owners = string.Join(", ", design.Owners);
                 var link = GetMarkdownLink(directoryPath, design.Path, design.Title);
-                outputWriter.WriteLine($"| {design.Year} | {link} | { owners } |");
+                outputWriter.WriteLine($"| {design.Year} | {link} | {owners} |");
             }
         }
     }
@@ -183,6 +183,7 @@ internal sealed class Document
     public static Document? Parse(string path)
     {
         var fileInfo = new FileInfo(path);
+        Console.WriteLine($"info: parsing {fileInfo.FullName}");
         if (!fileInfo.Exists)
         {
             return null;
@@ -266,8 +267,10 @@ internal sealed class Document
             }
         }
 
+
         if (title == null)
         {
+            Console.Error.WriteLine($"error: could not find title in {path}");
             return null;
         }
 
@@ -277,9 +280,28 @@ internal sealed class Document
 
         if (kind == DocumentKind.AcceptedDesign && !owners.Any())
         {
+            Console.Error.WriteLine($"error: could not find owners for accepted design in {path}");
             return null;
         }
 
+        var ownersString = owners.Count == 0 ? "no one" : string.Join(", ", owners);
+        Console.WriteLine($"info: found {kind.ToString().Green()}{(year is null ? "" : "(" + year?.ToString()?.Green() + ")")} design in {System.IO.Path.GetFileName(path).Yellow()} named '{title.Green()}' and owned by {ownersString.Yellow()}");
         return new Document(kind.Value, path, year, title, owners);
     }
+}
+public static class StringExtensions
+{
+    public static string Red(this string str) => $"\u001b[31m{str}\u001b[0m";
+    public static string Green(this string str) => $"\u001b[32m{str}\u001b[0m";
+    public static string Yellow(this string str) => $"\u001b[33m{str}\u001b[0m";
+    public static string Blue(this string str) => $"\u001b[34m{str}\u001b[0m";
+    public static string Magenta(this string str) => $"\u001b[35m{str}\u001b[0m";
+    public static string Cyan(this string str) => $"\u001b[36m{str}\u001b[0m";
+    public static string White(this string str) => $"\u001b[37m{str}\u001b[0m";
+    public static string Black(this string str) => $"\u001b[30m{str}\u001b[0m";
+    public static string Bold(this string str) => $"\u001b[1m{str}\u001b[0m";
+    public static string Underline(this string str) => $"\u001b[4m{str}\u001b[0m";
+    public static string Inverse(this string str) => $"\u001b[7m{str}\u001b[0m";
+    public static string Italic(this string str) => $"\u001b[3m{str}\u001b[0m";
+    public static string Strikethrough(this string str) => $"\u001b[9m{str}\u001b[0m";
 }

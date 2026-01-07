@@ -57,7 +57,9 @@ Executable space protection on Windows is called Data Execution Prevention (DEP)
 
 [W^X](https://en.wikipedia.org/wiki/W%5EX) is one of the most fundamental mitigations. It blocks the simplest attack path by disallowing memory pages to be writeable and executable at the same time. .NET runtime has been missing this mitigation so far and the lack of this mitigation has (correctly) resulted in us not considering more advanced mitigations. Large number of pages that are both writeable and executable in a typical .NET process is a ripe target for attacks that simply inject new code.
 
-Apple has made the W^X mandatory for future versions of macOS desktop operating system as part of Apple Silicon transition. It motivated us to schedule implementation of this mitigation for .NET 6, on all supported operating systems. Our principle is to treat all supported operating systems equally with respect to security, where possible.
+Apple has made the W^X mandatory for future versions of macOS desktop operating system as part of Apple Silicon transition. It motivated us to implement this mitigation on all supported operating systems. Our principle is to treat all supported operating systems equally with respect to security, where possible.
+
+This mitigation was [enabled by default](https://github.com/dotnet/runtime/issues/50391) in .NET 6.
 
 ## Protect Intermediate Language (IL) Code
 
@@ -77,9 +79,9 @@ Disallowing runtime code generation altogether is the ultimate form of executabl
 
 The runtime code generation has been unconditionally disallowed on most game consoles and Apple devices, to protect business models and consumer experiences. We expect that the set of environments that unconditionally disallow runtime code generation is going to grow over time. It will include cloud infrastructure and the most critical cloud services where the restriction will be enforced across the system via Hypervisor-Protected Code Integrity (HCVI) and related technologies.
 
-Also, operating systems often offer opt-in or opt-out mechanisms to disallow runtime code generation, for example [Arbitrary Code Guard](https://docs.microsoft.com/en-us/windows/security/threat-protection/microsoft-defender-atp/customize-exploit-protection) (ACG) on Windows, [Allow Execution of JIT-compiled Code Entitlement](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_security_cs_allow-jit) on macOS.
+Also, operating systems often offer opt-in or opt-out mechanisms to disallow runtime code generation, for example [Arbitrary Code Guard](https://docs.microsoft.com/windows/security/threat-protection/microsoft-defender-atp/customize-exploit-protection) (ACG) on Windows, [Allow Execution of JIT-compiled Code Entitlement](https://developer.apple.com/documentation/bundleresources/entitlements/com_apple_security_cs_allow-jit) on macOS.
 
-Mono and .NET Native for UWP have been shipping .NET runtimes that abide by the runtime code generation restriction. [Native AOT Form Factor](https://github.com/dotnet/runtimelab/tree/feature/NativeAOT) experiment explores this space further.
+[Native AOT](https://learn.microsoft.com/dotnet/core/deploying/native-aot/security#no-run-time-code-generation) introduced in .NET 7, selected configurations of Mono and .NET Native for UWP have been shipping .NET runtimes that abide by the runtime code generation restriction.
 
 IL code interpreters circumvent the environment restriction on runtime code generation and allow .NET libraries that depend on runtime code generation to work, with lower performance. From a security point of view, IL code interpreters are not desirable in environments with disallowed code generation since IL code is equivalent of executable code as described above. This concern applies more generally to any higher level general purpose interpreters and compilers.
 
@@ -105,7 +107,7 @@ A second stack of return addresses that is mostly invisible to the program is ma
 
 Low-level techniques used by .NET runtime such as return address hijacking for GC thread suspension have to be updated for compatibility with shadow stack.
 
-We have been working closely with Windows team on ensuring that the shadow stack support in the operating system can work well together with .NET runtime. New Windows OS APIs designed as part of this effort are going to be introduced to make it possible. These new APIs should help other similar language runtimes to enable this mitigation as well. Our plan is complete support for shadow stack mitigation on Windows in .NET 6.
+We have been working closely with Windows team on ensuring that the shadow stack support in the operating system can work well together with .NET runtime. New Windows OS APIs such as [QueueUserAPC2](https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-queueuserapc2) and [RtlGetReturnAddressHijackTarget](https://learn.microsoft.com/windows/win32/devnotes/rtlgetreturnaddresshijacktarget) designed as part of this effort should help other similar language runtimes to enable this mitigation as well. Support for shadow stacks on Windows was introduced as [opt-in in .NET 7](https://github.com/dotnet/runtime/blob/main/docs/design/features/cet-feature.md) and enabled by default in .NET 9.
 
 Linux support for shadow stack is [still being worked on](https://lore.kernel.org/linux-mm/20210217222730.15819-1-yu-cheng.yu@intel.com/T/#t) at the time of writing. Once the shadow stack support lands in mainstream Linux kernels, we will make sure that .NET runtime is compatible with it. We expect that supporting shadow stack on Linux will be easier due to the less restrictive approach taken to implement this mitigation in Linux kernel. Unlike Windows, the shadow stack mismatches can be handled by the user code on Linux that is less secure, but also easier to work with.
 
@@ -127,11 +129,13 @@ Armv8.5-A includes equivalent mitigation as [Branch Target Identification](https
 
 CFG is a software equivalent of IBT. The operating system maintains bitmap of all valid indirect branch targets. Code inserted before indirect call and jump instructions consults this bitmap to validate the target address.
 
-The .NET runtime C/C++ implementation is compiled [with /guard:cf](https://docs.microsoft.com/en-us/cpp/build/reference/guard-enable-control-flow-guard). However, the .NET runtime generated code (JITed code or hand-generated assembly stubs) does not cooperate with CFG today. The indirect calls made by .NET runtime generated code do not include CFG checks and all locations in code generated at runtime are marked as valid CFG targets. It reduces protection that the other code loaded in the process (e.g. OS libraries written in C/C++) gets from CFG.
+The .NET runtime C/C++ implementation is compiled [with /guard:cf](https://docs.microsoft.com/cpp/build/reference/guard-enable-control-flow-guard). However, the .NET runtime generated code (JITed code or hand-generated assembly stubs) does not cooperate with CFG today. The indirect calls made by .NET runtime generated code do not include CFG checks and all locations in code generated at runtime are marked as valid CFG targets. It reduces protection that the other code loaded in the process (e.g. OS libraries written in C/C++) gets from CFG.
 
 As first priority, the .NET runtime should start marking the valid indirect call targets properly using `SetProcessValidCallTargets` API. It will cease to reduce protection that the other code loaded in the process gets from CFG.
 
 Introducing CFG checks for all indirect calls made by .NET runtime warrants further investigation and feasibility analysis. The CFG checks add measurable overhead to indirect calls. The overhead of straightforward implementation may prove to be prohibitive since indirect calls are much more frequent in .NET code. A viable CFG checks alternative is storing function pointers in read-only memory where they cannot be tampered with. We may need to update the key runtime control structures to fit this model to reduce frequency and overhead of CFG checks.
+
+CFG is available as [opt-in feature in Native AOT](https://learn.microsoft.com/dotnet/core/deploying/native-aot/security#control-flow-guard) on Windows.
 
 For reference, Clang includes [multiple software control flow integrity options geared towards C++](http://clang.llvm.org/docs/ControlFlowIntegrity.html).
 
@@ -181,7 +185,7 @@ We will introduce a GC feature that clears unused memory after GC heap compactio
 
 Object deserialization vulnerabilities continue to be a major issue for many type safe languages. These vulnerabilities allow the attacker to introduce unexpected object graphs into the remote process.
 
-We plan to gradually [deprecate binary formatter](https://github.com/dotnet/designs/blob/main/accepted/2020/better-obsoletion/binaryformatter-obsoletion.md) that has been the source of the worst .NET serialization vulnerabilities. We will work on raising awareness about other similar dangerous serialization patterns within .NET ecosystem.
+Binary formatter that has been the source of the worst .NET serialization vulnerabilities was [deprecated in .NET 9](https://devblogs.microsoft.com/dotnet/binaryformatter-removed-from-dotnet-9/). We have been raising awareness about other similar dangerous serialization patterns within .NET ecosystem.
 
 # Looking forward
 

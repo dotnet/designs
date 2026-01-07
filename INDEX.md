@@ -30,14 +30,14 @@ Use update-index to regenerate it:
 | 2018 | [Rolling self-contained .NET Core app deployments forward to the latest patch](accepted/2018/self-contained-roll-forward.md) | [Daniel Plaisted](https://github.com/dsplaisted) |
 | 2018 | [Standardized Environment Variables for CI Services](accepted/2018/build/standard-ci-env-variables.md) | [Tomáš Matoušek](https://github.com/tmat) |
 | 2018 | [Windows Compatibility Pack](accepted/2018/compat-pack/compat-pack.md) | [Immo Landwerth](https://github.com/terrajobst), [Wes Haggard](https://github.com/weshaggard) |
-| 2019 | [.NET Core GC Support for Docker Limits](accepted/2019/support-for-memory-limits.md) | [Rich Lander](https://github.com/richlander) |
+| 2019 | [.NET GC Support for Container Limits](accepted/2019/support-for-memory-limits.md) | [Rich Lander](https://github.com/richlander) |
 | 2019 | [Background](accepted/2019/targeting-packs-and-runtime-packs.md) | [Rich Lander](https://github.com/richlander), [Nick Guerrera](https://github.com/nguerrera) |
 | 2019 | [Runtime Binding Behavior](accepted/2019/runtime-binding.md) | [Rich Lander](https://github.com/richlander) |
 | 2019 | [System.Index and System.Range](accepted/2019/system-range/system-range.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [.NET 5 Minimum OS Versioning](accepted/2020/minimum-os-version/minimum-os-version.md) | [Mikayla Hutchinson](https://github.com/mhutch) |
 | 2020 | [.NET Core 3.0 AppDomain Replacement Design and Guidance](accepted/2020/AssemblyLoadContext/AppDomainReplacement.md) | [Steve MacLean](https://github.com/sdmaclea) |
 | 2020 | [.NET Optional SDK Workloads](accepted/2020/workloads/workloads.md) | [Rich Lander](https://github.com/richlander) |
-| 2020 | [.NET Runtime Form Factors](accepted/2020/form-factors.md) | [Rich Lander](https://github.com/richlander), [Jan Kotas](https://github.com/jkotas) |
+| 2020 | [.NET Runtime Form Factors](accepted/2020/form-factors.md) | [Jan Kotas](https://github.com/jkotas), [Rich Lander](https://github.com/richlander) |
 | 2020 | [.NET SDK Workload Manifests](accepted/2020/workloads/workload-manifest.md) | [Mikayla Hutchinson](https://github.com/mhutch) |
 | 2020 | [Annotating APIs as unsupported on specific platforms](accepted/2020/platform-exclusion/platform-exclusion.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2020 | [Annotating platform-specific APIs and detecting its use](accepted/2020/platform-checks/platform-checks.md) | [Immo Landwerth](https://github.com/terrajobst) |
@@ -76,9 +76,22 @@ Use update-index to regenerate it:
 | 2021 | [Make `System.Drawing.Common` only supported on Windows](accepted/2021/system-drawing-win-only/system-drawing-win-only.md) | [Santiago Fernandez Madero](https://github.com/safern) |
 | 2021 | [Objective-C interoperability](accepted/2021/objectivec-interop.md) | [Aaron Robinson](https://github.com/AaronRobinsonMSFT) |
 | 2021 | [Preview Features](accepted/2021/preview-features/preview-features.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Tanner Gooding](https://github.com/tannergooding), [David Wrighton](https://github.com/davidwrighton), [Mads Torgersen](https://github.com/MadsTorgersen), [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [Streamline Windows Forms application configuration and bootstrap](accepted/2021/winforms/streamline-application-bootstrap.md) | [Igor Velikorossov](https://github.com/RussKie) |
 | 2021 | [TFM for .NET nanoFramework](accepted/2021/nano-framework-tfm/nano-framework-tfm.md) | [Immo Landwerth](https://github.com/terrajobst), [Laurent Ellerbach](https://github.com/Ellerbach), [José Simões](https://github.com/josesimoes) |
 | 2021 | [Tracking Platform Dependencies](accepted/2021/platform-dependencies/platform-dependencies.md) | [Matt Thalman](https://github.com/mthalman) |
+| 2022 | [.NET 7 Version Selection Improvements](accepted/2022/version-selection.md) | [Rich Lander](https://github.com/richlander) |
+| 2023 | [.NET 8.0 Polyfill](accepted/2023/net8.0-polyfills/net8.0-polyfills.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2023 | [Experimental APIs](accepted/2023/preview-apis/preview-apis.md) | [Immo Landwerth](https://github.com/terrjobst) |
+| 2023 | [Multi-threading on a browser](accepted/2023/wasm-browser-threads.md) | [Pavel Savara](https://github.com/pavelsavara) |
+| 2023 | [net8.0-browser TFM for applications running in the browser](accepted/2023/net8.0-browser-tfm.md) | [Javier Calvarro](https://github.com/javiercn) |
+| 2024 | [.NET Standard Targeting Recommendations](accepted/2024/net-standard-recommendation.md) | [Immo Landwerth](https://github.com/terrajobst), [Viktor Hofer](https://github.com/ViktorHofer) |
+| 2025 | [.NET SDK Acquisition and Management Tool](accepted/2025/cli-acquisition-tool.md) | [Chet Husk](https://github.com/baronfel), [Daniel Plaisted](https://github.com/dsplaisted) |
+| 2025 | [Annotating members as `unsafe`](accepted/2025/memory-safety/caller-unsafe.md) | [Andy Gocke](https://github.com/agocke) |
+| 2025 | [dotnet tool exec and dnx](accepted/2025/direct-tool-execution.md) | : [Marc Paine](https://github.com/marcpopMSFT) |
+| 2025 | [Memory Safety in .NET](accepted/2025/memory-safety/memory-safety.md) | [Richard Lander](https://github.com/richlander) |
+| 2025 | [Provide SDK hint paths in global.json](accepted/2025/local-sdk-global-json.md) | [Jared Parsons](https://github.com/jaredpar) |
+| 2025 | [RID-Specific .NET Tool Packages](accepted/2025/rid-specific-tool-packages.md) | [Daniel Plaisted](https://github.com/dsplaisted) |
 
 ## Drafts
 
@@ -86,13 +99,16 @@ Use update-index to regenerate it:
 |----|-----|------|
 | 2021 | [Flexible HTTP APIs](accepted/2021/flexible-http.md) | [Cory Nelson](https://github.com/scalablecory), [Geoff Kizer](https://github.com/geoffkizer) |
 | 2021 | [Improve UTF-8 support](accepted/2021/utf8/README.md) | [Immo Landwerth](https://github.com/terrajobst) |
-| 2021 | [Statics in Interfaces](accepted/2021/statics-in-interfaces/README.md) | [Tanner Gooding](https://github.com/tannergooding), [David Wrighton](https://github.com/davidwrighton), [Mads Torgersen](https://github.com/MadsTorgersen), [Immo Landwerth](https://github.com/terrajobst) |
 
 ## Proposals
 
 |Year|Title|Owners|
 |----|-----|------|
+|  | [Add ability to embed install location options in apphost](proposed/apphost-embed-install-location.md) |  |
 |  | [Rate limits](proposed/rate-limit.md) | [John Luo](https://github.com/juntaoluo), [Sourabh Shirhatti](https://github.com/shirhatti) |
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
+|  | [SDK Analysis Level Property and Usage](proposed/sdk-analysis-level.md) | (PM) [Chet Husk](https://github.com/baronfel), (Engineering) [Daniel Plaisted](https://github.com/dsplaisted) |
+|  | [Swift Interop](proposed/swift-interop.md) | [Andy Gocke](https://github.com/agocke), [Jeremy Koritzinsky](https://github.com/jkoritzinsky) |
+|  | [Target AVX2 in R2R images](proposed/vector-instruction-set-default.md) | [Richard Lander](https://github.com/richlander) |
 

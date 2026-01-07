@@ -6,7 +6,7 @@ This document applies to the following framework versions:
 
 * .NET 5.0+
 
-Applications which target .NET Framework 2.x - 4.x or .NET Core 2.1 - 3.1 are _not affected_ by this proposal. `BinaryFormatter` will continue to work as expected in those applications. Consumers of `BinaryFormatter` are still advised to consult the [`BinaryFormatter` security guide](https://github.com/dotnet/docs/pull/19442) to help inform their risk assessment.
+Applications which target .NET Framework 2.x, .NET Framework 4.x, or .NET Core 3.1 are _not affected_ by this proposal. `BinaryFormatter` will continue to work as expected in those applications. Consumers of `BinaryFormatter` are still advised to consult the [`BinaryFormatter` security guide](https://github.com/dotnet/docs/pull/19442) to help inform their risk assessment.
 
 ## Introduction
 
@@ -41,13 +41,23 @@ Encouraging migration away from `BinaryFormatter` has the additional benefit of 
 
 ### .NET 7 (Nov 2022)
 
-- All first-party dotnet org code bases complete migration away from `BinaryFormatter`
-- `BinaryFormatter` disabled by default across all project types
-- Entirety of `BinaryFormatter` type obsolete _as warning_
+- All first-party dotnet org code bases continue migration away from `BinaryFormatter`
+- References to `BinaryFormatter` APIs marked obsolete as _warnings_ in .NET 5 now result in build _errors_
+  - A back-compat switch is made available to turn these back to warnings
 
 ### .NET 8 (Nov 2023)
 
+- All first-party dotnet org code bases complete migration away from `BinaryFormatter`
+- `BinaryFormatter` disabled by default across all project types
+- All not-yet-obsolete `BinaryFormatter` APIs marked obsolete _as warning_
+- Additional legacy serialization infrastructure marked obsolete _as warning_
+- No new `[Serializable]` types introduced (all target frameworks)
+
+### .NET 9 (Nov 2024)
+
+- Remainder of legacy serialization infrastructure marked obsolete _as warning_
 - `BinaryFormatter` infrastructure removed from .NET
+  - Back-compat switches also removed
 
 ## Timeline specifics
 
@@ -235,41 +245,117 @@ If `BinaryFormatter` is used in any other data persistence scenario (e.g., clipb
 
 As part of this, dotnet org developers should audit the area of ownership for calls to `Type.GetType` and related APIs, as these could function as unrestricted deserialization equivalents. Any call sites which deal with untrusted data should clearly be annotated as such in code comments. If necessary, the owners should open issues to track removing the dangerous code patterns or documenting the API as dangerous. This will allow us to make more informed estimates of our libraries' own exposure to potential RCE attacks.
 
-### All first-party dotnet org code bases complete migration away from BinaryFormatter (.NET 7)
+### APIs previously marked obsolete (_as warning_) in .NET 5 now produce build _errors_ by default (.NET 7)
+
+In .NET 5, we marked several `BinaryFormatter`-related APIs obsolete as warning (see [the breaking change notice](https://docs.microsoft.com/dotnet/core/compatibility/core-libraries/5.0/binaryformatter-serialization-obsolete)). In .NET 7, references to these APIs will produce build _errors_. This will cause compilation failures in applications which directly consume these APIs, and developers who call these APIs must take action in order to migrate their applications onto .NET 7.
+
+An opt-in back-compat switch will be made available for applications which cannot migrate away from `BinaryFormatter` in the .NET 7 timeframe. We will utilize the same compat switch that was introduced in .NET 5.
+
+```xml
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <!-- Setting the switch below turns the errors back to warnings. -->
+    <!-- WARNING: re-enabling the switch below could subject your application to critical security vulnerabilities. -->
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+  </PropertyGroup>
+</Project>
+```
+
+### All first-party dotnet org code bases complete migration away from BinaryFormatter (.NET 8)
 
 No first-party _dotnet_ org code base contains an enabled-by-default calls to `BinaryFormatter`. The call sites may remain in the library but must be guarded by an opt-in switch. This opt-in switch must be specified by _the app developer_, not by an "I'm serialized using `BinaryFormatter`" flag within the payload itself. All other payload formats must be written or read using a `BinaryFormatter` alternative.
 
 Importantly, none of our project types (WinForms / WPF / ASP.NET / mobile / etc.) can require developers to opt back in to allowing `BinaryFormatter` for any greenfield development. Applications which require `BinaryFormatter` for app-compat reasons must require developers to perform an explicit opt-in gesture to re-enable these code paths.
 
-### BinaryFormatter disabled by default across all project types (.NET 7)
+### BinaryFormatter disabled by default across all project types (.NET 8)
 
-Beginning with .NET 7.0, the "disable `BinaryFormatter`" feature switch is activated by default across all project types. Developers must perform an explicit opt-in gesture to re-enable these code paths. See the earlier feature switch section for more information.
+Beginning with .NET 8.0, the "disable `BinaryFormatter`" feature switch is activated by default across all project types. Developers must perform an explicit opt-in gesture to re-enable these code paths. This will utilize the same compat switch introduced in .NET 5.
 
-### Entirety of BinaryFormatter type obsolete as warning
+### New obsoletions in .NET 8
 
-In .NET 7.0, the following APIs will be marked `[Obsolete]` _as warning_.
+In .NET 8.0, the following APIs will be marked `[Obsolete]` _as error_ by default. These will utilize the existing `SYSLIB0011` warning code. The errors can be converted back to warnings by using the `<EnableUnsafeBinaryFormatterSerialization>` compat switch within the project file. 
 
 - The entirety of the `BinaryFormatter` type.
-- The entirety of the `ISerializable` type.
-  - Includes any public or explicitly-implemented `GetObjectData` methods.
-- `OnSerializingAttribute`, `OnDeserializingAttribute`, `OnSerializedAttribute`, and `OnDeserializedAttribute`
-- Any methods the above attributes are applied to.
-- The entirety of the types `FormatterServices`, `ISerializationSurrogate`, `ISurrogateSelector`, `ObjectManager`, `SurrogateSelector`, `FormatterAssemblyStyle`, `FormatterTypeStyle`, `IFieldInfo`, and `TypeFilterLevel`.
-- Any serialization ctors (`".ctor(SerializationInfo, StreamingContext)"`) on public types.
+- The entirety of the `IFormatter` interface.
+- The entirety of the `Formatter` type.
 
-As mentioned previously, members on `Exception`-derived types in projects which are consumed by _netstandard2.0_ or earlier will not be subject to obsoletion.
+The following APIs will be marked `[Obsolete]` _as warning_ using a new warning code (tentatively `SYSLIB0050`).
 
-For packages which perform asset harvesting or which otherwise aren't always compiled against _NetCoreAppCurrent_, obsoleting the serialization ctors and `GetObjectData` methods should be done on a best-effort basis. We'll have to see how difficult the task will be, but let's not force ourselves to perform unnatural contortions in the packaging system.
+**Newly obsolete types**
 
-This will also follow a "better obsoletion" mechanism so that applications can suppress the entire category of warnings if needed.
+- `IFormatterConverter` interface and `FormatterConverter` concrete type
+- `FormatterServices` static class
+- `IObjectReference` interface
+- `ISurrogateSelector` and `ISerializationSurrogate` interfaces, and the `SurrogateSelector` concrete type
+- `ISafeSerializationData` and `SafeSerializationEventArgs`
+- `StreamingContextStates` enum
+- `ObjectIDGenerator`
+- `ObjectManager`
+- `SerializationObjectManager`
+- `FormatterTypeStyle`, `FormatterAssemblyStyle`, and `TypeFilterLevel` enums
+- `IFieldInfo` interface
 
-### BinaryFormatter infrastructure removed from .NET (.NET 8)
+(All APIs which expose these types through their public API surface would also be obsoleted.)
 
-In .NET 8.0, the entirety of the `BinaryFormatter` infrastructure will be removed from the product. Here, "`BinaryFormatter` infrastructure" refers to any API which was obsoleted as part of an earlier stage of this proposal, even if that API is not itself on the `BinaryFormatter` type. The implementation of all such APIs will be to throw `PlatformNotSupportedException`. The internal `BinaryFormatter` implementation will no longer exist in .NET in any form, and there will not exist a feature switch to re-enable the implementation.
+**Newly obsolete members on existing types**
 
-All code bases which target _net8.0_ or above must be fully migrated away from `BinaryFormatter` at this time. This applies to _dotnet_ org first-party code, partner team code, and third-party user code.
+- `Type.IsSerializable` public property (and all overridden implementations)
+- `TypeAttributes.Serializable` enum value
+- `FieldInfo.IsNotSerialized` public property
+- `FieldAttributes.NotSerialized` enum value
+- `ISerializable.GetObjectData` method, but not the type itself
+- `SerializationInfo` and `StreamingContext`, all ctors, but not the types themselves
 
-There is currently no plan to remove the now-dead APIs themselves from the SDK. However, this may be suggested in the future either concurrent with or occurring after the final "obsolete as error" behavior.
+The following APIs will be marked `[Obsolete]` _as warning_ using a new warning code (tentatively `SYSLIB0051`) and marked `[EditorBrowsable(Never)]`.
+
+- All externally visible (public or protected) serialization ctors: `.ctor(SerializationInfo, StreamingContext)`.
+- All public (not explicit or protected) implementations of `IObjectReference.GetRealObject`.
+- All public (not explicit or protected) implementations of `ISerializable.GetObjectData`.
+
+The following APIs will not be obsoleted but will be marked `[EditorBrowsable(Never)]`.
+
+- The `SerializableAttribute` type
+- The `NonSerializedAttribute` type
+
+These changes only affect applications targeting .NET 8+. If a project targets multiple runtimes, these new annotations will be `#if` conditioned to apply only to .NET 8+.
+
+The reason for using two new warning codes is that these warnings are directed at two different audiences. The first warning code (tentatively `SYSLIB0050`) is directed toward people who _invoke_ the legacy serialization infrastructure. This consists mostly of people who are writing serializers or of application developers who are doing something so specialized that they require direct calls back in to the serialization infrastructure.
+
+The second warning code (tentatively `SYSLIB0051`) is directed at library authors who extend existing `[Serializable]` types. For example, this warning code would be observed by developers who _both_ subclass types like `Exception` or `Dictionary<TKey, TValue>` _and_ extend its serialization ctor. The warning code indicates that this is legacy serialization infrastructure intended only for compatibility, and it should not be adopted by new .NET applications.
+
+> Most developers who use `[Serializable]` or who implement `ISerializable` themselves will see no warnings, since those types are not being obsoleted at this time. For developers who see warnings because they call into base implementations' now-obsolete members, self-remediation guidance will be provided.
+
+The following types are _not_ being obsoleted at this time: `SerializableAttribute`, `NonSerializedAttribute`, `OnSerializingAttribute`, `OnSerializedAttribute`, `OnDeserializingAttribute`, `OnDeserializingAttribute`, `ISerializable`. This would be too disruptive to the wider ecosystem at this time since other serializers within .NET understand these attributes (but do not honor them correctly). Rather, we must prioritize getting people off of legacy dangerous deserializers by providing better guidance and stepping stones before tackling this longer tail of work. To support that principle, these APIs will not be obsoleted until .NET 9. However, since `SerializableAttribute` and `NonSerializedAttribute` are within the `System` namespace, it's prudent to mark them `[EditorBrowsable(Never)]` as part of this wave.
+
+### No new \[Serializable\] types introduced (.NET 8)
+
+In .NET 6, we had stopped attributing new types with `[Serializable]`, carving out an exception only for `Exception`-derived types in projects which targeted _netfx_ or _netstandard_.
+
+Starting with .NET 8, we will no longer attribute _any_ new types with `[Serializable]`, voiding the previously granted exception. (Already-shipped types will retain their existing annotations.)
+
+### Remainder of legacy serialization infrastructure obsoleted (.NET 9)
+
+When targeting .NET 9+, the following types will be marked `[Obsolete]` _as warning_.
+
+- `SerializableAttribute`
+- `NonSerializedAttribute`
+- `OnSerializingAttribute`
+- `OnSerializedAttribute`
+- `OnDeserializingAttribute`
+- `OnDeserializedAttribute`
+- `ISerializable`
+- `IDeserializationCallback`
+
+This should represent the balance of unobsoleted APIs which are strongly tied to the legacy serialization infrastructure.
+
+### BinaryFormatter infrastructure removed from .NET (.NET 9)
+
+In .NET 9.0, the entirety of the `BinaryFormatter` infrastructure will be removed from the product. Here, "`BinaryFormatter` infrastructure" refers to any API which was obsoleted (_as error_) as part of an earlier stage of this proposal, even if that API is not itself on the `BinaryFormatter` type. The implementation of all such APIs will be to throw `PlatformNotSupportedException`. The internal `BinaryFormatter` implementation will no longer exist in .NET in any form and cannot be reenabled through any compat switch. Functionality may be moved to an unsupported out-of-band package.
+
+All code bases which target _net9.0_ or above must be fully migrated away from `BinaryFormatter` at this time. This applies to _dotnet_ org first-party code, partner team code, and third-party user code.
+
+There is currently no plan to remove the now-dead APIs themselves from the SDK. Doing so would prevent loading existing libraries which are compiled against those types. However, this may be suggested in the future either concurrent with or occurring after the final "obsolete as error" behavior.
 
 ## Q\&A
 
@@ -290,6 +376,8 @@ __Is `BinaryFormatter` officially supported in .NET 5.0 and beyond?__
 Yes, per the limitations described in this document. As long as the type exists in the framework and has an implementation, support is available. For example, if an app which uses `BinaryFormatter` behaves as expected in .NET 5.0 but fails after a .NET 5.0.x patch is applied, this regression should be reported to the product team for resolution.
 
 See the earlier section section titled "All outstanding BinaryFormatter-related issues resolved won't fix" for more information on what categories of issues qualify for support.
+
+> Once `BinaryFormatter` is removed from the product (tentatively scheduled for .NET 9), it will no longer be supported by the product team in that release and in subsequent releases. For .NET 7, .NET Framework 4.x, and other runtimes which bundle `BinaryFormatter` as part of the product, the functionality will continue to be supported throughout the normal support period of the .NET runtime itself, subject to the above conditions.
 
 __What about other `BinaryFormatter`-equivalent types like `LosFormatter`, `ObjectStateFormatter`, `SoapFormatter`, and `NetDataContractSerializer`?__
 
