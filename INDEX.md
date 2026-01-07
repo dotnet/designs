@@ -31,9 +31,9 @@ Use update-index to regenerate it:
 | 2018 | [Standardized Environment Variables for CI Services](accepted/2018/build/standard-ci-env-variables.md) | [Tomáš Matoušek](https://github.com/tmat) |
 | 2018 | [Windows Compatibility Pack](accepted/2018/compat-pack/compat-pack.md) | [Immo Landwerth](https://github.com/terrajobst), [Wes Haggard](https://github.com/weshaggard) |
 | 2019 | [.NET GC Support for Container Limits](accepted/2019/support-for-memory-limits.md) | [Rich Lander](https://github.com/richlander) |
-| 2019 | [Background](accepted/2019/targeting-packs-and-runtime-packs.md) | [Rich Lander](https://github.com/richlander), [Nick Guerrera](https://github.com/nguerrera) |
 | 2019 | [Runtime Binding Behavior](accepted/2019/runtime-binding.md) | [Rich Lander](https://github.com/richlander) |
 | 2019 | [System.Index and System.Range](accepted/2019/system-range/system-range.md) | [Immo Landwerth](https://github.com/terrajobst) |
+| 2019 | [Targeting Packs and Runtime Packs](accepted/2019/targeting-packs-and-runtime-packs.md) | [Rich Lander](https://github.com/richlander), [Nick Guerrera](https://github.com/nguerrera) |
 | 2020 | [.NET 5 Minimum OS Versioning](accepted/2020/minimum-os-version/minimum-os-version.md) | [Mikayla Hutchinson](https://github.com/mhutch) |
 | 2020 | [.NET Core 3.0 AppDomain Replacement Design and Guidance](accepted/2020/AssemblyLoadContext/AppDomainReplacement.md) | [Steve MacLean](https://github.com/sdmaclea) |
 | 2020 | [.NET Optional SDK Workloads](accepted/2020/workloads/workloads.md) | [Rich Lander](https://github.com/richlander) |
@@ -92,6 +92,7 @@ Use update-index to regenerate it:
 | 2025 | [Memory Safety in .NET](accepted/2025/memory-safety/memory-safety.md) | [Richard Lander](https://github.com/richlander) |
 | 2025 | [Provide SDK hint paths in global.json](accepted/2025/local-sdk-global-json.md) | [Jared Parsons](https://github.com/jaredpar) |
 | 2025 | [RID-Specific .NET Tool Packages](accepted/2025/rid-specific-tool-packages.md) | [Daniel Plaisted](https://github.com/dsplaisted) |
+| 2025 | [SDK Unsafe Adoption](accepted/2025/memory-safety/sdk-memory-safety-enforcement.md) | [Fred Silberberg](https://github.com/333fred), [Richard Lander](https://github.com/richlander) |
 
 ## Drafts
 

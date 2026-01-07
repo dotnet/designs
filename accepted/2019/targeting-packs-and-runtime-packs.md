@@ -1,6 +1,8 @@
-# Background
+# Targeting Packs and Runtime Packs
 
 **Owner** [Rich Lander](https://github.com/richlander) | [Nick Guerrera](https://github.com/nguerrera)
+
+## Background
 
 The objectives here are:
 
@@ -8,7 +10,7 @@ The objectives here are:
 2. Establish details such as package naming, layout and versioning
 
 
-# Historical approaches
+## Historical approaches
 
 To date, there have effectively been two different approaches to framework references:
 
@@ -53,18 +55,18 @@ And each have had strengths and weaknesses:
 * Requires project context for resolution
 
 
-# Summary of New Approach
+## Summary of New Approach
 
-We introduce a third, hybrid approach to framework references that aims to capture the strengths of the earlier approaches while mitigating weaknesses. 
+We introduce a third, hybrid approach to framework references that aims to capture the strengths of the earlier approaches while mitigating weaknesses.
 
 In this new approach, framework reference assemblies will be commonly resolved from a global location alongside `dotnet`. This is similar in spirit to the classic targeting packs in `C:\Program Files\Reference Assemblies`, but cross-platform and compatible with non-admin SDK deployment.
 
-On top of that, we layer a fallback to acquiring the same assets via NuGet. This will be used so that you can easily build projects targeting frameworks that are older than the SDKs you have installed. 
+On top of that, we layer a fallback to acquiring the same assets via NuGet. This will be used so that you can easily build projects targeting frameworks that are older than the SDKs you have installed.
 
 Finally, we add a new `FrameworkReference` concept to the build, to represent the use of a group of assemblies that version with the target framework.
 
 
-# Targeting, Runtime, and AppHost Packs
+## Targeting, Runtime, and AppHost Packs
 
 We use the term "pack" for a collection of files used by the build. A pack can either be deployed globally alongside `dotnet` or wrapped in a NuGet package.
 
@@ -75,7 +77,7 @@ There are three categories of packs:
 3. AppHost packs - app executable template to generate native app executable
 
 
-# Globally Installed Packs 
+## Globally Installed Packs
 
 Targeting packs (and AppHost packs) will be bundled with the SDK, and available to be installed globally via native installers. This bundling is directly analagous to how the shared frameworks are bundled with the SDK or installable individually.
 
@@ -93,7 +95,7 @@ dotnet[.exe]
         Microsoft.ASPNetCore.App.Ref/3.0.0/...
         Microsoft.WindowsDesktop.App.Ref/3.0.0/...
         NETStandard.Library.Ref/2.1.0/...
-    
+
     sdk/      <--  build toolsets
         3.0.100/
 ```
@@ -103,7 +105,7 @@ Note that there are no .nuspecs,.nupkgs,.sha512,.metadata,.p7s files in the pack
 Furthermore, just like `sdk/*` and `shared/*`, `packs/*` content is either included in the sdk .zip or installed via a native installer with appropriate ref-counting. This is in stark, deliberate contrast to the `sdk/NuGetFallbackFolder` that gets content unzipped from each SDKs .lzma, and that only grows over time no matter what you uninstall. The .lzma will be eliminated entirely and replaced by these packs.
 
 
-# Packs Delivered via NuGet
+## Packs Delivered via NuGet
 
 The global scheme above allows for offline builds in common cases. For example, by bundling .NET Core 3.0 targeting packs with .NET Core 3.0.* SDKs, you can install the 3.0.* SDK and build framework-dependent 3.0 projects without pulling anything from the network. However, if you have projects that require a targeting pack that is not globally installed, then the SDK will instruct NuGet to download during restore and use it from the package cache instead of the global location. For this, a new NuGet package type -- `DotnetPlatform` is introduced that:
 
@@ -112,12 +114,12 @@ The global scheme above allows for offline builds in common cases. For example, 
 * cannot be depended upon by other packages
 * is not subject to standard nuget resolution rules
 
-Furthermore, when NuGet is used, the assets acquired are not cataloged in project.assets.json as normal assets that are subject to NuGet resolution rules. Insetead, the build will use the same logic as the global/offline case and simply redirect it to a downloaded folder in the NuGet package cache. 
+Furthermore, when NuGet is used, the assets acquired are not cataloged in project.assets.json as normal assets that are subject to NuGet resolution rules. Insetead, the build will use the same logic as the global/offline case and simply redirect it to a downloaded folder in the NuGet package cache.
 
 This will be implemented using a new "download only package" feature from NuGet: https://github.com/NuGet/Home/issues/7339
 
 
-## Package names
+### Package names
 
 The naming requirements are:
 
@@ -141,15 +143,15 @@ The naming requirements are:
  * Microsoft.WindowsDesktop.App.Runtime.win-x86 (runtime pack for WPF/Winforms on .NET Core for Windows OS and x64 CPU)
 
 
-## Package Versions
+### Package Versions
 
-Runtime pack package versions will be 1:1 with .NET Core Runtime / shared framework versions. This follows from the fact that runtime packs contain shared framework implementation and thus must change whenever the implementation changes. 
+Runtime pack package versions will be 1:1 with .NET Core Runtime / shared framework versions. This follows from the fact that runtime packs contain shared framework implementation and thus must change whenever the implementation changes.
 
 Targeting pack package versions will generally not increase past major.minor.0 where major.minor matches the the corresponding two-part TFM. For example, when there is a 3.0.1 .NET Core runtime, the targeting pack will likely remain at 3.0.0. This follows from the fact that targeting packs represent public API surface, which must not change in a patch version of the runtime. (With that said, we can reserve the right to modify the targeting pack in a patch release to fix a severe bug. In the rare event that this occurs, the targeting pack patch version could be incremented past 0.)
 
 During the prerelease phase of a new major.minor version of the runtime, the targeting pack will version 1:1 with the runtime. This is necessary as different prerelease versions will have different surface area.
 
-For example, 
+For example,
 
 * .NET Core SDK 3.0.100-preview with 3.0.0-preview runtime
     * packs/Microsoft.NETCore.App.Ref/3.0.0-preview
@@ -164,11 +166,11 @@ For example,
     * shared/Microsoft.NETCore.App/3.0.1
 
 
-## Package Layout
+### Package Layout
 
 Since the packages will have a special type and not be installable into projects in the usual way, we do not need to use folders in the nupkg like `ref/<TFM>` etc. However, it was decided to use the same conventions where there is overlap to convey the intent. So, reference assemblies will still be in `ref/<TFM>`. Implmentation assemblies in runtime packs will still be in `runtimes/rid/lib/<TFM>`, etc. Additional data files that have no analog in the traditional nuget packages will use a new `data/` folder.
 
-# FrameworkReference
+## FrameworkReference
 
 A `FrameworkReference` is a new MSBuild item that represents a reference to a well-known *group* of framework assemblies that are versioned with the project's `TargetFramework`.
 
@@ -197,13 +199,13 @@ A FrameworkReference can be added to a project in the following ways.
 
 The implicit framework references broken down by MSBuild SDK for netcoreapp3.0 are as follows:
 
- 1. Microsoft.NET.Sdk 
+ 1. Microsoft.NET.Sdk
     * "Microsoft.NETCore.App"
- 
+
  2. Microsoft.NET.Sdk.Web
-    * "Microsoft.AspNetCore.App" 
+    * "Microsoft.AspNetCore.App"
     * "Microsoft.NETCore.App" (via chained Microsoft.NET.Sdk)
- 
+
  3. Microsoft.NET.Sdk.WindowsDesktop
     * "Microsoft.WindowsDesktop.App" if both $(UseWPF) and $(UseWindowsForms) are true
     * "Microsoft.WindowsDesktop.App|WPF if only $(UseWPF) is true
@@ -215,12 +217,12 @@ Just as with the older framework package reference, `$(DisableImplicitFrameworkR
 Transitivity will be achieved via recording when a `ProjectReference` or `PackageReference` needs a `FrameworkReference` in the assets file during NuGet restore: https://github.com/NuGet/Home/issues/7342
 
 
-## FAQ: Why not just use Reference?
+### FAQ: Why not just use Reference?
 
 Other parts of the system are hard-wired to 1 Reference:1 Assembly. Like PackageReferences, FrameworkReferences will resolve each FrameworkReference down to multiple, constituent References before ResolveAssemblyReferences runs. There are too many assemblies in Microsoft.NETCore.App and Microsoft.AspNETCore.App to productively reference individually.
 
 
-## FAQ: Why not just use PackageReference with an implicit version?
+### FAQ: Why not just use PackageReference with an implicit version?
 
 In short, because we tried it already in .NET Core 2.x, and it did not work very well. Framework asset resolution implemented via standard nuget package resolution is a leaky abstraction:
 
@@ -238,13 +240,13 @@ Here is a sampling of issues:
 * https://github.com/aspnet/Home/issues/3257
 * https://github.com/aspnet/Home/issues/3245
 * https://github.com/aspnet/Home/issues/3241
-* https://github.com/aspnet/Mvc/issues/7946 
+* https://github.com/aspnet/Mvc/issues/7946
 * https://github.com/dotnet/cli/issues/9519
 * https://github.com/aspnet/websdk/issues/369
 * https://github.com/dotnet/corefx/issues/30573
 * https://github.com/dotnet/core/issues/1746
 * https://github.com/dotnet/core/issues/1712
-* https://github.com/dotnet/core/issues/1720 
+* https://github.com/dotnet/core/issues/1720
 * https://github.com/aspnet/Docs/issues/7532
 * https://github.com/cloudfoundry/dotnet-core-buildpack/issues/188
 * https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql/issues/641
@@ -272,7 +274,7 @@ Now imagine this graph:
 In this example, for A to use B, System.Xml is needed, but it makes no sense to use .NET 4.0 System.Xml in .NET 4.5. So A must unify to .NET 4.5 System.Xml. In the case of System and mscorlib, this happened because A also references them directly. This breaks down when a framework asset is acquired transitively.
 
 
-## FAQ: If NuGet writes FrameworkReferences to assets file, shouldn't it also be responsible for determining FrameworkReference assets and listing them in assets file?
+### FAQ: If NuGet writes FrameworkReferences to assets file, shouldn't it also be responsible for determining FrameworkReference assets and listing them in assets file?
 
 Writing FrameworkReferences to the assets file is morally equivalent to writing References as frameworkAssemblies. The process of consuming them will be nearly the same: instead of raising Reference items from the assets file, we raise FrameworkReference. NuGet does not need to know anything about them other than their names.
 
@@ -281,7 +283,7 @@ Abstractly, FrameworkReferences are not directly coupled to packages. As outline
 This allows the SDK to be fully in control of how FrameworkReferences are resolved to files on disk without baking more concepts into NuGet.
 
 
-# Global resolution
+## Global resolution
 
 There is one weakness of historical framework NuGet packages that was listed in the introduction, but not adressed in the plan above: "Requires project context for resolution." The issue there is that reference assemblies may only be pulled down by a NuGet restore operation, which is still tied to a project. In general, you cannot just ask for the reference assemblies for a given TFM / shared framework unless that targeting pack is globally installed. Furthermore, Visual Studio has a Global Design Time Assembly Resolution (GDTAR) service that relies on being able to do just that. Platforms based on packages such as UWP and .NET Core cannot provide this service naturally, which blocks certain VS features from working correctly and there is concern that some of the features that will need to be brought up for .NET Core 3. WPF/WinForms may run into this. For UWP, design-time scenarios, this was an issue and a workaround that is not considered maintainable was instituted.
 
