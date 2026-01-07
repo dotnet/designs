@@ -22,6 +22,14 @@ Vector databases establish relationships via embedding similarity, refined throu
 
 Hypermedia advocates for self-describing document structures. HATEOAS contributes the idea that labeled relations across resources enable semantic navigation. This idea can be stretched to being thought of as "no-schema" consumption: readers discover structure through descriptive labels and follow matching paths without requiring domain knowledge upfront. This paradigm is both semantic and structural, equal parts [Retrieval-Augmented Generation (RAG)](https://en.wikipedia.org/wiki/Retrieval-augmented_generation) and [PageRank](https://en.wikipedia.org/wiki/PageRank). It's this mixture that enables direct consumption without the need for vector techniques, enabling low-cost LLM enablement for scenarios where hosting a persistent AI server would be prohibitive.
 
+## User experience
+
+This is the intended user experience:
+
+>I last updated .NET 8 in September 2025. Were there any critical CVEs since then? Tell me what they fixed so I can decide if I have an issue. Look at code diffs.
+>
+>Start here: https://raw.githubusercontent.com/dotnet/core/refs/heads/release-index/llms.txt
+
 ## Approach
 
 The primary techniques for LLM applicability are:
