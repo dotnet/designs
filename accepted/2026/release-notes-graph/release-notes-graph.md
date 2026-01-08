@@ -322,7 +322,7 @@ Notes:
 
 ## Version Index Modeling
 
-The version index has three layers: releases, major version, patch version. Most nodes in the graph are named `index.json`. The examples should look similar to the HAL spec documents shared earlier.
+The version index has three layers: releases, major version, patch version. There is no concept of minor version. `10.0` and `10.1` (if such a version existed) would both be considered separate major verisons in this scheme. Most nodes in the graph are named `index.json`. The examples should look similar to the HAL spec documents shared earlier.
 
 ### Releases index
 
