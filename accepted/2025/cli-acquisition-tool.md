@@ -8,8 +8,8 @@
 - [Milestones](#milestones)
   - [Proof of Concept](#proof-of-concept)
   - [Internal Preview](#internal-preview)
-  - [Public Preview](#public-preview)
-  - [GA](#ga)
+  - [Experimental Public Preview](#experimental-public-preview)
+  - [Productization](#productization)
 - [Other Concerns](#other-concerns)
   - [Aspire](#aspire)
   - [VS Project System](#vs-project-system)
@@ -184,6 +184,36 @@ This command will check documented, signed release manifests for `dnup` and down
 Provenance and signature validation of the new binary will also happen to ensure the content is as expected.
 This update capability should be able to be triggered manually or on an automatic cadence (e.g. every execution, once a day, etc.)
 
+## Ecosystem Context
+
+### Key Observations from Other Ecosystems
+*	**npm, Rust, Python, Maven/Gradle:** Strong preference for per-user installs; admin installs are rare.
+*	**Go and Java:** Language runtimes often installed centrally, but developers increasingly use version managers or user-scoped installs to avoid admin rights.
+*	**PATH-based discovery** is universal across ecosystems.
+*	**Isolation mechanisms** (virtual environments, local installs) are highly valued for avoiding dependency conflicts.
+
+### Multi-Ecosystem Version Managers
+Developers increasingly use unified version managers that work across multiple language ecosystems:
+*	**asdf** - Older, established tool that manages versions for dozens of languages and tools (Node.js, Python, Ruby, Go, etc.)
+*	**mise-en-place (mise)** - Newer, faster alternative to asdf with broader tool support including Android/iOS tooling, CLI tools, and development utilities
+*	**Common patterns** - These tools provide consistent commands (`install`, `use`, `list`, etc.) and workspace-local version pinning across all supported ecosystems
+
+Developers reach for these tools to have **one unified experience** for managing all their various development dependencies rather than learning ecosystem-specific tools. This trend suggests strong demand for consistent tooling patterns across languages.
+
+### Customer preference
+*	Developers overwhelmingly prefer **non-admin installs** for flexibility and speed.
+*	Enterprises may still require **central installs**, so keep that as an option.
+*	PATH-based discovery is expected; avoid custom mechanisms.
+
+| Ecosystem | Default Install | Admin Required? |
+|-----------|----------------|-----------------|
+| npm | Per-user | No |
+| Rust | Per-user | No |
+| Python | Per-user / venv | No |
+| Go | Mixed | Sometimes |
+| Java | Mixed | Sometimes |
+| .NET (Proposed) | Per-user | No |
+
 ## Q & A
 
 ### How will I get `dnup`?
@@ -247,12 +277,24 @@ This is a large effort, and there are different areas of the work that will prog
   * at this phase we'll be able to do more lifecycle management, onboarding, checking for updates
   * we may be missing crypto validation or other security features that would prevent a general public preview
   * this is the phase where we should receive core end user feedback and iterate on the main UX
-* **Public Preview**
-  * at this phase we'll have all of the security related requirements and will be ready for broad usage
-* **General Availability**
-  * fit-and-finish work, documentation, telemetry, etc will all be present before we reach this milestone
+* **Experimental Public Preview**
+  * at this phase we'll have all of the security related requirements implemented and will be ready for broad usage of the tool
+  * we'll have usage telemetry to help us make go/no-go decisions, in addition to soliciting end user feedback via surveys and direct outreach
+  * branding and blogposts will make it clear that
+    * this is an _experiment_ intended to address reported user pain around SDK/Runtime management
+    * this works on all platforms, but there are caveats to seamless usage on environments that have global .NET installations, especially Windows with Visual Studio installed
+    * feedback from users will determine the next steps for the tool
+* **Productization**
+  * fit-and-finish work, documentation, etc will all be present before we reach this milestone
   * blocking feedback from earlier previews will be addressed
     * if feedback from public preview is overwhelmingly negative we may end up stopping the effort overall in favor of other approaches to solving the acquisition/management problems
+    * if feedback is positive about the functionality but negative about the separate tool, we may consider folding it into the dotnet CLI
+      * this would likely have other layering implications - how do you bootstrap an install of .NET, can admin installs of .NET also self-manage, etc
+    * if feedback is positive about the separate tool and the functionality we can move to productization and deeper integration into other tools/environments like:
+      * dotnet CLI
+      * VS/DevKit IDE experiences
+      * CI/CD runner setup actions
+  * If we go ahead, then the remaining SDL requirements that haven't already been implemented must be done by this stage
 
 More details on these proposed milestones will likely vary, but may look like:
 
@@ -268,17 +310,17 @@ More details on these proposed milestones will likely vary, but may look like:
 * can check for updates to installed SDKs via `dnup update --check` or similar
 * installs are tracked by `dnup` for future management scenarios
 
-### Public Preview
+### Experimental Public Preview
 
 * settle on the name for the tool
 * uninstall of installed SDK
 * signature validation of manifests and downloaded artifacts
 * interactive UX, prompting, progress
+* telemetry is implemented and documented
 
-### GA
+### Productization
 
 * self-update of the `dnup` binary is implement
-* telemetry is implemented and documented
 * public documentation is created
 * public download url/script/mechanism is up
 * the `dnup update` command is fully implemented
