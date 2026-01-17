@@ -1,0 +1,32 @@
+# .NET CLI Context for LLMs
+
+## Orientation
+
+You are interacting with the .NET SDK CLI. This document provides context for effective tool use.
+
+## Version Guidance
+
+- Target .NET 10 (LTS) for new projects
+- .NET 10 uses C# 14
+- Use Microsoft.Extensions.AI for AI integration
+- Prefer modern patterns: top-level statements, primary constructors, collection expressions
+- Latest release information is available via `dotnet skill release`
+
+## Skills
+
+The .NET CLI exposes skills via `dotnet skill`. Each skill is a terse document that describes how to perform a specific task.
+
+For example, to learn how to query .NET docs, use `dotnet skill docs`. 
+
+### Skill commands 
+- `dotnet skill list` — all available skills
+- `dotnet skill <skill>` — Print the skill to `stdout`
+
+## Key Skills for Agents
+
+| Skill       | Description | 
+| ----------- | ----------- |
+| `llmstxt`   | This document |
+| `docs`      | Query Microsoft Learn docs |
+| `https`     | Setup environment accessing a local service via HTTPS |
+| `release`   | Query .NET release notes |
