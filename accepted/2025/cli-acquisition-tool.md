@@ -214,6 +214,113 @@ Developers reach for these tools to have **one unified experience** for managing
 | Java | Mixed | Sometimes |
 | .NET (Proposed) | Per-user | No |
 
+### Deep Dive: nvm (Node.js)
+
+**Historical Context:**
+
+Early Node.js installations followed the traditional Unix model of system-wide package manager installs. Developers would install Node.js via `apt`, `yum`, or `brew`, which placed binaries in system directories like `/usr/local/bin`. When developers then ran `npm install -g` to install global packages, npm would attempt to write to system directories, triggering `EACCES` permission errors on Unix systems. The common workaround of using `sudo npm install -g` created even worse problems: files would be owned by root, causing cascading permission issues, and running third-party code with elevated privileges created security concerns.
+
+Tim Caswell created nvm (Node Version Manager) in 2011 to fundamentally solve these problems by installing Node.js per-user in `~/.nvm`. This approach eliminated permission issues entirely and had the added benefit of enabling easy switching between Node.js versions. The official npm documentation now recommends nvm as the primary solution for permission issues, marking a complete shift from system-wide to user-local installations in the Node.js ecosystem.
+
+**Key Design Principles:**
+
+* All Node versions install to `~/.nvm/versions/node/`
+* Global npm packages are scoped per-Node-version, preventing version conflicts
+* No admin rights required for any operation
+* Per-project version pinning via `.nvmrc` file containing a version string
+* Shell integration allows `nvm use` to modify the current shell's PATH
+
+**Command Reference:**
+
+| Task | Command |
+|------|---------|
+| Install latest LTS | `nvm install --lts` |
+| Install specific version | `nvm install 20.10.0` |
+| Install named LTS | `nvm install lts/iron` |
+| List available versions | `nvm ls-remote` |
+| Use version in current shell | `nvm use 20.10.0` |
+| Set permanent default | `nvm alias default 20.10.0` |
+| Upgrade + migrate packages | `nvm install --lts --reinstall-packages-from=$(nvm current)` |
+| Per-project pinning | `.nvmrc` file with version, then `nvm use` |
+
+### Deep Dive: rustup (Rust)
+
+**Historical Context:**
+
+Brian Anderson created multirust in 2014 as a shell script for managing multiple Rust toolchains. At the time, Rust was pre-1.0 and developers needed to frequently switch between stable, beta, and nightly channels to test new features and ensure compatibility. multirust was rewritten in Rust as rustup in 2016 and moved under official Rust governance, becoming the recommended installation method.
+
+Unlike Node.js's evolution from system-wide to user-local, Rust designed for user-local installation (`~/.rustup`, `~/.cargo`) as a core principle from day one. The Rust team learned from other ecosystems' permission problems and made rustup the canonical way to install Rust, even directing users from the main Rust website to use it.
+
+**Key Design Principles:**
+
+* Toolchains install to `~/.rustup/toolchains/`
+* No root/admin needed for any operation
+* Per-directory overrides via `rustup override set`
+* Per-project pinning via `rust-toolchain.toml` file
+* **Killer feature**: Running `cargo build` with a `rust-toolchain.toml` auto-installs the required toolchain without any manual intervention
+* Self-contained design allows rustup to update itself via `rustup self update`
+
+**Command Reference:**
+
+| Task | Command |
+|------|---------|
+| Install stable | `rustup install stable` |
+| Install nightly | `rustup install nightly` |
+| Install specific version | `rustup install 1.75.0` |
+| Install specific nightly | `rustup install nightly-2024-01-15` |
+| Update all toolchains | `rustup update` |
+| Update specific channel | `rustup update stable` |
+| Self-update | `rustup self update` |
+| Set default toolchain | `rustup default stable` |
+| Override for directory | `rustup override set nightly` |
+| One-off command | `cargo +nightly build` |
+| Per-project pinning | `rust-toolchain.toml` file (auto-installs on first use) |
+
+### Command Comparison: Ecosystem Tools
+
+This table maps common version management tasks across nvm, rustup, and the proposed dotnetup:
+
+| Task | nvm (Node) | rustup (Rust) | dotnetup (Proposed) |
+|------|-----------|---------------|---------------------|
+| Install latest stable/LTS | `nvm install --lts` | `rustup install stable` | `dnup install --lts` |
+| Install specific version | `nvm install 20.10.0` | `rustup install 1.75.0` | `dnup install 8.0.100` |
+| Install preview/nightly | `nvm install node` | `rustup install nightly` | `dnup install preview` |
+| Update all | N/A (install new) | `rustup update` | `dnup update` |
+| Check for updates | `nvm ls-remote` | `rustup update` (reports) | `dnup update --check` |
+| List installed | `nvm ls` | `rustup toolchain list` | `dnup list` |
+| Use in current shell | `nvm use 20.10.0` | N/A | `dnup use 8.0` |
+| Set permanent default | `nvm alias default 20` | `rustup default stable` | `dnup default 8.0` |
+| Per-project pin file | `.nvmrc` | `rust-toolchain.toml` | `global.json` |
+| Auto-install on project entry | Manual (shell hook) | **Automatic** | Should be automatic |
+| One-off command | `nvm exec 18 node app.js` | `cargo +1.75 build` | TBD |
+| Self-update | N/A (git pull) | `rustup self update` | `dnup update --self` |
+
+### UX Lessons for dotnetup
+
+**From nvm:**
+
+* Permission problems drove tool adoption - solving real daily pain makes a tool indispensable
+* Per-version isolation of global packages prevents subtle breakage when switching versions
+* Community tools can become official recommendations when they solve fundamental problems better than official solutions
+
+**From rustup:**
+
+* Design for multi-toolchain management from the start rather than bolting it on later
+* Auto-install on project entry (via `rust-toolchain.toml`) is a killer feature that .NET's `global.json` lacks
+* Self-contained user installs enable rapid iteration without admin tickets or IT approval
+
+**From both:**
+
+* Logical version aliases (`--lts`, `stable`, `nightly`) are expected alongside exact versions
+* Per-project configuration files are universal across modern development ecosystems
+* Single update command that handles everything (all toolchains, channels, etc.) is highly valued by users
+
+**Key gap for dotnetup to address:**
+
+* Unlike rustup, .NET's `global.json` pins versions but doesn't auto-install missing SDKs
+* dotnetup should detect `global.json`, check if the specified SDK is installed, and auto-install it (or at minimum prompt the user)
+* This would match rustup's workflow and eliminate the common "SDK version not found" errors that frustrate new contributors
+
 ## Q & A
 
 ### How will I get `dnup`?
