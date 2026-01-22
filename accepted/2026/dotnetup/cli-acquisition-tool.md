@@ -243,6 +243,65 @@ Tim Caswell created nvm (Node Version Manager) in 2011 to fundamentally solve th
 | Upgrade + migrate packages | `nvm install --lts --reinstall-packages-from=$(nvm current)` |
 | Per-project pinning | `.nvmrc` file with version, then `nvm use` |
 
+### Comparison: `nvm` and `dotnetup`
+
+#### Windows
+
+##### `nvm`
+
+`nvm` chose to not support windows at all. `nvm` is a `POSIX` shell based tool.
+[nvm windows statement](https://github.com/nvm-sh/nvm#:~:text=Note%3A%20nvm%20also%20supports%20Windows%20in%20some%20cases.%20It%20should%20work%20through%20WSL%20(Windows%20Subsystem%20for%20Linux)%20depending%20on%20the%20version%20of%20WSL.%20It%20should%20also%20work%20with%20GitBash%20(MSYS)%20or%20Cygwin.%20Otherwise%2C%20for%20Windows%2C%20a%20few%20alternatives%20exist%2C%20which%20are%20neither%20supported%20nor%20developed%20by%20us%3A)
+
+It can thus ignore Windows issues with elevation, the `PATH`, and conflicting installs.
+We considered doing this with `dotnetup`, but Windows comprises a large cohort of current .NET users.
+
+`nvm` suggests `nvm-windows` as the first, yet unsupported/unofficial option. `nvm-windows` appears to be the most frequently used on Windows, so we investigate below.
+
+##### `nvm-windows`
+
+###### Admin Install Handling
+`nvm-windows` setup dialog (UI) and user instructions on the `readme.md` suggest you uninstall all admin installations to prevent `PATH` issues.
+
+`nvm-windows` does not guarantee proper functionality with those installs. That is harder for `dotnetup` because `Visual Studio` is directly tied to its ecosystem.
+
+`nvm-windows` does, however, copy admin installations into the `nvm root`, in an attempt to not break existing tooling on the box.
+
+The Setup does this via a walkthrough dialog (UI), and asks for your permission to do so. The default is to do so.
+
+In our discussions for `dotnetup`, we decided something similar, where the walkthrough when you first launch `dotnetup` will try to install the admin-hive installs as local installs into the `dotnetup` hive.
+
+We cannot ignore `PATH` issues on Windows. That should be covered elsewhere - see https://github.com/dotnet/designs/tree/dnvm-e2e-experience/proposed for an older design on this.
+
+######  Symlink Technology Enables Shell Updates
+`NVM_SYMLINK` is used because it enables to `nvm use` to apply to all console windows and can persist upon reboots. However, when running `where npm`, nothing is returned.
+
+This is harder for `dotnetup` because it requires `dotnet` to not be on the `PATH`, or for the `symlink` version to win over the `dotnet` on the `PATH`.
+We updated the MSI installers to not modify the `PATH` upon update, but that faced issues and got rolled back. It is still worth exploring.
+
+Hive Locations:
+The installation location of nvm is `%APPDATA%\nvm` which is a user-based hive containing multiple versions.
+The default installation hive is based off of `NVM_SYMLINK`, which contains the location of the symlink file. That symlink is added to the `PATH` behind `NVM_HOME`.
+
+`%APPDATA%\Roaming\npm` contains globally installed tools is above on the PATH and is not part of `nvm`.
+
+`NVM_SYMLINK` defaults to `C:\nvm4w\node` -> `nvm use` points it to `...\AppData\Local\nvm\{version}` which contains the `nvm` folder.
+`NVM_HOME` defaults to `...\AppData\Local\nvm`. Contains `nvm-windows` itself and its installs.
+
+Some users report confusion because the symlink cannot point to `C:\Program Files\nodejs`.
+
+`NVM_DIR` is `$HOME/.nvm`.
+
+##### Provides `nvm debug` to debug `PATH` issues.
+
+We've considered similar for `dotnetup`.
+
+##### Command Space
+
+`dotnetup use` makes less sense since the `dotnet` executable is a multiplexing system.
+To make something similar, we would either need to write into the `global.json` file or create a separate folder with only the specific `sdk` or `runtime` designed.
+
+The experience for other commands such as `install` is quite similar, but instead tries to replicate the `NuGet` and `workload` existing terminology.
+
 ### Deep Dive: rustup (Rust)
 
 **Historical Context:**
