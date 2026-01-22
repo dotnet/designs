@@ -302,6 +302,49 @@ To make something similar, we would either need to write into the `global.json` 
 
 The experience for other commands such as `install` is quite similar, but instead tries to replicate the `NuGet` and `workload` existing terminology.
 
+#### Unix (macOS/Linux)
+
+##### Shell Integration
+
+`nvm` is implemented as a shell function sourced into the user's shell profile (`.bashrc`, `.zshrc`, etc.). This approach allows `nvm use` to modify the current shell's `PATH` directly without spawning a subshell. The tradeoff is that `nvm` must be re-sourced in each new terminal session.
+
+For `dotnetup`, we plan to take a similar approach: set `DOTNET_ROOT` and prepend the install location to `PATH` in the shell profile.
+We can modify the profile with users consent during the initial walkthrough.
+
+##### Installation Location
+
+`nvm` installs all Node versions under `NVM_DIR` which is `$HOME/.nvm` with each version in its own subdirectory (e.g., `~/.nvm/versions/node/v20.10.0/`).
+
+`dotnetup` will follow a similar pattern with installs under a user-local directory. The .NET SDK's existing layout with `sdk/`, `shared/`, and `packs/` directories naturally supports multiple versions side-by-side.
+
+##### Version Resolution
+
+`nvm` resolves versions via:
+1. Explicit `nvm use <version>` commands that modify `PATH`
+2. `.nvmrc` files in the current directory (requires manual `nvm use` or shell hooks)
+3. A default alias set via `nvm alias default`
+
+`dotnetup` benefits from .NET's existing `global.json` mechanism, which the `dotnet` muxer reads automatically. This is closer to rustup's behavior where version resolution happens transparently without explicit shell commands.
+
+##### Package Manager Coexistence
+
+On Linux, system package managers (`apt`, `dnf`, etc) may install Node.js to `/usr/bin/node`. `nvm` avoids conflicts by placing its Node versions earlier in `PATH` when activated.
+
+For .NET, distro packages typically install to `/usr/share/dotnet` with `/usr/bin/dotnet` as a symlink. `dotnetup` will need to handle this by:
+1. Setting `DOTNET_ROOT` to the user-local hive
+2. Ensuring the user-local `dotnet` appears before `/usr/bin` in `PATH`
+3. Potentially warning users when a system install is detected
+
+If `dotnetup` is successful we want to consider working with our package manager partners.
+A big win for this would be to enable acquisition of non-`100` band .NET SDKs on Linux.
+
+##### Self-Contained Design
+
+`nvm` is a collection of shell scripts that must be sourced. Updates suggest using `nvm upgrade`, (on `nvm-windows`), or officially the install script or pulling the git repository.
+
+`dotnetup` will be a Native AOT compiled binary, making it fully self-contained with no runtime dependencies. This simplifies distribution and enables proper self-update functionality similar to rustup.
+We must ensure we build with a proper cross-gen container for older Linux versions.
+
 ### Deep Dive: rustup (Rust)
 
 **Historical Context:**
