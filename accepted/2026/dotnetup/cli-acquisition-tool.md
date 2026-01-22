@@ -343,7 +343,8 @@ A big win for this would be to enable acquisition of non-`100` band .NET SDKs on
 `nvm` is a collection of shell scripts that must be sourced. Updates suggest using `nvm upgrade`, (on `nvm-windows`), or officially the install script or pulling the git repository.
 
 `dotnetup` will be a Native AOT compiled binary, making it fully self-contained with no runtime dependencies. This simplifies distribution and enables proper self-update functionality similar to rustup.
-We must ensure we build with a proper cross-gen container for older Linux versions.
+We must ensure we build with a proper cross-build container for older Linux versions.
+https://github.com/dotnet/sdk/issues/51585
 
 ### Deep Dive: rustup (Rust)
 
