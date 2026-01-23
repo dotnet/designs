@@ -243,6 +243,109 @@ Tim Caswell created nvm (Node Version Manager) in 2011 to fundamentally solve th
 | Upgrade + migrate packages | `nvm install --lts --reinstall-packages-from=$(nvm current)` |
 | Per-project pinning | `.nvmrc` file with version, then `nvm use` |
 
+### Comparison: `nvm` and `dotnetup`
+
+#### Windows
+
+##### `nvm`
+
+`nvm` chose to not support windows at all. `nvm` is a `POSIX` shell based tool.
+[nvm windows statement](https://github.com/nvm-sh/nvm#:~:text=Note%3A%20nvm%20also%20supports%20Windows%20in%20some%20cases.%20It%20should%20work%20through%20WSL%20(Windows%20Subsystem%20for%20Linux)%20depending%20on%20the%20version%20of%20WSL.%20It%20should%20also%20work%20with%20GitBash%20(MSYS)%20or%20Cygwin.%20Otherwise%2C%20for%20Windows%2C%20a%20few%20alternatives%20exist%2C%20which%20are%20neither%20supported%20nor%20developed%20by%20us%3A)
+
+It can thus ignore Windows issues with elevation, the `PATH`, and conflicting installs.
+We considered doing this with `dotnetup`, but Windows comprises a large cohort of current .NET users.
+
+`nvm` suggests `nvm-windows` as the first, yet unsupported/unofficial option. `nvm-windows` appears to be the most frequently used on Windows, so we investigate below.
+
+##### `nvm-windows`
+
+###### Admin Install Handling
+`nvm-windows` setup dialog (UI) and user instructions on the `readme.md` suggest you uninstall all admin installations to prevent `PATH` issues.
+
+`nvm-windows` does not guarantee proper functionality with those installs. That is harder for `dotnetup` because `Visual Studio` is directly tied to its ecosystem.
+
+`nvm-windows` does, however, copy admin installations into the `nvm root`, in an attempt to not break existing tooling on the box.
+
+The Setup does this via a walkthrough dialog (UI), and asks for your permission to do so. The default is to do so.
+
+In our discussions for `dotnetup`, we decided something similar, where the walkthrough when you first launch `dotnetup` will try to install the admin-hive installs as local installs into the `dotnetup` hive.
+
+We cannot ignore `PATH` issues on Windows. That should be covered elsewhere - see https://github.com/dotnet/designs/blob/dnvm-e2e-experience/proposed/dotnet-bootstrapper/dotnet-bootstrapper-path.md for an older design on this.
+
+######  Symlink Technology Enables Shell Updates
+`NVM_SYMLINK` is used because it enables to `nvm use` to apply to all console windows and can persist upon reboots. However, when running `where npm`, nothing is returned.
+
+This is harder for `dotnetup` because it requires `dotnet` to not be on the `PATH`, or for the `symlink` version to win over the `dotnet` on the `PATH`.
+We updated the MSI installers to not modify the `PATH` upon update, but that faced issues and got rolled back.
+
+Hive Locations:
+The installation location of nvm is `%APPDATA%\nvm` which is a user-based hive containing multiple versions.
+The default installation hive is based off of `NVM_SYMLINK`, which contains the location of the symlink file. That symlink is added to the `PATH` behind `NVM_HOME`.
+
+`%APPDATA%\Roaming\npm` contains globally installed tools is above on the PATH and is not part of `nvm`.
+
+`NVM_SYMLINK` defaults to `C:\nvm4w\node` -> `nvm use` points it to `...\AppData\Local\nvm\{version}` which contains the `nvm` folder.
+`NVM_HOME` defaults to `...\AppData\Local\nvm`. Contains `nvm-windows` itself and its installs.
+
+Some users report confusion because the symlink cannot point to `C:\Program Files\nodejs`.
+
+`NVM_DIR` is `$HOME/.nvm`.
+
+##### Provides `nvm debug` to debug `PATH` issues.
+
+We've considered similar for `dotnetup`.
+
+##### Command Space
+
+`dotnetup use` makes less sense since the `dotnet` executable is a multiplexing system.
+To make something similar, we would either need to write into the `global.json` file or create a separate folder with only the specific `sdk` or `runtime` designed.
+
+The experience for other commands such as `install` is quite similar, but instead tries to replicate the `NuGet` and `workload` existing terminology.
+
+#### Unix (macOS/Linux)
+
+##### Shell Integration
+
+`nvm` is implemented as a shell function sourced into the user's shell profile (`.bashrc`, `.zshrc`, etc.). This approach allows `nvm use` to modify the current shell's `PATH` directly without spawning a subshell. The tradeoff is that `nvm` must be re-sourced in each new terminal session.
+
+For `dotnetup`, we plan to take a similar approach: set `DOTNET_ROOT` and prepend the install location to `PATH` in the shell profile.
+We can modify the profile with users consent during the initial walkthrough.
+
+##### Installation Location
+
+`nvm` installs all Node versions under `NVM_DIR` which is `$HOME/.nvm` with each version in its own subdirectory (e.g., `~/.nvm/versions/node/v20.10.0/`).
+
+`dotnetup` will follow a similar pattern with installs under a user-local directory. The .NET SDK's existing layout with `sdk/`, `shared/`, and `packs/` directories naturally supports multiple versions side-by-side.
+
+##### Version Resolution
+
+`nvm` resolves versions via:
+1. Explicit `nvm use <version>` commands that modify `PATH`
+2. `.nvmrc` files in the current directory (requires manual `nvm use` or shell hooks)
+3. A default alias set via `nvm alias default`
+
+`dotnetup` benefits from .NET's existing `global.json` mechanism, which the `dotnet` muxer reads automatically. This is closer to rustup's behavior where version resolution happens transparently without explicit shell commands.
+
+##### Package Manager Coexistence
+
+On Linux, system package managers (`apt`, `dnf`, etc) may install Node.js to `/usr/bin/node`. `nvm` avoids conflicts by placing its Node versions earlier in `PATH` when activated.
+
+For .NET, distro packages typically install to `/usr/share/dotnet` with `/usr/bin/dotnet` as a symlink. `dotnetup` will need to handle this by:
+1. Setting `DOTNET_ROOT` to the user-local hive
+2. Ensuring the user-local `dotnet` appears before `/usr/bin` in `PATH`
+3. Potentially warning users when a system install is detected
+
+If `dotnetup` is successful we want to consider working with our package manager partners.
+A big win for this would be to enable acquisition of non-`100` band .NET SDKs on Linux.
+
+##### Self-Contained Design
+
+`nvm` is a collection of shell scripts that must be sourced. Updates suggest using `nvm upgrade`, (on `nvm-windows`), or officially the install script or pulling the git repository.
+
+`dotnetup` will be a Native AOT compiled binary, making it fully self-contained with no runtime dependencies. This simplifies distribution and enables proper self-update functionality similar to rustup.
+We must ensure we build with a proper cross-build container for older Linux versions.
+https://github.com/dotnet/sdk/issues/51585
+
 ### Deep Dive: rustup (Rust)
 
 **Historical Context:**
