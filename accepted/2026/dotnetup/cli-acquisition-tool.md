@@ -276,7 +276,7 @@ We cannot ignore `PATH` issues on Windows. That should be covered elsewhere - se
 `NVM_SYMLINK` is used because it enables to `nvm use` to apply to all console windows and can persist upon reboots. However, when running `where npm`, nothing is returned.
 
 This is harder for `dotnetup` because it requires `dotnet` to not be on the `PATH`, or for the `symlink` version to win over the `dotnet` on the `PATH`.
-We updated the MSI installers to not modify the `PATH` upon update, but that faced issues and got rolled back. It is still worth exploring.
+We updated the MSI installers to not modify the `PATH` upon update, but that faced issues and got rolled back.
 
 Hive Locations:
 The installation location of nvm is `%APPDATA%\nvm` which is a user-based hive containing multiple versions.
