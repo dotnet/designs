@@ -270,7 +270,7 @@ The Setup does this via a walkthrough dialog (UI), and asks for your permission 
 
 In our discussions for `dotnetup`, we decided something similar, where the walkthrough when you first launch `dotnetup` will try to install the admin-hive installs as local installs into the `dotnetup` hive.
 
-We cannot ignore `PATH` issues on Windows. That should be covered elsewhere - see https://github.com/dotnet/designs/tree/dnvm-e2e-experience/proposed for an older design on this.
+We cannot ignore `PATH` issues on Windows. That should be covered elsewhere - see https://github.com/dotnet/designs/blob/dnvm-e2e-experience/proposed/dotnet-bootstrapper/dotnet-bootstrapper-path.md for an older design on this.
 
 ######  Symlink Technology Enables Shell Updates
 `NVM_SYMLINK` is used because it enables to `nvm use` to apply to all console windows and can persist upon reboots. However, when running `where npm`, nothing is returned.
