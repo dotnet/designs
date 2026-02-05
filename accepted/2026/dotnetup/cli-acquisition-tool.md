@@ -8,8 +8,8 @@
 - [Milestones](#milestones)
   - [Proof of Concept](#proof-of-concept)
   - [Internal Preview](#internal-preview)
-  - [Public Preview](#public-preview)
-  - [GA](#ga)
+  - [Experimental Public Preview](#experimental-public-preview)
+  - [Productization](#productization)
 - [Other Concerns](#other-concerns)
   - [Aspire](#aspire)
   - [VS Project System](#vs-project-system)
@@ -184,6 +184,246 @@ This command will check documented, signed release manifests for `dnup` and down
 Provenance and signature validation of the new binary will also happen to ensure the content is as expected.
 This update capability should be able to be triggered manually or on an automatic cadence (e.g. every execution, once a day, etc.)
 
+## Ecosystem Context
+
+### Key Observations from Other Ecosystems
+*	**npm, Rust, Python, Maven/Gradle:** Strong preference for per-user installs; admin installs are rare.
+*	**Go and Java:** Language runtimes often installed centrally, but developers increasingly use version managers or user-scoped installs to avoid admin rights.
+*	**PATH-based discovery** is universal across ecosystems.
+*	**Isolation mechanisms** (virtual environments, local installs) are highly valued for avoiding dependency conflicts.
+
+### Multi-Ecosystem Version Managers
+Developers increasingly use unified version managers that work across multiple language ecosystems:
+*	**asdf** - Older, established tool that manages versions for dozens of languages and tools (Node.js, Python, Ruby, Go, etc.)
+*	**mise-en-place (mise)** - Newer, faster alternative to asdf with broader tool support including Android/iOS tooling, CLI tools, and development utilities
+*	**Common patterns** - These tools provide consistent commands (`install`, `use`, `list`, etc.) and workspace-local version pinning across all supported ecosystems
+
+Developers reach for these tools to have **one unified experience** for managing all their various development dependencies rather than learning ecosystem-specific tools. This trend suggests strong demand for consistent tooling patterns across languages.
+
+### Customer preference
+*	Developers overwhelmingly prefer **non-admin installs** for flexibility and speed.
+*	Enterprises may still require **central installs**, so keep that as an option.
+*	PATH-based discovery is expected; avoid custom mechanisms.
+
+| Ecosystem | Default Install | Admin Required? |
+|-----------|----------------|-----------------|
+| npm | Per-user | No |
+| Rust | Per-user | No |
+| Python | Per-user / venv | No |
+| Go | Mixed | Sometimes |
+| Java | Mixed | Sometimes |
+| .NET (Proposed) | Per-user | No |
+
+### Deep Dive: nvm (Node.js)
+
+**Historical Context:**
+
+Early Node.js installations followed the traditional Unix model of system-wide package manager installs. Developers would install Node.js via `apt`, `yum`, or `brew`, which placed binaries in system directories like `/usr/local/bin`. When developers then ran `npm install -g` to install global packages, npm would attempt to write to system directories, triggering `EACCES` permission errors on Unix systems. The common workaround of using `sudo npm install -g` created even worse problems: files would be owned by root, causing cascading permission issues, and running third-party code with elevated privileges created security concerns.
+
+Tim Caswell created nvm (Node Version Manager) in 2011 to fundamentally solve these problems by installing Node.js per-user in `~/.nvm`. This approach eliminated permission issues entirely and had the added benefit of enabling easy switching between Node.js versions. The official npm documentation now recommends nvm as the primary solution for permission issues, marking a complete shift from system-wide to user-local installations in the Node.js ecosystem.
+
+**Key Design Principles:**
+
+* All Node versions install to `~/.nvm/versions/node/`
+* Global npm packages are scoped per-Node-version, preventing version conflicts
+* No admin rights required for any operation
+* Per-project version pinning via `.nvmrc` file containing a version string
+* Shell integration allows `nvm use` to modify the current shell's PATH
+
+**Command Reference:**
+
+| Task | Command |
+|------|---------|
+| Install latest LTS | `nvm install --lts` |
+| Install specific version | `nvm install 20.10.0` |
+| Install named LTS | `nvm install lts/iron` |
+| List available versions | `nvm ls-remote` |
+| Use version in current shell | `nvm use 20.10.0` |
+| Set permanent default | `nvm alias default 20.10.0` |
+| Upgrade + migrate packages | `nvm install --lts --reinstall-packages-from=$(nvm current)` |
+| Per-project pinning | `.nvmrc` file with version, then `nvm use` |
+
+### Comparison: `nvm` and `dotnetup`
+
+#### Windows
+
+##### `nvm`
+
+`nvm` chose to not support windows at all. `nvm` is a `POSIX` shell based tool.
+[nvm windows statement](https://github.com/nvm-sh/nvm#:~:text=Note%3A%20nvm%20also%20supports%20Windows%20in%20some%20cases.%20It%20should%20work%20through%20WSL%20(Windows%20Subsystem%20for%20Linux)%20depending%20on%20the%20version%20of%20WSL.%20It%20should%20also%20work%20with%20GitBash%20(MSYS)%20or%20Cygwin.%20Otherwise%2C%20for%20Windows%2C%20a%20few%20alternatives%20exist%2C%20which%20are%20neither%20supported%20nor%20developed%20by%20us%3A)
+
+It can thus ignore Windows issues with elevation, the `PATH`, and conflicting installs.
+We considered doing this with `dotnetup`, but Windows comprises a large cohort of current .NET users.
+
+`nvm` suggests `nvm-windows` as the first, yet unsupported/unofficial option. `nvm-windows` appears to be the most frequently used on Windows, so we investigate below.
+
+##### `nvm-windows`
+
+###### Admin Install Handling
+`nvm-windows` setup dialog (UI) and user instructions on the `readme.md` suggest you uninstall all admin installations to prevent `PATH` issues.
+
+`nvm-windows` does not guarantee proper functionality with those installs. That is harder for `dotnetup` because `Visual Studio` is directly tied to its ecosystem.
+
+`nvm-windows` does, however, copy admin installations into the `nvm root`, in an attempt to not break existing tooling on the box.
+
+The Setup does this via a walkthrough dialog (UI), and asks for your permission to do so. The default is to do so.
+
+In our discussions for `dotnetup`, we decided something similar, where the walkthrough when you first launch `dotnetup` will try to install the admin-hive installs as local installs into the `dotnetup` hive.
+
+We cannot ignore `PATH` issues on Windows. That should be covered elsewhere - see https://github.com/dotnet/designs/blob/dnvm-e2e-experience/proposed/dotnet-bootstrapper/dotnet-bootstrapper-path.md for an older design on this.
+
+######  Symlink Technology Enables Shell Updates
+`NVM_SYMLINK` is used because it enables to `nvm use` to apply to all console windows and can persist upon reboots. However, when running `where npm`, nothing is returned.
+
+This is harder for `dotnetup` because it requires `dotnet` to not be on the `PATH`, or for the `symlink` version to win over the `dotnet` on the `PATH`.
+We updated the MSI installers to not modify the `PATH` upon update, but that faced issues and got rolled back.
+
+Hive Locations:
+The installation location of nvm is `%APPDATA%\nvm` which is a user-based hive containing multiple versions.
+The default installation hive is based off of `NVM_SYMLINK`, which contains the location of the symlink file. That symlink is added to the `PATH` behind `NVM_HOME`.
+
+`%APPDATA%\Roaming\npm` contains globally installed tools is above on the PATH and is not part of `nvm`.
+
+`NVM_SYMLINK` defaults to `C:\nvm4w\node` -> `nvm use` points it to `...\AppData\Local\nvm\{version}` which contains the `nvm` folder.
+`NVM_HOME` defaults to `...\AppData\Local\nvm`. Contains `nvm-windows` itself and its installs.
+
+Some users report confusion because the symlink cannot point to `C:\Program Files\nodejs`.
+
+`NVM_DIR` is `$HOME/.nvm`.
+
+##### Provides `nvm debug` to debug `PATH` issues.
+
+We've considered similar for `dotnetup`.
+
+##### Command Space
+
+`dotnetup use` makes less sense since the `dotnet` executable is a multiplexing system.
+To make something similar, we would either need to write into the `global.json` file or create a separate folder with only the specific `sdk` or `runtime` designed.
+
+The experience for other commands such as `install` is quite similar, but instead tries to replicate the `NuGet` and `workload` existing terminology.
+
+#### Unix (macOS/Linux)
+
+##### Shell Integration
+
+`nvm` is implemented as a shell function sourced into the user's shell profile (`.bashrc`, `.zshrc`, etc.). This approach allows `nvm use` to modify the current shell's `PATH` directly without spawning a subshell. The tradeoff is that `nvm` must be re-sourced in each new terminal session.
+
+For `dotnetup`, we plan to take a similar approach: set `DOTNET_ROOT` and prepend the install location to `PATH` in the shell profile.
+We can modify the profile with users consent during the initial walkthrough.
+
+##### Installation Location
+
+`nvm` installs all Node versions under `NVM_DIR` which is `$HOME/.nvm` with each version in its own subdirectory (e.g., `~/.nvm/versions/node/v20.10.0/`).
+
+`dotnetup` will follow a similar pattern with installs under a user-local directory. The .NET SDK's existing layout with `sdk/`, `shared/`, and `packs/` directories naturally supports multiple versions side-by-side.
+
+##### Version Resolution
+
+`nvm` resolves versions via:
+1. Explicit `nvm use <version>` commands that modify `PATH`
+2. `.nvmrc` files in the current directory (requires manual `nvm use` or shell hooks)
+3. A default alias set via `nvm alias default`
+
+`dotnetup` benefits from .NET's existing `global.json` mechanism, which the `dotnet` muxer reads automatically. This is closer to rustup's behavior where version resolution happens transparently without explicit shell commands.
+
+##### Package Manager Coexistence
+
+On Linux, system package managers (`apt`, `dnf`, etc) may install Node.js to `/usr/bin/node`. `nvm` avoids conflicts by placing its Node versions earlier in `PATH` when activated.
+
+For .NET, distro packages typically install to `/usr/share/dotnet` with `/usr/bin/dotnet` as a symlink. `dotnetup` will need to handle this by:
+1. Setting `DOTNET_ROOT` to the user-local hive
+2. Ensuring the user-local `dotnet` appears before `/usr/bin` in `PATH`
+3. Potentially warning users when a system install is detected
+
+If `dotnetup` is successful we want to consider working with our package manager partners.
+A big win for this would be to enable acquisition of non-`100` band .NET SDKs on Linux.
+
+##### Self-Contained Design
+
+`nvm` is a collection of shell scripts that must be sourced. Updates suggest using `nvm upgrade`, (on `nvm-windows`), or officially the install script or pulling the git repository.
+
+`dotnetup` will be a Native AOT compiled binary, making it fully self-contained with no runtime dependencies. This simplifies distribution and enables proper self-update functionality similar to rustup.
+We must ensure we build with a proper cross-build container for older Linux versions.
+https://github.com/dotnet/sdk/issues/51585
+
+### Deep Dive: rustup (Rust)
+
+**Historical Context:**
+
+Brian Anderson created multirust in 2014 as a shell script for managing multiple Rust toolchains. At the time, Rust was pre-1.0 and developers needed to frequently switch between stable, beta, and nightly channels to test new features and ensure compatibility. multirust was rewritten in Rust as rustup in 2016 and moved under official Rust governance, becoming the recommended installation method.
+
+Unlike Node.js's evolution from system-wide to user-local, Rust designed for user-local installation (`~/.rustup`, `~/.cargo`) as a core principle from day one. The Rust team learned from other ecosystems' permission problems and made rustup the canonical way to install Rust, even directing users from the main Rust website to use it.
+
+**Key Design Principles:**
+
+* Toolchains install to `~/.rustup/toolchains/`
+* No root/admin needed for any operation
+* Per-directory overrides via `rustup override set`
+* Per-project pinning via `rust-toolchain.toml` file
+* **Killer feature**: Running `cargo build` with a `rust-toolchain.toml` auto-installs the required toolchain without any manual intervention
+* Self-contained design allows rustup to update itself via `rustup self update`
+
+**Command Reference:**
+
+| Task | Command |
+|------|---------|
+| Install stable | `rustup install stable` |
+| Install nightly | `rustup install nightly` |
+| Install specific version | `rustup install 1.75.0` |
+| Install specific nightly | `rustup install nightly-2024-01-15` |
+| Update all toolchains | `rustup update` |
+| Update specific channel | `rustup update stable` |
+| Self-update | `rustup self update` |
+| Set default toolchain | `rustup default stable` |
+| Override for directory | `rustup override set nightly` |
+| One-off command | `cargo +nightly build` |
+| Per-project pinning | `rust-toolchain.toml` file (auto-installs on first use) |
+
+### Command Comparison: Ecosystem Tools
+
+This table maps common version management tasks across nvm, rustup, and the proposed dotnetup:
+
+| Task | nvm (Node) | rustup (Rust) | dotnetup (Proposed) |
+|------|-----------|---------------|---------------------|
+| Install latest stable/LTS | `nvm install --lts` | `rustup install stable` | `dnup install --lts` |
+| Install specific version | `nvm install 20.10.0` | `rustup install 1.75.0` | `dnup install 8.0.100` |
+| Install preview/nightly | `nvm install node` | `rustup install nightly` | `dnup install preview` |
+| Update all | N/A (install new) | `rustup update` | `dnup update` |
+| Check for updates | `nvm ls-remote` | `rustup update` (reports) | `dnup update --check` |
+| List installed | `nvm ls` | `rustup toolchain list` | `dnup list` |
+| Use in current shell | `nvm use 20.10.0` | N/A | `dnup use 8.0` |
+| Set permanent default | `nvm alias default 20` | `rustup default stable` | `dnup default 8.0` |
+| Per-project pin file | `.nvmrc` | `rust-toolchain.toml` | `global.json` |
+| Auto-install on project entry | Manual (shell hook) | **Automatic** | Should be automatic |
+| One-off command | `nvm exec 18 node app.js` | `cargo +1.75 build` | TBD |
+| Self-update | N/A (git pull) | `rustup self update` | `dnup update --self` |
+
+### UX Lessons for dotnetup
+
+**From nvm:**
+
+* Permission problems drove tool adoption - solving real daily pain makes a tool indispensable
+* Per-version isolation of global packages prevents subtle breakage when switching versions
+* Community tools can become official recommendations when they solve fundamental problems better than official solutions
+
+**From rustup:**
+
+* Design for multi-toolchain management from the start rather than bolting it on later
+* Auto-install on project entry (via `rust-toolchain.toml`) is a killer feature that .NET's `global.json` lacks
+* Self-contained user installs enable rapid iteration without admin tickets or IT approval
+
+**From both:**
+
+* Logical version aliases (`--lts`, `stable`, `nightly`) are expected alongside exact versions
+* Per-project configuration files are universal across modern development ecosystems
+* Single update command that handles everything (all toolchains, channels, etc.) is highly valued by users
+
+**Key gap for dotnetup to address:**
+
+* Unlike rustup, .NET's `global.json` pins versions but doesn't auto-install missing SDKs
+* dotnetup should detect `global.json`, check if the specified SDK is installed, and auto-install it (or at minimum prompt the user)
+* This would match rustup's workflow and eliminate the common "SDK version not found" errors that frustrate new contributors
+
 ## Q & A
 
 ### How will I get `dnup`?
@@ -247,12 +487,24 @@ This is a large effort, and there are different areas of the work that will prog
   * at this phase we'll be able to do more lifecycle management, onboarding, checking for updates
   * we may be missing crypto validation or other security features that would prevent a general public preview
   * this is the phase where we should receive core end user feedback and iterate on the main UX
-* **Public Preview**
-  * at this phase we'll have all of the security related requirements and will be ready for broad usage
-* **General Availability**
-  * fit-and-finish work, documentation, telemetry, etc will all be present before we reach this milestone
+* **Experimental Public Preview**
+  * at this phase we'll have all of the security related requirements implemented and will be ready for broad usage of the tool
+  * we'll have usage telemetry to help us make go/no-go decisions, in addition to soliciting end user feedback via surveys and direct outreach
+  * branding and blogposts will make it clear that
+    * this is an _experiment_ intended to address reported user pain around SDK/Runtime management
+    * this works on all platforms, but there are caveats to seamless usage on environments that have global .NET installations, especially Windows with Visual Studio installed
+    * feedback from users will determine the next steps for the tool
+* **Productization**
+  * fit-and-finish work, documentation, etc will all be present before we reach this milestone
   * blocking feedback from earlier previews will be addressed
     * if feedback from public preview is overwhelmingly negative we may end up stopping the effort overall in favor of other approaches to solving the acquisition/management problems
+    * if feedback is positive about the functionality but negative about the separate tool, we may consider folding it into the dotnet CLI
+      * this would likely have other layering implications - how do you bootstrap an install of .NET, can admin installs of .NET also self-manage, etc
+    * if feedback is positive about the separate tool and the functionality we can move to productization and deeper integration into other tools/environments like:
+      * dotnet CLI
+      * VS/DevKit IDE experiences
+      * CI/CD runner setup actions
+  * If we go ahead, then the remaining SDL requirements that haven't already been implemented must be done by this stage
 
 More details on these proposed milestones will likely vary, but may look like:
 
@@ -268,17 +520,17 @@ More details on these proposed milestones will likely vary, but may look like:
 * can check for updates to installed SDKs via `dnup update --check` or similar
 * installs are tracked by `dnup` for future management scenarios
 
-### Public Preview
+### Experimental Public Preview
 
 * settle on the name for the tool
 * uninstall of installed SDK
 * signature validation of manifests and downloaded artifacts
 * interactive UX, prompting, progress
+* telemetry is implemented and documented
 
-### GA
+### Productization
 
 * self-update of the `dnup` binary is implement
-* telemetry is implemented and documented
 * public documentation is created
 * public download url/script/mechanism is up
 * the `dnup update` command is fully implemented
