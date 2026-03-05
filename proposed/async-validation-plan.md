@@ -185,7 +185,7 @@ namespace System.ComponentModel.DataAnnotations;
 public interface IAsyncValidatableObject : IValidatableObject
 {
     IEnumerable<ValidationResult> IValidatableObject.Validate(ValidationContext validationContext) =>
-        throw new NotSupportedException(
+        throw new NotSupportedException("This object supports only asynchronous validation. Use the async validation APIs.");
 
     IAsyncEnumerable<ValidationResult> ValidateAsync(
         ValidationContext validationContext,
