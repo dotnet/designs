@@ -94,20 +94,6 @@ public abstract class AsyncValidationAttribute : ValidationAttribute
 }
 ```
 
-And on the base `ValidationAttribute`, add the async public entry point + virtual method with default behavior:
-
-```csharp
-// On ValidationAttribute itself:
-
-// Public async entry point (counterpart to GetValidationResult)
-public ValueTask<ValidationResult?> GetValidationResultAsync(
-    object? value,
-    ValidationContext validationContext,
-    CancellationToken cancellationToken)
-{
-    // Calls IsValidAsync, ensures error message is populated (mirrors GetValidationResult logic)
-}
-```
 
 **Key behaviors:**
 | Attribute Type | Sync Path (`GetValidationResult`) | Async Path (`GetValidationResultAsync`) |
