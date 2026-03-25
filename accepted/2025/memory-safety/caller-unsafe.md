@@ -156,7 +156,9 @@ According to the above definition, there are two valid constructors: the explici
 
 These data races are considered fundamental to the .NET type system. The safe subset of C# does not protect against them.
 
-- Resource lifetime. Some code patterns, like object pools, require manual lifetime management. When this management is done incorrectly bad behaviors can occur, including improper memory reuse. Notably, none of those behaviors include invalid memory access, although it can include symptoms that look like memory corruption. Because invalid memory access is not possible, this is considered safe.
+- Resource lifetime. Some code patterns, like object pools, require manual lifetime management. When this management is done incorrectly bad behaviors can occur, including improper memory reuse. Notably, none of those behaviors include invalid memory access, although it can include symptoms that look like memory corruption. Because invalid memory access is not possible, this is considered safe. Any resource lifetime issues that can cause invalid memory access _are_ considered unsafe.
+
+- Reflection. Reflection is a known hole in the current unsafe model. Reflection can be used to call unsafe methods or access unsafe properties without the reflection code containing any unsafe blocks. This may be addressed a future proposal.
 
 ### Evolution
 
