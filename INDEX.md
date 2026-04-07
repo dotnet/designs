@@ -106,6 +106,7 @@ Use update-index to regenerate it:
 |Year|Title|Owners|
 |----|-----|------|
 |  | [Add ability to embed install location options in apphost](proposed/apphost-embed-install-location.md) |  |
+|  | [In-proc debugger load hook](proposed/in-proc-debugger-load.md) | [Aaron Robinson](https://github.com/AaronRobinsonMSFT), [Steve Pfister](https://github.com/steveisok) |
 |  | [Rate limits](proposed/rate-limit.md) | [John Luo](https://github.com/juntaoluo), [Sourabh Shirhatti](https://github.com/shirhatti) |
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
