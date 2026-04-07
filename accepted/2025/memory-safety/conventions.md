@@ -1,7 +1,7 @@
 
 # Unsafe coding conventions
 
-Outside of the language destails, there's a question of recommendations and conventions in how to use the feature, particularly the scope of unsafe blocks.
+Outside of the language details, there's a question of recommendations and conventions in how to use the feature, particularly the scope of unsafe blocks.
 
 We can split the annotations into two categories:
 * Unsafe member annotations
