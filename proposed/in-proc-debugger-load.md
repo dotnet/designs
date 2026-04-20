@@ -2,7 +2,7 @@
 
 **Owner** [Aaron Robinson](https://github.com/AaronRobinsonMSFT) | [Steve Pfister](https://github.com/steveisok)
 
-Mobile and other non-desktop .NET hosts need a supported way to load native debugger support after runtime initialization but before the first managed instruction executes. This proposal introduces a narrow, host-controlled in-proc debugger load hook for that purpose.
+Mobile and other non-desktop .NET hosts need a supported way to run the debugger in-proc. On these platforms, the traditional model of launching a separate debugger process is not viable, so the host needs a supported way to load the native debugger component before the first managed instruction executes. This proposal introduces a narrow, host-controlled in-proc debugger load hook for that purpose.
 
 The hook is intended for Android and iOS debugging scenarios and similar host-owned diagnostics integrations. It is deliberately not a general-purpose native extensibility point.
 
@@ -10,23 +10,23 @@ The hook is intended for Android and iOS debugging scenarios and similar host-ow
 
 ### Android and iOS debugging
 
-Tooling that launches a mobile debug session needs a supported way to load a native debugger support library after runtime initialization but before the first managed code executes.
+Tooling that launches a mobile debug session needs a supported way to load a native debugger support library before the first managed code executes.
 
-With the proposed design, tooling sets a debugger-specific, host-recognized setting. The host resolves the specified library and loads it during startup so the native component can perform its debugger-specific initialization before managed entrypoint execution.
+With the proposed design, tooling sets `DOTNET_INPROC_DEBUGGER` for supported debug launches. The host resolves the specified library and loads it during startup so the native component can perform its debugger-specific initialization before managed entrypoint execution.
 
 ```text
-DOTNET_ANDROID_INPROC_DEBUGGER=libdebugger.so
+DOTNET_INPROC_DEBUGGER=libdebugger.so
 ```
 
-Conceptually, the host flow becomes:
+Conceptually, one possible host flow is:
 
 ```c
 coreclr_initialize(...);
-dlopen(resolve_debugger_hook(getenv("DOTNET_ANDROID_INPROC_DEBUGGER")), RTLD_NOW);
+dlopen(resolve_debugger_hook(getenv("DOTNET_INPROC_DEBUGGER")), RTLD_NOW);
 coreclr_execute_assembly(...);
 ```
 
-The exact environment variable name is still under discussion. This document uses `DOTNET_INPROC_DEBUGGER_HOOK` as a conceptual name for the feature and `DOTNET_ANDROID_INPROC_DEBUGGER` / `DOTNET_IOS_INPROC_DEBUGGER` as examples of host-specific variants.
+The important requirement is that the load occurs before `coreclr_execute_assembly(...)` starts managed code. The exact ordering relative to `coreclr_initialize(...)` is a host implementation detail.
 
 ### Standard app launch
 
@@ -46,6 +46,7 @@ Hosts that need early debugger loading can opt into this mechanism. Hosts that d
 - Allow hosts to define platform-appropriate path semantics, such as bundle-relative resolution on iOS.
 - Avoid introducing a new, broad CoreCLR-level unmanaged startup extensibility surface.
 - Make failures explicit when a requested debugger library cannot be loaded.
+- Keep the initial design limited to loading exactly one library.
 - Enable cleanup of legacy profiler-based bootstrapping on non-desktop targets.
 
 ### Non-Goals
@@ -65,16 +66,16 @@ Hosts that need early debugger loading can opt into this mechanism. Hosts that d
 
 ### Background
 
-Some current mobile debugging flows reuse profiler-related startup plumbing as a practical way to load a native binary between `coreclr_initialize` and `coreclr_execute_assembly`. That was a convenient implementation detail, not the intended contract. The real requirement is a supported way for participating hosts to load an in-proc debugger component during startup.
+Some current mobile debugging flows reuse profiler-related startup plumbing as a practical way to load a native binary during startup. That was a convenient implementation detail, not the intended contract. The actual motivation is that mobile environments cannot depend on the usual out-of-proc debugger architecture (`mscordbi`/DAC plus an external debugger process). For .NET 11, the debugger needs to run in-proc instead, and the host needs a supported way to load that native component before managed code starts.
 
 ### Proposed model
 
 The replacement should be a host-owned, debugger-specific load hook:
 
-1. A host opts into recognizing a debugger hook environment variable.
+1. A host opts into recognizing `DOTNET_INPROC_DEBUGGER`.
 2. Tooling sets that variable only for supported debug launches.
-3. The host resolves the value to a native library location using host-defined rules.
-4. The host loads the library after runtime initialization and before managed entrypoint execution.
+3. The host resolves the value to a single native library location using host-defined rules.
+4. The host loads the library before managed entrypoint execution.
 5. If the library cannot be loaded, the host reports a clear error and fails the debug launch rather than silently continuing.
 
 This keeps the behavior narrow and directly aligned with the only scenario we need to preserve: early loading of an in-proc debugger component.
@@ -89,16 +90,7 @@ The hook is intended to support debugger and diagnostics components that must be
 
 ### Naming and scope
 
-Several naming shapes were discussed:
-
-- `DOTNET_HOST_LOAD_UNMANAGED`
-- `DOTNET_ANDROID_HOST_LOAD_UNMANAGED`
-- `DOTNET_IOS_HOST_LOAD_UNMANAGED`
-- `DOTNET_INPROC_DEBUGGER`
-- `DOTNET_INPROC_DEBUGGER_HOOK`
-- `DOTNET_INPROC_DIAGNOSTICS_HOOK`
-
-The preferred direction is to emphasize that this is a debugger or diagnostics hook, not a general-purpose extension point. A platform-specific or otherwise host-scoped name is preferable to a broadly documented runtime contract.
+This proposal uses `DOTNET_INPROC_DEBUGGER` as the environment variable name. Alternative names were considered, but this one is explicit about the intended purpose and avoids presenting the feature as a general-purpose native extension point.
 
 ### Host-specific behavior
 
@@ -122,28 +114,13 @@ If future evidence shows that multiple runtimes or hosts need the same capabilit
 
 ### Security and supportability
 
-This proposal does not meaningfully change the trust model because environment variables are already treated as trusted process input. The key supportability concern is not security but accidentally creating a new public extension surface. For that reason, the hook should be explicitly described as intended for debugger or diagnostics tooling on participating hosts only.
-
-### Transition plan
-
-1. Introduce the host-controlled debugger hook on the mobile hosts that need it.
-2. Update debugger tooling to use the new mechanism.
-3. Retire the older profiler-based bootstrapping path once the supported debugging scenarios no longer depend on it.
-
-Temporary compatibility behavior during the transition can be host-specific, but the long-term direction should be the debugger hook described here rather than indefinite dual support.
-
-### Open issues
-
-- Final environment variable name and whether it should be shared or platform-specific.
-- Whether the initial design should support exactly one library or a delimited list.
-- Whether Android should align with iOS on bundle-relative or host-relative resolution semantics.
-- How much of this behavior should be documented publicly versus maintained as host-specific implementation detail.
+This proposal does not meaningfully change the trust model because environment variables are already treated as trusted process input. This feature should be treated as public because tooling will intentionally depend on it, but it should still be documented and supported as a narrowly scoped debugger hook on participating hosts rather than a general plugin model for arbitrary native code.
 
 ## Q & A
 
 ### Why is this hook needed?
 
-Because mobile debugging needs a supported way to load native debugger code before the first managed instruction executes. This hook makes that requirement explicit and gives hosts a purpose-built mechanism for it.
+Because mobile debugging on these platforms cannot rely on the traditional separate debugger process model. This hook makes the in-proc requirement explicit and gives hosts a purpose-built mechanism to load the native debugger before the first managed instruction executes.
 
 ### Why not make this a general native extension mechanism?
 
@@ -155,4 +132,4 @@ A small amount of current startup behavior reuses profiler plumbing to achieve e
 
 ### Is the hook public and documented?
 
-It should be documented enough for maintainers and tooling teams to rely on it intentionally, but it should remain clearly scoped as a debugger or diagnostics hook on participating hosts rather than a new public plugin model for arbitrary native code.
+Yes. It should be publicly documented at an appropriate level so maintainers and tooling teams can rely on it intentionally. This design doc, plus a pointer from the relevant public docs, should be sufficient while still keeping the feature clearly scoped to debugger and diagnostics scenarios.
