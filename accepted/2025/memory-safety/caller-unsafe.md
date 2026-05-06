@@ -16,6 +16,7 @@ The overall goal is to ensure .NET code is "valid" with respect to certain prope
 
 * Memory safety
 * No access to uninitialized memory
+* The [.NET Memory Model](https://github.com/dotnet/runtime/blob/main/docs/design/specs/Memory-model.md)
 
 The complete definition of these properties is in [Global invariants](#global-invariants).
 
