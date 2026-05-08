@@ -139,7 +139,7 @@ These properties are guaranteed by "safe" code through a combination of compiler
 
 The .NET memory model contains guarantees which must not be violated by unsafe code:
 
-* Managed references must always point to aligned data
+* Managed references must always be aligned
 
 ### Non-goals
 
