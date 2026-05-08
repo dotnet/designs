@@ -115,10 +115,11 @@ public sealed class RequiresUnsafeAttribute : System.Attribute
 
 ### Global invariants
 
-Two properties which should always hold in .NET programs are:
+Three properties which should always hold in .NET programs are:
 
 * Memory safety
 * No access to uninitialized memory
+* Alignment with the .NET Memory Model
 
 The "safe" subset of C# must guarantee these properties by construction. The unsafe subset cannot be guaranteed entirely by the system -- it needs external validation by the user or other tooling.
 
@@ -133,6 +134,12 @@ These properties are particularly important for security purposes. Any methods t
 These properties are guaranteed by "safe" code through a combination of compiler and .NET runtime enforcement. For `unsafe` code, these properties must be guaranteed by the programmer.
 
 `unsafe` members are used to identify the places that cannot be automatically checked by the compiler and runtime for validity. Inside unsafe blocks, the programmer is responsible for ensuring that all requirements of the unsafe code are met, and that all code outside the block will have validity properly enforced by the system.
+
+#### .NET Memory Model Alignment
+
+The .NET memory model contains guarantees which must not be violated by unsafe code:
+
+* Managed references must always point to aligned data
 
 ### Non-goals
 
