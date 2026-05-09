@@ -200,7 +200,7 @@ All P/Invoke methods are unsafe because they may compromise memory safety if the
 
 **SafeHandle, GCHandle, and other handle wrappers**
 
-Safe subset of these API must guarantee that safe code cannot operate on invalid handle. For example, `SafeHandle.Dispose` is safe and `SafeFileHandle(IntPtr handle, bool ownsHandle)` constructor is unsafe.
+Safe subset of these APIs must guarantee that safe code cannot operate on invalid handle. For example, `SafeHandle.Dispose` is safe and `SafeFileHandle(IntPtr handle, bool ownsHandle)` constructor is unsafe.
 
 **Alignment of managed references**
 
