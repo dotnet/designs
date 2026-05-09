@@ -133,6 +133,8 @@ These properties are guaranteed by "safe" code through a combination of compiler
 
 `unsafe` members are used to identify the places that cannot be automatically checked by the compiler and runtime for validity. Inside unsafe blocks, the programmer is responsible for ensuring that all requirements of the unsafe code are met, and that all code outside the block will have validity properly enforced by the system.
 
+The design of `unsafe` annotations for any given feature area must guarantee that these properties cannot be violated by "safe" code indirectly. For example, APIs that wrap OS handles must be designed such that safe code cannot cause the OS handle to become invalid without also causing the wrapper to become unusable. Otherwise, the safe code can corrupt the process state by manipulating arbitrary OS handles and violate memory safety.
+
 ### Non-goals
 
 The new definition of `unsafe` is centered around memory safety, specifically ensuring access to valid memory and avoiding memory corruption. There are some properties that may be desirable but are not covered by memory safety. This includes:
@@ -195,3 +197,11 @@ This language feature is unsafe if used in a `SkipLocalsInit` context because th
 **P/Invoke**
 
 All P/Invoke methods are unsafe because they may compromise memory safety if the callee function does not match the P/Invoke method specification.
+
+**SafeHandle, GCHandle, and other handle wrappers**
+
+Safe subset of these APIs must guarantee that safe code cannot operate on invalid handle. For example, `SafeHandle.Dispose` is safe and `SafeFileHandle(IntPtr handle, bool ownsHandle)` constructor is unsafe.
+
+**Alignment of managed references**
+
+Safe code must be prohibited from creating unaligned managed references. Managed refereces are often pinned as unmanaged pointers and passed to native code using C/C++ conventions. C/C++ requires that all pointers are properly aligned, the behavior is undefined otherwise and it can lead to memory safety violations.
