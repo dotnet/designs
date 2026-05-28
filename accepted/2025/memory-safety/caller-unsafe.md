@@ -156,6 +156,50 @@ According to the above definition, there are two valid constructors: the explici
 
 These data races are considered fundamental to the .NET type system. The safe subset of C# does not protect against them.
 
+Note that memory safety violations that occur _due to data races_ would be considered invalid and any code that can produce this result must be marked unsafe. Consider the following example:
+
+```C#
+public class NativeBuffer : IDisposable
+{
+    private unsafe byte* _ptr;
+    public int Length { get; }
+
+    public NativeBuffer(int length)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(length);
+        unsafe
+        {
+          _ptr = (byte*)NativeMemory.Alloc((nuint)length);
+        }
+        Length = length;
+    }
+
+    public byte ReadAt(int index)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Length);
+        unsafe
+        {
+            ObjectDisposedException.ThrowIf(_ptr is null, this);
+            // SAFETY: bounds checked above; null check just above; _ptr therefore points to Length bytes
+            return _ptr[index];
+        }
+    }
+
+    public void Dispose()
+    {
+        unsafe
+        {
+            // SAFETY: _ptr is null or was returned by NativeMemory.Alloc; Free accepts both
+            NativeMemory.Free(_ptr);
+            _ptr = null;
+        }
+    }
+}
+```
+
+The above code can produce memory safety violations in the presence of data races. Consider two threads, one that invokes `Dispose` and the other that invokes `ReadAt` simultaneously. If the first thread executes right between the `_ptr[index]` derefence, the dereference will be invalid (out of bounds/use after free). Both the `Dispose` method and `ReadAt` method would need to be marked `unsafe` to correctly communicate the requirement that they must not be executed concurrently, or the implementation would have to be rewritten to use synchronization.
+
 - Resource lifetime. Some code patterns, like object pools, require manual lifetime management. When this management is done incorrectly bad behaviors can occur, including improper memory reuse. Notably, none of those behaviors include invalid memory access, although it can include symptoms that look like memory corruption. Because invalid memory access is not possible, this is considered safe.
 
 ### Evolution
