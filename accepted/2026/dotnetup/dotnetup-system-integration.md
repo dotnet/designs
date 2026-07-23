@@ -159,8 +159,8 @@ change) removes it.
 This seems to lead to the following solution:
 
 - The `Program Files\dotnet` muxer (`dotnet.exe`) can be the one resolved via the `PATH`
-- The muxer supports a **user-scoped** environment variable that redirects its resolution to a
-  different dotnet hive.
+- The muxer supports an environment variable (which dotnetup would set as a user-scoped variable)
+  that redirects its resolution to a different dotnet hive.
 
 Concretely, the muxer would support the following environment variables:
 
@@ -301,7 +301,8 @@ runtime together rather than leaving the runtime behind.
 - **Non-Windows.** The goals are the same on macOS/Linux, but this proposal focuses on the
   Windows solution (likely the hardest). Phase 1 is Windows-specific and likely doesn't apply;
   Phase 2's redirect may or may not be the right approach there. The cross-platform design
-  remains to be worked out.
+  remains to be worked out.  We do propose that the Phase 2 muxer redirect changes be implemented
+  in a cross-platform way so they can be used from other OS's if need be.
 
 ## Appendix: prior art
 
