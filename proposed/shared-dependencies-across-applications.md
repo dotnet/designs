@@ -42,7 +42,7 @@ The host reads a `sharedDependencies` array in `runtimeconfig.json`. Each entry 
 
 ### Developer experience
 
-An app can reference a shared set so it compiles against the libraries without copying them into its output, and the build records the deployed `.deps.json` in the app's `sharedDependencies`. The shared set can be a project that aggregates the libraries to be shared.
+An app references a shared set so it compiles against the libraries without deploying them, and the build records the deployed `.deps.json` in the app's `sharedDependencies`. The shared set can be a project or package that aggregates the libraries to be shared.
 
 `App.csproj` (app):
 
@@ -59,10 +59,15 @@ An app can reference a shared set so it compiles against the libraries without c
                       SharedDependencyLocation="/opt/AppSuite.Shared/" />
   </ItemGroup>
 
-  <!-- SharedDependency item (emits the entry) + ProjectReference with Private=false (no copy-local) -->
+  <!-- SharedDependency item (emits the entry)
+       ProjectReference with Private=false (no copy-local)
+       or PackageReference with HostProvided=true (compile-only asset) -->
   <ItemGroup>
     <ProjectReference Include="../AppSuite.Utilities/AppSuite.Utilities.csproj" Private="false" />
     <SharedDependency Include="/opt/AppSuite.Utilities/AppSuite.Utilities.deps.json" />
+
+    <PackageReference Include="AppSuite.Extras" Version="1.0.0" HostProvided="true" />
+    <SharedDependency Include="/opt/AppSuite.Extras/AppSuite.Extras.deps.json" />
   </ItemGroup>
 </Project>
 ```
@@ -86,9 +91,12 @@ An app can reference a shared set so it compiles against the libraries without c
 - `SharedDependency` item points at a deployed `.deps.json` and emits the entry.
 - Publishing the shared set produces a layout with the dependency assemblies and a `deps.json`. That layout is deployed to the shared location and the `deps.json` is pointed at by `sharedDependencies`.
 
+This relies on existing or future functionality for marking a reference as external — compiled against but not deployed with the app. `Private="false"` (copy-local off) on a project reference exists today. `HostProvided="true"` on a package reference would come from a future NuGet feature for compile-only assets and audit ownership transfer to whoever deploys the set. That NuGet design is still in progress and not finalized. Support for both need not land together — project references alone are already valuable.
+
 ## Related
 
 - [dotnet/runtime#53834](https://github.com/dotnet/runtime/issues/53834) — Support deploying multiple exes as a single self-contained set
+- [dotnet/runtime#71282](https://github.com/dotnet/runtime/issues/71282) — Locally shared deployment
 - [`--additional-deps`/`DOTNET_ADDITIONAL_DEPS`](https://github.com/dotnet/runtime/blob/main/docs/design/features/additional-deps.md) — existing support for additional deps files via command line or environment variable
 - Not directly related, but in the space of configuring how dependencies can be laid out and found
     - [Configure .NET install search behavior](https://learn.microsoft.com/dotnet/core/deploying#configure-net-install-search-behavior) — existing configuration for how the apphost finds the .NET install
