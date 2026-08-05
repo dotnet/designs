@@ -194,6 +194,12 @@ For repositories with public-to-internal mirroring, branch topology must preserv
 
 This model needs validation with engineering systems owners before adoption.
 
+Concerns:
+
+- We would have two versions of the .1xx band shipping on the same day. One would be stable branded and one would be preview branded. That would then create 6 different feature combinations depending on the channel setting as well.
+  - Example: 11.0.103 would ship in VS stable and 11.0.1xx-preview.27053.4 would release in VS canary on Feb patch tuesday.
+  - Note: 11.0.1xx-preview.27053.4 versioning wouldn't work with workloads as is as we expect a preview version.
+
 ### Servicing safety rules
 
 In servicing trains:
