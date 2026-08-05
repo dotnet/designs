@@ -2,7 +2,7 @@
 
 **Owner** [marcpopMSFT](https://github.com/marcpopMSFT)
 
-Today, SDK feature bands, SDK tools, and Visual Studio are coupled in ways that is complex to manage and confusing for users.  The challenge with changing this is users can receive new features or behavior changes without intentionally opting in. This is especially problematic for managed environments and source build partners that prioritize stability. We propose a single SDK feature band strategy, combined with a global feature channel setting that all SDK-loaded components honor. This setting has three states: baseline, stable, and preview. New behavior is always disabled in baseline, and initially enabled only in preview.
+Today, SDK feature bands, SDK tools, and Visual Studio are coupled in ways that is complex to manage and confusing for users.  The challenge with changing this is users can receive new features or behavior changes without intentionally opting in. This is especially problematic for managed environments and source build partners that prioritize stability. We propose a single SDK feature band strategy, combined with a global feature channel setting that all SDK-loaded components honor. This setting has three states: baseline, stable, and preview. New behavior or new features should never show up in baseline. New features should initially be enabled only in preview. Stable is for features that have gone through some preview validation and make include some behavior changes or new warnings.
 
 ## Scenarios and User Experience
 
@@ -27,7 +27,7 @@ Outcome:
 - Behavior aligns with VS stable expectations.
 - Mid-cycle surprises are reduced.
 
-### Scenario 3: Canary/Insider users validate upcoming behavior
+### Scenario 3: Visual Studio Canary/Insider users validate upcoming behavior
 
 A developer in VS canary receives the public 11.0.1xx SDK build with preview branding. Their global channel is preview, so new behavior can be enabled early for validation.
 
@@ -36,6 +36,18 @@ Outcome:
 - Early adopter feedback happens before stable rollout.
 - Preview-only changes do not leak into stable/baseline channels by default.
 - Reduces the need to worry about the Insider behavior as it'll be the same as Canary
+
+### Scenario 4: VS Code user gets flexible feature control
+
+A developer using VS Code and the .NET SDK can choose their preferred feature channel to match their development needs. They default to stable for a balance of new features and stability. If they want maximum stability, they can set the environment variable to baseline. If they want to try cutting-edge features early, they can opt into preview.
+
+Outcome:
+
+- Stable channel is a sensible default for most developers.
+- Power users have direct control via environment variable configuration.
+- Independent of IDE choice; behavior is consistent across any editor using the SDK.
+- Easy to experiment with new features without waiting for broader SDK releases.
+- With each major release, VSCode will update the SDK installed to a new band resulting in a new baseline.
 
 ## Requirements
 
@@ -50,6 +62,7 @@ Outcome:
 - Align Visual Studio channel insertion with intended behavior channel semantics.
 - Keep .NET optional workload acquisition aligned to latest stable builds across VS channels.
 - Reduce branch management costs down to a single feature band sourced from two branches
+- Stable from major version N (eg .NET 11) will automatically be included in baseline of N+1 (eg .NET 12)
 
 ### Non-Goals
 
@@ -113,7 +126,7 @@ Precedence (highest to lowest):
 3. Host-computed default written by SDK startup
 4. SDK build-time default
 
-Global.json integration may be added later, but is not required for the initial design.
+global.json integration may be added later, but is not required for the initial design.
 
 Open questions: 
 
@@ -145,7 +158,7 @@ Proposed VS integration model:
 - Internal branch build:
   - Stable branding
   - Includes MSRC fixes and latest runtimes
-  - Insert into VS stable and oobstable
+  - Insert into VS stable and last servicing version. VS typically releases a new GA and a final release of the last minor version on the same day and we would update both.
   - Global channel default: stable
   - Preview behavior remains default-disabled; customer opt-in is allowed
 
@@ -235,3 +248,4 @@ No. Component-level flags can remain. This proposal adds a single, global compat
 
 1. Whether `DOTNET_SDK_FEATURE_CHANNEL` should be the only v1 control surface or whether a CLI switch should also ship in v1.
 2. Minimum schema for the machine-readable behavior manifest.
+3. Is there a change to the versioning schema we could do for the SDK? We could change to match runtime versioning but we sometimes have SDK hotfixes so it might be confusing to release an 11.0.108 that has 11.0.7 runtime in it.
