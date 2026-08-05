@@ -6,9 +6,9 @@ Today, SDK feature bands, SDK tools, and Visual Studio are coupled in ways that 
 
 ## Scenarios and User Experience
 
-### Scenario 1: Source build partner requires maximum stability
+### Scenario 1: Enterprise Source build partner requires maximum stability
 
-A source build partner consumes servicing builds and needs strict behavioral predictability. They configure the global channel to baseline. New features and behavior changes remain off by default across SDK, MSBuild, Roslyn, NuGet, MSTest, and other participating components. Today, these partners stay on the N.0.1xx feature band in order to prioritize stability.
+Some source build partners consume servicing builds and needs strict behavioral predictability. They configure the global channel to baseline. New features and behavior changes remain off by default across SDK, MSBuild, Roslyn, NuGet, MSTest, and other participating components. Today, these partners stay on the N.0.1xx feature band in order to prioritize stability.
 
 Outcome:
 
@@ -16,6 +16,7 @@ Outcome:
 - Existing behavior remains stable unless explicitly opted in.
 - Partner validation costs and risk are reduced.
 - Customers using source build SDKs can use the same SDK on multiple platforms with the same behavior with a simple environment variable
+- Source build partners can choose additional features through the stable channel and source build customers can even choose to try out previews which has been a long term ask.
 
 ### Scenario 2: Visual Studio stable users get curated, stable behavior
 
@@ -227,8 +228,11 @@ A binary model cannot represent baseline needs independently from mainstream sta
 
 Open questions:
 
-- Do we need an enfrocement bot enabled in every participating repo?
+- How do we enforce this in every contributing repo?
+  - PR review guidance as a minimum
+  - What other enforcement can we create?
 - Do we need the ability to dump all new features into a machine and human readable format for review and comparison against intent/docs/PRs?
+  - It'd be great to be able to tag issues/PRs on which release they are in as well.
 
 Unknowns to validate during review:
 
