@@ -178,27 +178,24 @@ No additional compatibility contract is required for workloads in this proposal.
 
 ### MSBuild and similar component branch flow
 
-For teams that need behavior alignment with VS stability (example: MSBuild engine):
+We will not ship two SDK/tooling versions in parallel for the same feature band.
 
-- Stable branch codeflow from internal branch for stable alignment.
-- Public flow for latest/preview innovation.
-- Explicit merge and promotion policy to avoid accidental stable-channel behavior changes.
+Rationale:
 
-This pattern is recommended for all tooling teams that need stable-channel alignment.
+- Command-line usage of `dotnet` inside VS canary/insiders has not produced enough critical feedback to justify the operational complexity of dual-version shipping.
 
-For repositories with public-to-internal mirroring, branch topology must preserve stable and preview intent. A candidate model is:
+Updated branch and insertion policy for MSBuild and similar tooling teams:
 
-- Public default branch mirrors into a public preview branch (source-preferred). Example: flow from 11.0.1xx to 11.0.1xx-featurepreviews.
-- Promotion from internal preview branch to internal stable branch is controlled (target-protected, with explicit acceptance gates).
-- Stable insertions are produced from the internal stable branch, while canary insertions are produced from preview-aligned flow.
+- Preview tooling ships from `main`.
+- Those preview bits flow into VS canary and the .NET vNext SDK.
+- Released SDKs ship tooling only from stable tooling branches.
+- No separate preview-branded/stable-branded split for the same released feature band.
 
-This model needs validation with engineering systems owners before adoption.
+This keeps preview validation where it is most useful (canary and vNext) while reducing branch/codeflow complexity and release risk for shipped SDKs.
 
-Concerns:
+Risk:
 
-- We would have two versions of the .1xx band shipping on the same day. One would be stable branded and one would be preview branded. That would then create 6 different feature combinations depending on the channel setting as well.
-  - Example: 11.0.103 would ship in VS stable and 11.0.1xx-preview.27053.4 would release in VS canary on Feb patch tuesday.
-  - Note: 11.0.1xx-preview.27053.4 versioning wouldn't work with workloads as is as we expect a preview version.
+This potentially limits the amount of feedback tooling teams would get on new features before promoting them to stable as they'd only be available in vNext or VS/msbuild.exe.
 
 ### Servicing safety rules
 
