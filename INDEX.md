@@ -72,6 +72,7 @@ Use update-index to regenerate it:
 | 2021 | [.NET 6.0 Target Frameworks](accepted/2021/net6.0-tfms/net6.0-tfms.md) | [Immo Landwerth](https://github.com/terrajobst) |
 | 2021 | [.NET SDK build types and Architecture targeting](accepted/2021/architecture-targeting.md) | [Rich Lander](https://github.com/richlander) |
 | 2021 | [Compile-time source generation for strongly-typed logging messages](accepted/2021/logging-generator.md) | [Maryam Ariyan](https://github.com/maryamariyan), [Martin Taillefer](https://github.com/geeknoid) |
+| 2021 | [Experiment: NuGet Package Shading](accepted/2021/experimental-package-shading/experimental-package-shading.md) | [Mikayla Hutchinson](https://github.com/mhutch) |
 | 2021 | [Inbox Source Generators](accepted/2021/InboxSourceGenerators.md) | [Eric StJohn](https://github.com/ericstj) |
 | 2021 | [Make `System.Drawing.Common` only supported on Windows](accepted/2021/system-drawing-win-only/system-drawing-win-only.md) | [Santiago Fernandez Madero](https://github.com/safern) |
 | 2021 | [Objective-C interoperability](accepted/2021/objectivec-interop.md) | [Aaron Robinson](https://github.com/AaronRobinsonMSFT) |
