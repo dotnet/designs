@@ -50,6 +50,20 @@ Outcome:
 - Easy to experiment with new features without waiting for broader SDK releases.
 - With each major release, VSCode will update the SDK installed to a new band resulting in a new baseline.
 
+## Alternatives
+
+### Monthly SDK minor releases
+
+Instead of using feature channels within a single SDK feature band, the SDK could adopt monthly minor releases. The .NET 11 GA SDK would be `11.0.0`, followed by `11.1.0`, `11.2.0`, and so on in subsequent months. Each monthly SDK would replace the previous monthly release and contain the latest available runtime, including applicable security and reliability fixes. I considered just having monthly feature bands as an alternative but the feeling was that having 11.0.100 and 11.0.1000 would lead to more confusion.
+
+Only the latest monthly minor and the original `11.0.x` release line would be serviced. The `11.0.x` line would receive security and reliability fixes but no new features, providing a stability-oriented option for source-build and enterprise partners. Existing `global.json` version selection and roll-forward behavior would allow customers to remain on `11.0.x`, select a particular monthly SDK, or move to newer monthly releases.
+
+Workload set versions would generally match the SDK version. For example, the workload set for `11.2.0` would use that version, while SDK hotfixes and mid-month workload updates would consume successive patch numbers such as `11.2.1` and `11.2.2`. A patch number could therefore represent either kind of update, avoiding the need for four-part workload set versions.
+
+This model would likely require three branches: the `11.0` stability branch, stable, and preview. DARC channels would flow monthly releases from preview to stable together with the required branding updates.
+
+The primary benefit of this approach is avoiding the governance and coordination risk of requiring every SDK-loaded component to implement feature channels correctly. Its primary drawbacks are that source-build customers remaining on `11.0.x` could not opt into new features through a feature-channel update, and the SDK would need to manage additional branching, flow, and branding complexity. This basically takes the feature band model and tries to find a reasonable way of collapsing it into monthly releases.
+
 ## Requirements
 
 ### Goals
