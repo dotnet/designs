@@ -54,15 +54,103 @@ Outcome:
 
 ### Monthly SDK minor releases
 
-Instead of using feature channels within a single SDK feature band, the SDK could adopt monthly minor releases. The .NET 11 GA SDK would be `11.0.0`, followed by `11.1.0`, `11.2.0`, and so on in subsequent months. Each monthly SDK would replace the previous monthly release and contain the latest available runtime, including applicable security and reliability fixes. I considered just having monthly feature bands as an alternative but the feeling was that having 11.0.100 and 11.0.1000 would lead to more confusion.
+Instead of using feature channels within a single SDK feature band, the SDK could adopt monthly minor releases. For example, the .NET 12 GA SDK would be `12.0.0`, followed by `12.1.0`, `12.2.0`, and so on in subsequent months. Each monthly SDK would replace the previous monthly release as the actively supported feature release and contain the latest available runtime, including applicable security and reliability fixes.
 
-Only the latest monthly minor and the original `11.0.x` release line would be serviced. The `11.0.x` line would receive security and reliability fixes but no new features, providing a stability-oriented option for source-build and enterprise partners. Existing `global.json` version selection and roll-forward behavior would allow customers to remain on `11.0.x`, select a particular monthly SDK, or move to newer monthly releases.
+Monthly feature bands were also considered, but versions such as `12.0.100` followed by `12.0.200` or `12.0.1000` continue the feature-band concept and do not communicate the monthly release ordering as directly.
 
-Workload set versions would generally match the SDK version. For example, the workload set for `11.2.0` would use that version, while SDK hotfixes and mid-month workload updates would consume successive patch numbers such as `11.2.1` and `11.2.2`. A patch number could therefore represent either kind of update, avoiding the need for four-part workload set versions.
+#### Release and branch model
 
-This model would likely require three branches: the `11.0` stability branch, stable, and preview. DARC channels would flow monthly releases from preview to stable together with the required branding updates.
+Development would primarily occur in a long-lived preview branch. It could be as simple as a public release/12.x branch with all public codeflow to this branch. Once a month, the preview content intended for release would be promoted to a long-lived stable branch which couild just be internal/release/12.x which has internal codeflow of the runtime version. Each month we'd update the branding in each branch separately.
 
-The primary benefit of this approach is avoiding the governance and coordination risk of requiring every SDK-loaded component to implement feature channels correctly. Its primary drawbacks are that source-build customers remaining on `11.0.x` could not opt into new features through a feature-channel update, and the SDK would need to manage additional branching, flow, and branding complexity. This basically takes the feature band model and tries to find a reasonable way of collapsing it into monthly releases.
+The original `12.0.x` release line would remain available as the stability-oriented release for customers that want security and reliability fixes without new features (specifically, enterprise source build partners). This produces at least three logical release paths:
+
+- The original `12.0.x` stability line.
+- The latest stable monthly minor release.
+- The next monthly minor release in preview.
+
+Monthly promotion introduces a risk of drift between preview and stable. We could have codeflow from stable tooling to the stable branch but that would cause mirror conflicts or alternatively, we could require all stable tooling changes be made in the internal/release branch. Any security fixes would have to be ported on release day to the preview branch.
+
+#### Servicing and security fixes
+
+Only the latest monthly minor and the original `12.0.x` release line would be serviced. Superseded monthly minors would remain installable but would not receive further fixes. The `12.0.x` line would receive security and reliability fixes but no new features, providing a predictable option for enterprise source-build and other stability-focused customers.
+
+The servicing policy needs to distinguish among:
+
+- Runtime security and reliability updates included in an SDK release.
+- SDK or tooling hotfixes that do not require a runtime release.
+- Workload updates released between monthly SDK releases.
+- Fixes required by Visual Studio or source-build consumers that remain on a different SDK release path.
+
+Security and reliability fixes need an explicit propagation path to the original stability line, the current stable monthly release, the next preview, Visual Studio's supported SDK builds, and any dedicated source-build branch. Stable tooling fixes would need to flow through the VMR or an equivalent internal release process rather than flowing only into the preview branch.
+
+The policy must also define what happens when a runtime security release is delayed, skipped, or released out of band. A runtime release should not necessarily require a new SDK minor, but supported SDK lines still need a way to acquire that runtime update.
+
+#### SDK and runtime version relationship
+
+SDK and runtime versions would intentionally be allowed to differ. For example, an SDK hotfix `12.2.1` might contain runtime `12.0.7`, and a new monthly SDK minor preview would contain the most recently available runtime patch rather than a runtime released on the same day. Release notes would need to make this relationship clear.
+
+The SDK version components would have the following meaning:
+
+- Major: the annual .NET release.
+- Minor: a monthly SDK feature release.
+- Patch: an SDK/tooling hotfix or a release used to carry an updated workload set between monthly feature releases.
+- Prerelease label: builds of the next monthly minor before promotion to stable.
+
+Using the patch component for both SDK hotfixes and workload updates preserves a three-part version but means patch numbers identify release order rather than a particular type of change. Release tooling and documentation must not assume that every patch increment has the same cause.
+
+#### Visual Studio integration
+
+The preview SDK would continue to flow to Visual Studio Canary for validation. The stable monthly SDK would be available to supported Visual Studio channels according to their insertion and servicing policies. Visual Studio Insiders could continue to consume the preview flow through Canary rather than requiring a separate SDK build.
+
+
+#### Source-build contract
+
+Enterprise source-build partners that require maximum stability could remain on `12.0.x` and receive security and reliability fixes without taking monthly feature releases. Other source-build consumers could move to newer monthly minors through their normal distribution update process.
+
+Unlike the feature-channel proposal, a customer remaining on `12.0.x` could not opt into selected newer SDK features without moving to a newer monthly SDK. This loses a benefit of the feature-channel model for customers that must acquire the SDK from a distribution feed but want newer features. On the other hand, release boundaries provide stronger isolation than relying on every component to gate all behavior correctly. This is particularly important for changes such as analyzer fixes that may introduce new warnings even when the change is otherwise considered a correctness fix.
+
+#### Workloads, installers, and SDK selection
+
+Existing workload and SDK infrastructure encodes feature-band identity in workload manifests, workload sets, package IDs, version validation, and selection logic. This model would need to define the monthly minor as the new compatibility boundary and update those systems accordingly.
+
+Workload set versions would generally match the SDK version. For example, the workload set for `12.2.0` would use that version, while SDK hotfixes and mid-month workload updates would consume successive patch numbers such as `12.2.1` and `12.2.2`. The release process must define ordering when both an SDK hotfix and a workload update are required in the same month and ensure that an SDK can resolve a compatible workload set after either kind of update.
+
+Existing `global.json` version selection and roll-forward behavior would allow customers to remain on `12.0.x`, select a particular monthly SDK, or move to newer monthly releases. The exact behavior of each roll-forward policy across minor releases needs to be specified, including whether existing feature-band-oriented policies retain their current names and how they map to monthly minors.
+
+Installer and acquisition behavior also needs an explicit contract:
+
+- Whether monthly minors install side by side or replace the previous monthly SDK.
+- How MSI related-product and upgrade relationships are represented.
+- How uninstalling a monthly SDK affects shared runtimes and workload content.
+- How Microsoft Update targets standalone SDKs on the original stability line versus later monthly minors.
+- How SDKs installed by Visual Studio are detected and serviced separately from standalone SDKs.
+
+#### Transition
+
+Adopting this model at the beginning of a major release is simpler than changing versioning after customers and tooling have already consumed feature-band versions. One transition option is to retain the existing feature-band model through .NET 11, including a final feature band if needed, and begin monthly minor releases with .NET 12.
+
+The transition plan would need to identify and update automation that parses SDK feature bands, including workload tooling, `global.json` handling, installers, Microsoft Update, release pipelines, support tooling, and documentation. Compatibility behavior is required for tools that encounter both the older feature-band scheme and the monthly-minor scheme.
+
+#### Benefits and drawbacks
+
+The primary benefits of this approach are:
+
+- Monthly versions communicate release order directly and align SDK tooling delivery with a monthly Visual Studio cadence.
+- Features can reach stable customers monthly rather than waiting for a quarterly feature band.
+- Release boundaries provide stronger isolation for stability-focused customers.
+- The SDK does not depend on every loaded component implementing, naming, testing, documenting, and honoring a shared feature-channel setting correctly.
+- Tooling teams can use normal version and branch boundaries instead of maintaining a growing set of indefinitely supported feature gates.
+
+The primary drawbacks are:
+
+- Source-build customers remaining on the original stability line cannot opt into selected newer features.
+- Workload, installer, SDK selection, release, and servicing infrastructure require significant changes.
+- Preview-to-stable promotion and fix propagation can create branch drift and merge debt.
+- Visual Studio and source-build may still require separate servicing paths, limiting the expected branch reduction.
+- SDK and runtime versions may differ in ways that require clear diagnostics and documentation.
+- Monthly minors increase the number of SDK versions customers and support teams encounter.
+
+This alternative should be selected if the operational cost of monthly promotion, servicing, installer, workload, and version-selection changes is lower than the governance and compatibility risk of requiring every SDK-loaded component to implement feature channels correctly. Before selecting it, the design needs validated plans for security-fix propagation, Visual Studio servicing, source-build support, workload versioning, installer upgrade behavior, and the transition from feature bands.
 
 ## Requirements
 
