@@ -110,6 +110,7 @@ Use update-index to regenerate it:
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
 |  | [SDK Analysis Level Property and Usage](proposed/sdk-analysis-level.md) | (PM) [Chet Husk](https://github.com/baronfel), (Engineering) [Daniel Plaisted](https://github.com/dsplaisted) |
+|  | [Shared dependencies across applications](proposed/shared-dependencies-across-applications.md) |  |
 |  | [Swift Interop](proposed/swift-interop.md) | [Andy Gocke](https://github.com/agocke), [Jeremy Koritzinsky](https://github.com/jkoritzinsky) |
 |  | [Target AVX2 in R2R images](proposed/vector-instruction-set-default.md) | [Richard Lander](https://github.com/richlander) |
 
