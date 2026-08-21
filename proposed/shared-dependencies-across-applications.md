@@ -36,9 +36,11 @@ The host reads a `sharedDependencies` array in `runtimeconfig.json`. Each entry 
 }
 ```
 
-- Each `sharedDependencies` entry is either an absolute path or relative path (based on the app's directory) to the shared set's `.deps.json`. Environment variables are not supported.
+- Each `sharedDependencies` entry is either an absolute path or relative path (based on the app's directory) to the shared set's `.deps.json`. Symbolic links are followed. Environment variables are not supported — support could be added as future work to enable locations that are only known at deployment time.
 - The host merges each shared set's `deps.json` into the app's dependencies at startup. The shared set is treated as part of the app, so it resolves with the same priority as assets directly in the app's `deps.json` (that is, before frameworks). This is similar to an [additional `deps.json` via `--additional-deps`/`DOTNET_ADDITIONAL_DEPS`](https://github.com/dotnet/runtime/blob/main/docs/design/features/additional-deps.md).
-- The assets in a shared set's `deps.json` are resolved relative to that `deps.json`'s folder (`/opt/AppSuite.Shared/` in the above example). The presence of `sharedDependencies` does not trigger file existence checks at startup. This differs from `--additional-deps`/`DOTNET_ADDITIONAL_DEPS`, which resolves an additional deps file's assets relative to the app directory and enables those file existence checks.
+- The assets in a shared set's `deps.json` are resolved relative to that `deps.json`'s folder (`/opt/AppSuite.Shared/` in the above example). The presence of `sharedDependencies` does not trigger asset file existence checks at startup. This differs from `--additional-deps`/`DOTNET_ADDITIONAL_DEPS`, which resolves an additional deps file's assets relative to the app directory and enables those file existence checks.
+- If a `deps.json` specified in `sharedDependencies` does not exist or cannot be parsed, startup fails.
+- `runtimeconfig.json` is considered trusted as part of the app, so each shared set's `.deps.json` and its assets are considered equally trusted.
 
 ### Developer experience
 
