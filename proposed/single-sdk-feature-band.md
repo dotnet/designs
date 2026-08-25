@@ -2,7 +2,25 @@
 
 **Owner** [marcpopMSFT](https://github.com/marcpopMSFT)
 
-Today, SDK feature bands, SDK tools, Visual Studio, workloads, and servicing branches are coupled in ways that are complex to manage and confusing for users. New features arrive in quarterly feature bands, while enterprise source build partners remain on the first feature band to preserve behavioral stability.
+## Motivation
+
+.NET tooling (MSBuild, NuGet, Roslyn, etc) and Visual Studio already ship on a monthly cadence starting with 18.0, but stable SDK features are delivered through quarterly feature bands. This mismatch creates a release-management problem every month: teams must coordinate monthly tooling and Visual Studio releases with an SDK release model that advances only once per quarter.
+
+Internally, each feature band requires repeated engineering and coordination work for:
+
+- Branding and branching.
+- Implicit version updates.
+- Runtime and workload updates.
+- `darc` subscription and channel maintenance.
+- Visual Studio insertion coordination, particularly between main and stable branches.
+
+Many of these we should solve regardless of this proposal but the current state still creates a lot of additional friction and mental load at a minimum.
+
+Externally, the mismatch makes it harder to explain which tooling features and fixes are available in Visual Studio, in the standalone SDK, and in servicing releases. Customers can receive monthly Visual Studio and tooling updates while the SDK's visible feature boundary remains quarterly.
+
+Feature bands add another layer of complexity. Versions such as `12.0.100`, `12.0.200`, and `12.0.300` do not clearly communicate release order, support status, or their relationship to the monthly tooling releases. The concept is .NET SDK-specific and requires customers, support teams, and internal tooling to understand special version-selection and servicing rules.
+
+## Proposal
 
 We propose replacing SDK feature bands with monthly minor SDK releases. For example, the .NET 12 GA SDK would be `12.0.0`, followed by `12.1.0`, `12.2.0`, and so on. Each monthly minor is an explicit feature boundary. The latest minor receives new features, while customers that require maximum stability can remain on the original `12.0.x` line and receive only security and reliability fixes.
 
@@ -112,15 +130,6 @@ Only the original stability line and latest monthly minor are serviced. Supersed
 
 Tooling teams continue flowing public development into the public `release/12.x` branch for the next monthly SDK preview. Stable fixes must also reach the internal VMR branch used to produce the stable SDK and, when applicable, Visual Studio.
 
-It is critical that we reduce the engineering costs that we currently pay for feature band releases:
-- Branding
-- Branching
-- Implicit versions
-- Runtime updates
-- Workloads releases
-- darc subscription and channel maintenance
-- VS insertion coordination especially main vs. stable
-
 The design must select one of the following models:
 
 ### Code flow with mirror conflict resolution
@@ -211,14 +220,17 @@ Installer and acquisition behavior also needs an explicit contract:
 - Whether monthly minors install side by side or replace the previous monthly SDK.
 - How MSI related-product and upgrade relationships are represented.
 - How uninstalling a monthly SDK affects shared runtimes and workload content.
+- How the .NET uninstall tool identifies monthly SDK releases and determines which installations are eligible for removal.
 - How Microsoft Update targets standalone SDKs on the original stability line versus later monthly minors.
 - How SDKs installed by Visual Studio are detected and serviced separately from standalone SDKs.
+
+The release library and other compliance, inventory, and support tooling may also encode feature-band assumptions when parsing, classifying, or comparing SDK versions. These tools must be audited and updated so that monthly minors are recognized as SDK feature boundaries and the original `N.0.x` stability line is handled correctly.
 
 ## Transition
 
 Adopting this model at the beginning of a major release is simpler than changing versioning after customers and tooling have consumed feature-band versions. The proposed transition is to retain the existing feature-band model through .NET 11, including a final feature band if needed, and begin monthly minor releases with .NET 12.
 
-The transition plan must identify and update automation that parses SDK feature bands, including workload tooling, `global.json` handling, installers, Microsoft Update, release pipelines, support tooling, and documentation. Tools that encounter both the old feature-band scheme and the monthly-minor scheme need defined compatibility behavior.
+The transition plan must identify and update automation that parses SDK feature bands, including workload tooling, `global.json` handling, installers, the .NET uninstall tool, the release library, Microsoft Update, release pipelines, compliance and inventory systems, support tooling, and documentation. Tools that encounter both the old feature-band scheme and the monthly-minor scheme need defined compatibility behavior.
 
 ## Benefits and Drawbacks
 
