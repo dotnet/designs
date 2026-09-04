@@ -1,6 +1,17 @@
 # Monthly SDK Minor Releases
 
+Two-band transition in .NET 11 and monthly minor releases beginning in .NET 12
+
 **Owner** [marcpopMSFT](https://github.com/marcpopMSFT)
+
+## Decision Summary
+
+We will make this change in two stages:
+
+- **.NET 11:** Ship exactly two SDK feature bands. `11.0.1xx` is the long-lived servicing band and accepts only security fixes and fixes required to unblock servicing. `11.0.2xx` is the feature-delivery band.
+- **.NET 12:** Replace SDK feature-band versions with monthly minor SDK releases, such as `12.1.0`, `12.2.0`, and `12.3.0`.
+
+We will announce both stages together. During the early .NET 12 previews, we will address the infrastructure and ecosystem gaps required to support minor-version SDK releases.
 
 ## Motivation
 
@@ -22,7 +33,22 @@ Feature bands add another layer of complexity. Versions such as `12.0.100`, `12.
 
 ## Proposal
 
-We propose replacing SDK feature bands with monthly minor SDK releases. For example, the .NET 12 GA SDK would be `12.0.0`, followed by `12.1.0`, `12.2.0`, and so on. Each monthly minor is an explicit feature boundary. The latest minor receives new features, while customers that require maximum stability can remain on the original `12.0.x` line and receive only security and reliability fixes.
+We propose a phased rollout that reduces the number of release trains in .NET 11 while the ecosystem prepares for monthly minor SDK releases in .NET 12.
+
+### Phase 1: .NET 11 two-band transition
+
+.NET 11 ships exactly two SDK feature bands:
+
+| Version | Purpose | Allowed changes |
+| --- | --- | --- |
+| `11.0.1xx` | Long-lived servicing baseline | Security fixes and fixes required to unblock servicing |
+| `11.0.2xx` | Feature delivery | New SDK and tooling features, plus applicable servicing fixes |
+
+There will be no `11.0.3xx` or `11.0.4xx` feature bands. Existing feature-band-aware infrastructure remains in place for .NET 11, avoiding a versioning migration before the required host, workload, installer, acquisition, update, and release infrastructure is ready.
+
+### Phase 2: .NET 12 monthly minor releases
+
+Beginning with .NET 12, SDK feature bands are replaced with monthly minor SDK releases. The .NET 12 GA SDK is `12.0.0`, followed by `12.1.0`, `12.2.0`, and so on. Each monthly minor is an explicit feature boundary. The latest minor receives new features, while the original `12.0.x` line provides a stability-oriented servicing boundary.
 
 Release boundaries provide stronger isolation than a shared feature-flag system. In particular, analyzer, compiler, and API-shape changes can affect customers even when a tool attempts to gate user-visible behavior.
 
@@ -73,6 +99,8 @@ Outcome:
 
 ### Goals
 
+- Ship exactly two SDK feature bands in .NET 11, with distinct servicing and feature-delivery roles.
+- Preserve existing feature-band-aware infrastructure during the .NET 11 transition.
 - Replace quarterly SDK feature bands with monthly minor SDK releases.
 - Make the SDK version an explicit and reliable feature boundary.
 - Deliver stable tooling features monthly.
@@ -228,9 +256,27 @@ The release library and other compliance, inventory, and support tooling may als
 
 ## Transition
 
-Adopting this model at the beginning of a major release is simpler than changing versioning after customers and tooling have consumed feature-band versions. The proposed transition is to retain the existing feature-band model through .NET 11, including a final feature band if needed, and begin monthly minor releases with .NET 12.
+Adopting monthly minor versions at the beginning of a major release is simpler than changing versioning after customers and tooling have consumed feature-band versions. .NET 11 therefore uses a two-band transition model:
 
-The transition plan must identify and update automation that parses SDK feature bands, including workload tooling, `global.json` handling, installers, the .NET uninstall tool, the release library, Microsoft Update, release pipelines, compliance and inventory systems, support tooling, and documentation. Tools that encounter both the old feature-band scheme and the monthly-minor scheme need defined compatibility behavior.
+- `11.0.1xx` remains the rollback and servicing boundary for customers and source-build partners that require maximum stability. It receives only security fixes and fixes required to unblock servicing.
+- `11.0.2xx` receives new SDK and tooling features.
+- No additional .NET 11 feature bands are produced.
+
+During the early .NET 12 previews, we will identify, assign, and close the gaps required to use monthly minor versions. This work includes host and SDK resolution, `global.json`, workload tooling, installers, the .NET uninstall tool, the release library, Microsoft Update, WinGet, DNIM, getdotnet, release pipelines, VMR infrastructure, compliance and inventory systems, support tooling, third-party version parsing, and documentation.
+
+Tools that encounter both the feature-band scheme used through .NET 11 and the monthly-minor scheme beginning in .NET 12 need defined compatibility behavior. Changes that affect the ecosystem should land early enough in the .NET 12 preview cycle to allow validation and correction before stabilization.
+
+## External Communication
+
+We will publish a blog post that explains both stages of the plan:
+
+- Why .NET 11 retains feature-band numbering while reducing the release model to two bands.
+- The servicing-only role of `11.0.1xx` and the feature-delivery role of `11.0.2xx`.
+- Why monthly minor versions are the intended .NET 12 direction.
+- Which infrastructure and ecosystem gaps will be addressed during the .NET 12 previews.
+- What customers, partners, and tool authors should expect for SDK selection, workloads, installation, servicing, and version parsing.
+
+Migration guidance for affected tooling must be available before the first .NET 12 preview that uses the new versioning model.
 
 ## Benefits and Drawbacks
 
@@ -251,16 +297,27 @@ Drawbacks:
 - SDK and runtime versions can differ in ways that require clear diagnostics and documentation.
 - Monthly minors increase the number of SDK versions encountered by customers and support teams.
 
-## Risks and Open Questions
+## Implementation Work and Remaining Questions
+
+The following decisions are settled:
+
+- .NET 11 has exactly two SDK feature bands.
+- `11.0.1xx` receives only security fixes and fixes required to unblock servicing.
+- `11.0.2xx` is the .NET 11 feature-delivery band.
+- Monthly minor SDK versions are the intended .NET 12 direction.
+- Both stages will be communicated publicly.
+
+The .NET 12 preview work must:
 
 - Choose code flow with mirror conflict resolution or dual check-ins for tooling fixes needed by both the SDK and Visual Studio.
 - Define ownership and service expectations for the selected tooling propagation path.
-- Validate the monthly promotion and branding automation.
+- Validate monthly promotion and branding automation.
 - Define security-fix propagation for the stability line, current stable minor, next preview, Visual Studio, and source build.
 - Define workload compatibility and patch-number ordering.
 - Specify `global.json` roll-forward behavior across monthly minors.
-- Define installer, Microsoft Update, and side-by-side installation behavior.
-- Confirm the model and operational responsibilities with tooling teams and VMR owners.
+- Define installer, Microsoft Update, uninstall, acquisition, rollback, and side-by-side installation behavior.
+- Audit first-party and third-party systems that parse or compare SDK versions.
+- Confirm operational responsibilities with tooling teams and VMR owners.
 
 ## Alternatives Considered
 
