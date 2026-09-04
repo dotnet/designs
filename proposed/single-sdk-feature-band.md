@@ -136,9 +136,15 @@ For example:
 - `12.2.0-preview.<buildnumber>`: a preview of the next monthly SDK feature release.
 - `12.2.1`: a hotfix or workload update after `12.2.0`.
 
+Incrementing the minor resets the patch component to zero. Within the feature-delivery train, `12.(M+1).0` succeeds `12.M.P` and normally contains SDK and tooling content at least as recent as the prior minor, except for an intentional rollback. The `12.0.x` line is a parallel stability-oriented servicing family rather than the predecessor of every monthly minor.
+
 The SDK and runtime versions are intentionally independent. An SDK hotfix such as `12.2.1` might contain runtime `12.0.3`. A monthly SDK preview contains the most recently available runtime patch rather than requiring a runtime release on the same day. Release notes and diagnostics must make the relationship clear.
 
+When a `12.0.P` servicing release and a `12.M.0` feature release ship in the same month, they contain the same runtime servicing level. A preview of the next minor may temporarily contain the runtime servicing level from the preceding month.
+
 Using the patch component for both SDK hotfixes and workload updates means patch numbers identify release order rather than a particular kind of change. Release tooling and documentation must not assume that every patch increment has the same cause.
+
+When regular feature delivery ends, the final minor becomes the servicing line for the feature train. Subsequent updates advance its patch component rather than creating additional minors.
 
 ## Release and Branch Model
 
@@ -237,9 +243,19 @@ The next minor preview should be buildable with a prior stable release so 12.4.0
 
 ## Workloads, Installers, and SDK Selection
 
-Existing workload and SDK infrastructure encodes feature-band identity in workload manifests, workload sets, package IDs, version validation, and selection logic. Monthly minors become the new compatibility boundary, and these systems must be updated accordingly.
+Existing workload and SDK infrastructure encodes feature-band identity in workload manifests, workload sets, package IDs, version validation, and selection logic. These systems must recognize monthly SDK minors while continuing to model workload compatibility boundaries independently.
 
-Workload set versions generally match the SDK version. For example, the workload set for `12.2.0` uses that version, while SDK hotfixes and mid-month workload updates consume successive patch numbers such as `12.2.1` and `12.2.2`. The release process must define ordering when an SDK hotfix and workload update are both required in the same month.
+Workload set package versions generally match the SDK version. For example, SDK `12.2.0` can consume `Microsoft.NET.Workloads.12.2.0`, while SDK hotfixes and mid-month workload updates consume successive patch numbers such as `12.2.1` and `12.2.2`. The release process must define ordering when an SDK hotfix and workload update are both required in the same month.
+
+Workload manifest package compatibility bands do not need to change for every monthly minor. The initial .NET 12 manifest package could be:
+
+`Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest-12.0.0`
+
+SDKs `12.1.0` through `12.6.x` could continue resolving manifests from that compatibility band. If a workload change requires a new compatibility boundary, a later minor can rebaseline it, for example:
+
+`Microsoft.NET.Workload.Mono.ToolChain.Current.Manifest-12.7.0`
+
+SDK `12.7.0` and later releases would then resolve the new manifest band, while earlier SDK minors remain on the original band. Workload commands and Visual Studio select the appropriate band without requiring customers to manage this distinction directly.
 
 Existing `global.json` version selection and roll-forward behavior must allow customers to remain on `12.0.x`, select a particular monthly SDK, or move to newer monthly releases. The exact behavior of each roll-forward policy across minor releases must be specified, including how feature-band-oriented policy names map to monthly minors.
 
