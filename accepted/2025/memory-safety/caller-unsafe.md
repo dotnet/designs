@@ -118,7 +118,7 @@ Properties which should always hold in .NET programs are:
 
 * Memory safety
 * No access to uninitialized memory
-* Managed references are always valid to dereference, both as references and if converted to a pointer
+* Managed references are either null, or always valid to dereference, both as references and if converted to a pointer of the same type
 
 The "safe" subset of C# must guarantee these properties by construction. The unsafe subset cannot be guaranteed entirely by the system -- it needs external validation by the user or other tooling.
 
