@@ -118,7 +118,6 @@ Properties which should always hold in .NET programs are:
 
 * Memory safety
 * No access to uninitialized memory
-* Managed references are either null, or always valid to dereference, both as references and if converted to a pointer of the same type
 
 The "safe" subset of C# must guarantee these properties by construction. The unsafe subset cannot be guaranteed entirely by the system -- it needs external validation by the user or other tooling.
 
@@ -184,6 +183,15 @@ The second type of changes would be adding annotations, meaning adding the `unsa
 The last notable area of impact is source generation. Most users will only see changes to `unsafe` when updating libraries that have new unsafe annotations. The major exception to that is source generation, where the changes to the semantics of method bodies will be visible directly. The other limitation of source generation is that, unlike library updates, the problem cannot be fixed by reverting a reference update.
 
 One concession we could make to source generation would be to allow more fine-grained enabling and disabling of the warning scope. This proposal does **not** recommend such configuration switches. The `unsafe` feature is specifically designed to catch dangerous situations and source generation does not eliminate that risk. Therefore our recommendation would be to **avoid enabling the feature** until all source generators are updated to produce compatible code.
+
+### Requirements
+
+To uphold the global safety invariants, user code must uphold certain requirements.
+
+In particular, managed references have the following requirements:
+
+- Managed references must be aligned in safe code. Managed refereces are often pinned as unmanaged pointers and passed to native code using C/C++ conventions. C/C++ requires that all pointers are properly aligned, the behavior is undefined otherwise and it can lead to memory safety violations.
+- Managed references may be null, but if they are non-null then they must point to valid memory, _even in unsafe code_. For these purposes, one element past the end of an array is considered valid memory.
 
 ### Examples and APIs
 
