@@ -191,7 +191,7 @@ To uphold the global safety invariants, user code must uphold certain requiremen
 In particular, managed references have the following requirements:
 
 - Managed references must be aligned in safe code. Managed refereces are often pinned as unmanaged pointers and passed to native code using C/C++ conventions. C/C++ requires that all pointers are properly aligned, the behavior is undefined otherwise and it can lead to memory safety violations.
-- Managed references may be null, but if they are non-null then they must point to valid memory, _even in unsafe code_. For these purposes, one element past the end of an array is considered valid memory.
+- Managed references may be null, but if they are non-null then they must point to valid memory, _even in unsafe code_. For these purposes, one element past the end of an array is considered valid memory, as is pointing just past the end of the object. Managed references pointing past objects may not be dereferenced in either safe or unsafe code.
 
 ### Examples and APIs
 
