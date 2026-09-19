@@ -190,8 +190,8 @@ To uphold the global safety invariants, user code must uphold certain requiremen
 
 In particular, managed references have the following requirements:
 
-- Managed references must be aligned in safe code. Managed refereces are often pinned as unmanaged pointers and passed to native code using C/C++ conventions. C/C++ requires that all pointers are properly aligned, the behavior is undefined otherwise and it can lead to memory safety violations.
-- Managed references may be null, but if they are non-null then they must point to valid memory, _even in unsafe code_. For these purposes, one element past the end of an array is considered valid memory, as is pointing just past the end of the object. Managed references pointing past objects may not be dereferenced in either safe or unsafe code.
+- In safe code, managed references must be aligned. Managed references are often pinned as unmanaged pointers and passed to native code using C/C++ conventions. C/C++ requires that all pointers are properly aligned, the behavior is undefined otherwise and it can lead to memory safety violations.
+- In both safe and unsafe code, managed references follow the rules specified in https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md#ii1442
 
 ### Examples and APIs
 
@@ -210,7 +210,3 @@ All P/Invoke methods are unsafe because they may compromise memory safety if the
 **SafeHandle, GCHandle, and other handle wrappers**
 
 Safe subset of these APIs must guarantee that safe code cannot operate on invalid handle. For example, `SafeHandle.Dispose` is safe and `SafeFileHandle(IntPtr handle, bool ownsHandle)` constructor is unsafe.
-
-**Alignment of managed references**
-
-Safe code must be prohibited from creating unaligned managed references. Managed refereces are often pinned as unmanaged pointers and passed to native code using C/C++ conventions. C/C++ requires that all pointers are properly aligned, the behavior is undefined otherwise and it can lead to memory safety violations.
