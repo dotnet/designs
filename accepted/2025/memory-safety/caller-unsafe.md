@@ -190,7 +190,7 @@ To uphold the global safety invariants, user code must uphold certain requiremen
 
 In particular, managed references have the following requirements:
 
-- In safe code, managed references must be aligned. Managed references are often pinned as unmanaged pointers and passed to native code using C/C++ conventions. C/C++ requires that all pointers are properly aligned, the behavior is undefined otherwise and it can lead to memory safety violations.
+- In safe code, managed references must be aligned. .NET APIs expect managed references (including Spans) to be aligned. The behavior of .NET APIs on misaligned references is undefined. Additionally, managed references are often pinned as unmanaged pointers and passed to native code using C/C++ conventions. C/C++ requires that all pointers are properly aligned, the behavior is undefined otherwise and it can lead to memory safety violations.
 - In both safe and unsafe code, managed references must follow the rules specified in https://github.com/dotnet/runtime/blob/main/docs/design/specs/Ecma-335-Augments.md#ii1442
 
 ### Examples and APIs
