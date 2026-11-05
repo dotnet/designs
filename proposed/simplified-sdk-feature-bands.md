@@ -64,6 +64,24 @@ For example, `11.0.201` has already shipped when the release fork for `11.0.202`
 
 Use persistent VS Canary and VS Stable channels, updating the versioned producer branches behind them instead of recreating channels and subscriptions each month. Record the branch mappings and promotion operation in the release procedure, and automate the monthly mechanics where practical.
 
+### Microsoft Update
+
+Microsoft Update continues servicing standalone SDKs by feature band. Customers with `11.0.1xx` receive updates within that band; installing `11.0.2xx` enables updates within the feature-delivery band. Microsoft Update does not move customers from `1xx` to `2xx`. If both bands are installed, both receive applicable updates.
+
+SDKs installed by Visual Studio continue to be serviced through Visual Studio. Standalone SDK updates include their bundled runtime updates.
+
+### Guidance for Tooling Teams
+
+New features from MSBuild, Roslyn, NuGet, analyzers, and other SDK components ship through `11.0.2xx`. Where practical, teams should initially ship a feature disabled by default, allow customers to opt in and provide feedback in a stable release, and enable it by default in a later release.
+
+This uses component-specific controls, not a new SDK-wide feature-channel setting. Features spanning multiple components must coordinate their dependencies, validation, and rollout. Release notes should identify when a feature becomes available and when its default changes.
+
+### Source-build Bootstrapping
+
+Source-build guidance should allow successive `11.0.2xx` releases to build using a previously released stable SDK and the required source-built inputs. Later releases may depend on tooling features from earlier released `2xx` SDKs; they are not required to remain buildable with `11.0.1xx`.
+
+Preview builds should use released bootstrap inputs rather than depend on SDK features available only in an unreleased SDK. The supported bootstrap inputs must be recorded and validated for each release.
+
 ## Future SDK Versioning Proposal (Not Approved)
 
 The remaining sections describe a monthly-minor option for future SDK releases, not committed .NET 12 work. Retaining feature-band numbering is also an option. Versions such as `12.0.0` and `12.1.0`, branch names, package names, and release sequences below are illustrative and do not establish approved .NET 12 branding, support policy, implementation scope, or rollout timing.
