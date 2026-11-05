@@ -1,17 +1,17 @@
-# Monthly SDK Minor Releases
+# SDK Feature Delivery: .NET 11 Plan and Future Versioning Options
 
-Two-band transition in .NET 11 and monthly minor releases beginning in .NET 12
+Monthly feature delivery in .NET 11, with future SDK numbering and branding under discussion
 
 **Owner** [marcpopMSFT](https://github.com/marcpopMSFT)
 
 ## Decision Summary
 
-We will make this change in two stages:
+The committed implementation scope is monthly SDK and tooling feature delivery within the .NET 11 `11.0.2xx` feature band, retaining existing feature-band versioning.
 
 - **.NET 11:** Ship exactly two SDK feature bands. `11.0.1xx` is the long-lived servicing band and accepts only security fixes and fixes required to unblock servicing. `11.0.2xx` is the feature-delivery band.
-- **.NET 12:** Replace SDK feature-band versions with monthly minor SDK releases, such as `12.1.0`, `12.2.0`, and `12.3.0`.
+- **Future versioning:** Changes to SDK numbering and branding for .NET 12, including monthly minor versions, remain under discussion.
 
-We will announce both stages together. During the early .NET 12 previews, we will address the infrastructure and ecosystem gaps required to support minor-version SDK releases.
+This document records the monthly-minor proposal but does not approve it or commit its implementation, release timing, or announcement. Any future change requires a separate decision and implementation plan. Completion of the .NET 11 work does not depend on adopting that proposal.
 
 ## Motivation
 
@@ -31,11 +31,11 @@ Externally, the mismatch makes it harder to explain which tooling features and f
 
 Feature bands add another layer of complexity. Versions such as `12.0.100`, `12.0.200`, and `12.0.300` do not clearly communicate release order, support status, or their relationship to the monthly tooling releases. The concept is .NET SDK-specific and requires customers, support teams, and internal tooling to understand special version-selection and servicing rules.
 
-## Proposal
+## .NET 11 Implementation Plan
 
-We propose a phased rollout that reduces the number of release trains in .NET 11 while the ecosystem prepares for monthly minor SDK releases in .NET 12.
+The .NET 11 work reduces the number of release trains and enables monthly feature delivery independently of any later SDK numbering or branding decision.
 
-### Phase 1: .NET 11 two-band transition
+### Servicing and Feature Delivery
 
 .NET 11 ships exactly two SDK feature bands:
 
@@ -44,17 +44,41 @@ We propose a phased rollout that reduces the number of release trains in .NET 11
 | `11.0.1xx` | Long-lived servicing baseline | Security fixes and fixes required to unblock servicing |
 | `11.0.2xx` | Feature delivery | New SDK and tooling features, plus applicable servicing fixes |
 
-There will be no `11.0.3xx` or `11.0.4xx` feature bands. Existing feature-band-aware infrastructure remains in place for .NET 11, avoiding a versioning migration before the required host, workload, installer, acquisition, update, and release infrastructure is ready.
+There will be no `11.0.3xx` or `11.0.4xx` feature bands. Existing feature-band-aware infrastructure remains in place for .NET 11; this plan does not require the versioning migration described in the future proposal.
 
-### Phase 2: .NET 12 monthly minor releases
+New SDK and tooling features ship through successive `11.0.2xx` patch releases rather than additional feature bands. Unlike the servicing-only `11.0.1xx` line, patch updates within `11.0.2xx` can therefore contain new features.
 
-Beginning with .NET 12, SDK feature bands are replaced with monthly minor SDK releases. The .NET 12 GA SDK is `12.0.0`, followed by `12.1.0`, `12.2.0`, and so on. Each monthly minor is an explicit feature boundary. The latest minor receives new features, while the original `12.0.x` line provides a stability-oriented servicing boundary.
+The tentative schedule is to release `11.0.200` in February, followed by `11.0.201` in March and subsequent monthly feature releases. Previews are available ahead of release through Visual Studio Canary/Insiders. Dates and standalone preview acquisition details remain to be finalized.
+
+### Branching, Code Flow, and Monthly Promotion
+
+The .NET 11 flow distinguishes three VMR branch roles:
+
+- A public development/preview branch receives new SDK and tooling features and produces previews for Visual Studio Canary.
+- A non-shipping internal preview mirror carries the preview content plus protected fixes required for the next release.
+- A monthly release fork supplies the stable release. It aligns with the tooling branches for that release, including Roslyn stable.
+
+Security fixes needed in both stable and the next release must be applied to the stable release and the internal preview mirror so that monthly promotion preserves them. Security-only SDK changes are made in the VMR rather than requiring a separate SDK-repository stable branch. Protected changes must not backflow into public repositories before disclosure.
+
+For example, `11.0.201` has already shipped when the release fork for `11.0.202` is created from the internal preview content. That fork aligns with Roslyn stable for `202`; Roslyn insiders and the internal preview then advance toward `11.0.203`. The release fork is distinct from the internal preview branch, not a replacement for an unshipped `201`.
+
+Use persistent VS Canary and VS Stable channels, updating the versioned producer branches behind them instead of recreating channels and subscriptions each month. Record the branch mappings and promotion operation in the release procedure, and automate the monthly mechanics where practical.
+
+## Future SDK Versioning Proposal (Not Approved)
+
+The remaining sections describe a monthly-minor option for future SDK releases, not committed .NET 12 work. Retaining feature-band numbering is also an option. Versions such as `12.0.0` and `12.1.0`, branch names, package names, and release sequences below are illustrative and do not establish approved .NET 12 branding, support policy, implementation scope, or rollout timing.
+
+Requirements expressed below apply only if this option is separately approved. Its scope, owners, migration schedule, and communication plan would need to be agreed before implementation.
+
+### Monthly Minor Releases
+
+Under this option, SDK feature bands would be replaced with monthly minor SDK releases. The annual GA SDK would be `12.0.0`, followed by `12.1.0`, `12.2.0`, and so on. Each monthly minor would be an explicit feature boundary. The latest minor would receive new features, while the original `12.0.x` line would provide a stability-oriented servicing boundary.
 
 Release boundaries provide stronger isolation than a shared feature-flag system. In particular, analyzer, compiler, and API-shape changes can affect customers even when a tool attempts to gate user-visible behavior.
 
-## Scenarios and User Experience
+### Scenarios and User Experience
 
-### Enterprise source-build partner requires maximum stability
+#### Enterprise source-build partner requires maximum stability
 
 An enterprise source-build partner remains on the original `12.0.x` line. It receives security and reliability fixes without taking new SDK or tooling features.
 
@@ -65,7 +89,7 @@ Outcome:
 - Partner validation cost and risk are reduced.
 - The release version clearly identifies the stability boundary.
 
-### Visual Studio stable users receive monthly tooling updates
+#### Visual Studio stable users receive monthly tooling updates
 
 A developer on a supported Visual Studio stable channel receives the latest stable monthly SDK minor according to Visual Studio insertion and servicing policies. The SDK includes the latest applicable runtime and tooling security fixes.
 
@@ -75,7 +99,7 @@ Outcome:
 - Preview content is validated before monthly promotion.
 - SDK release boundaries align more closely with the Visual Studio release cadence.
 
-### Visual Studio Canary users validate the next monthly release
+#### Visual Studio Canary users validate the next monthly release
 
 A developer on Visual Studio Canary receives preview builds of the next SDK minor from the public release branch.
 
@@ -85,7 +109,7 @@ Outcome:
 - Preview behavior does not appear in the current stable monthly release.
 - Visual Studio Insiders can consume the Canary flow without requiring a separate SDK build.
 
-### Command-line and VS Code users select an SDK release
+#### Command-line and VS Code users select an SDK release
 
 A developer using the .NET CLI or VS Code can use `global.json` and existing SDK acquisition mechanisms to remain on the original stability line, select a monthly minor, or roll forward to newer monthly releases.
 
@@ -95,12 +119,10 @@ Outcome:
 - SDK selection continues to support projects with different stability requirements; whether monthly minors install side by side remains an installer-design decision.
 - Moving to a newer feature set is an explicit SDK version change.
 
-## Requirements
+### Requirements
 
-### Goals
+#### Goals
 
-- Ship exactly two SDK feature bands in .NET 11, with distinct servicing and feature-delivery roles.
-- Preserve existing feature-band-aware infrastructure during the .NET 11 transition.
 - Replace quarterly SDK feature bands with monthly minor SDK releases.
 - Make the SDK version an explicit and reliable feature boundary.
 - Deliver stable tooling features monthly.
@@ -110,7 +132,7 @@ Outcome:
 - Define how tooling fixes reach both the VMR and Visual Studio without introducing unmanageable mirror conflicts or check-in overhead.
 - Update workloads, installers, SDK selection, and release automation for the new compatibility boundary.
 
-### Non-goals
+#### Non-goals
 
 - Changing runtime versioning to match the SDK's monthly minor.
 - Requiring the SDK and runtime contained in it to have the same version.
@@ -118,7 +140,7 @@ Outcome:
 - Supporting every superseded monthly minor indefinitely.
 - Changing the feature rollout experience of components loaded directly by Visual Studio rather than through the SDK.
 
-## Versioning Model
+### Versioning Model
 
 The SDK version components have the following meaning:
 
@@ -146,7 +168,7 @@ Using the patch component for both SDK hotfixes and workload updates means patch
 
 When regular feature delivery ends, the final minor becomes the servicing line for the feature train. Subsequent updates advance its patch component rather than creating additional minors.
 
-## Release and Branch Model
+### Release and Branch Model
 
 Development occurs primarily in a long-lived public `release/12.x` branch. Public code flow from tooling repositories targets this branch. Preview builds of the next monthly minor are produced from it and flow to Visual Studio Canary.
 
@@ -160,13 +182,13 @@ The model has three logical release paths:
 
 Only the original stability line and latest monthly minor are serviced. Superseded monthly minors remain installable but do not receive further fixes.
 
-## Tooling Code Flow
+### Tooling Code Flow
 
 Tooling teams continue flowing public development into the public `release/12.x` branch for the next monthly SDK preview. Stable fixes must also reach the internal VMR branch used to produce the stable SDK and, when applicable, Visual Studio.
 
 The design must select one of the following models:
 
-### Code flow with mirror conflict resolution
+#### Code flow with mirror conflict resolution
 
 Stable tooling changes flow automatically into the internal stable branch. The mirror and code-flow infrastructure must distinguish public preview content from stable servicing content and provide a supported way to resolve conflicts.
 
@@ -182,7 +204,7 @@ Costs and risks:
 - Conflicts between the public preview branch and internal stable branch can block propagation.
 - The mirror system becomes part of the release-critical path and needs clear ownership and service-level expectations.
 
-### Dual check-in by tooling teams
+#### Dual check-in by tooling teams
 
 Tooling teams check stable fixes into both their normal repository or branch and the VMR or internal release branch when the fix is needed by both the SDK and Visual Studio.
 
@@ -199,7 +221,7 @@ Costs and risks:
 - A fix can be missed in one destination.
 - Security fixes require coordinated validation and disclosure-safe propagation across multiple repositories.
 
-### Decision criteria
+#### Decision criteria
 
 The code-flow model should be selected with the tooling teams and VMR owners based on:
 
@@ -212,7 +234,7 @@ The code-flow model should be selected with the tooling teams and VMR owners bas
 
 Until this decision is made, the proposal does not assume that monthly promotion alone solves tooling branch management. The selected model must include a security-fix path and a recovery process for failed or incomplete propagation.
 
-## Servicing and Security Fixes
+### Servicing and Security Fixes
 
 The servicing policy must distinguish among:
 
@@ -225,7 +247,7 @@ Security and reliability fixes need an explicit propagation path to the original
 
 The policy must also cover delayed, skipped, and out-of-band runtime releases. Any security fix needed in both stable and preview must be applied through the selected tooling code-flow model rather than waiting for the next monthly promotion.
 
-## Visual Studio Integration
+### Visual Studio Integration
 
 - The next monthly SDK preview flows to Visual Studio Canary.
 - The current stable monthly SDK is available to supported Visual Studio channels according to their insertion and servicing policies.
@@ -233,7 +255,7 @@ The policy must also cover delayed, skipped, and out-of-band runtime releases. A
 - We would try to avoid any insiders insertions unless a blocking bug necessitated an update
 - Components loaded directly by Visual Studio continue to follow their existing Visual Studio rollout policies.
 
-## Source-build Contract
+### Source-build Contract
 
 Enterprise source-build partners that require maximum stability can remain on `12.0.x` and receive security and reliability fixes without taking monthly feature releases. Other source-build consumers can move to newer monthly minors through their normal distribution update process.
 
@@ -241,7 +263,7 @@ A customer remaining on `12.0.x` cannot opt into selected features from later mo
 
 The next minor preview should be buildable with a prior stable release so 12.4.0 can be built with 12.3.0. The previews of the SDK will have to build with N-2 SDKs as the N-1 will still be unreleased and being worked on.
 
-## Workloads, Installers, and SDK Selection
+### Workloads, Installers, and SDK Selection
 
 Existing workload and SDK infrastructure encodes feature-band identity in workload manifests, workload sets, package IDs, version validation, and selection logic. These systems must recognize monthly SDK minors while continuing to model workload compatibility boundaries independently.
 
@@ -270,31 +292,19 @@ Installer and acquisition behavior also needs an explicit contract:
 
 The release library and other compliance, inventory, and support tooling may also encode feature-band assumptions when parsing, classifying, or comparing SDK versions. These tools must be audited and updated so that monthly minors are recognized as SDK feature boundaries and the original `N.0.x` stability line is handled correctly.
 
-## Transition
+### Readiness and Migration
 
-Adopting monthly minor versions at the beginning of a major release is simpler than changing versioning after customers and tooling have consumed feature-band versions. .NET 11 therefore uses a two-band transition model:
+Adopting monthly minor versions at the beginning of a major release would be simpler than changing versioning after customers and tooling have consumed feature-band versions. That consideration does not commit a change for .NET 12 or make the .NET 11 plan a transition to this option.
 
-- `11.0.1xx` remains the rollback and servicing boundary for customers and source-build partners that require maximum stability. It receives only security fixes and fixes required to unblock servicing.
-- `11.0.2xx` receives new SDK and tooling features.
-- No additional .NET 11 feature bands are produced.
+If a future versioning change is approved, its implementation plan must identify affected systems, owners, compatibility requirements, and a validated migration schedule. The impact inventory includes host and SDK resolution, `global.json`, workload tooling, installers, the .NET uninstall tool, the release library, Microsoft Update, WinGet, DNIM, getdotnet, release pipelines, VMR infrastructure, compliance and inventory systems, support tooling, third-party version parsing, and documentation.
 
-During the early .NET 12 previews, we will identify, assign, and close the gaps required to use monthly minor versions. This work includes host and SDK resolution, `global.json`, workload tooling, installers, the .NET uninstall tool, the release library, Microsoft Update, WinGet, DNIM, getdotnet, release pipelines, VMR infrastructure, compliance and inventory systems, support tooling, third-party version parsing, and documentation.
+Tools that encounter both feature-band and monthly-minor schemes would need defined compatibility behavior. The migration schedule must allow ecosystem validation and correction before stabilization; no .NET 12 preview deadline is committed here.
 
-Tools that encounter both the feature-band scheme used through .NET 11 and the monthly-minor scheme beginning in .NET 12 need defined compatibility behavior. Changes that affect the ecosystem should land early enough in the .NET 12 preview cycle to allow validation and correction before stabilization.
+### Communication for a Future Versioning Change
 
-## External Communication
+If a numbering change is approved, its communication plan must explain the chosen versioning model, migration timing, ecosystem impact, and customer guidance. Guidance for affected tooling must be available before the first preview that uses the new model.
 
-We will publish a blog post that explains both stages of the plan:
-
-- Why .NET 11 retains feature-band numbering while reducing the release model to two bands.
-- The servicing-only role of `11.0.1xx` and the feature-delivery role of `11.0.2xx`.
-- Why monthly minor versions are the intended .NET 12 direction.
-- Which infrastructure and ecosystem gaps will be addressed during the .NET 12 previews.
-- What customers, partners, and tool authors should expect for SDK selection, workloads, installation, servicing, and version parsing.
-
-Migration guidance for affected tooling must be available before the first .NET 12 preview that uses the new versioning model.
-
-## Benefits and Drawbacks
+### Benefits and Drawbacks
 
 Benefits:
 
@@ -313,17 +323,11 @@ Drawbacks:
 - SDK and runtime versions can differ in ways that require clear diagnostics and documentation.
 - Monthly minors increase the number of SDK versions encountered by customers and support teams.
 
-## Implementation Work and Remaining Questions
+### Open Decisions and Preconditions
 
-The following decisions are settled:
+The monthly-minor option requires a separate decision on SDK numbering and branding, including whether to adopt it for .NET 12 or retain feature-band versions. Neither the destination nor its implementation schedule is settled by this document.
 
-- .NET 11 has exactly two SDK feature bands.
-- `11.0.1xx` receives only security fixes and fixes required to unblock servicing.
-- `11.0.2xx` is the .NET 11 feature-delivery band.
-- Monthly minor SDK versions are the intended .NET 12 direction.
-- Both stages will be communicated publicly.
-
-The .NET 12 preview work must:
+Before a future numbering change can ship, its approved implementation plan must:
 
 - Choose code flow with mirror conflict resolution or dual check-ins for tooling fixes needed by both the SDK and Visual Studio.
 - Define ownership and service expectations for the selected tooling propagation path.
@@ -335,13 +339,17 @@ The .NET 12 preview work must:
 - Audit first-party and third-party systems that parse or compare SDK versions.
 - Confirm operational responsibilities with tooling teams and VMR owners.
 
-## Alternatives Considered
+### Alternatives Considered
 
-### Continue quarterly feature bands
+#### Retain feature-band numbering with monthly feature delivery
+
+Future SDK releases could retain a servicing baseline such as `12.0.1xx` and deliver monthly features through `12.0.2xx` patch releases, following the .NET 11 model. This would avoid the monthly-minor versioning migration while preserving monthly feature delivery, but would retain feature-band-specific version interpretation and selection rules.
+
+#### Continue quarterly feature bands
 
 The SDK could retain versions such as `12.0.100`, `12.0.200`, `12.0.300`, and `12.0.400`. This avoids much of the transition cost, but it preserves the current feature-band concept, delays stable feature delivery, and does not communicate monthly release ordering directly.
 
-### Single feature band with global feature channels
+#### Single feature band with global feature channels
 
 We considered retaining one SDK feature band and introducing a global feature channel such as `baseline`, `stable`, or `preview`. Every participating SDK-loaded component would read the channel and gate new features or behavior accordingly.
 
