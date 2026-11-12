@@ -93,6 +93,7 @@ Use update-index to regenerate it:
 | 2025 | [RID-Specific .NET Tool Packages](accepted/2025/rid-specific-tool-packages.md) | [Daniel Plaisted](https://github.com/dsplaisted) |
 | 2025 | [SDK Unsafe Adoption](accepted/2025/memory-safety/sdk-memory-safety-enforcement.md) | [Fred Silberberg](https://github.com/333fred), [Richard Lander](https://github.com/richlander) |
 | 2026 | [.NET SDK Acquisition and Management Tool](accepted/2026/dotnetup/cli-acquisition-tool.md) | [Chet Husk](https://github.com/baronfel), [Daniel Plaisted](https://github.com/dsplaisted) |
+| 2026 | [SDK Feature Delivery: .NET 11 Plan and Future Versioning Options](accepted/2026/simplified-sdk-feature-bands.md) | [marcpopMSFT](https://github.com/marcpopMSFT) |
 
 ## Drafts
 
@@ -110,7 +111,6 @@ Use update-index to regenerate it:
 |  | [Readonly references in C# and IL verification.](proposed/verifiable-ref-readonly.md) |  |
 |  | [Ref returns in C# and IL verification.](proposed/verifiable-ref-returns.md) |  |
 |  | [SDK Analysis Level Property and Usage](proposed/sdk-analysis-level.md) | (PM) [Chet Husk](https://github.com/baronfel), (Engineering) [Daniel Plaisted](https://github.com/dsplaisted) |
-|  | [SDK Feature Delivery: .NET 11 Plan and Future Versioning Options](proposed/simplified-sdk-feature-bands.md) | [marcpopMSFT](https://github.com/marcpopMSFT) |
 |  | [Swift Interop](proposed/swift-interop.md) | [Andy Gocke](https://github.com/agocke), [Jeremy Koritzinsky](https://github.com/jkoritzinsky) |
 |  | [Target AVX2 in R2R images](proposed/vector-instruction-set-default.md) | [Richard Lander](https://github.com/richlander) |
 
